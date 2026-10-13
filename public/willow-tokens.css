@@ -1,0 +1,29 @@
+/* Willow's design tokens, defined once: the app (public/willow.css), the sign-in and
+   setup frames (public/willow-frame.css) and the run site's pages all read these. */
+:root {
+  --paper: #faf9f5;        /* page */
+  --card: #fefdfa;         /* cards, inputs */
+  --ink: #1f2a23;          /* headings, body */
+  --ink-2: #4a564e;        /* sentences, descriptions */
+  --ink-3: #6b756e;        /* labels, table heads, meta, hints */
+  --line: rgb(31 42 35 / .12);
+  --line-strong: rgb(31 42 35 / .2);
+  --pill: #26312a;
+  --pill-hover: #34413a;
+  --on-pill: #faf9f5;
+  --willow: #5f7444;       /* links, focus accent, mark */
+  --willow-wash: #e4eadb;  /* active nav, positive chips, avatar discs, success notice */
+  --gold-wash: #f4ecd0;
+  --gold-ink: #7a5d12;     /* upcoming, scheduled, draft, awaiting sign-off, pending chips */
+  --quiet-wash: #eeede8;   /* past, former, No, cancelled chips */
+  --alert-wash: #f6e3dc;
+  --alert-ink: #8c3a26;    /* overdue, unresolved, insufficient balance, errors */
+  --serif: 'Willow Serif', 'Source Serif 4', Georgia, serif;
+  --sans: 'Public Sans', system-ui, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --r-card: 14px;
+  --r-input: 10px;
+  --r-pill: 999px;
+  --r-chip: 999px;
+  --shadow-card: 0 1px 2px rgb(31 42 35 / .04), 0 8px 24px -12px rgb(31 42 35 / .12);
+}

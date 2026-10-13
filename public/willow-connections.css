@@ -1,0 +1,31 @@
+/* Connections uses the shared page column, grid, card, heading and type styles.
+   This file only arranges the details inside those shared components. */
+.connections { color: var(--ink); }
+.connections .feature-head { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 20px; align-items: start; padding-bottom: 20px; }
+.connections .icon-disc { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: var(--willow-wash) url('/homepage/disc-willow.webp') center / cover; color: var(--ink); }
+.connections .icon-disc svg { display: block; width: 24px; height: 24px; }
+.connections .description { margin: 0; color: var(--ink-2); }
+.connections .config { border-top: 1px solid var(--line); padding: 12px 0 10px; }
+.connections .config p { margin: 0; color: var(--ink-2); }
+.connections .config h3, .connections .state-label { margin: 0; }
+.connections details { margin: 8px 0; }
+.connections .state { display: grid; grid-template-columns: 145px minmax(0, 1fr); gap: 10px; padding: 12px 0 0; border-top: 1px solid var(--line); }
+.connections .state-label { padding-top: 4px; }
+.connections .status { margin: 0 0 3px; }
+.connections .state-body p.explanation { margin: 0; color: var(--ink-2); }
+.connections .manual { margin-top: 15px; }
+.connections .manual .state-body { padding-top: 3px; }
+.connections .available { font-weight: 600; }
+.connections .note { margin-top: 20px; padding: 11px 12px; border-radius: var(--r-input); background: var(--paper); color: var(--ink-2); }
+.connections .note p { margin: 0; }
+.connections .model { grid-column: 1 / -1; }
+
+@media (max-width: 719px) {
+  .connections .feature-head { grid-template-columns: 40px minmax(0, 1fr); gap: 13px; padding-bottom: 16px; }
+  .connections .icon-disc { width: 40px; height: 40px; }
+  .connections .feature-head .tag { grid-column: 2; justify-self: start; }
+  .connections .state { grid-template-columns: 1fr; gap: 3px; }
+  .connections .state-body { padding-top: 7px; }
+  .connections .manual { margin-top: 13px; }
+  .connections .note { margin-top: 18px; }
+}

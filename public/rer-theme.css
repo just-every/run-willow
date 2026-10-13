@@ -1,0 +1,32 @@
+/* Willow's declared theme: the --rer-* tokens Base's frames (installer, sign-in,
+   /setup, the Lobby) read, in the grammar Base accepts (hex colours and faces
+   only). The same colours are Willow's own tokens in public/willow-tokens.css. */
+@font-face {
+  font-family: 'Public Sans';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/public-sans/public-sans-latin-wght-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/source-serif-4/source-serif-4-latin-opsz-normal.woff2') format('woff2');
+}
+:root {
+  --rer-font-body: 'Public Sans', Arial, sans-serif;
+  --rer-font-heading: 'Source Serif 4', Georgia, serif;
+  --rer-page: #faf9f5;
+  --rer-surface: #fefdfa;
+  --rer-text: #1f2a23;
+  --rer-muted: #4a564e;
+  --rer-border: #7f8a82;
+  --rer-focus: #5f7444;
+  --rer-link: #5f7444;
+  --rer-accent: #26312a;
+  --rer-accent-text: #faf9f5;
+  --rer-radius: 14px;
+  --rer-logo: url('/brand/mark.svg');
+}

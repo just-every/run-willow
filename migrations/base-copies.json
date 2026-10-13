@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "copies": [
+    {
+      "path": "migrations/core/0001_owner.sql",
+      "originPath": "modules/operator-auth/accounts/schema/operator-auth.sql",
+      "revision": "56d2eadbd094cfe31c7f155da3355afe6fccf7de",
+      "files": {
+        "migrations/core/0001_owner.sql": "a3a586a6b095cae80501c3f22fd8df98f4140e0281bc08f3b944c818a977ecde"
+      },
+      "modes": {
+        "migrations/core/0001_owner.sql": "100644"
+      }
+    },
+    {
+      "path": "migrations/core/0002_outbox.sql",
+      "originPath": "modules/mail/src/development/schema.sql",
+      "revision": "56d2eadbd094cfe31c7f155da3355afe6fccf7de",
+      "files": {
+        "migrations/core/0002_outbox.sql": "45d6b03eadfe1e91737763ae85cdff74e7216f859869e34431550bba48294996"
+      },
+      "modes": {
+        "migrations/core/0002_outbox.sql": "100644"
+      }
+    },
+    {
+      "path": "migrations/core/0003_portability.sql",
+      "originPath": "modules/portability/schema/portability.sql",
+      "revision": "56d2eadbd094cfe31c7f155da3355afe6fccf7de",
+      "files": {
+        "migrations/core/0003_portability.sql": "c7db9042f6d5c571e10297c02df858ad2f3466beb4fa85649fee407cc228747b"
+      },
+      "modes": {
+        "migrations/core/0003_portability.sql": "100644"
+      }
+    },
+    {
+      "path": "migrations/core/0005_identity_providers.sql",
+      "originPath": "modules/operator-auth/identity/oidc/schema/oidc.sql",
+      "revision": "56d2eadbd094cfe31c7f155da3355afe6fccf7de",
+      "files": {
+        "migrations/core/0005_identity_providers.sql": "f879fb86b079e591dfe4a8513752a8e0394e252b940aa35d3f7430f27b7382c6"
+      },
+      "modes": {
+        "migrations/core/0005_identity_providers.sql": "100644"
+      }
+    }
+  ]
+}

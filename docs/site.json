@@ -1,0 +1,27 @@
+{
+  "sections": [
+    {
+      "title": "Start here",
+      "pages": [
+        { "slug": "getting-started", "title": "Getting started", "file": "getting-started.md", "summary": "Run Willow on your own computer, sign in as the owner and finish setup." },
+        { "slug": "first-day", "title": "Your first day in Willow", "file": "first-day.md", "summary": "Name your employer, add places, teams, schedules, leave policies and checklists, then invite your team." }
+      ]
+    },
+    {
+      "title": "Everyday work",
+      "pages": [
+        { "slug": "people", "title": "People and joiners", "file": "people.md", "summary": "Start a joiner, schedule a change, record a leaver and keep each person's record and documents." },
+        { "slug": "leave", "title": "Leave", "file": "leave.md", "summary": "Leave worked out in hours from each person's schedule, decided by their manager and kept in a ledger." },
+        { "slug": "payroll", "title": "Payroll handoff", "file": "payroll.md", "summary": "Each pay period, hand your payroll provider exactly what changed, once, in the file layout it reads." },
+        { "slug": "access", "title": "Access and privacy", "file": "access.md", "summary": "Who sees what: explicit permissions, what managers see, and how to preview exactly what anyone sees." }
+      ]
+    },
+    {
+      "title": "Bring and keep your records",
+      "pages": [
+        { "slug": "move-in", "title": "Move in from BambooHR", "file": "move-in.md", "summary": "Preview your BambooHR export before anything is written, apply it, and undo it if it is not right." },
+        { "slug": "backup", "title": "Back up and restore", "file": "backup.md", "summary": "Export every table and document to one archive, keep it safe, and restore it into a fresh Willow." }
+      ]
+    }
+  ]
+}

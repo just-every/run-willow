@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "id": "people/willow",
+  "identityKind": "project",
+  "toolchain": {
+    "id": "runeditrun/edition-authoring",
+    "version": "1.1.0"
+  },
+  "parent": null,
+  "components": [
+    {
+      "id": "people/willow",
+      "role": "edition",
+      "source": {
+        "kind": "local",
+        "paths": [
+          "src/willow",
+          "src/routes",
+          "public/willow.css",
+          "migrations/core/0006_willow.sql",
+          "tests/willow",
+          "migrations/core/0008_connections.sql",
+          "public/willow-connections.css",
+          "src/auth.server.ts",
+          "src/mail.server.mjs",
+          "src/identity.server.ts",
+          "src/identity-fetch.ts",
+          "src/identity.ts",
+          "src/client.tsx",
+          "src/server.ts",
+          "migrations/core/0009_identity_token_health.sql",
+          "migrations/core/0017_identity_settings.sql",
+          "migrations/core/0018_import_kit_upgrade.sql"
+        ]
+      }
+    },
+    {
+      "id": "runeditrun/base",
+      "role": "foundation",
+      "source": {
+        "kind": "local",
+        "paths": [
+          "src/base",
+          "src/modules/operator-auth",
+          "src/modules/mail",
+          "scripts/edition-authoring",
+          "src/modules/dependencies",
+          "src/modules/owner-claim"
+        ],
+        "origin": {
+          "repository": "https://github.com/runeditrun/base.git",
+          "revision": "4c83ea57efc3a5b462426c6abc88826b72375112",
+          "path": ".",
+          "paths": [
+            "foundation/runtime",
+            "modules/operator-auth",
+            "modules/mail",
+            "modules/dependencies",
+            "modules/owner-claim",
+            "edition-authoring"
+          ]
+        },
+        "mappings": [
+          {
+            "path": "src/base/hydration/README.md",
+            "originPath": "foundation/runtime/hydration/README.md"
+          }
+        ]
+      }
+    },
+    {
+      "id": "runeditrun/import-kit",
+      "role": "module",
+      "source": {
+        "kind": "local",
+        "paths": [
+          "src/modules/import-kit"
+        ],
+        "origin": {
+          "repository": "https://github.com/runeditrun/base.git",
+          "revision": "4c83ea57efc3a5b462426c6abc88826b72375112",
+          "path": "modules/import-kit",
+          "paths": [
+            "src",
+            "schema",
+            "README.md",
+            "CONTRACT.md"
+          ]
+        }
+      }
+    },
+    {
+      "id": "people/willow-command-docs",
+      "role": "module",
+      "source": {
+        "kind": "local",
+        "paths": [
+          "HOMEPAGE-VARIANTS.md",
+          "RUN-LOCALLY.md",
+          "SEED-COMMAND-CONTRACT.md"
+        ],
+        "origin": {
+          "repository": "https://github.com/runeditrun/base.git",
+          "revision": "4c83ea57efc3a5b462426c6abc88826b72375112",
+          "path": "export",
+          "paths": [
+            "HOMEPAGE-VARIANTS.md",
+            "RUN-LOCALLY.md",
+            "SEED-COMMAND-CONTRACT.md"
+          ]
+        },
+        "mappings": [
+          {
+            "path": "HOMEPAGE-VARIANTS.md",
+            "originPath": "HOMEPAGE-VARIANTS.md"
+          },
+          {
+            "path": "RUN-LOCALLY.md",
+            "originPath": "RUN-LOCALLY.md"
+          },
+          {
+            "path": "SEED-COMMAND-CONTRACT.md",
+            "originPath": "SEED-COMMAND-CONTRACT.md"
+          }
+        ]
+      }
+    }
+  ]
+}

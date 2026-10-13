@@ -1,0 +1,49 @@
+name: Verify
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: 'true'
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - name: Set external evidence directory
+        run: printf 'WILLOW_EVIDENCE_DIR=%s/willow-evidence\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # rer's servers keep their real 15 GiB free-space guard; Willow uses none of
+      # these preinstalled SDKs, so remove them on GitHub's disposable runner.
+      - name: Reclaim unused hosted-runner SDKs
+        if: ${{ runner.environment == 'github-hosted' && runner.os == 'Linux' }}
+        run: |
+          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.20.0'
+      - run: npm install --global pnpm@10.12.4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec rer install
+      - run: pnpm exec rer check --profile first-party
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec rer verify
+      - run: pnpm run test:phase2-browser
+      - run: pnpm run test:site
+      # The checkout is a fresh clone: the journey runs setup, dev, build,
+      # preview, export and import in it through pnpm exec rer.
+      - run: pnpm run test:journey
+        env:
+          WILLOW_TEST_CHECKOUT: '1'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: willow-pages
+          path: |
+            ${{ runner.temp }}/willow-evidence/*.png

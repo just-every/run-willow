@@ -1,0 +1,102 @@
+{
+  "id": "willow",
+  "name": "Willow",
+  "version": "0.1.0",
+  "maturity": "first-public-release",
+  "category": "people",
+  "spine": {
+    "id": "employment-period",
+    "record": "A person's employment period with its effective-dated terms, leave ledger and lifecycle evidence"
+  },
+  "description": "People register, effective-dated employment, owner-approved leave policies with an append-only ledger, joiner/mover/leaver cases with evidence, private documents, payroll change handoff, access-scoped summaries and agent proposals, and a BambooHR move-in kit.",
+  "capabilities": [
+    {
+      "id": "people-records",
+      "clauses": [
+        "WIL-01",
+        "WIL-02",
+        "WIL-03",
+        "WIL-04",
+        "WIL-05",
+        "WIL-06",
+        "WIL-07",
+        "WIL-08",
+        "WIL-09",
+        "WIL-10",
+        "WIL-11",
+        "WIL-12",
+        "WIL-13",
+        "WIL-14",
+        "WIL-15",
+        "WIL-16",
+        "WIL-17"
+      ]
+    }
+  ],
+  "nonGoals": [
+    "Payroll calculation, tax filing or payments",
+    "Benefits, pensions or employer-of-record responsibility",
+    "Applicant tracking or performance management",
+    "Automated candidate ranking, dismissal recommendations, surveillance or psychological scoring",
+    "Statutory or award entitlement engines",
+    "Native legal signing",
+    "Model-generated output in phase one"
+  ],
+  "externals": [
+    {
+      "id": "cloudflare",
+      "required": true,
+      "why": "Worker hosting, D1 records and R2 private documents",
+      "data": [
+        "Employee identities and private contact details",
+        "Employment terms and pay",
+        "Leave balances, requests and confidential reasons",
+        "Private documents"
+      ],
+      "adapters": []
+    }
+  ],
+  "env": [],
+  "deploy": {
+    "healthPath": "/health",
+    "publicPaths": [
+      "/",
+      "/health",
+      "/signin"
+    ],
+    "notes": "Native owner and member sessions guard /app and /api/willow; private fields pass through one access projection; unknown paths return real 404s; the development outbox is local-only."
+  },
+  "extensionPoints": {
+    "contributions": [],
+    "policies": [],
+    "events": [],
+    "slots": [],
+    "adapters": []
+  },
+  "limits": {
+    "status": "local admission limits only",
+    "documentFileBytes": 10000000,
+    "moveInFileBytes": 8000000
+  },
+  "accessibility": {
+    "level": "WCAG 2.2 AA",
+    "status": "target; unaudited"
+  },
+  "operatingCost": {
+    "status": "unmeasured"
+  },
+  "composition": {
+    "base": "base",
+    "family": "people",
+    "edition": "willow",
+    "modules": [
+      "job-queue",
+      "release",
+      "deploy-kit",
+      "mail",
+      "operator-auth",
+      "portability",
+      "import-kit"
+    ]
+  }
+}

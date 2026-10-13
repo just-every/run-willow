@@ -1,0 +1,99 @@
+// The one projection of a person: every page, JSON read, preview and agent
+// context of a person is built here from the viewer's facets, selecting only
+// the values those facets allow. Reads of someone else's private contact
+// details or pay are audited.
+import type { Bindings } from '../auth.server'
+import type { Actor } from './actor'
+import { facets as facetsOf, readsCategory, seesEveryone, type Facet } from './access'
+import { all, auditRead, insist, one, type Row } from './core'
+import { selectedPeriods } from './employment'
+import { documentsFor } from './documents'
+import { leaveFor } from './leave'
+import { casesFor } from './lifecycle'
+import { PRIVATE_FIELDS, currentTerms, displayName, personNames, statusOf } from './people'
+
+export interface ViewOptions {
+  audit?: boolean
+  /** Preview admission is the selected member's; reads/audits remain the real viewer's. */
+  admissionActor?: Actor
+  /** A narrower facet set (visibility previews). Defaults to the actor's own facets. */
+  facets?: Set<Facet>
+  categories?: (category: Record<string, any>) => boolean
+}
+
+async function lookups(env: Bindings) {
+  const [departments, locations, schedules, names] = await Promise.all([
+    all(env, 'SELECT id, name FROM wl_departments'), all(env, 'SELECT id, name FROM wl_locations'), all(env, 'SELECT * FROM wl_schedules'), personNames(env),
+  ])
+  const name = (rows: Row[]) => new Map(rows.map(row => [row.id, row.name as string]))
+  return { departments: name(departments), locations: name(locations), schedules: new Map(schedules.map(row => [row.id, { name: row.name, weeklyMinutes: row.mon + row.tue + row.wed + row.thu + row.fri + row.sat + row.sun }])), people: names }
+}
+
+type Lookups = Awaited<ReturnType<typeof lookups>>
+
+function termsSummary(terms: Row | undefined, look: Lookups) {
+  if (!terms) return null
+  return {
+    jobTitle: terms.job_title,
+    department: terms.department_id ? { id: terms.department_id, name: look.departments.get(terms.department_id) } : null,
+    location: terms.location_id ? { id: terms.location_id, name: look.locations.get(terms.location_id) } : null,
+    manager: terms.manager_person_id ? { id: terms.manager_person_id, name: look.people.get(terms.manager_person_id) } : null,
+  }
+}
+
+export async function personView(env: Bindings, actor: Actor, personId: string, options: ViewOptions = {}) {
+  const person = await one(env, 'SELECT id, legal_name, preferred_name, work_email, employee_number, revision FROM wl_people WHERE id = ?', personId)
+  insist(person, 'not_found', 404)
+  const look = await lookups(env)
+  const periods = await all(env, 'SELECT id, start_date, end_date, employment_type, payroll_id, end_reason FROM wl_periods WHERE person_id = ? ORDER BY start_date DESC', personId)
+  const current = (await currentTerms(env, actor.today)).get(personId)
+  const selected = (await selectedPeriods(env, actor.today)).get(personId)
+  const admitted = options.admissionActor ?? actor
+  // Former employees appear only to members who see everyone.
+  insist(statusOf(selected, admitted.today) !== 'former' || seesEveryone(admitted) || admitted.personId === personId || facetsOf(admitted, personId).has('employment'), 'not_found', 404)
+  const visible = options.facets ?? facetsOf(actor, personId)
+  const view: Record<string, unknown> = {
+    id: person.id, revision: person.revision, name: displayName(person), legalName: person.legal_name, preferredName: person.preferred_name, workEmail: person.work_email,
+    status: statusOf(selected, actor.today), current: termsSummary(current, look), facets: [...visible],
+  }
+  if (visible.has('employment')) {
+    view.employeeNumber = person.employee_number
+    const terms = periods.length ? await all(env, `SELECT * FROM wl_terms WHERE period_id IN (${periods.map(() => '?').join(', ')}) ORDER BY effective_from DESC, recorded_at DESC`, ...periods.map(period => period.id)) : []
+    const pay = visible.has('pay') && terms.length ? new Map((await all(env, `SELECT * FROM wl_term_pay WHERE term_id IN (${terms.map(() => '?').join(', ')})`, ...terms.map(row => row.id))).map(row => [row.term_id, row])) : null
+    view.employment = periods.map(period => ({
+      id: period.id, startDate: period.start_date, endDate: period.end_date, employmentType: period.employment_type, status: statusOf(period, actor.today),
+      ...(visible.has('payroll') ? { payrollId: period.payroll_id } : {}),
+      ...(visible.has('private') ? { endReason: period.end_reason } : {}),
+      terms: terms.filter(row => row.period_id === period.id).map(row => ({
+        id: row.id, effectiveFrom: row.effective_from, status: row.status, reason: row.reason, inForce: row.id === current?.id,
+        ...termsSummary(row, look), schedule: row.schedule_id ? { id: row.schedule_id, ...look.schedules.get(row.schedule_id) } : null, recordedAt: row.recorded_at,
+        ...(pay ? { pay: pay.get(row.id) ? { basis: pay.get(row.id)!.pay_basis, amountCents: pay.get(row.id)!.amount_cents, currency: pay.get(row.id)!.currency } : null } : {}),
+      })),
+    }))
+    if (pay) view.pay = true
+  }
+  if (visible.has('private')) {
+    const values = await one(env, `SELECT ${PRIVATE_FIELDS.join(', ')} FROM wl_person_private WHERE person_id = ?`, personId)
+    view.private = Object.fromEntries(PRIVATE_FIELDS.map(field => [field, values?.[field] ?? null]))
+  }
+  if (visible.has('leave')) view.leave = await leaveFor(env, actor, personId, visible.has('leave_reason'))
+  if (visible.has('lifecycle')) view.cases = await casesFor(env, personId)
+  if (visible.has('documents')) view.documents = await documentsFor(env, actor, personId, options.categories ?? (category => readsCategory(actor, personId, category)))
+  if (options.audit !== false && actor.personId !== personId && (visible.has('private') || visible.has('pay'))) {
+    await auditRead(env, actor.id, 'person.private.read', personId, { private: visible.has('private'), pay: visible.has('pay') })
+  }
+  return view
+}
+
+/** The directory: current and upcoming people for every member; former people too for members who see everyone. */
+export async function directory(env: Bindings, actor: Actor) {
+  const look = await lookups(env)
+  const people = await all(env, 'SELECT id, legal_name, preferred_name, work_email FROM wl_people ORDER BY COALESCE(preferred_name, legal_name)')
+  const selected = await selectedPeriods(env, actor.today)
+  const current = await currentTerms(env, actor.today)
+  const everyone = seesEveryone(actor)
+  return people
+    .map(person => ({ person, status: statusOf(selected.get(person.id), actor.today) }))
+    .filter(({ status }) => everyone || status === 'active' || status === 'upcoming')
+    .map(({ person, status }) => ({ id: person.id, name: displayName(person), workEmail: person.work_email, status, ...termsSummary(current.get(person.id), look) }))
+}
