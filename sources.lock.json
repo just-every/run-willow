@@ -2172,6 +2172,10 @@
       "sha256": "c69764c65c9e6cf680f3b355248ee5db5268f02e894b9f48bf91d0eb04b220dc",
       "executable": false
     },
+    "src/willow/money.ts": {
+      "sha256": "15ee0a2c7c18c93191567c1009a3c8abf0e3da76fde5e76033cc47488489c53f",
+      "executable": false
+    },
     "src/willow/movein/bamboohr.ts": {
       "sha256": "dead01d82866dbc59808ba5569e9f0eec31ccd5dc4f36895e90b6a63b9bbcc92",
       "executable": false
@@ -2189,7 +2193,7 @@
       "executable": false
     },
     "src/willow/payroll-calculation.ts": {
-      "sha256": "886f6abaa8388d65d5206cd67f2073b13919472bf073ac78a7c79c2b493470e0",
+      "sha256": "ea0c994e0e261443e1e053fcac4c3ff23744b80a96bf21b03cc13f0dfabc3f4a",
       "executable": false
     },
     "src/willow/payroll-layout.ts": {
@@ -2213,7 +2217,7 @@
       "executable": false
     },
     "src/willow/proposals.ts": {
-      "sha256": "11706f89a05be458ef9dcd25a9956e79928b811e08403fbdf44633a9a22e49a9",
+      "sha256": "912841f64e7d48962af60d8601ed1eee416f8398c1edc9cad86b3abea57e6cbd",
       "executable": false
     },
     "src/willow/recover-access.ts": {
@@ -2221,7 +2225,7 @@
       "executable": false
     },
     "src/willow/reports.ts": {
-      "sha256": "bbb655b2fbde096cf06554d356b7f3f5cd92e892f4ef92c0af091e492a39f47d",
+      "sha256": "9ec3218a1d6ddc97630eb519256c0696eec4f9f63e9de057c8be00da4467b73e",
       "executable": false
     },
     "src/willow/ui/connections.ts": {
@@ -2253,7 +2257,7 @@
       "executable": false
     },
     "src/willow/ui/people.ts": {
-      "sha256": "e9df46b3914685b2928cdea9a2a177127988f1666f1b798d9576590915db9f17",
+      "sha256": "4416b04a69cff15d1de4737fcd97cef9dc296de94a5f6641303ffc980d53216a",
       "executable": false
     },
     "src/willow/ui/settings.ts": {
@@ -2261,7 +2265,7 @@
       "executable": false
     },
     "src/willow/ui/work.ts": {
-      "sha256": "3a4ad9240dbfe4bc93cb3021dde49b2e4b9630dee5c92f553d8437b962341287",
+      "sha256": "b11ffec3ed07f2bee485525ad6b77d3866ea05cb63012211a469eb62cd030f1d",
       "executable": false
     },
     "src/willow/views.ts": {
