@@ -2,13 +2,14 @@
 // reads may occur here: import apply/undo can restore the fence while a live
 // multi-query reader has retained transient rows.
 import { hours } from './dates'
+import { plainMoney } from './money'
 import { displayName } from './people'
 import type { PayrollSourceRows } from './payroll-sources'
 
 export interface Line { key: string; kind: 'start' | 'end' | 'change' | 'leave' | 'leave_reversal'; person: string; name: string; employeeNumber: string | null; payrollId: string | null; effectiveDate: string; endDate?: string; policyId?: string; periodId?: string; units?: string; unit?: string; changes?: { field: string; from: string | null; to: string | null }[]; note: string }
 
 type Terms = PayrollSourceRows['wl_terms'][number] & PayrollSourceRows['wl_term_pay'][number]
-const money = (cents: number | null, currency: string) => cents === null ? null : `${(cents / 100).toFixed(2)} ${currency}`
+const money = (cents: number | null, currency: string) => cents === null ? null : plainMoney(cents, currency)
 const order = (left: string, right: string) => left < right ? -1 : left > right ? 1 : 0
 
 export function calculatePayroll(sources: PayrollSourceRows, end: string) {

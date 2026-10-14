@@ -41,17 +41,17 @@ export async function summary(env: Bindings, actor: Actor, url: URL) {
   }
   if (organisation && can(actor, 'pay.read')) {
     const pay = await all(env, `SELECT t.department_id, p.pay_basis, p.amount_cents, p.currency, (s.mon + s.tue + s.wed + s.thu + s.fri + s.sat + s.sun) AS weekly FROM wl_term_pay p JOIN wl_terms t ON t.id = p.term_id LEFT JOIN wl_schedules s ON s.id = t.schedule_id WHERE t.id IN (${terms.filter(row => active.has(row.period_id)).map(() => '?').join(', ') || "''"})`, ...terms.filter(row => active.has(row.period_id)).map(row => row.id))
-    const totals = new Map<string, { people: number; annualCents: number; unknown: number }>()
+    const totals = new Map<string, { people: number; annualCents: number; unknown: number; currency: string }>()
     for (const row of pay) {
       const key = `${departments.get(row.department_id) ?? 'No department'} (${row.currency})`
-      const entry = totals.get(key) ?? { people: 0, annualCents: 0, unknown: 0 }
+      const entry = totals.get(key) ?? { people: 0, annualCents: 0, unknown: 0, currency: row.currency }
       entry.people++
       if (row.pay_basis === 'salary' && row.amount_cents !== null) entry.annualCents += row.amount_cents
       else if (row.pay_basis === 'hourly' && row.amount_cents !== null && row.weekly) entry.annualCents += Math.round(row.amount_cents * row.weekly / 60 * 52)
       else entry.unknown++
       totals.set(key, entry)
     }
-    result.compensation = { note: 'Annualised: salary as recorded; hourly rate x scheduled weekly hours x 52. People with unknown pay are counted separately.', byDepartment: [...totals].sort().map(([group, value]) => ({ group, people: value.people, annual: (value.annualCents / 100).toFixed(2), unknownPay: value.unknown })) }
+    result.compensation = { note: 'Annualised: salary as recorded; hourly rate x scheduled weekly hours x 52. People with unknown pay are counted separately.', byDepartment: [...totals].sort().map(([group, value]) => ({ group, people: value.people, annual: (value.annualCents / 100).toFixed(2), unknownPay: value.unknown, currency: value.currency })) }
     await auditRead(env, actor.id, 'report.compensation.read', 'organisation', { asOf })
   }
   return result

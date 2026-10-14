@@ -5,6 +5,7 @@ import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
 import { formatDate, formatInstant } from '../dates'
 import { employer } from '../employer'
+import { displayPayText, formatMoney } from '../money'
 import { batchDetail, batches } from '../payroll'
 import { proposalDetail, proposals } from '../proposals'
 import { summary } from '../reports'
@@ -23,7 +24,7 @@ export async function payrollPage(env: Bindings, actor: Actor, url: URL) {
 export async function batchPage(env: Bindings, actor: Actor, id: string, url: URL) {
   const batch = await batchDetail(env, actor, id)
   const body = h`<p class="back"><a href="/app/payroll">← Payroll</a></p><div class="title-row"><h1>Changes for ${formatDate(batch.periodStart)} – ${formatDate(batch.periodEnd)}</h1><p>${tag(batch.status)}${batch.providerReference ? ` · provider reference ${batch.providerReference}` : ''}</p></div>
-<section class="card"><h2>Lines</h2>${batch.lines.length ? table(['Provider ID', 'Person', 'Change', 'Effective', 'Units', 'Detail'], batch.lines.map(line => [line.payrollId, line.name, tag(line.kind.replace('_', ' ')), h`${formatDate(line.effectiveDate)}${line.endDate ? h` – ${formatDate(line.endDate)}` : ''}`, line.units ? `${line.units} ${line.unit}` : '—', h`${line.note}${line.changes?.length ? h`<ul>${line.changes.map(change => h`<li>${change.field}: ${change.from ?? '—'} → ${change.to ?? '—'}</li>`)}</ul>` : ''}`])) : h`<p class="muted">No changes to hand off.</p>`}</section>
+<section class="card"><h2>Lines</h2>${batch.lines.length ? table(['Provider ID', 'Person', 'Change', 'Effective', 'Units', 'Detail'], batch.lines.map(line => [line.payrollId, line.name, tag(line.kind.replace('_', ' ')), h`${formatDate(line.effectiveDate)}${line.endDate ? h` – ${formatDate(line.endDate)}` : ''}`, line.units ? `${line.units} ${line.unit}` : '—', h`${displayPayText(line.note)}${line.changes?.length ? h`<ul>${line.changes.map(change => h`<li>${change.field}: ${displayPayText(change.from ?? '—')} → ${displayPayText(change.to ?? '—')}</li>`)}</ul>` : ''}`])) : h`<p class="muted">No changes to hand off.</p>`}</section>
 <section class="card"><h2>Exceptions</h2>${batch.exceptions.length ? h`<ul>${batch.exceptions.map(exception => h`<li>${exception.name}: ${exception.reason} ${exception.resolved ? h`${tag('resolved in a later batch')}` : h`${tag('unresolved')} <a href="/app/people/${exception.person}">fix</a>`}</li>`)}</ul>` : h`<p class="muted">None.</p>`}</section>
 ${batch.previewStatus.issues.length ? h`<section class="card"><h2>Export blockers</h2><ul>${batch.previewStatus.issues.map(issue=>h`<li>${issue}</li>`)}</ul><p><a href="/app/payroll">Review layout mapping</a></p></section>` : ''}
 ${batch.filePreview ? h`<section class="card"><h2>Actual file preview · ${batch.layoutFormat}</h2><pre>${batch.filePreview}</pre><p>Export freezes these exact bytes. A changed source or mapping requires another preview.</p></section>` : ''}
@@ -38,7 +39,7 @@ export async function reportsPage(env: Bindings, actor: Actor, url: URL) {
 <form method="get" action="/app/reports" class="row-form">${field('As of', 'asOf', { type: 'date', value: report.filters.asOf })}${field('From', 'from', { type: 'date', value: report.filters.from })}${field('To', 'to', { type: 'date', value: report.filters.to })}<button type="submit" class="secondary">Update</button></form>
 <div class="grid"><section class="card"><h2>Headcount: ${report.headcount.total}</h2>${table(['Department', 'People'], report.headcount.byDepartment.map((row: any) => [row.group, row.people]))}${table(['Location', 'People'], report.headcount.byLocation.map((row: any) => [row.group, row.people]))}</section>
 <section class="card"><h2>Movements</h2><p>${report.movements.starters} starter(s), ${report.movements.leavers} leaver(s) in the range.</p><h2>Leave taken</h2>${report.leaveTaken.length ? table(['Policy', 'Hours'], report.leaveTaken.map((row: any) => [row.policy, row.hours])) : h`<p class="muted">None.</p>`}<h2>Lifecycle work</h2><p>${report.lifecycleWork.openTasks} open task(s), ${report.lifecycleWork.overdue} overdue.</p></section>
-${report.compensation ? h`<section class="card"><h2>Compensation</h2><p class="muted">${report.compensation.note}</p>${table(['Department', 'People', 'Annualised', 'Unknown pay'], report.compensation.byDepartment.map((row: any) => [row.group, row.people, row.annual, row.unknownPay]))}</section>` : ''}</div>
+${report.compensation ? h`<section class="card"><h2>Compensation</h2><p class="muted">${report.compensation.note}</p>${table(['Department', 'People', 'Annualised', 'Unknown pay'], report.compensation.byDepartment.map((row: any) => [row.group, row.people, formatMoney(Math.round(Number(row.annual) * 100), row.currency), row.unknownPay]))}</section>` : ''}</div>
 <p class="muted">${report.calculation}</p><p><a href="/app/reports.csv?asOf=${report.filters.asOf}&amp;from=${report.filters.from}&amp;to=${report.filters.to}">Download as CSV</a></p>`
   return page('Summaries', actor, body, { current: '/app/reports', url })
 }

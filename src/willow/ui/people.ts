@@ -9,11 +9,12 @@ import { settings } from '../employer'
 import { policies } from '../leave'
 import { templates } from '../lifecycle'
 import { EMPLOYMENT_TYPES, PRIVATE_FIELDS, PRIVATE_LABELS } from '../people'
+import { formatPay } from '../money'
 import { directory, personView } from '../profile'
 import { area, field, fileField, form, h, hidden, page, person as personName, select, table, tag, type Html } from './html'
 
 const TYPE_LABELS: Record<string, string> = { full_time: 'Full time', part_time: 'Part time', casual: 'Casual', fixed_term: 'Fixed term', unknown: 'Unknown (from import)' }
-const money = (pay: { basis: string; amountCents: number | null; currency: string } | null) => pay ? (pay.amountCents === null ? `${pay.basis} (amount unknown)` : `${(pay.amountCents / 100).toFixed(2)} ${pay.currency} ${pay.basis === 'hourly' ? 'per hour' : pay.basis === 'salary' ? 'per year' : ''}`) : '—'
+const money = (pay: { basis: string; amountCents: number | null; currency: string } | null) => pay ? formatPay(pay.basis, pay.amountCents, pay.currency) : '—'
 
 async function choices(env: Bindings, actor: Actor) {
   const [data, people] = await Promise.all([settings(env), directory(env, actor)])

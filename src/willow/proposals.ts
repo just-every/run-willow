@@ -13,11 +13,18 @@ import { all, commit, guard, insist, json, newId, now, one, sha256Hex, stmt } fr
 import { Input } from './input'
 import { REQUIRED_FIELDS, prepareJoiner, prepareMover } from './lifecycle'
 import { PRIVATE_FIELDS, displayName, termsOn } from './people'
+import { employer } from './employer'
+import { formatPay } from './money'
 import { personView } from './profile'
 
 type Change = { field: string; from: string | null; to: string | null; sensitivity?: 'private' | 'pay' }
 
 const TERM_FIELDS: [string, string, string][] = [['jobTitle', 'job_title', 'Job title'], ['departmentId', 'department_id', 'Department'], ['locationId', 'location_id', 'Location'], ['managerPersonId', 'manager_person_id', 'Manager'], ['scheduleId', 'schedule_id', 'Schedule']]
+
+async function payLabel(env: Bindings, basis: string | null, amount: string | null) {
+  const currency = (await employer(env))?.currency
+  return amount && currency ? formatPay(basis ?? '', Math.round(Number(amount) * 100), currency) : `${basis} ${amount ?? ''}`.trim()
+}
 
 async function label(env: Bindings, column: string, value: string | null) {
   if (!value) return null
@@ -45,7 +52,7 @@ async function describe(env: Bindings, kind: string, plan: Record<string, unknow
     changes.push({ field: 'Start date', from: null, to: text('startDate') }, { field: 'Employment type', from: null, to: text('employmentType') })
     if (text('payrollId')) changes.push({ field: 'Payroll identifier', from: null, to: text('payrollId') })
     for (const [key, column, name] of TERM_FIELDS) changes.push({ field: name, from: null, to: await label(env, column, text(key)) })
-    if (text('payBasis')) changes.push({ field: 'Pay', from: null, to: `${text('payBasis')} ${text('payAmount') ?? ''}`.trim(), sensitivity: 'pay' })
+    if (text('payBasis')) changes.push({ field: 'Pay', from: null, to: await payLabel(env, text('payBasis'), text('payAmount')), sensitivity: 'pay' })
     const required = json<string[]>(template.required_fields, [])
     const supplied = (field: string) => field === 'work_email' ? text('workEmail') : field === 'payroll_id' ? text('payrollId') : text(field)
     missing.push(...required.filter(field => (REQUIRED_FIELDS as readonly string[]).includes(field) && !supplied(field)))
@@ -58,7 +65,7 @@ async function describe(env: Bindings, kind: string, plan: Record<string, unknow
     const base = await termsOn(env, period.id, text('effectiveFrom') ?? period.start_date)
     changes.push({ field: 'Effective from', from: base?.effective_from ?? null, to: text('effectiveFrom') })
     for (const [key, column, name] of TERM_FIELDS) if (key in plan) changes.push({ field: name, from: await label(env, column, base?.[column] ?? null), to: await label(env, column, text(key)) })
-    if (text('payBasis')) changes.push({ field: 'Pay', from: null, to: `${text('payBasis')} ${text('payAmount') ?? ''}`.trim(), sensitivity: 'pay' })
+    if (text('payBasis')) changes.push({ field: 'Pay', from: null, to: await payLabel(env, text('payBasis'), text('payAmount')), sensitivity: 'pay' })
   }
   return { changes, missing, expected }
 }
