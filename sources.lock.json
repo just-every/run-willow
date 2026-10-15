@@ -201,7 +201,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "26d0a59a172bce5b87d1c3d95b18c2b27ab228bdcfbc5de230ab1f15a6074466",
+      "sha256": "1d08aaa78868e9c9d4b0c2490609c606a2c5317c660f04b4669452963b6883f6",
       "executable": false
     },
     "CLAUDE.md": {
@@ -217,7 +217,7 @@
       "executable": false
     },
     "DEMO.md": {
-      "sha256": "0dd2c71befc3d0efa353719ca6053d2240944890aa4803c6dbe5a559ab844efb",
+      "sha256": "6535906b7ab7766ac3bcf5d8bd9383ca704f4f5ebd20a18cf7db561787b0e36c",
       "executable": false
     },
     "deploy-demo.json": {
@@ -729,7 +729,7 @@
       "executable": false
     },
     "src/modules/demo/index.mjs": {
-      "sha256": "154c7fea50350afc5e19100a143aae6a5c6834d03f293a6452b5862a5adc10bc",
+      "sha256": "07c22ed6c7e21d6ad805c6d7041f653ff4ee431887713c4f0a37f43803d917a4",
       "executable": false
     },
     "src/modules/demo/README.md": {
@@ -1774,10 +1774,6 @@
     },
     "src/modules/operator-auth/crypto.mjs": {
       "sha256": "c9a843518d9223ec91698060bacd5a44cd0c4361adaa6b09c05be69f11a828b8",
-      "executable": false
-    },
-    "src/modules/operator-auth/csp.mjs": {
-      "sha256": "9bf6c5c5b2adcfc6f6c82a657af38346b8ec4e2344aea20b4d972a2564cffaed",
       "executable": false
     },
     "src/modules/operator-auth/dev-admission.d.mts": {

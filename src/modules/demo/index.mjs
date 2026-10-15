@@ -8,7 +8,7 @@
 // bar listing the captured mail and the blocked sends.
 import { env } from 'cloudflare:workers';
 import { escapeHtml, isLoopbackHost } from '../operator-auth/http.mjs';
-import { allow, sha256 } from '../operator-auth/csp.mjs';
+import { allow, sha256 } from '@runeditrun/rer/internal/modules/operator-auth/csp.mjs';
 
 const on = env?.RER_DEMO === '1';
 let database = 'DB';

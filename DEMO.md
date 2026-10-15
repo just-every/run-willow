@@ -12,9 +12,13 @@ Names reuse Willow's documented BambooHR fixtures. Dates follow the current day.
 `src/demo.ts` writes native records through Willow's domain operations; no test
 fixture runtime or simulated application implementation is used.
 
-The CLI is the exact published `@runeditrun/rer` 0.2.19 package. The unchanged
+The CLI is the exact published `@runeditrun/rer` 0.2.19 package. The
 `src/modules/demo` runtime comes from Base tag `rer-v0.2.19`, commit
-`e17843562355e1b6e5068289c8e037951fbc8d3d`, recorded in `base-copies.json`.
+`e17843562355e1b6e5068289c8e037951fbc8d3d`, recorded in `base-copies.json` and the edition source lock. Its only adaptation
+is the CSP import: it uses the identical helper exported by the pinned package
+at `@runeditrun/rer/internal/modules/operator-auth/csp.mjs`, keeping Willow's
+existing operator-auth runtime on its single immutable pin. The other five
+demo files are recorded byte for byte.
 `withDemo` loads first in the Worker. On this release, external fetches and
 sockets are refused by Base, and development mail is captured by Base's existing
 mail adapter. No Willow-specific blocking or capture is added. The forthcoming
