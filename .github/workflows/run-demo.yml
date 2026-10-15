@@ -46,7 +46,8 @@ jobs:
         run: |
           node --input-type=module <<'JS'
           import fs from 'node:fs';
-          const p = 'deploy.json', d = JSON.parse(fs.readFileSync(p));
+          const p = 'wrangler.jsonc', d = JSON.parse(fs.readFileSync(p));
+          d.vars ??= {};
           d.vars.MODELS_ENDPOINT = 'https://example.com/v1/chat/completions';
           d.vars.MODELS_KEY = 'noncredential-egress-proof';
           fs.writeFileSync(p, JSON.stringify(d));
