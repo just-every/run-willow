@@ -4,7 +4,7 @@ export const genericColumns = ['provider_employee_id','employee_number','name','
 export function providerFixture() {
   const { privateKey, publicKey } = generateKeyPairSync('rsa', {modulusLength:2048})
   const jwk = {...publicKey.export({format:'jwk'}),kid:'test-key',alg:'RS256',use:'sig'}
-  const edge = { mode:'valid', mail:'accepted', oidc:'valid', email:'employee@example.test', nonce:'', calls:[], messages:[] }
+  const edge = { mode:'valid', mail:'accepted', oidc:'valid', email:'employee@example.com', nonce:'', calls:[], messages:[] }
   const json = (body,status=200) => new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}})
   edge.fetch = async request => {
     const url = new URL(request.url)
@@ -29,7 +29,7 @@ export function providerFixture() {
       if (['unavailable','token-error'].includes(edge.oidc)) return json({error:'unauthorized_client',error_description:'PRIVATE-PROVIDER-ERROR'},edge.oidc === 'token-error' ? 200 : 403)
       const clientId=Buffer.from(request.headers.get('authorization').slice('Basic '.length),'base64').toString('utf8').split(':')[0]
       const t = Math.floor(Date.now()/1000)
-      const claims = {iss:edge.oidc==='issuer'?'https://attacker.example':'https://accounts.google.com',sub:edge.email,aud:edge.oidc==='audience'?'other-client':clientId,iat:t,exp:t+300,nonce:edge.nonce,email:edge.email,email_verified:edge.oidc!=='unverified',hd:'example.test',groups:['owner'],role:'owner'}
+      const claims = {iss:edge.oidc==='issuer'?'https://attacker.example':'https://accounts.google.com',sub:edge.email,aud:edge.oidc==='audience'?'other-client':clientId,iat:t,exp:t+300,nonce:edge.nonce,email:edge.email,email_verified:edge.oidc!=='unverified',hd:edge.email.split('@')[1],groups:['owner'],role:'owner'}
       const header = Buffer.from(JSON.stringify({alg:'RS256',kid:'test-key'})).toString('base64url')
       const payload = Buffer.from(JSON.stringify(claims)).toString('base64url')
       const value = `${header}.${payload}`

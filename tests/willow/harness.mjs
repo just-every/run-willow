@@ -1,9 +1,9 @@
 // Runs the built Worker (dist/) with its own local D1 and R2 state in a
 // temporary directory, and drives it only through public HTTP doors.
 import assert from 'node:assert/strict'
-import { execFileSync, spawn } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
-import { mkdtemp, rm, writeFile, readdir } from 'node:fs/promises'
+import { mkdtemp, mkdir, rm, writeFile, readdir } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -18,18 +18,22 @@ async function freePort() {
   return port
 }
 
-export async function harness({ bindings = {}, provider } = {}) {
-  const port = await freePort()
-  const origin = `http://127.0.0.1:${port}`
-  const directory = await mkdtemp(join(tmpdir(), 'willow-flows-'))
+export async function harness({ bindings = {}, provider, persistTo, port: chosenPort } = {}) {
+  // The fake provider edge runs beside the real production Worker on local TLS.
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+  const port = chosenPort ?? await freePort()
+  const origin = `https://127.0.0.1:${port}`
+  const directory = persistTo ?? await mkdtemp(join(tmpdir(), 'willow-flows-'))
+  await mkdir(directory, {recursive:true})
   const secret = () => randomBytes(32).toString('base64url')
-  const vars = { AUTH_LOCAL: 'true', AUTH_ORIGIN: origin, OWNER_EMAIL: 'owner@example.test', SESSION_SECRET: secret(), SETUP_TOKEN: secret(), MAIL_PROVIDER: 'development', MAIL_FROM: 'auth@localhost.test', RER_DEV_KEY: secret(), ...bindings }
+  const vars = { AUTH_LOCAL: 'false', AUTH_ORIGIN: origin, OWNER_EMAIL: 'owner@example.com', SESSION_SECRET: secret(), SETUP_TOKEN: secret(), MAIL_PROVIDER: 'sendgrid', MAIL_API_KEY: 'test-mail-key', MAIL_FROM: 'auth@localhost.test', RER_DEV_KEY: secret(), ...bindings }
   await writeFile(join(directory, 'local.env'), Object.entries(vars).map(([key, value]) => `${key}=${value}`).join('\n') + '\n', { mode: 0o600 })
   const wrangler = 'node_modules/wrangler/bin/wrangler.js'
   const env = workerEnvironment()
   execFileSync(process.execPath, [wrangler, 'd1', 'migrations', 'apply', 'DB', '--local', '--persist-to', directory, '--config', 'dist/server/wrangler.json', '--env-file', join(directory, 'local.env')], { stdio: 'ignore', env })
-  let output = '', worker, mf, mfOptions, convertOptions
-  if (provider) {
+  const links = new Map()
+  let mf, mfOptions, convertOptions
+  {
     const require = createRequire(import.meta.url)
     const fromWrangler = createRequire(require.resolve('wrangler/package.json'))
     const { Miniflare, convertV4MiniflareOptions } = fromWrangler('miniflare')
@@ -39,30 +43,35 @@ export async function harness({ bindings = {}, provider } = {}) {
       compatibilityDate: '2026-09-08', compatibilityFlags: ['nodejs_compat'],
       bindings: vars, d1Databases: { DB: 'local-willow-only' }, r2Buckets: { FILES: 'people-willow-files' },
       resourcePersistencePath: join(directory, 'v3'),
-      outboundService: provider, host: '127.0.0.1', port,
+      outboundService: async request => {
+        if (new URL(request.url).hostname === 'api.sendgrid.com') {
+          const message = await request.clone().json()
+          for (const content of message.content ?? []) {
+            const link = content.value.match(/https?:[^\s"<>]+\/auth\/confirm\?token=[^\s"<>]+/)?.[0]
+            if (link) for (const recipient of message.personalizations.flatMap(p => p.to)) links.set(recipient.email, link.replaceAll('&amp;', '&'))
+          }
+          return provider ? provider(request) : new Response(null, { status: 202 })
+        }
+        if (provider) return provider(request)
+        throw new Error('Unexpected provider request')
+      }, host: '127.0.0.1', port, https: true,
       assets: { directory: resolve('dist/client'), routerConfig: { has_user_worker: true } },
     }
     mf = new Miniflare(convertOptions(mfOptions))
     await mf.ready
-  } else {
-    worker = spawn(process.execPath, [wrangler, 'dev', '--config', 'dist/server/wrangler.json', '--inspector-port', '0', '--local', '--persist-to', directory, '--ip', '127.0.0.1', '--port', String(port), '--env-file', join(directory, 'local.env')], { stdio: ['ignore', 'pipe', 'pipe'], env })
-    for (const stream of [worker.stdout, worker.stderr]) stream.on('data', chunk => { output = (output + chunk).slice(-20_000) })
   }
   const close = async () => {
     if (mf) await mf.dispose()
-    if (worker?.exitCode === null) { worker.kill('SIGTERM'); await new Promise(resolve => worker.exitCode !== null ? resolve() : worker.once('exit', resolve)) }
-    await rm(directory, { recursive: true, force: true })
+    if (!persistTo) await rm(directory, { recursive: true, force: true })
   }
   try {
     let ready = false
     for (let attempt = 0; attempt < 240 && !ready; attempt++) {
-      if (worker) assert.equal(worker.exitCode, null, 'the Worker stays up')
       try { ready = (await fetch(`${origin}/health`)).ok } catch { await new Promise(resolve => setTimeout(resolve, 250)) }
     }
     assert.ok(ready, 'the Worker became healthy')
   } catch (error) { await close(); throw error }
 
-  const devKey = { 'x-rer-dev-key': vars.RER_DEV_KEY }
   const raw = (path, { cookie, body, form, method } = {}) => fetch(origin + path, {
     method: method ?? (body !== undefined || form ? 'POST' : 'GET'), redirect: 'manual',
     headers: { 'CF-Connecting-IP': '127.0.0.1', ...(cookie ? { cookie } : {}), ...(body !== undefined || form ? { origin } : {}), ...(body !== undefined ? { 'content-type': 'application/json' } : {}) },
@@ -87,25 +96,28 @@ export async function harness({ bindings = {}, provider } = {}) {
     return new URL(response.headers.get('location'), origin)
   }
 
-  /** Signs in through an ordinary email link from the key-gated development outbox. */
+  /** Provider-edge mail is captured only in this test harness. */
   async function signIn(email, { requested = false } = {}) {
-    if (!requested) assert.equal((await raw('/auth/magic-link', { body: { email, returnTo: '/app' } })).status, 202)
-    const listing = await (await fetch(`${origin}/__dev/outbox`, { headers: devKey })).text()
-    for (const match of listing.matchAll(/href="(\/__dev\/outbox\?message=[^"]+)"/g)) {
-      const detail = await (await fetch(origin + match[1].replaceAll('&amp;', '&'), { headers: devKey })).text()
-      if (!detail.includes(email)) continue
-      const link = detail.match(/href="([^"]*\/auth\/confirm\?token=[^"]+)"/)
-      if (!link) continue
-      const token = new URL(link[1].replaceAll('&amp;', '&'), origin).searchParams.get('token')
-      const confirmed = await raw('/auth/confirm', { body: { token } })
-      assert.equal(confirmed.status, 303, 'ordinary link confirmation')
-      return confirmed.headers.getSetCookie().map(line => line.split(';')[0]).join('; ')
+    if (!requested) {
+      links.delete(email)
+      assert.equal((await raw('/auth/magic-link', { body: { email, returnTo: '/app' } })).status, 202)
     }
-    throw new Error(`no sign-in message for ${email}`)
+    const link = links.get(email)
+    if (!link) throw new Error(`no sign-in message for ${email}`)
+    const token = new URL(link).searchParams.get('token')
+    const confirmed = await raw('/auth/confirm', { body: { token } })
+    assert.equal(confirmed.status, 303, 'ordinary link confirmation')
+    links.delete(email)
+    return confirmed.headers.getSetCookie().map(line => line.split(';')[0]).join('; ')
+  }
+  async function outstanding(email) {
+    links.delete(email)
+    await raw('/auth/magic-link', { body: { email } })
+    return new URL(links.get(email)).searchParams.get('token')
   }
 
-  const redacted = () => Object.values(vars).reduce((text, value) => text.replaceAll(value, '[redacted]'), output)
-  return { origin, vars, raw, setBindings: async changes => { assert.ok(mf); Object.assign(vars, changes); await mf.setOptions(convertOptions({...mfOptions,bindings:vars})) },  api, submit, signIn, close, output: redacted }
+  const redacted = () => ''
+  return { origin, vars, raw, outstanding, setBindings: async changes => { assert.ok(mf); Object.assign(vars, changes); await mf.setOptions(convertOptions({...mfOptions,bindings:vars})) },  api, submit, signIn, close, output: redacted }
 }
 
 export const file = (filename, content, type = 'application/octet-stream') => ({ filename, base64: Buffer.from(content).toString('base64'), type })

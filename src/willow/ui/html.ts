@@ -52,7 +52,7 @@ export function page(title: string, actor: Actor | null, body: Html, { current =
   const nav = actor && showNav ? h`<nav aria-label="Main"><ul>${NAV.filter(item => item.show(actor)).map(item => h`<li><a href="${item.href}"${item.href === current ? raw(' aria-current="page"') : ''}>${item.label}</a></li>`)}</ul></nav>` : ''
   const who = actor ? h`<span class="who">${actor.name}</span>` : ''
   const document = h`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · ${branding.name}</title><link rel="stylesheet" href="/fonts/fonts.css"><link rel="stylesheet" href="/rer-theme.css"><link rel="stylesheet" href="/willow-tokens.css"><link rel="stylesheet" href="/willow.css"><link rel="stylesheet" href="/willow-layouts.css"><link rel="stylesheet" href="/willow-connections.css"></head><body${art ? raw(` class="art-${art}"`) : ''}>
-<header class="top"><div class="top-inner"><a class="brand" href="/app"><img src="/brand/mark.svg" alt="" width="32" height="32">${branding.name}</a>${nav}${who}</div></header>
+<header class="top"><div class="top-inner"><a class="brand" href="/app"><img src="/brand/mark.svg" alt="" width="32" height="32"><span data-rer-name>${branding.name}</span></a>${nav}${who}</div></header>
 <main>${notice ? h`<p class="flash" role="status">${notice}</p>` : ''}${error ? h`<p class="flash error" role="alert">That did not work: ${describeError(error)}</p>` : ''}${body}</main></body></html>`
   return new Response(document.html, { status, headers })
 }

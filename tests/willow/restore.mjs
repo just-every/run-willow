@@ -6,7 +6,8 @@ import { spawn } from 'node:child_process'
 import { access, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { readArchive } from '@runeditrun/rer/modules/portability'
-import { command, devKey, serving, signIn } from './cli.mjs'
+import { command } from './cli.mjs'
+import { harness } from './harness.mjs'
 
 async function archive(path) {
   const data = await readFile(path), records = []
@@ -30,7 +31,7 @@ export async function restoreJourney({ root, target, port }) {
   assert.equal(rows('wl_periods').filter(row => row.end_date).length, 2)
   assert.ok(rows('wl_ledger').some(row => row.kind === 'use'))
 
-  const clone = spawn('git', ['clone', '--quiet', '--no-local', root, target], { stdio: 'ignore' })
+  const clone = spawn('git', ['clone', '--quiet', root, target], { stdio: 'ignore' })
   assert.equal(await new Promise(resolve => clone.once('exit', resolve)), 0, 'fresh target clone')
   await command(target, ['install'])
   await mkdir(join(target, 'exports'), { recursive: true })
@@ -44,12 +45,12 @@ export async function restoreJourney({ root, target, port }) {
   assert.deepEqual(items(await archive(join(target, 'exports/restored.rer'))), items(before), 'every portable row and document chunk survives an empty-target restore')
 
   const answers = join(target, 'exports/answers.json')
-  await writeFile(answers, JSON.stringify({ OWNER_EMAIL: 'owner@example.test' }), { mode: 0o600 })
+  await writeFile(answers, JSON.stringify({ OWNER_EMAIL: 'owner@example.com' }), { mode: 0o600 })
   await command(target, ['setup', '--answers', 'exports/answers.json', '--non-interactive', '--port', String(port)])
-  const server = await serving(target, 'preview', port)
-  const origin = `http://127.0.0.1:${port}`
+  const server = await harness({persistTo:join(target,'.wrangler/state'),port})
+  const origin = server.origin
   try {
-    const cookie = await signIn(origin, await devKey(target), 'owner@example.test')
+    const cookie = await server.signIn('owner@example.com')
     // First-run confirmation belongs to the installation, not the archive: the new owner confirms it again.
     const confirmed = await fetch(`${origin}/setup`, { method: 'POST', redirect: 'manual', headers: { cookie, origin, 'content-type': 'application/x-www-form-urlencoded' }, body: 'confirm=yes' })
     assert.equal(confirmed.status, 303)
@@ -70,7 +71,7 @@ export async function restoreJourney({ root, target, port }) {
     assert.ok(members.some(member => member.person && member.status === 'ended'), 'access state restored')
     assert.ok((await get('payroll')).every(batch => batch.status === 'acknowledged'), 'payroll handoff history restored')
   } finally {
-    await server.stop()
+    await server.close()
   }
   console.log('WIL-17 passed: rer export, public/ destination refused, corrupt and nonempty import refused, fresh-clone restore with identical rows and document bytes, people, pay, ledger, access and payroll history readable after a new sign-in')
 }

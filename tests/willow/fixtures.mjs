@@ -16,14 +16,14 @@ export const HEADERS = ['id', 'employeeNumber', 'firstName', 'lastName', 'prefer
 /** Rows: three active, one former, a repeated id, a missing hireDate, a conflict with an existing Willow person, an inactive row without a date. */
 export function employeesCsv({ conflictingEmail }) {
   return csv([HEADERS,
-    ['101', 'E101', 'Rowan', 'Hale', '', 'rowan.hale@example.test', 'rowan.home@example.test', '0400 000 101', '1 Example Street', 'Sydney', 'NSW', '2000', 'Australia', '1985-04-02', '2019-03-04', '', 'Active', 'Full-Time', 'Operations Lead', 'Warehouse', 'Parramatta', '', '98000.00 AUD', 'Salary', 'Year'],
-    ['102', 'E102', 'Tamsin', 'Vale', 'Tam', 'tamsin.vale@example.test', '', '', '', '', '', '', '', '', '2021-07-12', '', 'Active', 'Part-Time', 'Support Specialist', 'Warehouse', 'Parramatta', '101', '38.50 AUD', 'Hourly', 'Hour'],
-    ['103', 'E103', 'Idris', 'Penn', '', 'idris.penn@example.test', '', '', '', '', '', '', '', '', '2023-01-09', '', 'Active', 'Casual', 'Warehouse Assistant', 'Warehouse', 'Parramatta', '101', '', '', ''],
-    ['104', 'E104', 'Juno', 'Ashby', '', 'juno.ashby@example.test', '', '', '', '', '', '', '', '', '2017-05-01', '2022-11-30', 'Inactive', 'Terminated', 'Accountant', 'Finance', 'Parramatta', '101', '85000.00 AUD', 'Salary', 'Year'],
-    ['103', 'E103', 'Idris', 'Penn', '', 'idris.penn@example.test', '', '', '', '', '', '', '', '', '2023-01-09', '', 'Active', 'Casual', 'Warehouse Lead', 'Warehouse', 'Parramatta', '101', '', '', ''],
-    ['105', 'E105', 'Marlo', 'Quist', '', 'marlo.quist@example.test', '', '', '', '', '', '', '', '', '', '', 'Active', 'Full-Time', 'Designer', 'Warehouse', 'Parramatta', '', '', '', ''],
+    ['101', 'E101', 'Rowan', 'Hale', '', 'rowan.hale@example.com', 'rowan.home@example.com', '0400 000 101', '1 Example Street', 'Sydney', 'NSW', '2000', 'Australia', '1985-04-02', '2019-03-04', '', 'Active', 'Full-Time', 'Operations Lead', 'Warehouse', 'Parramatta', '', '98000.00 AUD', 'Salary', 'Year'],
+    ['102', 'E102', 'Tamsin', 'Vale', 'Tam', 'tamsin.vale@example.com', '', '', '', '', '', '', '', '', '2021-07-12', '', 'Active', 'Part-Time', 'Support Specialist', 'Warehouse', 'Parramatta', '101', '38.50 AUD', 'Hourly', 'Hour'],
+    ['103', 'E103', 'Idris', 'Penn', '', 'idris.penn@example.com', '', '', '', '', '', '', '', '', '2023-01-09', '', 'Active', 'Casual', 'Warehouse Assistant', 'Warehouse', 'Parramatta', '101', '', '', ''],
+    ['104', 'E104', 'Juno', 'Ashby', '', 'juno.ashby@example.com', '', '', '', '', '', '', '', '', '2017-05-01', '2022-11-30', 'Inactive', 'Terminated', 'Accountant', 'Finance', 'Parramatta', '101', '85000.00 AUD', 'Salary', 'Year'],
+    ['103', 'E103', 'Idris', 'Penn', '', 'idris.penn@example.com', '', '', '', '', '', '', '', '', '2023-01-09', '', 'Active', 'Casual', 'Warehouse Lead', 'Warehouse', 'Parramatta', '101', '', '', ''],
+    ['105', 'E105', 'Marlo', 'Quist', '', 'marlo.quist@example.com', '', '', '', '', '', '', '', '', '', '', 'Active', 'Full-Time', 'Designer', 'Warehouse', 'Parramatta', '', '', '', ''],
     ['106', 'E106', 'Kit', 'Double', '', conflictingEmail, '', '', '', '', '', '', '', '', '2020-02-02', '', 'Active', 'Full-Time', 'Driver', 'Warehouse', 'Parramatta', '', '', '', ''],
-    ['107', 'E107', 'Ola', 'Stray', '', 'ola.stray@example.test', '', '', '', '', '', '', '', '', '2018-02-02', '', 'Inactive', 'Full-Time', 'Picker', 'Warehouse', 'Parramatta', '', '', '', ''],
+    ['107', 'E107', 'Ola', 'Stray', '', 'ola.stray@example.com', '', '', '', '', '', '', '', '', '2018-02-02', '', 'Inactive', 'Full-Time', 'Picker', 'Warehouse', 'Parramatta', '', '', '', ''],
   ])
 }
 

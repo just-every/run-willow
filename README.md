@@ -26,7 +26,7 @@ owner at `owner@<checkout-name>.test` and the manifest's local defaults. Run
 `rer setup` first when you want to supply the real owner mailbox.
 
 `setup` builds the app, applies every local migration, claims the first owner
-and checks that an ordinary sign-in message reached the local outbox; it exits
+and prepares one-click local sign-in with mail silently suppressed; it exits
 with nothing running. Use the setup prompt instead of `--owner-email` to enter
 the real owner mailbox, or pass a private mode-0600 answers file inside the
 checkout: `rer setup --answers exports/answers.json --non-interactive`
@@ -50,7 +50,7 @@ A persona becomes someone's manager or an employee when HR records a person
 with the persona's work email (`manager@dev.localhost`, `employee@dev.localhost`)
 and presses **Give access** on that person. With `dev` already running, these
 print a fresh `RER_OPEN` for that persona and exit. `dev --login` turns dev
-identity off and prints the outbox instead. Stop `dev` with
+identity off and opens the ordinary sign-in page instead. Stop `dev` with
 `rer dev --stop` or Ctrl-C, and stop `preview` with
 `rer preview --stop` before build or verification.
 

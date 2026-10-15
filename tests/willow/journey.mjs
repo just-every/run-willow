@@ -197,12 +197,12 @@ try {
   // Setup reads answers only from inside the checkout; exports/ is ignored by Git and never served.
   await mkdir(join(root, 'exports'), { recursive: true })
   const answers = join(root, 'exports/answers.json')
-  await writeFile(answers, JSON.stringify({ OWNER_EMAIL: 'owner@example.test' }), { mode: 0o600 })
+  await writeFile(answers, JSON.stringify({ OWNER_EMAIL: 'owner@example.com' }), { mode: 0o600 })
   await chmod(answers, 0o600)
   await command(root, ['setup', '--answers', 'exports/answers.json', '--non-interactive', '--port', String(port)])
   server = await serving(root, 'dev', port)
   const ownerOpen = server.open()
-  assert.ok(ownerOpen && server.output().includes('RER_SIGNED_IN owner@example.test'))
+  assert.ok(ownerOpen && server.output().includes('RER_SIGNED_IN owner@example.com'))
   const personaOpen = async as => (await command(root, ['dev', '--port', String(port), '--as', as])).match(/RER_OPEN (\S+)/)[1]
   browser = await chromium.launch({ headless: true })
   for (const [width, persona] of [[1440, { as: 'employee', name: 'Sam Patel', member: 'Sam Patel (employee)' }], [390, { as: 'manager', name: 'Jordan Lee', member: 'Jordan Lee (manager)' }]]) {

@@ -1,5 +1,6 @@
 // Deliberately structured intake: no free-form prompt, employee context or task
 // title can enter a model request, even when the owner makes it.
+import { demoEffect } from '../modules/demo/index.mjs'
 import type { Bindings } from '../auth.server'
 import { requirePermission, type Actor } from './actor'
 import { all, commit, guard, insist, newId, now, one, stmt } from './core'
@@ -34,10 +35,13 @@ export async function createModelDraft(env: Bindings, actor: Actor, input: Input
     const endpoint = new URL(env.MODELS_ENDPOINT!)
     insist(!endpoint.username && !endpoint.password && !endpoint.search && !endpoint.hash && (endpoint.protocol === 'https:' || env.AUTH_LOCAL === 'true' && endpoint.protocol === 'http:' && ['localhost','127.0.0.1'].includes(endpoint.hostname)), 'invalid_models_endpoint')
     insist(endpoint.pathname === '/v1/chat/completions', 'invalid_models_endpoint')
-    const response = await fetch(endpoint, { method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(20_000), headers: { 'content-type': 'application/json', authorization: `Bearer ${env.MODELS_KEY}`, 'x-models-feature': 'willow-checklist-draft' }, body: JSON.stringify({ model: settings.model, messages: [
+    const response = await demoEffect(() => fetch(endpoint, { method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(20_000), headers: { 'content-type': 'application/json', authorization: `Bearer ${env.MODELS_KEY}`, 'x-models-feature': 'willow-checklist-draft' }, body: JSON.stringify({ model: settings.model, messages: [
       { role: 'system', content: 'Draft a lifecycle checklist for human review from the structured template. Return only JSON: {"source":{"id":string,"version":number},"items":[{"position":number,"text":string}]}. Cite the exact source id and version. Include each task position exactly once. Explain the assignee, deadline offset and evidence obligation without inventing systems, people, policy or actions. No employment decisions. Never claim an external task is done.' },
       { role: 'user', content: expected },
-    ], temperature: 0 }) })
+    ], temperature: 0 }) }), () => Response.json({ choices: [{ message: { content: JSON.stringify({
+      source: { id: context.id, version: context.version },
+      items: context.tasks.map(task => ({ position: task.position, text: `${task.assignee} reviews the task at day ${task.due_offset_days}; ${task.evidence_required ? 'record evidence before completion' : 'confirm completion in Willow'}.` })),
+    }) } }] }))
     insist(response.ok, 'model_call_failed')
     const reader = response.body!.getReader(); let bytes = 0, text = ''; const decoder = new TextDecoder()
     while (true) { const part = await reader.read(); if (part.done) break; bytes += part.value.length; if (bytes > 32_000) { await reader.cancel(); throw new Error() } text += decoder.decode(part.value, { stream: true }) }

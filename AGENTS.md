@@ -14,7 +14,7 @@ private answers file inside the checkout: `--answers exports/answers.json
 --non-interactive`). `dev` prints `RER_OPEN`, which opens Willow signed in as
 the owner; `dev --as hr|payroll|it|manager|employee` prints one for a persona
 (real local members at `<as>@dev.localhost`, defined in `src/dev-personas.ts`);
-`dev --login` uses the ordinary outbox sign-in instead. No external mail is
+`dev --login` uses the ordinary sign-in page instead. No external mail is
 sent and no provider account is needed. Stop servers with
 `rer dev --stop` or `rer preview --stop`
 before build or verification.

@@ -39,17 +39,16 @@ jobs:
       - name: Scope test deployment
         if: inputs.test_only
         run: node --input-type=module -e "import fs from 'node:fs'; const p='deploy-demo.json'; const d=JSON.parse(fs.readFileSync(p)); d.domain='test.run-willow.com'; fs.writeFileSync(p,JSON.stringify(d));"
-      # A non-credential at the network edge lets the existing model action
-      # prove container egress without adding a probe route to Willow.
-      - name: Configure the test-only network edge
+      - name: Configure public provider checks in the test demo
         if: inputs.test_only && !inputs.remove_test
         run: |
           node --input-type=module <<'JS'
           import fs from 'node:fs';
-          const p = 'wrangler.jsonc', d = JSON.parse(fs.readFileSync(p));
-          d.vars ??= {};
-          d.vars.MODELS_ENDPOINT = 'https://example.com/v1/chat/completions';
-          d.vars.MODELS_KEY = 'noncredential-egress-proof';
+          const p = 'deploy-demo.json', d = JSON.parse(fs.readFileSync(p));
+          d.settings.OIDC_PROVIDERS = JSON.stringify([{id:'google',preset:'google',clientId:'willow-demo-test',clientSecret:'test-client-secret',tokenAuthMethod:'client_secret_basic'}]);
+          d.settings.OIDC_TRANSACTION_SECRET = 'test-independent-transaction-secret-123456789';
+          d.settings.MODELS_ENDPOINT = 'https://example.com/v1/chat/completions';
+          d.settings.MODELS_KEY = 'noncredential-demo-proof';
           fs.writeFileSync(p, JSON.stringify(d));
           JS
       - name: Deploy demo

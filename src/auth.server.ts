@@ -2,9 +2,8 @@ import { createOwnerClaimHandler } from './modules/owner-claim/index.mjs'
 import { identityFetch } from './identity-fetch'
 import { firstRunResponse } from './base/setup'
 import { fontDocumentResponse } from './base/font-response'
-import { createOperatorAuth, createAuthHandler, createSignInHandler, devGate, devNotFound, type AuthConfig } from './modules/operator-auth/index.mjs'
+import { createOperatorAuth, createAuthHandler, createSignInHandler, type AuthConfig } from './modules/operator-auth/index.mjs'
 import { operatorMail } from './mail.server.mjs'
-import { createD1DevelopmentOutbox, createDevelopmentOutboxHandler } from './modules/mail/src/development/index.mjs'
 import branding from './branding.json'
 import { identityConfiguration } from './identity.server'
 import { recoverMemberIdentities } from './willow/recover-access'
@@ -14,6 +13,7 @@ const theme = { href: '/rer-theme.css', productName: branding.name, accentColor:
 
 export interface Bindings {
  ASSETS?: Fetcher
+ RER_DEMO?: string
  RER_DEPLOY_SOURCE?: string
  RER_DEPLOY_FINGERPRINT?: string
  RER_VERSION?: { id: string }
@@ -70,15 +70,6 @@ export async function authResponse(request: Request, original: Bindings): Promis
   const claim = await createOwnerClaimHandler({ db: env.DB, authConfig: authConfig(env), clientIp: req => req.headers.get('CF-Connecting-IP') ?? '', issuer: env.RER_OWNER_CLAIM_ISSUER ?? '', installationId: env.RER_OWNER_CLAIM_INSTALLATION_ID ?? '', appOrigin: env.AUTH_ORIGIN, expectedEmail: env.OWNER_EMAIL, publicKeys: JSON.parse(env.RER_OWNER_CLAIM_PUBLIC_KEYS) })(request)
   if (claim) return claim
  }
- // The outbox and key exchange answer only a local runtime holding RER_DEV_KEY;
- // the outbox also needs the key gate's cookie (or the rer harness's header).
- if (url.pathname === '/__dev/outbox' || url.pathname === '/__dev/key') {
-  const gate = env.MAIL_PROVIDER === 'development' ? devGate({ key: env.RER_DEV_KEY, origin: env.AUTH_ORIGIN, local: env.AUTH_LOCAL === 'true' }) : null
-  if (!gate) return devNotFound()
-  if (url.pathname === '/__dev/key') return await gate.exchange(request) ?? devNotFound()
-  if (!await gate.admits(request)) return devNotFound()
-  return await createDevelopmentOutboxHandler({ local: true, origin: env.AUTH_ORIGIN, outbox: createD1DevelopmentOutbox({ db: env.DB }) })(request) ?? devNotFound()
- }
  // The shared server-rendered sign-in page: plain forms that work before any script.
  const identity = identityConfiguration(env)
  const identityEnabled = async () => !!(await env.DB.prepare('SELECT oidc FROM wl_connections WHERE singleton = 1').first<{oidc: number}>())?.oidc
@@ -89,7 +80,6 @@ export async function authResponse(request: Request, original: Bindings): Promis
  if (url.pathname === '/signin') {
   const page = await createSignInHandler(operatorAuth(await linkedEnvironment()), {
    defaultReturnTo: '/setup',
-   links: () => env.MAIL_PROVIDER === 'development' && env.AUTH_LOCAL === 'true' ? [{ href: '/__dev/outbox', label: 'Open the local development outbox' }] : [],
   })(request)
   if (page) return fontDocumentResponse(page)
  }

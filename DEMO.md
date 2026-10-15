@@ -12,25 +12,21 @@ Names reuse Willow's documented BambooHR fixtures. Dates follow the current day.
 `src/demo.ts` writes native records through Willow's domain operations; no test
 fixture runtime or simulated application implementation is used.
 
-The CLI is the exact published `@runeditrun/rer` 0.2.19 package. The
-`src/modules/demo` runtime comes from Base tag `rer-v0.2.19`, commit
-`e17843562355e1b6e5068289c8e037951fbc8d3d`, recorded in `base-copies.json` and the edition source lock. Its only adaptation
-is the CSP import: it uses the identical helper exported by the pinned package
-at `@runeditrun/rer/internal/modules/operator-auth/csp.mjs`, keeping Willow's
-existing operator-auth runtime on its single immutable pin. The other five
-demo files are recorded byte for byte.
-`withDemo` loads first in the Worker. On this release, external fetches and
-sockets are refused by Base, and development mail is captured by Base's existing
-mail adapter. No Willow-specific blocking or capture is added. The forthcoming
-Base effect-policy release will remove its bar/outbox and allow real reads with
-mocked successful effects; Willow will adopt that shared release when published.
+The CLI is the exact published `@runeditrun/rer` 0.2.20 package. The demo,
+local identity and mail runtime are refreshed from Base tag `rer-v0.2.20`,
+commit `38aa7efdb3cceec585d2344ed54dd559295b9059`, recorded byte for byte in
+`base-copies.json`. The auth schema adds Base’s owner-sign-in table in forward migration 0019.
+`withDemo` loads first in the Worker. Public internet reads and checks run for
+real; external effects that reach people or third-party accounts return mocked
+success under `RER_DEMO` only. Local and demo mail is silently suppressed.
+The nav and title read Willow Demo or Willow Dev; there is no bar or outbox.
 Optional model and OIDC providers remain unconfigured in the sample workspace.
 
 The hosted demo uses Base's signed owner claim handler when its runtime supplies
 trusted claim keys; it adds no independent authentication protocol. Each visitor
 gets a private container, session, database and files. Base owns the 60 minute
-lifetime and 15 minute idle policy. Hosted magic-link mail is unavailable on this
-release; the signed owner claim is the visitor's sign-in.
+lifetime and 15 minute idle policy. The signed owner claim
+is the visitor's one-click sign-in; mail is suppressed silently.
 
 `.github/workflows/run-demo.yml` reads the `run-demo` environment on manual
 `workflow_dispatch`. `test_only` uses a separate `demo-test` Worker at
@@ -40,6 +36,5 @@ variable is needed. `remove_test` with `test_only` removes the test deployment
 and reads back resource absence. All deployments use the RunEditRun account.
 The front GET sets no cookie; visitor state begins only after the start POST.
 
-The test-only workflow supplies a non-credential model binding aimed at
-`example.com` so Willow's existing model action can prove the container's
-outbound refusal. It adds no probe route or production binding.
+The test-only workflow uses the same read/effect policy and sample data as
+production, with passing Turnstile test keys. Its non-credential Google and model settings exercise real public discovery and mocked model sends; it adds no probe route or production binding.

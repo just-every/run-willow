@@ -44,6 +44,17 @@
       "modes": {
         "migrations/core/0005_identity_providers.sql": "100644"
       }
+    },
+    {
+      "path": "migrations/core/0019_owner_signin.sql",
+      "originPath": "modules/operator-auth/accounts/schema/owner-signin.sql",
+      "revision": "38aa7efdb3cceec585d2344ed54dd559295b9059",
+      "files": {
+        "migrations/core/0019_owner_signin.sql": "98da904e768e35b43fb1be83d9dcc9c9b5d86ab3a795234ed5223c4fddc567d9"
+      },
+      "modes": {
+        "migrations/core/0019_owner_signin.sql": "100644"
+      }
     }
   ]
 }

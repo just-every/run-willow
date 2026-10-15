@@ -1,3 +1,4 @@
+import { demoEffect } from '../modules/demo/index.mjs'
 import { operatorAuth, type Bindings } from '../auth.server'
 import { requireOwner, type Actor } from './actor'
 import { all, commit, insist, WillowError, newId, one, stmt } from './core'
@@ -44,7 +45,19 @@ export async function configureIdentity(env: Bindings, actor: Actor, input: Inpu
   const auth = operatorAuth(env)
   // Base checks owner authority and fresh app-local email proof for each operation.
   let result
-  try { result = await (operation === 'relink' ? auth.relinkProvider(request, { provider }) : auth.unlinkProvider(request, { provider })) } catch (error) {
+  try {
+    result = await demoEffect(
+      () => operation === 'relink' ? auth.relinkProvider(request, { provider }) : auth.unlinkProvider(request, { provider }),
+      async () => {
+        // The demo owner needs no emailed proof. Discovery is still a real
+        // public read; only this throwaway installation's provider pin changes.
+        insist(auth.providers?.ids.includes(provider), 'unknown_provider')
+        if (operation === 'relink') await auth.providers!.relink(provider)
+        else await auth.providers!.unlink(provider)
+        return auth.providers!.links()
+      },
+    )
+  } catch (error) {
     if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && error.code.startsWith('oidc_')) throw new WillowError(error.code, 502)
     throw error
   }

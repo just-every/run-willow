@@ -80,7 +80,7 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
    await stmt(env, 'UPDATE wl_members SET person_id = ? WHERE id = ?', record.person, employee.id).run()
    const requester: Actor = { ...actor, id: employee.id, email: `${people[i][0]}@harbour-field.example`, name: employee.name, owner: false, permissions: new Set(), personId: record.person }
    let start = addDays(date, 7 + i * 7)
-   while ([0, 6].includes(new Date(start + 'T00:00:00Z').getUTCDay())) start = addDays(start, 1)
+   while ([0, 6].includes(new Date(start + 'T00:00:00Z').getUTCDay()) || i === 1 && new Date(start + 'T00:00:00Z').getUTCDay() === 5) start = addDays(start, 1)
    const leave = await requestLeave(env, requester, input({ account: account.id, startDate: start, endDate: addDays(start, 1), reason: i === 1 ? 'Family weekend away' : 'A few days to recharge' }))
    if (i > 2) await decideLeave(env, actor, input({ request: leave.id, decision: 'approve', note: 'Team coverage confirmed.' }))
   })

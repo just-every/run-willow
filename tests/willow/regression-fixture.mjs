@@ -8,17 +8,17 @@ export async function fixture(h, owner) {
   const templates = {}
   for (const kind of ['joiner', 'leaver']) templates[kind] = (await api('template.create', { name: kind, kind, taskTitle: ['Record evidence'], taskAssignee: ['hr'], taskDueDays: ['0'] })).id
   let count = 0
-  const join = async (key, extra = {}) => api('joiner.start', { template: templates.joiner, legalName: key, workEmail: `${key}@example.test`, startDate: day(-100), employmentType: 'full_time', jobTitle: 'Present role', payrollId: `PAY-${++count}`, scheduleId: schedule, payBasis: 'salary', payAmount: '81234.56', phone: `PRIVATE-${key}`, ...extra })
+  const join = async (key, extra = {}) => api('joiner.start', { template: templates.joiner, legalName: key, workEmail: `${key}@example.com`, startDate: day(-100), employmentType: 'full_time', jobTitle: 'Present role', payrollId: `PAY-${++count}`, scheduleId: schedule, payBasis: 'salary', payAmount: '81234.56', phone: `PRIVATE-${key}`, ...extra })
   const staff = {}
   for (const key of ['managera', 'managerb', 'employee', 'payroll', 'hr', 'ended', 'invited']) {
     const person = await join(key, key === 'employee' ? { managerPersonId: staff.managera.person } : {})
     const member = await api('access.give', { person: person.person })
     staff[key] = { ...person, member: member.id }
-    if (key !== 'invited') staff[key].cookie = await h.signIn(`${key}@example.test`, { requested: true })
+    if (key !== 'invited') staff[key].cookie = await h.signIn(`${key}@example.com`, { requested: true })
   }
   for (const [key, permissions] of [['payroll', ['pay.read', 'payroll.handoff']], ['hr', ['people.manage', 'people.private', 'documents.private', 'leave.manage']]]) {
     await api('member.permissions', { member: staff[key].member, permissions })
-    staff[key].cookie = await h.signIn(`${key}@example.test`)
+    staff[key].cookie = await h.signIn(`${key}@example.com`)
   }
   const policy = await api('policy.write', { name: 'Annual', summary: 'Hours from schedule', accrualWeeks: '4', negativeLimitHours: '0' })
   await api('policy.approve', { version: policy.id })

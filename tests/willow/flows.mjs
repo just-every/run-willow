@@ -51,22 +51,22 @@ try {
     // Staff are people first; access is given to a person through their work email.
     const staff = { hana: ['Hana Reid', ids.people], pat: ['Pat Okoro', ids.people], ivan: ['Ivan Ruiz', ids.ops], mia: ['Mia Chen', ids.ops] }
     for (const [key, [name, department]] of Object.entries(staff)) {
-      const started = await h.api('joiner.start', cookie.owner, { template: ids.joinerTemplate, legalName: name, workEmail: `${key}@example.test`, startDate: addDays(today, -900), employmentType: 'full_time', payrollId: `PAY-${key}`, jobTitle: key === 'mia' ? 'Operations Manager' : 'Staff', departmentId: department, locationId: ids.sydney, scheduleId: ids.week })
+      const started = await h.api('joiner.start', cookie.owner, { template: ids.joinerTemplate, legalName: name, workEmail: `${key}@example.com`, startDate: addDays(today, -900), employmentType: 'full_time', payrollId: `PAY-${key}`, jobTitle: key === 'mia' ? 'Operations Manager' : 'Staff', departmentId: department, locationId: ids.sydney, scheduleId: ids.week })
       ids[key] = started.person; ids[`${key}Period`] = started.period
     }
     for (const [key, name, payroll, pay] of [['sam', 'Samira Patel', 'PAY-sam', SECRET.salary], ['lee', 'Lee Park', '', '']]) {
-      const started = await h.api('joiner.start', cookie.owner, { template: ids.joinerTemplate, legalName: name, workEmail: `${key}@example.test`, startDate: addDays(today, -200), employmentType: 'full_time', payrollId: payroll, jobTitle: 'Coordinator', departmentId: ids.ops, locationId: ids.sydney, managerPersonId: ids.mia, scheduleId: ids.week, ...(pay ? { payBasis: 'salary', payAmount: pay } : {}), ...(key === 'sam' ? { phone: SECRET.phone } : {}) })
+      const started = await h.api('joiner.start', cookie.owner, { template: ids.joinerTemplate, legalName: name, workEmail: `${key}@example.com`, startDate: addDays(today, -200), employmentType: 'full_time', payrollId: payroll, jobTitle: 'Coordinator', departmentId: ids.ops, locationId: ids.sydney, managerPersonId: ids.mia, scheduleId: ids.week, ...(pay ? { payBasis: 'salary', payAmount: pay } : {}), ...(key === 'sam' ? { phone: SECRET.phone } : {}) })
       ids[key] = started.person; ids[`${key}Period`] = started.period; ids[`${key}Case`] = started.case
     }
     for (const key of ['hana', 'pat', 'ivan', 'mia', 'sam', 'lee']) {
       await h.api('access.give', cookie.owner, { person: ids[key] })
-      cookie[key] = await h.signIn(`${key}@example.test`, { requested: true })
+      cookie[key] = await h.signIn(`${key}@example.com`, { requested: true })
     }
     const members = await h.api('members', cookie.owner)
     for (const member of members) ids[`${member.email.split('@')[0]}Member`] = member.id
     await h.api('member.permissions', cookie.owner, { member: ids.hanaMember, permissions: ['people.manage', 'people.private', 'documents.private', 'leave.manage', 'reports.read', 'audit.read'] })
     // people.manage makes Hana's sign-in an admin; the role change ends her earlier session.
-    cookie.hana = await h.signIn('hana@example.test')
+    cookie.hana = await h.signIn('hana@example.com')
     await h.api('member.permissions', cookie.owner, { member: ids.patMember, permissions: ['pay.read', 'payroll.handoff'] })
     await h.api('member.permissions', cookie.owner, { member: ids.ivanMember, permissions: ['it.tasks'] })
     // Only the owner sets permissions; managing people grants none.
@@ -79,7 +79,7 @@ try {
     await h.api('me', cookie.ivan, undefined, 401)
     await h.api('access.give', cookie.hana, { person: ids.ivan })
     await h.api('me', cookie.ivan, undefined, 401)
-    cookie.ivan = await h.signIn('ivan@example.test')
+    cookie.ivan = await h.signIn('ivan@example.com')
     assert.deepEqual((await h.api('me', cookie.ivan)).permissions, [])
     await h.api('member.permissions', cookie.owner, { member: ids.ivanMember, permissions: ['it.tasks'] })
   })
@@ -94,7 +94,7 @@ try {
     assert.equal(period.terms[0].manager.id, ids.mia)
     assert.equal(sam.current.department.name, 'Operations')
     // A person is separate from the employment period: identity is unique, periods never overlap.
-    await h.api('joiner.start', cookie.hana, { template: ids.joinerTemplate, legalName: 'Other', workEmail: 'sam@example.test', startDate: today, employmentType: 'casual', jobTitle: 'X' }, 409)
+    await h.api('joiner.start', cookie.hana, { template: ids.joinerTemplate, legalName: 'Other', workEmail: 'sam@example.com', startDate: today, employmentType: 'casual', jobTitle: 'X' }, 409)
     const overlap = await h.api('joiner.start', cookie.hana, { template: ids.joinerTemplate, person: ids.sam, startDate: today, employmentType: 'casual', jobTitle: 'X' }, 409)
     assert.equal(overlap.error, 'period_overlap')
     await h.api('joiner.start', cookie.mia, { template: ids.joinerTemplate, legalName: 'Nope', startDate: today, employmentType: 'casual', jobTitle: 'X' }, 403)
@@ -108,7 +108,7 @@ try {
     // Each task belongs to its assignee; IT work needs evidence.
     assert.equal((await h.api('task.complete', cookie.hana, { task: task('it'), evidence: 'done' }, 403)).error, 'not_your_task')
     assert.equal((await h.api('task.complete', cookie.ivan, { task: task('it') }, 400)).error, 'evidence_required')
-    await h.api('task.complete', cookie.ivan, { task: task('it'), evidence: 'Mailbox sam@example.test created in the email admin console' })
+    await h.api('task.complete', cookie.ivan, { task: task('it'), evidence: 'Mailbox sam@example.com created in the email admin console' })
     await h.api('task.complete', cookie.lee, { task: task('manager') }, 403)
     await h.api('task.complete', cookie.mia, { task: task('manager') })
     await h.api('task.complete', cookie.sam, { task: task('employee') })
@@ -351,8 +351,8 @@ try {
     assert.equal(lee.employment.find(period => period.id === ids.leePeriod).terms.length, 1)
     assert.equal(lee.employment.find(period => period.id === rehire.period).startDate, start)
     // Old access is not silently reactivated.
-    assert.equal((await h.raw('/auth/magic-link', { body: { email: 'lee@example.test', returnTo: '/app' } })).status, 202)
-    await assert.rejects(h.signIn('lee@example.test', { requested: true }))
+    assert.equal((await h.raw('/auth/magic-link', { body: { email: 'lee@example.com', returnTo: '/app' } })).status, 202)
+    await assert.rejects(h.signIn('lee@example.com', { requested: true }))
     const member = (await h.api('members', cookie.hana)).find(row => row.person === ids.lee)
     assert.equal(member.status, 'ended')
     assert.deepEqual(member.permissions, [])
@@ -377,7 +377,7 @@ try {
 
   await check('WIL-15', async () => {
     // The owner's own agent prepares a joiner through the JSON door; nothing changes until HR approves the exact plan.
-    const plan = { template: ids.joinerTemplate, legalName: 'Noor Haddad', workEmail: 'noor@example.test', startDate: addDays(today, 21), employmentType: 'full_time', jobTitle: 'Driver', departmentId: ids.ops, managerPersonId: ids.mia }
+    const plan = { template: ids.joinerTemplate, legalName: 'Noor Haddad', workEmail: 'noor@example.com', startDate: addDays(today, 21), employmentType: 'full_time', jobTitle: 'Driver', departmentId: ids.ops, managerPersonId: ids.mia }
     const proposal = await h.api('proposal.create', cookie.hana, { kind: 'joiner', summary: 'Onboard Noor as a driver', agent: 'owner agent (intake form)', plan })
     assert.deepEqual(proposal.missing.sort(), ['phone', 'working schedule'])
     assert.ok(!(await h.api('people', cookie.hana)).some(person => person.name === 'Noor Haddad'))
@@ -465,7 +465,7 @@ try {
   })
 
   await check('WIL-16', async () => {
-    const inputs = { employees: file('employees.csv', employeesCsv({ conflictingEmail: 'mia@example.test' })), balances: file('balances.csv', balancesCsv), documents: file('documents.zip', documentsZip()), schedule: ids.week }
+    const inputs = { employees: file('employees.csv', employeesCsv({ conflictingEmail: 'mia@example.com' })), balances: file('balances.csv', balancesCsv), documents: file('documents.zip', documentsZip()), schedule: ids.week }
     const before = (await h.api('people', cookie.hana)).length
     await h.api('import.preview', cookie.mia, inputs, 403)
     await h.api('category.create', cookie.hana, { name: 'Passport scans' })

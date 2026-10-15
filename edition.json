@@ -136,15 +136,19 @@
         ],
         "origin": {
           "repository": "https://github.com/runeditrun/base.git",
-          "revision": "e17843562355e1b6e5068289c8e037951fbc8d3d",
+          "revision": "38aa7efdb3cceec585d2344ed54dd559295b9059",
           "path": "modules/demo",
           "paths": [
-            "index.mjs",
-            "index.d.mts",
-            "vite.mjs",
             "vite.d.mts",
+            "effects.mjs",
+            "responses.mjs",
+            "index.d.mts",
+            "label.d.mts",
+            "README.md",
+            "vite.mjs",
+            "index.mjs",
             "sockets.mjs",
-            "README.md"
+            "label.mjs"
           ]
         }
       }
