@@ -3,6 +3,7 @@ import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
 import { formatDate, hours } from '../dates'
 import { employer } from '../employer'
+import { one } from '../core'
 import { approvals, leaveFor } from '../leave'
 import { caseDetail, myTasks } from '../lifecycle'
 import { area, avatar, form, h, hidden, page, person, table, tag } from './html'
@@ -14,13 +15,14 @@ function taskList(tasks: Awaited<ReturnType<typeof myTasks>>) {
 export async function homePage(env: Bindings, actor: Actor, url: URL) {
   const [company, tasks, waiting] = await Promise.all([employer(env), myTasks(env, actor), approvals(env, actor)])
   const leave = actor.personId ? await leaveFor(env, actor, actor.personId) : null
+  const gettingStarted = can(actor, 'people.manage') && !await one(env, 'SELECT 1 FROM wl_people LIMIT 1')
   const body = h`<h1>${company?.name ?? 'Willow'}</h1><p class="muted">Signed in as ${actor.name}. Today is ${formatDate(actor.today)} (${company?.timezone}).</p>
 <div class="grid home-grid">
 <section class="card your-tasks"><h2>Your tasks</h2>${taskList(tasks)}</section>
 <section class="card to-decide"><h2>Leave to decide</h2>${waiting.length ? h`<ul class="people-list">${waiting.map(request => h`<li>${avatar(request.name)}<a href="/app/leave/${request.id}">${request.name}: ${formatDate(request.startDate)} – ${formatDate(request.endDate)} (${request.hours} h)</a></li>`)}</ul>` : h`<p class="muted">No requests waiting for you.</p>`}</section>
 <section class="card your-leave"><h2>Your leave</h2>${leave?.accounts.length ? h`<ul class="plain">${leave.accounts.map(account => h`<li>${account.policy.name}: ${hours(account.balanceMinutes)} hours${account.openingStatus === 'proposed' ? ' (opening balance awaiting sign-off)' : ''}</li>`)}</ul>` : h`<p class="muted">${actor.personId ? 'No leave accounts yet.' : 'Your sign-in is not linked to a person record.'}</p>`}
 ${leave?.accounts.length || actor.personId ? h`<p class="actions">${leave?.accounts.length ? h`<a class="button" href="/app/leave">Request leave</a>` : ''}${actor.personId ? h`<a class="button secondary" href="/app/people/${actor.personId}">Your record</a>` : ''}</p>` : ''}</section>
-${can(actor, 'people.manage') ? h`<section class="card get-started"><h2>Get started</h2><ol class="steps"><li><span><a href="/app/settings">Add locations, departments, schedules, document categories, templates and leave policies</a></span></li><li><span><a href="/app/import">Move in from BambooHR</a> or <a href="/app/people">start a joiner</a></span></li><li><span><a href="/app/access">Give people access and preview what each person sees</a></span></li></ol></section>` : ''}
+${gettingStarted ? h`<section class="card get-started"><h2>Get started</h2><ol class="steps"><li><span><a href="/app/settings">Add locations, departments, schedules, document categories, templates and leave policies</a></span></li><li><span><a href="/app/import">Move in from BambooHR</a> or <a href="/app/people">start a joiner</a></span></li><li><span><a href="/app/access">Give people access and preview what each person sees</a></span></li></ol></section>` : ''}
 </div>`
   return page('Home', actor, body, { current: '/app', url, art: 'frond' })
 }
