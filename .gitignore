@@ -13,3 +13,6 @@ exports/
 
 .rer/local/
 evidence/
+
+.rer/demo/
+.rer/demo-host/

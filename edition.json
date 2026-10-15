@@ -30,7 +30,8 @@
           "src/server.ts",
           "migrations/core/0009_identity_token_health.sql",
           "migrations/core/0017_identity_settings.sql",
-          "migrations/core/0018_import_kit_upgrade.sql"
+          "migrations/core/0018_import_kit_upgrade.sql",
+          "src/demo.ts"
         ]
       }
     },
@@ -123,6 +124,29 @@
             "originPath": "SEED-COMMAND-CONTRACT.md"
           }
         ]
+      }
+    },
+    {
+      "id": "runeditrun/demo",
+      "role": "module",
+      "source": {
+        "kind": "local",
+        "paths": [
+          "src/modules/demo"
+        ],
+        "origin": {
+          "repository": "https://github.com/runeditrun/base.git",
+          "revision": "e17843562355e1b6e5068289c8e037951fbc8d3d",
+          "path": "modules/demo",
+          "paths": [
+            "index.mjs",
+            "index.d.mts",
+            "vite.mjs",
+            "vite.d.mts",
+            "sockets.mjs",
+            "README.md"
+          ]
+        }
       }
     }
   ]

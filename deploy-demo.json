@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "domain": "run-willow.com",
+  "name": "Willow",
+  "settings": {
+    "MAIL_PROVIDER": "development",
+    "MAIL_FROM": "Willow demo <demo@demo.invalid>"
+  },
+  "instanceType": "basic"
+}
