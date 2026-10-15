@@ -13,7 +13,7 @@ Names reuse Willow's documented BambooHR fixtures. Dates follow the current day.
 fixture runtime or simulated application implementation is used.
 
 The CLI is the exact published `@runeditrun/rer` 0.2.20 package. The demo,
-local identity and mail runtime are refreshed from Base tag `rer-v0.2.20`,
+local identity, owner-claim and mail runtime are refreshed from Base tag `rer-v0.2.20`,
 commit `38aa7efdb3cceec585d2344ed54dd559295b9059`, recorded byte for byte in
 `base-copies.json`. The auth schema adds Base’s owner-sign-in table in forward migration 0019.
 `withDemo` loads first in the Worker. Public internet reads and checks run for

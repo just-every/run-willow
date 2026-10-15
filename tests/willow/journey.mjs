@@ -220,7 +220,10 @@ try {
   assert.equal((await fetch(`${origin}/health`)).status, 200)
   assert.equal((await fetch(`${origin}/signin`)).status, 200)
   await server.stop(); server = null
-  await command(root, ['deploy', '--dry-run'])
+  await command(root, ['deploy', '--dry-run'], {refuse:true})
+  await mkdir(join(root,'exports'), {recursive:true})
+  await writeFile(join(root,'exports/production-test.env'), 'MAIL_API_KEY=test-no-network-mail-key\n', {mode:0o600})
+  await command(root, ['deploy', '--dry-run', '--env-file', 'exports/production-test.env'])
   await restoreJourney({ root, target: join(scratch, 'target'), port })
 } finally {
   await browser?.close()

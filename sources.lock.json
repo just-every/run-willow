@@ -205,7 +205,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "616c4925fb570dd9bd456593b54cf8e43c8762d5f261560306946429f1b62135",
+      "sha256": "b864659450d98d193d4e00a2d1ef164ee44338c2e083b018c444b789145de3a7",
       "executable": false
     },
     "CLAUDE.md": {
@@ -221,7 +221,7 @@
       "executable": false
     },
     "DEMO.md": {
-      "sha256": "aee7741682d806925437889351098d2bec6a999afb7c9b2fe33e3a0823713532",
+      "sha256": "b6ced0bb61bfa2bd15bc97f1d0b1c757ef4fb4ad9b955b046c85e1958f1d2fe4",
       "executable": false
     },
     "deploy-demo.json": {
@@ -2009,7 +2009,7 @@
       "executable": false
     },
     "src/modules/owner-claim/README.md": {
-      "sha256": "400d900fbe0981f9e6e27ff40b7913ebb140680bd045167cfb9ddb2a45a4c890",
+      "sha256": "ab3ead07f6a21347c4f084c48acbdd5d62ee9abc711982cc09ffb1c53f239459",
       "executable": false
     },
     "src/modules/owner-claim/schema/idp.sql": {
@@ -2021,7 +2021,7 @@
       "executable": false
     },
     "src/modules/owner-claim/transaction.mjs": {
-      "sha256": "ca36db33042d7778d518b407bd9b403dd4bac82d4b89d81beeb78ed47421cca2",
+      "sha256": "56f9cf605a5a4afae2be22012e84035e661fb38c07612ec7d4f8cdc39526aa54",
       "executable": false
     },
     "src/modules/owner-claim/verify.mjs": {
@@ -2389,7 +2389,7 @@
       "executable": false
     },
     "tests/willow/journey.mjs": {
-      "sha256": "4edf3e3aabdcf4ad48c58eabb4d5141d863fe49a9862004c2a41ed538b0f2ec5",
+      "sha256": "bebe48af95a4d058341840f9e732d345f8560254c2b02ecb63e86b0a459b878e",
       "executable": false
     },
     "tests/willow/phase2-fixtures.mjs": {
