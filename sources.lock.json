@@ -609,7 +609,7 @@
       "executable": false
     },
     "scripts/willow/demo-quiet-window.mjs": {
-      "sha256": "a59cf9110d6c9337d707f4d61241ac6f0be7e745d78c3611e131ee617b20fe41",
+      "sha256": "848b99adbdb9650403df0cf36187ebd4c61a6d79c607431e38aa94309c0b5063",
       "executable": false
     },
     "scripts/willow/import-kit-migration.mjs": {

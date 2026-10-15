@@ -5,7 +5,7 @@ const account = process.env.CLOUDFLARE_ACCOUNT_ID;
 if (account !== 'b20c0ca9cab0c2b70e13d7cf724b89bd') throw Error('Wrong Cloudflare account');
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${account}/workers/scripts/willow-demo-test--demo/tails`;
 const headers = { authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`, 'content-type': 'application/json' };
-const opened = await fetch(endpoint, { method: 'POST', headers, body: '{}' });
+const opened = await fetch(endpoint, { method: 'POST', headers, body: '{}', signal: AbortSignal.timeout(10_000) });
 const result = await opened.json();
 if (!opened.ok || !result.success) throw Error(`Tail refused: ${opened.status}`);
 const tail = result.result, admissions = [];
@@ -25,6 +25,7 @@ try {
   const started = new Date().toISOString();
   const done = new Promise(resolve => { finish = resolve; });
   const fail = () => { interrupted = true; finish(); };
+  process.once('SIGINT', fail); process.once('SIGTERM', fail);
   socket.addEventListener('close', fail); socket.addEventListener('error', fail);
   const timer = setTimeout(finish, 15 * 60_000);
   console.log('Observing the test host for fifteen minutes without starting visitors.');
@@ -35,6 +36,8 @@ try {
   console.log('Quiet window established: no admissions in fifteen minutes.');
 } finally {
   socket?.close();
-  const removed = await fetch(`${endpoint}/${tail.id}`, { method: 'DELETE', headers });
+  const removed = await fetch(`${endpoint}/${tail.id}`, { method: 'DELETE', headers, signal: AbortSignal.timeout(10_000) });
   if (!removed.ok) throw Error(`Tail cleanup failed: ${removed.status}`);
 }
+// The tail WebSocket can retain its transport after close; cleanup above has completed.
+process.exit(0);
