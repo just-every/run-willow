@@ -44,11 +44,12 @@ jobs:
         run: |
           node --input-type=module <<'JS'
           import fs from 'node:fs';
-          const p = 'deploy-demo.json', d = JSON.parse(fs.readFileSync(p));
-          d.settings.OIDC_PROVIDERS = JSON.stringify([{id:'google',preset:'google',clientId:'willow-demo-test',clientSecret:'test-client-secret',tokenAuthMethod:'client_secret_basic'}]);
-          d.settings.OIDC_TRANSACTION_SECRET = 'test-independent-transaction-secret-123456789';
-          d.settings.MODELS_ENDPOINT = 'https://example.com/v1/chat/completions';
-          d.settings.MODELS_KEY = 'noncredential-demo-proof';
+          const p = 'wrangler.jsonc', d = JSON.parse(fs.readFileSync(p));
+          d.vars ??= {};
+          d.vars.OIDC_PROVIDERS = JSON.stringify([{id:'google',preset:'google',clientId:'willow-demo-test',clientSecret:'test-client-secret',tokenAuthMethod:'client_secret_basic'}]);
+          d.vars.OIDC_TRANSACTION_SECRET = 'test-independent-transaction-secret-123456789';
+          d.vars.MODELS_ENDPOINT = 'https://example.com/v1/chat/completions';
+          d.vars.MODELS_KEY = 'noncredential-demo-proof';
           fs.writeFileSync(p, JSON.stringify(d));
           JS
       - name: Deploy demo
