@@ -35,3 +35,7 @@ Production uses the real widget keys at `demo.run-willow.com`. No repository
 variable is needed. `remove_test` with `test_only` removes the test deployment
 and reads back resource absence. All deployments use the RunEditRun account.
 The front GET sets no cookie; visitor state begins only after the start POST.
+
+The test-only workflow supplies a non-credential model binding aimed at
+`example.com` so Willow's existing model action can prove the container's
+outbound refusal. It adds no probe route or production binding.

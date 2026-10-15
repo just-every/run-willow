@@ -169,7 +169,7 @@
   ],
   "files": {
     ".github/workflows/run-demo.yml": {
-      "sha256": "77183269db4212a1960c1f246681ac080c7174c48712f8b47005aeb642cc557d",
+      "sha256": "a5039f56eb2c072c6399c88349012b42f0bd4aa33d2bb1ef720acdee4cc61481",
       "executable": false
     },
     ".github/workflows/run-site.yml": {
@@ -217,7 +217,7 @@
       "executable": false
     },
     "DEMO.md": {
-      "sha256": "ab380f3a1f0e74608e31c5e6863c91df4a9a9331a9e9794c18c0e4337cdc445b",
+      "sha256": "0dd2c71befc3d0efa353719ca6053d2240944890aa4803c6dbe5a559ab844efb",
       "executable": false
     },
     "deploy-demo.json": {
