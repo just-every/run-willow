@@ -9,6 +9,7 @@ export const hero = {
   body: 'Willow keeps every person’s record, leave and checklist, and hands payroll exactly what changed.',
   alternatives: ['BambooHR', 'HiBob', 'Rippling'],
   run: 'Run Willow',
+  demo: 'Try the demo',
   docs: 'Read the docs',
   label: 'A joiner, Priya Shah, starts on 3 Nov; IT, her manager and HR each finish their task; payroll receives her start.',
   steps: {

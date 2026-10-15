@@ -2085,11 +2085,11 @@
       "executable": false
     },
     "src/ui/homepage/Actions.tsx": {
-      "sha256": "2b308f527e55b3805bd51fe212cc5f0f1a8c634310d7bd5e3b24863071cd48af",
+      "sha256": "0fe073a15662e821815d65712747eee0ea8ce02aa78e1264f52b6bef02b12ac6",
       "executable": false
     },
     "src/ui/homepage/copy.ts": {
-      "sha256": "2a28bcbcd3492d1e5d2682a2020a1bf98342fa4565f616aea52172cdc4b57609",
+      "sha256": "93afb01aa99a4285b6ba272959a992c076c5442192b39f0c3711640e1113a7b3",
       "executable": false
     },
     "src/ui/homepage/drawings.css": {
@@ -2125,7 +2125,7 @@
       "executable": false
     },
     "src/ui/homepage/links.ts": {
-      "sha256": "8bfec1cb55d16c1725cb903ff15e9936b5628cbdf627483120325812b317bfcb",
+      "sha256": "9cfffbcdbf343c3a46265238595fe62b932e82be2a26ce0ab2f0e9312aea08b2",
       "executable": false
     },
     "src/ui/homepage/Lockup.tsx": {
