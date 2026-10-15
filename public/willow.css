@@ -23,14 +23,14 @@ h1 + p, .lead { color: var(--ink-2); font-size: 17px; max-width: 72ch; margin: -
 
 /* Shell */
 .top { background: var(--paper); border-bottom: 1px solid var(--line); position: relative; z-index: 1; }
-.top-inner { max-width: 1260px; min-height: 72px; margin: 0 auto; padding: 0 40px; display: flex; align-items: center; gap: 16px 28px; }
-.brand { display: inline-flex; align-items: center; gap: 12px; flex: none; color: var(--ink); text-decoration: none; font: 500 24px/1 var(--serif); letter-spacing: -.01em; }
+.top-inner { max-width: 1260px; min-height: 72px; margin: 0 auto; padding: 0 40px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; flex: none; color: var(--ink); text-decoration: none; font: 500 24px/1 var(--serif); letter-spacing: -.01em; white-space: nowrap; }
 .brand:hover { color: var(--ink); }
 .brand img { width: 32px; height: 32px; display: block; }
-.top nav { flex: 1; min-width: 0; }
+.top nav { flex: 1; min-width: max-content; }
 .top nav ul { list-style: none; display: flex; justify-content: center; gap: 2px; margin: 0; padding: 0; }
 .top nav li + li { margin: 0; }
-.top nav a { display: block; padding: 8px 14px; border-radius: var(--r-pill); color: var(--ink-2); text-decoration: none; font-size: 15px; white-space: nowrap; }
+.top nav a { display: block; padding: 8px 10px; border-radius: var(--r-pill); color: var(--ink-2); text-decoration: none; font-size: 15px; white-space: nowrap; }
 .top nav a:hover { color: var(--ink); background: rgb(31 42 35 / .04); }
 .top nav a[aria-current="page"] { background: var(--willow-wash); color: var(--ink); }
 .who { margin-left: auto; flex: none; color: var(--ink-2); white-space: nowrap; }
@@ -123,10 +123,9 @@ body.art-frame { background: url('/homepage/fronds-left.webp') left -20px top -4
 body.art-frond main { background: url('/homepage/fronds-right.webp') right -20px top -6px / 96px auto no-repeat; }
 
 @media (max-width: 1239px) {
-  .top-inner { flex-wrap: wrap; padding-top: 14px; gap: 10px 16px; }
-  .top nav { order: 3; flex-basis: 100%; margin: 0 -40px; padding: 0 40px; overflow-x: auto; scrollbar-width: none; border-top: 1px solid var(--line); }
-  .top nav::-webkit-scrollbar { display: none; }
-  .top nav ul { justify-content: flex-start; padding: 8px 0; }
+  .top-inner { padding-top: 14px; gap: 10px 16px; }
+  .top nav { order: 3; flex-basis: 100%; min-width: 0; margin: 0 -40px; padding: 0 40px; border-top: 1px solid var(--line); }
+  .top nav ul { flex-wrap: wrap; justify-content: flex-start; padding: 8px 0; }
 }
 @media (max-width: 719px) {
   body { font-size: 15px; }

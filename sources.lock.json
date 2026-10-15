@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "people/willow",
-  "manifest": "ef6c1af26ff170a58232af78c918191ca3f4739824b9b96dec9b7738715096d4",
+  "manifest": "b9c0b4490856a2cbf7ff2862aa0ab8fe89a99f153d108c716e7e6547c106c263",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -148,7 +148,7 @@
         ],
         "origin": {
           "repository": "https://github.com/runeditrun/base.git",
-          "revision": "38aa7efdb3cceec585d2344ed54dd559295b9059",
+          "revision": "756bf5a8544d792a51bb76f6e90a8ee5908a32a5",
           "path": "modules/demo",
           "paths": [
             "vite.d.mts",
@@ -165,9 +165,9 @@
         }
       },
       "baseline": {
-        "key": "5ca9231ffaa21f1958c53f93ec9e44bb62a40f2ceafac02ff908542e06777c2c",
+        "key": "14ba1addd82276b7dc4bc5d93e139105b02e6fa429403f990117ed48009b2886",
         "digest": "8f47dd8fd330671f273315fa8cce161157d02e2b19398d2dbf9f5dfdb9ef8268",
-        "sha256": "d01ed916770bfde63dc92703dd916e3371fa115fe1e7a65832460656ff1e0964"
+        "sha256": "1a43e9d15a4666df3e5f600be0c4da2b89b776c4a5123745e65ca927c94af080"
       }
     }
   ],
@@ -205,7 +205,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "b864659450d98d193d4e00a2d1ef164ee44338c2e083b018c444b789145de3a7",
+      "sha256": "18609c0005fd05a4c6ea3e8b1575b5bfc4d6af13c28d9709df8e38fafaf4cbff",
       "executable": false
     },
     "CLAUDE.md": {
@@ -273,7 +273,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "ef6c1af26ff170a58232af78c918191ca3f4739824b9b96dec9b7738715096d4",
+      "sha256": "b9c0b4490856a2cbf7ff2862aa0ab8fe89a99f153d108c716e7e6547c106c263",
       "executable": false
     },
     "FIELD-AUTHORITY.md": {
@@ -385,11 +385,11 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "feea0accf9be3d0c30435e5a6a2cdebad39daf20c5dafb9cb33dfbc347696d5b",
+      "sha256": "049c73b0a5d274441c2eda50bff271b61fb4f6dc818d0b9695b932b86c8279b6",
       "executable": false
     },
     "pnpm-lock.yaml": {
-      "sha256": "199d34f7f02f5d12d4451937be8d0f7b9b0d966b67cff272aaa2b6f063e02822",
+      "sha256": "1faeaa77ae3b58a9e1a68daa2510ca7d027ce3fef9593eb16e77676536ee2466",
       "executable": false
     },
     "public/brand/band.svg": {
@@ -521,7 +521,7 @@
       "executable": false
     },
     "public/willow.css": {
-      "sha256": "9bbeb88200bb5d67c9098494c9549bded023e9b89d7ca64ede8ebe84f3927de7",
+      "sha256": "557e62ac58e1c79faee90d04e7da1cb22e8823dc7cf5e8435f418740231b4308",
       "executable": false
     },
     "README.md": {
