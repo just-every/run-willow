@@ -7,7 +7,8 @@ import { Input } from './willow/input'
 import { approveOpening, approvePolicy, createPolicy, decideLeave, openAccount, requestLeave } from './willow/leave'
 import { completeCase, completeTask, createTemplate, scheduleMover, startJoiner, startLeaver } from './willow/lifecycle'
 import { addDocument } from './willow/documents'
-import { createBatch } from './willow/payroll'
+import { acknowledgeBatch, createBatch, CSV_COLUMNS, exportBatch } from './willow/payroll'
+import { configureLayout, previewPayroll } from './willow/payroll-layout'
 import { propose } from './willow/proposals'
 
 /** Invented people from tests/willow/fixtures.mjs, expanded into native records.
@@ -91,6 +92,18 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
   for (const i of [0, 1, 9, 10]) await addDocument(env, actor, input({ person: records[i].person, category: category.id, title: 'Your first week at Harbour & Field', file: { filename: 'welcome.txt', base64: btoa('Welcome to Harbour & Field.\nMonday: meet your team and settle into your workspace.\nTuesday: customer care and workshop walkthrough.\nFriday: check in with Rowan about your first week.\nThis is an invented sample document for the Willow demo.') } }))
  })
  await stage('proposal', async () => { await propose(env, actor, input({ kind: 'joiner', summary: 'Prepare a new customer care starter for next month', agent: 'People planning assistant', plan: { template: joiner.id, legalName: 'Nia Lawson', workEmail: 'nia.lawson@harbour-field.example', startDate: addDays(date, 32), employmentType: 'full_time', jobTitle: 'Customer Care Specialist', departmentId: departments[1].id, locationId: sydney.id, scheduleId: week.id, managerPersonId: records[0].person } })) })
- await stage('payroll', async () => { await createBatch(env, actor, input({ periodStart: addDays(date, -14), periodEnd: addDays(date, 14) })) })
+ await stage('payroll-layout', async () => {
+  await configureLayout(env, actor, input({ format: 'generic', columns: CSV_COLUMNS.map(source => ({ source, heading: source })) }))
+ })
+ await stage('payroll-history', async () => {
+  const batch = await createBatch(env, actor, input({ periodStart: addDays(date, -30), periodEnd: addDays(date, -1) }))
+  const preview = await previewPayroll(env, actor, input({ batch: batch.id }))
+  await exportBatch(env, actor, input({ batch: batch.id, previewRevision: preview.previewRevision }))
+  await acknowledgeBatch(env, actor, input({ batch: batch.id, reference: 'HF-PAY-previous-month', note: 'Sample history: prior employment changes handed off and acknowledged by payroll.' }))
+ })
+ await stage('payroll', async () => {
+  const batch = await createBatch(env, actor, input({ periodStart: date, periodEnd: addDays(date, 14) }))
+  await previewPayroll(env, actor, input({ batch: batch.id }))
+ })
  await stmt(env, 'INSERT OR IGNORE INTO oa_first_run(singleton,completed_by,completed_at) SELECT 1,id,? FROM oa_operators WHERE email = ?', now.getTime(), ownerEmail).run()
 }

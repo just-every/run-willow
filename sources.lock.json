@@ -221,7 +221,7 @@
       "executable": false
     },
     "DEMO.md": {
-      "sha256": "4434153a0e50a650a486d5a4a3896ec0d57722ce010460ae4b0031db414de10b",
+      "sha256": "08c6ce935cfd73e3ab5a3172d7af86a04eea4bd6415395ae3300a9982bc53169",
       "executable": false
     },
     "deploy-demo.json": {
@@ -608,6 +608,10 @@
       "sha256": "decbd8619e40c741708b49639d54282bd19edc4581a782b240d96a423ad47f01",
       "executable": false
     },
+    "scripts/willow/demo-quiet-window.mjs": {
+      "sha256": "a59cf9110d6c9337d707f4d61241ac6f0be7e745d78c3611e131ee617b20fe41",
+      "executable": false
+    },
     "scripts/willow/import-kit-migration.mjs": {
       "sha256": "f9fe6d4ab34e2290a8a87a15f8feee0e44c92f70392efe8f67303fcd886717fc",
       "executable": false
@@ -701,7 +705,7 @@
       "executable": false
     },
     "src/demo.ts": {
-      "sha256": "e7023332ad5b835dd0ae746bcf0cfff4dff127c22d0954f6eb21d5f17f804403",
+      "sha256": "4f3caae49ac4ee6a1653dc1bd681ea45c95788297cc99d4ca067f9413a9706ed",
       "executable": false
     },
     "src/dev-personas.ts": {
