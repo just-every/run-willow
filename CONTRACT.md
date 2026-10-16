@@ -9,8 +9,9 @@ provider; amounts and compensation planning are USD-first.
 
 The competitive scope is core HR as sold by BambooHR, Rippling, HiBob and
 Gusto (HR side), with Factorial and Deel HR as additional switching sources.
-It includes employee/manager self-service, performance/goals and engagement,
-not just a private register and reviewed payroll files. This is the product
+It includes hiring, employee/manager self-service, access levels, an open API
+and webhooks, native e-signature, EEO reporting, performance/goals and
+engagement, not just a private register and reviewed payroll files. This is the product
 we are building towards. The status table describes current implementation;
 `missing` is work to deliver, not an exclusion. Existing release manifests and
 screens describe the delivered edition and are not expanded by this document.
@@ -33,6 +34,11 @@ counts because one target clause may cover several rows. `done` requires
 implementation and an existing public-door test for the full clause;
 `partial` names the narrower foundation and the outstanding work; `missing`
 has no working target flow. No new runtime capability is claimed here.
+Buyer review round 1 (17 October 2026) added HIRING-002–004, SIGN-002,
+ROLE-001–003, API-001–003, EEO-001–002, OPS-002, MIGRATE-002, PEOPLE-003,
+SELF-002 and BENEFITS-003 and sharpened HIRING-001, SIGN-001, WIL-01,
+REPORT-001, US-002, BENEFITS-001, MIGRATE-001, OPS-001 and BOUNDARY-001; their
+statuses are judged against the same inspected tree.
 
 Private employee reads use `src/willow/profile.ts` and facets in
 `src/willow/access.ts`; `src/willow/doors.ts` enumerates current read doors.
@@ -44,7 +50,7 @@ scoped, opted-in capabilities and retain the caller’s exact permissions.
 
 ### WIL-01 — Employer setup and explicit membership.
 
-The owner sets up one employer (name, IANA time zone, country, currency) before anything else, then locations, departments, immutable working schedules and private document categories. Members are people given sign-in access through their work email; every permission is explicit and set only by the owner (managing someone grants none). Ending access ends every session; giving it again needs a fresh sign-in and restores no permission.
+The owner sets up one employer (name, IANA time zone, country, currency) before anything else, then locations, departments, immutable working schedules and private document categories. Members are people given sign-in access through their work email; every permission is explicit and set only by the owner (managing someone grants none). Ending access ends every session; giving it again needs a fresh sign-in and restores no permission. Owner-set direct grants are this clause's current guarantee; ROLE-001–003 add named access levels, group scoping, default self-service and delegated access administration, and must keep these guarantees (explicit grants, no rank inference, ended access restoring nothing).
 
 **Acceptance evidence:** From setup, configure an employer, invite a member, grant access, end it and sign in again; former sessions fail and a new sign-in restores no removed grant.
 
@@ -182,17 +188,93 @@ Employees browse and search a scoped directory by name, location, department and
 
 **Acceptance evidence:** Open directory and org chart at desktop and phone widths; navigate a realistic multi-level team, search a location, inspect a future manager change and try a cycle. Compare chart, directory and profile on the effective date.
 
+### PEOPLE-003 — Multi-row record tables and company assets.
+
+Employee records hold dated multi-row tables: several emergency contacts (with a primary flag), education, certifications/licences with expiry and company assets (type, serial, assigned/returned dates, condition), plus custom tables HR defines with typed columns under the same visibility rules as PEOPLE-001. Assets assigned to a person generate device-return tasks in leaver cases (WIL-12, IDENTITY-001) that close only with return evidence; expiring certifications create renewal work (LEARN-001). Tables are importable (MIGRATE-001/002), reportable and exportable under the reader's access level.
+
+**Acceptance evidence:** Add two emergency contacts, a certification near expiry and a laptop asset to an employee and read them as the employee, manager and HR under their levels. Start a leaver case and confirm a laptop-return task that cannot close without evidence; let the certification expire and see renewal work; export the tables and import them into a fresh employer.
+
 ### SELF-001 — Employee and manager self-service portal.
 
-One portal gives employees their profile, documents, balances, PTO requests, assigned tasks and pending changes; managers see permitted team requests, outstanding work and coverage. Employees submit contact, name, dependent and other permitted changes with validation. Field policy determines immediate edits versus HR approval; immutable proposals show before/after, owner, due date, outcome and downstream reconciliation. An employee never edits pay or employment authority by changing their profile.
+One portal gives employees their profile, documents, balances, PTO requests, assigned tasks and pending changes; managers see permitted team requests, outstanding work and coverage. Employees submit contact, name, dependent and other permitted changes with validation. The member's access level (ROLE-001) determines immediate edits versus HR approval; immutable proposals show before/after, owner, due date, outcome and downstream reconciliation. An employee never edits pay or employment authority by changing their profile.
 
 **Acceptance evidence:** As an employee, change an allowed contact field and submit an approval-required name/dependent change; HR accepts one and rejects another. As manager, clear permitted team work and inspect the employee view. The approved revision feeds the payroll/benefits exception queue; no self-granted privilege is possible.
+
+### SELF-002 — Company home: announcements, celebrations and shared files.
+
+Every member's home shows employer announcements (targeted to everyone or a group, scheduled, pinned, with optional read acknowledgement), upcoming team time off, new hires, and birthday and work-anniversary celebrations for people who opt in (birthdays show month and day only). Company files (handbook, benefits guides, policies) live in versioned shared folders visible to everyone or to groups and can require a signature through SIGN-002. Announcements and files reach mobile (MOBILE-001) and Slack/Teams (COMMS-001) with the same targeting; nothing private (pay, birth year, absence reasons) is shown.
+
+**Acceptance evidence:** Publish one company-wide and one location-targeted announcement, upload a handbook to a shared folder and open home as employees inside and outside that location; each sees only their targeted content and files. Opt one person into birthday celebrations and another out; only the opted-in month and day appear and no birth year is exposed through any door.
 
 ### MOBILE-001 — Mobile work and accessible companion apps.
 
 The responsive portal and iOS/Android companion apps let employees update permitted details, read/sign documents, request PTO and complete tasks; managers approve and see team coverage. Secure push notifications reveal no private employee data on a locked device. Session revocation applies on every device; reconnecting a saved draft revalidates permissions and source revision before submission. Keyboard, screen-reader and 390-pixel journeys meet WCAG 2.2 AA.
 
 **Acceptance evidence:** Use real employee/manager accounts for request, approval, task completion and document access at 1440 and 390 pixels and on iOS/Android; interrupt a draft, revoke access, reconnect and prove no stale submission or private push content. Complete keyboard and screen-reader checks.
+
+## Access levels and the open API
+
+### ROLE-001 — Named access levels with field-level rights.
+
+Access is granted through named access levels: built-in Employee (self-service), Manager, HR administrator, Payroll administrator and IT, plus custom levels HR creates. Each level sets, per field and section (personal, job, compensation, documents by category, time off, benefits, performance, EEO, training), No access / View / Edit / Edit with approval, separately for "about themselves" and "about others", and which approvals, reports and settings it may use. A member may hold an employee level and one or more administrative levels; their rights are the union, shown in the WIL-02 preview. Levels compile to the server-side facets every door enforces, so the WIL-03 crawl covers each level, and edit-with-approval changes enter the SELF-001 approval queue. Editing a level shows the changed rights and affected members before saving, takes effect on the next request without a fresh sign-in and is audited. Rank alone grants nothing; pay, tax/identity, EEO and medical sections are never granted to Manager by default.
+
+**Acceptance evidence:** Create a custom level with view-only job fields, edit-with-approval personal fields and no compensation access, assign it, and crawl every API/page/download/CSV/preview/agent-context door as that member; withheld fields never appear and an approval-required edit lands in HR's queue. Change the level and repeat the crawl in the same session; every door reflects the change and the audit names who changed it.
+
+### ROLE-002 — Group-scoped levels and bulk assignment.
+
+The "about others" part of a level is scoped to everyone, direct reports, direct and indirect reports, or a group defined by location, department, division, employment type, legal entity or custom field. Group membership follows effective-dated terms (WIL-07): when someone transfers, the scope changes on the effective date without manual edits. HR assigns or changes a level for many people at once by selection or filter, previews each member whose rights change, and applies it in one audited step that can be reverted as a batch while no later change depends on it.
+
+**Acceptance evidence:** Scope a custom level to one location, assign it to ten members in one step after reviewing the preview, and verify they read only that location's employees through every door. Schedule a transfer out of that location and check access on each side of the effective date; revert the bulk assignment and confirm the prior levels return.
+
+### ROLE-003 — Default self-service access and delegated access administration.
+
+The owner sets the default level and invitation timing for new people: hires (HIRING-004), joiners, rehires and imported employees (MIGRATE-001/002) receive that level and a portal invitation automatically (to a personal mailbox before start under FLOW-003, otherwise the work email on the start date), with an import option to invite current employees in bulk or defer. The owner delegates access administration to HR administrators, who then create and assign levels and give or end access; a delegate can never grant a right they do not hold, change their own level or the owner's, or grant pay/tax rights without the owner's or a second administrator's approval. Ending employment ends the level and access under WIL-12; rehire restores no prior level (WIL-13).
+
+**Acceptance evidence:** Set Employee as the default, import 50 employees and hire one candidate; every new active person has the default level and exactly one invitation at the configured time, and former rows get none. As a delegated HR administrator assign a custom level to a group, then try to raise your own rights, edit the owner and grant pay access alone; each escalation is refused and audited.
+
+### API-001 — Employer-issued API credentials bound to an access level.
+
+The owner or a delegated administrator issues API keys and OAuth 2.0 clients (client credentials for the employer's own tools, authorization code for partner apps the employer installs). Each credential is bound to an access level (ROLE-001) and optional read/write scopes, can never exceed the issuing member's own rights, and has a name, owner, expiry and last-used time. Secrets are shown once and stored only as hashes; revocation is immediate; every call is audited with its credential and rate limits return standard headers. Credentials are excluded from archives, never survive a restore (DATA-001) and stop working when their issuer loses the rights they carry.
+
+**Acceptance evidence:** Issue a key bound to a custom level and confirm the API returns only that level's data; try to issue a key wider than your own rights and be refused. Rotate the key, revoke it and receive 401 on the next call; end the issuer's access and prove their remaining keys stop; inspect the audit and confirm no secret appears in logs, exports or archives.
+
+### API-002 — Documented employee and roster API.
+
+A versioned, published OpenAPI description covers employees (directory and full records with requested fields), employment and job history, org structure, custom fields and tables, time-off balances, requests and calendars, document metadata and downloads, and access-level metadata. Responses contain only the fields the credential's level may read and name withheld fields; lists paginate by cursor and support changed-since queries for incremental sync. Writes use the same validation, effective dating and edit-with-approval routing as the page doors. The API and webhooks are documented so unified-API providers (such as Merge, Finch and Kombo) and partner tools can integrate; their partnership listings are delivery work.
+
+**Acceptance evidence:** Read the roster with a key whose level withholds compensation and private contact fields, page through it and fetch changes since a cursor after a hire and a transfer; restricted fields never appear and each change appears once. Submit an edit-with-approval change through the API and see it wait in HR's queue; every response validates against the published OpenAPI description.
+
+### API-003 — Signed, replay-protected outbound webhooks.
+
+Administrators create global webhooks (any field they may read) and permissioned webhooks limited to the creating credential's level, choosing events (employee created; updated, with monitored fields; terminated; rehired; terms change effective; time off approved/cancelled; signature completed) and posted fields. Each delivery carries a unique event ID, a timestamp and an HMAC-SHA256 signature over both and the body with a per-webhook secret, so receivers following the documented verification reject stale or repeated events. Deliveries retry with backoff, appear in a delivery log with response codes, pause after repeated failure with a visible alert and can be replayed by an administrator. Future-dated changes fire when recorded and again when effective. Payloads never contain fields outside the webhook's level.
+
+**Acceptance evidence:** Register a permissioned webhook from a key scoped to one location, hire and terminate a person there and verify two signed events whose signatures check and whose payloads omit restricted fields; a hire elsewhere sends nothing. Re-send a captured event after the tolerance window and confirm the documented verification rejects it; fail the endpoint and observe retries, pause and manual replay; revoke the key and confirm the webhook stops.
+
+## Hiring
+
+### HIRING-001 — Accepted-hire handoffs from Greenhouse, Lever, Workable and JazzHR.
+
+Employers that keep a separate ATS connect Greenhouse, Lever, Workable or JazzHR through each provider's approved API/webhook authorization. An accepted-hire event produces a reviewed joiner proposal with candidate identity, approved offer, role, start date, manager and permitted documents. HR resolves duplicate/rehire matches and missing fields before creating one employee/packet; the resulting employee ID and onboarding status return to the ATS where it accepts them, and interview evaluations are never copied into broad employee records. Employers without a separate ATS use Willow's own pipeline (HIRING-002–004).
+
+**Acceptance evidence:** For each of Greenhouse, Lever, Workable and JazzHR, accept an offer, preview the hire in Willow, resolve a former-worker match, approve and inspect the packet plus returned status. Replay the event and withdraw the offer; neither duplicates the person nor retains unauthorized preboarding access.
+
+### HIRING-002 — Job openings, careers page and job-board posting.
+
+Hiring managers request openings with title, department, location, employment type, USD pay range (published where state pay-transparency laws such as California's, Colorado's, New York's and Washington's require it), hiring team and approval chain; HR approves before posting. Approved openings publish to an employer-branded, accessible careers page with structured job data for search engines, and post to Indeed, ZipRecruiter and LinkedIn through their approved posting/partner interfaces, each showing posted/live/rejected/expired state and the board's reference; partner programme access is delivery work. Closing, filling or editing an opening updates or withdraws every posting. Application forms are configurable per opening (resume, cover letter, questions, knockout questions) and applications from the careers page and each board arrive once as candidates with their source.
+
+**Acceptance evidence:** Request and approve an opening in a pay-transparency state, publish it and read it back on the careers page and from Indeed, ZipRecruiter and LinkedIn posting status (provider-edge tests plus a consented employer-account trial). Apply once from the careers page and once from a board, then close the opening; both candidates appear once with their source and every posting reports withdrawn.
+
+### HIRING-003 — Candidate pipeline, hiring-team review and candidate email.
+
+Each opening has configurable stages (such as new, screen, interview, offer, hired, rejected) with candidate cards, resumes, notes, per-interviewer scorecards and a timeline. Hiring-team members see only the openings they are assigned to; HR controls who sees pay expectations and notes. Interviews are scheduled against Google Calendar or Microsoft Outlook availability with invitations to the candidate and panel. Candidate emails use editable templates (acknowledgement, interview invitation, rejection) with merge fields and are logged on the candidate; bulk rejection sends one message per candidate. A repeat applicant is matched to their earlier record and duplicates merge with history. Candidate records follow the employer's retention schedule (DATA-002) and are never visible outside the hiring team and HR. People decide who advances; no agent ranks or rejects candidates.
+
+**Acceptance evidence:** Move two applicants through stages as a hiring manager, record two interviewer scorecards, schedule an interview against a connected calendar and send templated acknowledgement and rejection emails. Prove an employee outside the hiring team and the manager of a different opening cannot read the candidates, a repeat application merges into the earlier record, and no automated ranking or rejection exists.
+
+### HIRING-004 — Offer approval and hire into preboarding without re-keying.
+
+From an offer-stage candidate, HR generates an offer letter from a SIGN-001 template filled from the opening and candidate (title, USD pay, start date, manager, location), routes it for approval and sends it for native signature. A signed acceptance creates one reviewed joiner proposal (WIL-15) carrying the candidate's name, personal email, phone, address, role and terms, starts the matching preboarding packet (FLOW-003) at the personal mailbox and files the signed offer to the restricted employee record. No field is typed twice; a declined, withdrawn or expired offer reopens the candidate without creating a person, and a former worker is matched for rehire (WIL-13).
+
+**Acceptance evidence:** Send an offer from the pipeline, approve and sign it on a phone, and inspect the joiner proposal, preboarding invitation and filed signed offer; every carried field equals the candidate record and nothing is re-entered. Decline a second offer and confirm no person or packet exists; hire a former worker and confirm the existing person is reused.
 
 ## Workflows, documents and US onboarding
 
@@ -210,15 +292,21 @@ Every required task, approval, missing form, signature and provider exception ha
 
 ### FLOW-003 — Role-specific preboarding packets.
 
-An accepted hire gets a secure, revocable pre-start invitation with only their required personal details, offer/policy signatures, forms, benefits choices and tasks. HR chooses role/work-state packets, tracks completion and resolves missing data without asking the new hire to use an unprovisioned work mailbox. Expired or withdrawn offers end preboarding access and pending invitations without deleting retained evidence.
+An accepted hire gets a secure, revocable pre-start invitation with only their required personal details, offer/policy signatures, forms, voluntary EEO self-identification (EEO-001), benefits choices and tasks. HR chooses role/work-state packets, tracks completion and resolves missing data without asking the new hire to use an unprovisioned work mailbox. Expired or withdrawn offers end preboarding access and pending invitations without deleting retained evidence.
 
 **Acceptance evidence:** Send two role-specific packets to personal mailboxes, complete one on a phone, let the other expire/withdraw, then start employment. Inspect packet progress and prove only approved data becomes the employment record and expired links cannot read it.
 
-### SIGN-001 — Offer and policy templates with completed e-signatures.
+### SIGN-001 — Offer and policy templates with native e-signature.
 
-HR maintains versioned offer-letter, employment agreement and policy templates with controlled employee/compensation fields, approval routing and a recipient preview. DocuSign sends the exact approved document, records consent and signer attribution, tracks sent/viewed/signed/declined/expired/voided states, and returns the signed copy plus certificate and provider envelope ID to the restricted employee record and employee portal. Duplicate/out-of-order callbacks cannot sign a different version. Plain receipt acknowledgements in WIL-06 remain distinct.
+HR maintains versioned offer-letter, employment-agreement and policy signature templates with controlled employee/compensation merge fields, placed signature/initial/date/text fields, signer order (such as employee then HR countersignature), approval routing, a recipient preview and the document category (folder) the signed copy files into. Willow signs natively and needs no third-party account: each signer gives withdrawable ESIGN Act/UETA electronic-record consent, authenticates by an active session or an emailed one-time link plus code, and signs the exact approved version on desktop or phone. The completed document is sealed as a new immutable version with a SHA-256 digest and an audit certificate (signers, authentication method, consent, timestamps, IP/device, document digest), filed to the chosen category on the employee record and shown in the employee portal as that category allows. Sent/viewed/signed/declined/expired/voided states are tracked and a changed document voids and reissues. DocuSign is an optional signing provider for employers that require it, returning the signed copy, certificate and envelope ID under the same states; duplicate/out-of-order callbacks or old links cannot sign a different version. Plain receipt acknowledgements in WIL-06 remain distinct.
 
-**Acceptance evidence:** Approve an offer, send it through DocuSign, sign as the intended recipient and retrieve the identical signed copy/certificate through permitted doors. Void and reissue a changed offer; replay an older callback and prove it cannot complete the new packet. Exercise refusal, expiry and consent withdrawal.
+**Acceptance evidence:** With no DocuSign connection configured, approve an offer from a template, sign as the employee on a phone and countersign as HR; retrieve the sealed copy and certificate from the chosen category through permitted doors and verify the digest. Void and reissue a changed offer, replay an older signing link and prove it cannot complete the new version; exercise decline, expiry and consent withdrawal. Repeat the send through a connected DocuSign account and replay an older callback.
+
+### SIGN-002 — Cohort signature requests and the signed-documents report.
+
+HR sends a signature template (such as a handbook or policy) to named people, everyone, a location, department, employment type or access level, previews the recipient list and can include future joiners who match the cohort. Each recipient gets their own request in the portal, by email and on mobile (MOBILE-001). A signed-documents report lists every request by template, cohort and person with pending/viewed/signed/declined/expired state and dates, with filters and CSV export, scoped by level (HR sees all; a manager sees only their reports' status where the category allows). Pending requests follow the FLOW-002 reminder cadence and escalation until signed or withdrawn; a cohort send can be cancelled for unsigned recipients without touching signed copies.
+
+**Acceptance evidence:** Without DocuSign, send a policy to one location of five people, sign as two of them (one on a phone) and confirm each signed copy is filed in the chosen category. Open the signed-documents report as HR and as a manager, advance the scheduler and see one reminder to each pending signer only, add a new joiner at that location and see their request, then cancel the remainder; signed copies remain and later ticks send nothing.
 
 ### US-001 — I-9, E-Verify and W-4 through completion.
 
@@ -228,9 +316,21 @@ Worksite-aware onboarding collects current I-9 and federal/state withholding for
 
 ### US-002 — State new-hire reporting and employer administration.
 
-The employer maintains US legal entity/FEIN, work states, locations and W-2 employee versus 1099 contractor records without treating classification as an agent decision. New-hire/rehire reporting and state onboarding forms use current state-specific fields and reviewed deadlines, with configured multistate election, restricted review, submission through the state portal or authorized payroll partner, acknowledgement/rejection and correction. Owner-assigned manual portal steps retain submission receipts when a state has no machine interface; an export alone never completes reporting.
+The employer maintains one or more US legal entities under one account, each with its FEIN, registered work states, locations and payroll/benefits connections; every employment period belongs to one entity and reports, EEO-1 (EEO-002) and filings group by entity. It keeps W-2 employee versus 1099 contractor records without treating classification as an agent decision. New-hire/rehire reporting and state onboarding forms use current state-specific fields and reviewed deadlines, with configured multistate election, restricted review, submission through the state portal or authorized payroll partner, acknowledgement/rejection and correction. Owner-assigned manual portal steps retain submission receipts when a state has no machine interface; an export alone never completes reporting.
 
-**Acceptance evidence:** Onboard and rehire workers in California and Texas, preview the applicable forms/report destination and deadlines, approve and submit, reject/correct one report and inspect the acceptance receipt. Attempt to complete an unsubmitted report and to expose FEIN/SSN to a manager; both fail.
+**Acceptance evidence:** Under two legal entities with different FEINs, onboard and rehire workers in California and Texas, preview the applicable forms/report destination and deadlines, approve and submit, reject/correct one report and inspect the acceptance receipt. Attempt to complete an unsubmitted report and to expose FEIN/SSN to a manager; both fail, and each worker's records and reports carry their own entity.
+
+### EEO-001 — Voluntary EEO self-identification.
+
+Willow asks for voluntary self-identification of ethnicity (Hispanic or Latino first, then race), sex and, where the employer is a federal contractor, protected-veteran status and disability on the OFCCP voluntary form (CC-305), with "I do not wish to self-identify" on every question. It is offered in the preboarding packet (FLOW-003), in self-service at any time and to applicants separately from their application (HIRING-002/003). Answers sit in a restricted EEO section that no Manager level, hiring team, directory, agent context or ordinary export can read; only levels granted EEO access read individual values, every read is audited and applicant answers are never visible during selection. Where an employee declines, HR may record a category from employment records only as the current EEO-1 instructions allow, labelled with that source; answers keep their history.
+
+**Acceptance evidence:** Send preboarding packets to two hires; one completes self-ID and the other declines. Verify HR with EEO access sees each answer and its source while the manager, hiring team, directory, agent context and a standard CSV export receive nothing, and HR's read appears in the audit. Change an answer through self-service and inspect its history.
+
+### EEO-002 — EEO job categories and the EEO-1 Component 1 report.
+
+HR maps each job title to one of the ten EEO-1 job categories, effective-dated, and maps locations to EEO-1 establishments under their legal entity (US-002). For an employer-chosen workforce snapshot pay period, Willow produces EEO-1 Component 1 data by establishment and company (headquarters, establishment and consolidated reports where required): full- and part-time employees on payroll in that period by job category, sex and race/ethnicity, excluding 1099 contractors. A pre-filing check flags unmapped titles, missing or declined self-ID, missing establishment addresses or NAICS codes and people outside the period. HR downloads the data in the EEOC filing system's upload format, then records the submission confirmation as an owner-assigned manual step; the report never claims filing without it. Individual values stay with EEO-access levels and aggregate views suppress small cells.
+
+**Acceptance evidence:** Map titles for a two-location employer, choose a snapshot pay period containing a hire, a leaver and a contractor, and run the report; counts by category reconcile to the roster for that period, the contractor is excluded and the declined hire is flagged. Map one missing title and rerun, validate the download against the EEOC's published data-file specification and record a confirmation; a manager cannot open the report or its drill-down.
 
 ## Leave, time and workforce planning
 
@@ -245,6 +345,12 @@ HR configures vacation, sick and unpaid leave policies with eligibility, service
 Employees and managers have scoped absence/holiday calendars with employer-defined US federal/state/company holidays, partial days and working schedules. Requesting leave shows balance/coverage impact, notifies the effective approver in-app and by the configured channel, and follows substitute approval/reminder rules. Calendar subscriptions and Google Calendar/Microsoft Outlook connections expose only authorized absence labels/dates; cancellation or access loss removes or redacts updates without leaking reasons.
 
 **Acceptance evidence:** Request a partial-day absence over a company holiday, inspect the quote and shared calendar as employee/manager, deliver the manager request notice, delegate approval and cancel it. Read Google Calendar and Outlook updates and revoke access; confidential reasons never appear and stale requests cannot be approved.
+
+### TIME-001 — Time, shifts and Deputy reconciliation.
+
+Hourly workers record time, breaks, corrections and approved timesheets; managers publish shifts, manage availability/swaps and compare planned versus worked hours. US work-state overtime/break rules are employer-reviewed and versioned; edits preserve originals and require approval before payroll handoff. Deputy connections reconcile roster, shifts, approved hours and absences using explicit source authority; schedule changes feed PTO quotes without overwriting an approved payroll period.
+
+**Acceptance evidence:** Publish a week of shifts, clock and correct a missed break, approve a swap/timesheet and send hours to payroll. Compare Deputy and Willow roster/leave/time, create an overtime mismatch and resolve it; denied/late edits cannot silently change approved payroll.
 
 ## Connected payroll and benefits
 
@@ -274,15 +380,21 @@ Authorized employers connect QuickBooks Payroll using the required Intuit applic
 
 ### BENEFITS-001 — Enrollment and life events through brokers and carriers.
 
-HR and employees manage eligibility, dependents, plan comparison/costs, open enrollment, new-hire elections, waivers, qualifying life events and termination with effective dates and required documents. Employee Navigator and employer-authorized broker/carrier connections exchange census and elections with contracted US plans, including Aetna, UnitedHealthcare and Anthem where selected. Show per-carrier submitted/accepted/active/rejected coverage evidence, enrollment deadlines and unresolved handoffs. Carrier/API/834 agreements, broker licensing partners and protected-data agreements are delivery work; no unchecked task declares coverage active.
+HR and employees manage eligibility, dependents, plan comparison/costs, open enrollment, new-hire elections, waivers, qualifying life events and termination with effective dates and required documents. Employee Navigator and employer-authorized broker/carrier connections exchange census and elections with contracted US plans, including Aetna, UnitedHealthcare and Anthem where selected. Show per-carrier submitted/accepted/active/rejected coverage evidence, enrollment deadlines and unresolved handoffs. Carrier/API/834 agreements, broker licensing partners and protected-data agreements are delivery work; no unchecked task declares coverage active. Employers whose broker or carrier is not connected still record plans, rates, eligibility rules, waivers and elections in Willow, run open enrollment and export census/election files; each such election stays "recorded, not confirmed" until HR attaches the carrier's confirmation and never shows as active coverage before then.
 
-**Acceptance evidence:** Enroll a new hire, waive a plan, add a dependent after a life event and terminate coverage. Send through Employee Navigator/broker to the selected carrier, ingest acknowledgement and compare active coverage/dates; reject a dependent mismatch and resolve it. Employees read their own elections, HR sees permitted status and managers cannot see health evidence.
+**Acceptance evidence:** Enroll a new hire, waive a plan, add a dependent after a life event and terminate coverage. Send through Employee Navigator/broker to the selected carrier, ingest acknowledgement and compare active coverage/dates; reject a dependent mismatch and resolve it. Employees read their own elections, HR sees permitted status and managers cannot see health evidence. Without any connection, record a plan and an election, export the census and confirm the status stays recorded, not active, until a carrier confirmation is attached.
 
 ### BENEFITS-002 — Benefit deductions and payroll mismatch resolution.
 
 Benefits/employee elections map to provider plans and employee/employer contribution codes, coverage effective dates, pay frequencies, pre/post-tax treatment and arrears rules approved by payroll. Reconcile carrier/broker elections, payroll deductions and observed payroll results per employee/pay period. Exceptions name the owner, amount/date discrepancy and corrective action; retroactive changes require reviewed adjustments and a returned acknowledgement.
 
 **Acceptance evidence:** Change a benefit mid-period, preview deduction impact in USD, approve it, ingest payroll and carrier results and inspect a deliberately mismatched deduction. Resolve and re-read both systems; the mismatch remains open until evidence agrees and a duplicate event creates no duplicate adjustment.
+
+### BENEFITS-003 — ACA full-time measurement and 1095-C data.
+
+For employers at or near 50 full-time and full-time-equivalent employees, Willow calculates monthly full-time and FTE counts for applicable-large-employer status, tracks look-back measurement, administrative and stability periods for variable-hour and seasonal employees from TIME-001 and payroll hours, records offers of coverage, affordability inputs and waivers from BENEFITS-001, and produces per-employee monthly Form 1095-C codes and 1094-C totals for the payroll provider or broker that files. Calculations show their inputs; filing and IRS correspondence stay with that filer, and Willow records the filer's acknowledgement.
+
+**Acceptance evidence:** For an invented employer with full-time, part-time and variable-hour staff over 12 months, compute monthly ALE counts, complete a look-back that makes one variable-hour worker full-time for the stability period, record offers and a waiver, and generate 1095-C lines that reconcile to the inputs. Hand the file to the filer and record their acknowledgement; a missing month of hours is flagged, not assumed.
 
 ### RETIRE-001 — Retirement census and contribution handoff.
 
@@ -294,7 +406,7 @@ Human Interest and Guideline connections maintain eligible census, employment da
 
 ### IDENTITY-001 — Provisioning and verified deprovisioning.
 
-Google Workspace, Microsoft 365/Entra ID and Okta connections map immutable employee identities and HR attributes to accounts, groups, licenses and role-based access rules. IT previews grants/changes and approves privileged access; join/move/leave dates drive execution. Exits suspend/disable accounts, revoke sessions/tokens, remove groups/licenses as authorized and verify observed provider state; shared mailbox/data ownership and device-return tasks have named owners. An uncertain or failed provider action blocks departure completion. Rehire requires new reviewed access and never restores prior privileges automatically.
+Google Workspace, Microsoft 365/Entra ID and Okta connections map immutable employee identities and HR attributes to accounts, groups, licenses and role-based access rules. IT previews grants/changes and approves privileged access; join/move/leave dates drive execution. Exits suspend/disable accounts, revoke sessions/tokens, remove groups/licenses as authorized and verify observed provider state; shared mailbox/data ownership and device-return tasks (from the PEOPLE-003 asset register) have named owners. An uncertain or failed provider action blocks departure completion. Rehire requires new reviewed access and never restores prior privileges automatically.
 
 **Acceptance evidence:** For each named service, approve a joiner, transfer departments and offboard while holding an active external session. Inspect account/group/license read-back and session revocation, inject an API failure and show the open IT exception. Rehire and prove prior grants are not silently restored.
 
@@ -336,41 +448,31 @@ HR assigns mandatory and development training by role/location with due dates, r
 
 **Acceptance evidence:** Assign a hire to role-specific TalentLMS courses, ingest completion and a certificate, expire one certification and observe the renewal task. Suspend a departed learner and export the retained training record; a lost/duplicate callback cannot fabricate or duplicate completion.
 
-## Leave, time and workforce planning
-
-### TIME-001 — Time, shifts and Deputy reconciliation.
-
-Hourly workers record time, breaks, corrections and approved timesheets; managers publish shifts, manage availability/swaps and compare planned versus worked hours. US work-state overtime/break rules are employer-reviewed and versioned; edits preserve originals and require approval before payroll handoff. Deputy connections reconcile roster, shifts, approved hours and absences using explicit source authority; schedule changes feed PTO quotes without overwriting an approved payroll period.
-
-**Acceptance evidence:** Publish a week of shifts, clock and correct a missed break, approve a swap/timesheet and send hours to payroll. Compare Deputy and Willow roster/leave/time, create an overtime mismatch and resolve it; denied/late edits cannot silently change approved payroll.
-
-## Connected identity and collaboration
-
-### HIRING-001 — Greenhouse accepted-hire handoff.
-
-A Greenhouse accepted-hire event produces a reviewed joiner proposal with candidate identity, approved offer, role, start date, manager and permitted documents. HR resolves duplicate/re-hire matches and missing fields before creating one employee/packet. Send resulting employee ID and onboarding status back without copying interview evaluations into broad employee records. Recruiting pipelines remain in the ATS.
-
-**Acceptance evidence:** Accept a Greenhouse offer, preview the hire in Willow, resolve a former-worker match, approve and inspect the packet plus returned status. Replay the event and withdraw the offer; neither duplicates the person nor retains unauthorized preboarding access.
-
 ## Integration operation, reporting and portability
 
 ### CONNECT-001 — Operable connections and attribute rules.
 
-Owners authorize each named connector with least scopes, per-field mapping/authority and explicit outbound-data previews. Health shows last successful sync/read-back, freshness, scope loss, rate limits, stale/error/uncertain state and a per-person mismatch queue with owner/next action. Signed/replay-protected webhooks, durable execution IDs, reviewed safe retries and reconciliation after disconnect prevent duplicate effects. Secrets stay in protected runtime custody; rotation/revocation and provider-data deletion are explicit. Required production app review, contracts, scopes and health-data agreements are tracked to completion for every supported integration.
+Owners authorize each named connector with least scopes, per-field mapping/authority and explicit outbound-data previews. Health shows last successful sync/read-back, freshness, scope loss, rate limits, stale/error/uncertain state and a per-person mismatch queue with owner/next action. Signed/replay-protected webhooks, durable execution IDs, reviewed safe retries and reconciliation after disconnect prevent duplicate effects. Secrets stay in protected runtime custody; rotation/revocation and provider-data deletion are explicit. Required production app review, contracts, scopes and health-data agreements are tracked to completion for every supported integration. The employer's own and partner tools read and subscribe through API-001–003 under the same health and audit.
 
 **Acceptance evidence:** Connect a provider, change an attribute/access rule after preview, rotate credentials, lose a scope and replay a webhook. Restart during a change and inspect fresh/stale/error state and one durable outcome; no private payload/credential appears in logs, exports or unauthorized agent context.
 
 ### REPORT-001 — Custom workforce reporting and operational dashboards.
 
-HR builds and saves scoped reports over standard/custom fields, effective-dated headcount/FTE, turnover, tenure, leave liability, pay, diversity where lawfully collected, benefits mismatches and overdue work. Definitions show filters, as-of dates, denominators, excluded/unknown data and data freshness; drill-down reconciles every total to authorized records. Scheduled distribution rechecks recipient rights and sends safe links; dashboards and CSV/XLSX exports apply the same row/field restrictions.
+HR builds and saves scoped reports over standard/custom fields, effective-dated headcount/FTE, turnover, tenure, leave liability, pay, aggregate diversity from EEO-001 voluntary self-identification (EEO-access levels only, small cells suppressed, EEO-1 output in EEO-002), benefits mismatches, signature status (SIGN-002), hiring pipeline and overdue work. Definitions show filters, as-of dates, denominators, excluded/unknown data and data freshness; drill-down reconciles every total to authorized records. Scheduled distribution rechecks recipient rights and sends safe links; dashboards and CSV/XLSX exports apply the same row/field restrictions.
 
-**Acceptance evidence:** Build and schedule a report joining custom fields, headcount, leave and open exceptions; reconcile totals and drill-down to source records at a past date. Remove a recipient’s rights before dispatch and prove pay/private rows remain withheld in page, file and delivery.
+**Acceptance evidence:** Build and schedule a report joining custom fields, headcount, leave and open exceptions; reconcile totals and drill-down to source records at a past date. Remove a recipient’s rights before dispatch and prove pay/private rows remain withheld in page, file and delivery. Open a diversity breakdown as HR with EEO access and as a manager without it; the manager is refused and HR sees suppressed small cells, never individual values.
 
 ### MIGRATE-001 — Switch from each incumbent without losing history.
 
-Named move-in paths cover BambooHR (WIL-16), Rippling, HiBob, Gusto HR, Factorial and Deel HR using approved source APIs/exports. HR maps identities/custom fields, org/manager history, employment/pay versions, documents and signature certificates, leave policies/balances/requests, benefits elections, goals/reviews/training and open lifecycle work. Per-source preview lists unsupported fields and originals, reconciles counts and balances, and never substitutes empty data. Source IDs/provenance survive; repeated imports are idempotent, overlap cutover freezes agreed authority and guarded undo cannot destroy subsequent work. Imported history never grants sessions or triggers external actions.
+Named move-in paths cover BambooHR (WIL-16), Rippling, HiBob, Gusto HR, Factorial and Deel HR using approved source APIs/exports. HR maps identities/custom fields and custom/multi-row tables including assets (PEOPLE-003), org/manager history, employment/pay versions, documents, signature templates and certificates, access levels (proposed, assigning nothing until approved), leave policies/balances/requests, benefits elections, goals/reviews/training, open lifecycle work, and open job openings with candidates and application history (from the incumbent, or from Greenhouse, Lever, Workable or JazzHR for employers leaving a separate ATS). Per-source preview lists unsupported fields and originals, reconciles counts and balances, and never substitutes empty data. Source IDs/provenance survive; repeated imports are idempotent, overlap cutover freezes agreed authority and guarded undo cannot destroy subsequent work. Imported history never grants sessions or triggers external actions.
 
-**Acceptance evidence:** For each named source, preview a representative export with current/former/rehired workers, a signed document, balance and historical change; resolve conflicts, apply, compare row/document/balance totals and repeat. Edit an imported record and prove undo refusal; close cutover only after HR signs a variance report and all retained originals can be exported.
+**Acceptance evidence:** For each named source, preview a representative export with current/former/rehired workers, a signed document, balance, historical change, a custom table and an open opening with candidates; resolve conflicts, apply, compare row/document/balance totals and repeat. Edit an imported record and prove undo refusal; close cutover only after HR signs a variance report and all retained originals can be exported.
+
+### MIGRATE-002 — Complete BambooHR move-in beyond the current kit.
+
+Extending WIL-16, the BambooHR path reads BambooHR's API with an employer-issued key, or its exports, and also carries job and compensation history tables with effective dates, custom fields and custom/multi-row tables (emergency contacts, education, certifications, assets), the full files/documents export at the OPS-002 reference size with folder-to-category mapping, signature templates and completed signed documents with their audit trail, time-off policies, history and requested/approved leave, access levels proposed as ROLE-001 levels for HR review, and open job openings, candidates and application history into HIRING-002/003. The preview lists every unmapped field or table and reconciles counts; WIL-16's guarded undo, idempotency and retained originals apply; and no imported record sends an invitation, signature request, webhook or job posting until HR enables it.
+
+**Acceptance evidence:** From a BambooHR-shaped API fixture and export set with job history, a custom table, two assets, signed documents, open openings with candidates and three access levels, preview, map and apply; reconcile every table, document byte and balance, confirm the proposed level mapping assigns nothing until approved and that no invitation, webhook or posting fires. Repeat and undo as in WIL-16.
 
 ### DATA-001 — Usable employee exports and complete target-product portability.
 
@@ -392,15 +494,21 @@ Authorized HR/security owners inspect and export who read or changed sensitive r
 
 ### SECURITY-001 — Private-by-default HR operation and Base guarantees.
 
-HR, payroll, benefits, IT, manager, employee and agent permissions are enforced server-side on every page, API, search, export and download; managerial rank alone grants no sensitive facet. Origin-bound writes, rate limiting, safe text rendering, bounded validated uploads, private no-store responses and session revocation protect all modules. Transport/storage and connector secrets use appropriate protected custody; outbound services/data/purpose/retention are visible before enabling. No third-party training on HR data is authorized by default. Base identity, audit, portability, erasure and independent-operation requirements remain obligations; category-specific manual evidence is never a replacement for revoking an external account.
+Access levels (ROLE-001–003), API credentials and webhooks (API-001–003) and agent permissions are enforced server-side on every page, API, search, export, webhook and download; managerial rank alone grants no sensitive facet. Origin-bound writes, rate limiting, safe text rendering, bounded validated uploads, private no-store responses and session revocation protect all modules. Transport/storage and connector secrets use appropriate protected custody; outbound services/data/purpose/retention are visible before enabling. No third-party training on HR data is authorized by default. Base identity, audit, portability, erasure and independent-operation requirements remain obligations; category-specific manual evidence is never a replacement for revoking an external account.
 
-**Acceptance evidence:** Exercise all registered doors with a role matrix including restricted benefits/review fields, hostile text/uploads and cross-origin writes; revoke access mid-session and inspect downloads, logs and connector/model payloads. Prove the core HRIS works without optional providers and document each explicit Base replacement with its public-door proof.
+**Acceptance evidence:** Exercise all registered doors with an access-level matrix (built-in and custom levels and API keys) including restricted benefits/review/EEO fields, hostile text/uploads and cross-origin writes; revoke access mid-session and inspect downloads, logs and connector/model payloads. Prove the core HRIS works without optional providers and document each explicit Base replacement with its public-door proof.
 
 ### OPS-001 — Runnable, recoverable employer-owned product.
 
-Willow retains its supported rer install/setup/dev/build/verify/deploy/export/import commands, local provider-free operation, owner-account hosting and forward-only migrations. Health/configuration diagnostics name missing dependencies without secrets; durable work resumes without duplicate external effects and operational backups/upgrade checks preserve records, grants, audit and blobs. Capacity limits are disclosed and measured before promises; WCAG 2.2 AA, keyboard and mobile acceptance cover every HR journey. The approved homepage and UI remain the present product surface until separately authorized implementation.
+Willow retains its supported rer install/setup/dev/build/verify/deploy/export/import commands, local provider-free operation, owner-account hosting and forward-only migrations. Health/configuration diagnostics name missing dependencies without secrets; durable work resumes without duplicate external effects and operational backups/upgrade checks preserve records, grants, audit and blobs. Capacity is committed, measured and refused by named limit as OPS-002 states; WCAG 2.2 AA, keyboard and mobile acceptance cover every HR journey. The approved homepage and UI remain the present product surface until separately authorized implementation.
 
-**Acceptance evidence:** Use the supported commands to set up, run, stop, upgrade and recover a populated employer, compare records/grants/files and inspect missing-dependency diagnostics. Restart with pending work and verify no false completion/replay; run desktop/phone and keyboard journeys, plus a consented hosted acceptance before claiming production capacity.
+**Acceptance evidence:** Use the supported commands to set up, run, stop, upgrade and recover a populated employer, compare records/grants/files and inspect missing-dependency diagnostics. Restart with pending work and verify no false completion/replay; run desktop/phone and keyboard journeys, and pass the OPS-002 reference-employer run before claiming production capacity.
+
+### OPS-002 — Reference employer capacity with stated bounds.
+
+A reference employer works on the owner's hosted deployment: 250 active and 150 former employees, seven years of effective-dated history (at least ten terms versions per person), 40,000 documents totalling 25 GB, the leave ledgers and lifecycle cases that history implies, and 60 concurrent signed-in members. Single documents up to 50 MB upload; migration source files and document archives up to 25 GB upload by resumable multipart transfer and are processed streaming, without holding a whole file in memory. On that data the hosted product meets: directory, profile and self-service pages p95 ≤ 1 s server time; directory search p95 ≤ 500 ms; standard reports and their CSV ≤ 5 s; custom reports ≤ 15 s or a background job with progress; a payroll change-batch preview for every employee ≤ 30 s; a full BambooHR move-in (WIL-16, MIGRATE-002) preview ≤ 30 minutes and apply ≤ 2 hours, resumable after interruption; owner archive export and restore ≤ 4 hours each. Work beyond the reference employer either completes within these bounds or is refused before any write with a named limit (such as `documents.total_bytes`); nothing is silently truncated.
+
+**Acceptance evidence:** Generate the invented reference employer and its BambooHR-shaped export (including a 25 GB documents archive), run move-in, directory, search, standard and custom reports, payroll batch preview, export and restore on a hosted deployment, and record each timing against its bound with complete row/byte reconciliation. Interrupt the move-in and resume it without duplicates; exceed one stated limit and receive the named refusal with no partial write.
 
 ## Push further: agents that finish approved HR work
 
@@ -438,17 +546,25 @@ The agent compares task deadlines, signed documents, statutory forms, benefits a
 
 ### BOUNDARY-001 — US-first HRIS with accountable external execution.
 
-The first buyer is a US 20–200-person employer using USD, US work states, W-2 employees and separately classified 1099 contractors. Willow owns core HR, self-service, PTO, lifecycle completion, HR performance/engagement and the integrations above. Payroll providers execute gross-to-net, ACH/wage payments, tax filing and W-2/1099 issuance; brokers/carriers administer coverage and COBRA, retirement providers hold funds, Mitratech/enrolled employers perform official I-9/E-Verify work, and identity/device platforms enforce their accounts/devices. Greenhouse owns recruiting pipelines and the LMS owns course delivery. Willow must complete its connected handoffs and record verified outcomes; provider approval, native apps, protected-data agreements and commercial partnerships remain delivery obligations, never reasons to remove clauses. Non-US payroll/EOR, insurance underwriting, investment advice, device-management networks, surveillance and automated employment decisions are outside this HRIS; buyers use licensed providers and dedicated products for them.
+The first buyer is a US 20–200-person employer using USD, US work states, W-2 employees and separately classified 1099 contractors. Willow owns core HR, hiring (openings, careers page, board posting, candidates, offers), self-service, access levels, the open API and webhooks, native e-signature, PTO, lifecycle completion, EEO-1 preparation, ACA measurement data, HR performance/engagement and the integrations above. Payroll providers execute gross-to-net, ACH/wage payments, tax filing and W-2/1099 issuance; brokers/carriers administer coverage and COBRA, retirement providers hold funds, Mitratech/enrolled employers perform official I-9/E-Verify work, and identity/device platforms enforce their accounts/devices. Employers that keep Greenhouse, Lever, Workable or JazzHR hand accepted hires over (HIRING-001); background screening goes to a consumer reporting agency under the FCRA; EEO-1 submission is completed in the EEOC's filing system and ACA filing by the payroll provider or broker, with Willow recording each receipt; the LMS owns course delivery. Willow must complete its connected handoffs and record verified outcomes; provider approval, native apps, protected-data agreements and commercial partnerships remain delivery obligations, never reasons to remove clauses. Non-US payroll/EOR, insurance underwriting, investment advice, device-management networks, surveillance and automated employment decisions are outside this HRIS; buyers use licensed providers and dedicated products for them.
 
 **Acceptance evidence:** Walk a US hire/change/exit through the employee, HR, payroll, benefits and IT doors; inspect the system of record, external owner, USD amounts, required approval, receipt and final observed outcome for each step. An unconnected or unacknowledged dependency remains open, and the UI never claims payroll payment, insurance coverage or legal compliance from a checked task.
 
 ## Operating limits and sources
 
 Current local admission limits are 10 MB per document upload and 8 MB per
-move-in file; they are not hosted capacity promises. Required migrations and
-large archives must either finish with complete evidence or refuse with a
-named limit; no silent truncation. Hosted latency, real mail receipt, provider
-account conformance and accessibility remain separately measured acceptance.
+move-in file. They are today's limits, below the OPS-002 reference employer
+that the target commits to (50 MB documents, 25 GB migration archives).
+Required migrations and large archives must either finish with complete
+evidence or refuse with a named limit; no silent truncation. Hosted capacity
+and latency bounds are OPS-002 acceptance; real mail receipt, provider account
+conformance and accessibility remain separately measured acceptance.
+
+EEO work follows the EEOC's [EEO-1 Component 1 data collection](https://www.eeoc.gov/data/eeo-1-data-collection)
+instructions and the OFCCP voluntary disability form; ACA data follows the IRS
+[Form 1095-C](https://www.irs.gov/forms-pubs/about-form-1095-c) instructions.
+Native signing follows the federal ESIGN Act and state UETA consent and record
+rules. Reviewed rule versions are part of EEO-001/002, BENEFITS-003 and SIGN-001.
 
 The mapped ADP compatibility layout follows [ADP’s Time Sheet Import and RUN
 guide](https://support.adp.com/adp_payroll/content/hybrid/@runcomplete/doc/pdf/GTS_payroll_guide.pdf),
@@ -466,7 +582,7 @@ acceptance are part of US-001/002, not implied shipped capabilities.
 
 ## Current status per clause
 
-**63 clauses: 21 done / 26 partial / 16 missing.** Evidence paths refer to the inspected current tree; a partial citation proves only the foundation named.
+**80 clauses: 21 done / 33 partial / 26 missing.** Evidence paths refer to the inspected current tree; a partial citation proves only the foundation named.
 
 | Clause | Status | Current evidence and remaining gap |
 | --- | --- | --- |
@@ -493,22 +609,39 @@ acceptance are part of US-001/002, not implied shipped capabilities.
 | WIL-21 | done | `src/willow/payroll-layout.ts`, `src/willow/payroll.ts`; `tests/willow/phase2.mjs` (WIL-21), `tests/willow/regressions.mjs` |
 | PEOPLE-001 | missing | No product custom-field schema or public workflow in the audited tree. |
 | PEOPLE-002 | partial | `src/willow/profile.ts:88`, `src/willow/employment.ts`; directory/manager relationships exist, org chart and reorganization preview do not. |
+| PEOPLE-003 | missing | `src/willow/people.ts:13` holds one private `emergency_contact` value; multi-row tables, custom tables and the asset register are absent. |
 | SELF-001 | partial | `src/willow/people.ts:85`, `src/willow/leave.ts:344`, `src/willow/ui/home.ts`; `tests/willow/flows.mjs` (WIL-05/WIL-09). Approval-based profile/dependent changes and unified pending-change tracking are absent. |
+| SELF-002 | missing | `src/willow/ui/home.ts` shows the member's own tasks, approvals and leave; announcements, celebrations and shared company folders are absent. |
 | MOBILE-001 | partial | `src/willow/ui/leave.ts`; `tests/willow/journey.mjs` exercises responsive requests/approval. Native apps, secure push and full accessibility acceptance are missing. |
+| ROLE-001 | partial | `src/willow/actor.ts:10` (fixed permission set), `src/willow/actor.ts:26` (preset bundles), `src/willow/access.ts`, `src/willow/members.ts:27`; `tests/willow/flows.mjs` (WIL-01/WIL-03). Explicit per-member permissions and facet enforcement exist; named/custom levels, field-level rights and edit-with-approval do not. |
+| ROLE-002 | partial | `src/willow/actor.ts:41` derives manager scope from effective-dated terms; `tests/willow/flows.mjs` (WIL-07). Location/department/custom-field group scopes and bulk assignment are absent. |
+| ROLE-003 | partial | `src/willow/members.ts:45` lets people.manage holders give access per person with no permissions; `tests/willow/flows.mjs` (WIL-01). Default levels, automatic/bulk invitations and delegated level administration are absent. |
+| API-001 | missing | `src/willow/http.ts` resolves every JSON request to a signed-in member session (`currentActor`, `src/willow/actor.ts`); no employer-issued keys, OAuth clients or credential audit exist. |
+| API-002 | partial | `src/willow/doors.ts`, `src/willow/http.ts`; `tests/willow/flows.mjs` (WIL-03) prove session JSON doors return only permitted facets. Credential access, a published OpenAPI description, cursors and changed-since sync are absent. |
+| API-003 | missing | No outbound webhooks in the audited tree. |
+| HIRING-001 | missing | No Greenhouse, Lever, Workable or JazzHR handoff in the audited tree. |
+| HIRING-002 | missing | No job openings, careers page or Indeed/ZipRecruiter/LinkedIn posting in the audited tree. |
+| HIRING-003 | missing | No candidate pipeline, scorecards, interview scheduling or candidate email in the audited tree. |
+| HIRING-004 | partial | `src/willow/proposals.ts`, `src/willow/lifecycle.ts`; `tests/willow/flows.mjs` (WIL-15/WIL-13) prove reviewed joiner proposals with missing-field lists and rehire reuse. Candidate and offer sources, signed offers and preboarding hand-off are absent. |
 | FLOW-001 | partial | `src/willow/lifecycle.ts`, `src/willow/proposals.ts`; `tests/willow/flows.mjs` (WIL-05/WIL-15). Conditional editor, external dependencies and reviewed publication are incomplete. |
 | FLOW-002 | partial | `src/willow/lifecycle.ts:199`, `src/willow/notices.ts`; `tests/willow/phase2.mjs` (WIL-18). Task progress/notices exist; timed reminders, coverage and escalation do not. |
 | FLOW-003 | partial | `src/willow/lifecycle.ts` creates dated employee tasks; `tests/willow/flows.mjs` (WIL-05). Dedicated preboarding access, packets and personal-email invitation lifecycle are absent. |
-| SIGN-001 | missing | `src/willow/documents.ts` and WIL-06 provide receipt acknowledgements only; no template generation or DocuSign signing flow. |
+| SIGN-001 | missing | `src/willow/documents.ts` and WIL-06 provide immutable checksummed versions and receipt acknowledgements only; no signature templates, native signing, audit certificate or DocuSign flow. |
+| SIGN-002 | missing | No cohort signature requests or signed-documents report in the audited tree; WIL-06 receipts are per person and are not signatures. |
 | US-001 | missing | No product statutory-form collection, Mitratech connection or payroll form acknowledgement in the audited tree. |
-| US-002 | missing | Existing employer/person records do not implement US entity identifiers, contractor classification workflows or state reporting. |
+| US-002 | missing | Existing employer/person records do not implement US legal entities (single or multiple), FEINs, contractor classification workflows or state reporting. |
+| EEO-001 | missing | No EEO self-identification fields, restricted EEO facet or applicant self-ID in the audited tree. |
+| EEO-002 | missing | No EEO job-category mapping, establishments or EEO-1 report in the audited tree. |
 | LEAVE-001 | partial | `src/willow/leave.ts`; `tests/willow/flows.mjs` (WIL-08/WIL-10). Approved policy versions and deterministic accrual exist; scheduling, tier/cap/carryover rules and protected-leave case administration are incomplete. |
 | LEAVE-002 | partial | `src/willow/ui/leave.ts`, `src/willow/leave.ts`, `src/willow/notices.ts`; `tests/willow/flows.mjs` (WIL-09), `tests/willow/phase2.mjs` (WIL-18). Team coverage and decision notices exist; shared holidays/calendars, request notices and delegation are incomplete. |
+| TIME-001 | partial | `src/willow/employer.ts` working schedules and `src/willow/leave.ts` schedule quotes exist; `tests/willow/flows.mjs` (WIL-01/WIL-09). Clocks, shifts, timesheets and Deputy synchronization are absent. |
 | PAYROLL-001 | partial | `src/willow/payroll.ts`, `src/willow/payroll-layout.ts`; `tests/willow/regressions.mjs`, `tests/willow/phase2.mjs` (WIL-21). Snapshot/file mapping and manual acknowledgement exist; live sync and provider read-back do not. |
 | PAYROLL-002 | missing | No Gusto product connector or public connection journey in the audited tree. |
 | PAYROLL-003 | missing | `src/willow/payroll-layout.ts` implements an ADP RUN file layout only. Neither ADP live connector exists. |
 | PAYROLL-004 | missing | No QuickBooks Payroll product connector in the audited tree. |
 | BENEFITS-001 | missing | No benefits enrollment, Employee Navigator or carrier workflow in the audited tree. |
 | BENEFITS-002 | missing | No benefit deduction mapping or reconciliation reports in the audited tree. |
+| BENEFITS-003 | missing | No ACA measurement, offer-of-coverage records or 1095-C data in the audited tree. |
 | RETIRE-001 | missing | No Human Interest or Guideline connector or retirement census workflow in the audited tree. |
 | IDENTITY-001 | partial | `src/willow/lifecycle.ts:156`; `tests/willow/flows.mjs` (WIL-12/WIL-13). Native access ending and evidence-required manual IT tasks exist; external provider actions/read-back are absent. |
 | IDENTITY-002 | partial | `src/auth.server.ts`, `src/modules/operator-auth/identity/oidc/presets.mjs`; `tests/willow/phase2.mjs` (WIL-19) proves Google/generic OIDC only. Entra/Okta-specific journeys, SAML and enterprise session-policy acceptance are incomplete. |
@@ -517,16 +650,16 @@ acceptance are part of US-001/002, not implied shipped capabilities.
 | ENGAGE-001 | missing | No survey/engagement collection, anonymity controls or action-plan module in the audited tree. |
 | COMP-001 | partial | `src/willow/people.ts`, `src/willow/reports.ts:42`; `tests/willow/flows.mjs` (WIL-07/WIL-14) cover pay terms/totals. Bands, budgets and planning cycles are absent. |
 | LEARN-001 | missing | No training roster, certification or TalentLMS connection in the audited tree. |
-| TIME-001 | partial | `src/willow/employer.ts` working schedules and `src/willow/leave.ts` schedule quotes exist; `tests/willow/flows.mjs` (WIL-01/WIL-09). Clocks, shifts, timesheets and Deputy synchronization are absent. |
-| HIRING-001 | missing | No Greenhouse handoff in the audited tree. |
 | CONNECT-001 | partial | `src/willow/connections.ts`, `src/willow/payroll-layout.ts`; `tests/willow/phase2.mjs` cover optional connection diagnostics and file mappings. General connector execution/health/reconciliation is missing. |
 | REPORT-001 | partial | `src/willow/reports.ts`; `tests/willow/flows.mjs` (WIL-14). Fixed scoped summaries/CSV exist; report builder, saved/scheduled reports and broader dashboards are absent. |
 | MIGRATE-001 | partial | `src/willow/movein/bamboohr.ts`, `src/willow/movein/target.ts`; `tests/willow/flows.mjs` (WIL-16) proves BambooHR-shaped people/balances/documents. Other named kits and expanded history types are absent. |
+| MIGRATE-002 | partial | `src/willow/movein/bamboohr.ts`, `src/willow/movein/target.ts`; `tests/willow/flows.mjs` (WIL-16) cover the employee report, balances and documents ZIP within 8 MB. API source, history and custom tables, signatures, access levels, ATS data and large archives are absent. |
 | DATA-001 | partial | `src/willow/reports.ts`, `scripts/installer/local.mjs`; `tests/willow/restore.mjs`, `tests/willow/restore-access.mjs` prove current owner archive. General employee export and future-module/no-replay coverage remain incomplete. |
 | DATA-002 | missing | No Willow erasure/retention public action; vendored import-kit erasure helpers alone do not satisfy native record/blob/restore coverage. |
 | AUDIT-001 | partial | `src/willow/core.ts`, `src/willow/views.ts`; `tests/willow/flows.mjs` checks business/private-read audit and rollback. Cross-provider history and erasure anonymization are missing. |
 | SECURITY-001 | partial | `src/willow/access.ts`, `src/willow/profile.ts`, `src/willow/http.ts`, `src/willow/input.ts`; `tests/willow/flows.mjs` (WIL-03). Existing private core is tested; future modules, complete erasure and wider security/egress coverage are not. |
 | OPS-001 | partial | `scripts/installer/local.mjs`, `AGENTS.md`, `SEED-COMMAND-CONTRACT.md`; `tests/willow/journey.mjs`, `tests/willow/restore-access.mjs`. Current local lifecycle is tested; comprehensive upgrade, capacity, accessibility and future-work recovery acceptance remains open. |
+| OPS-002 | partial | `src/willow/documents.ts:12` (10 MB) and `src/willow/movein/bamboohr.ts:21` (8 MB) refuse oversize files with `file_size` before writing. Reference-employer bounds, multipart transfer and hosted measurement are absent. |
 | AI-001 | partial | `src/willow/proposals.ts:141`; `tests/willow/flows.mjs` (WIL-15) proves scoped, policy-citing context only. Interactive policy answers and associated provider controls are absent. |
 | AI-002 | partial | `src/willow/model-drafts.ts`, `src/willow/proposals.ts`; `tests/willow/phase2.mjs` (WIL-20) proves controlled checklist drafts only. Natural-language conditions, cross-system simulation and publication are missing. |
 | AGENT-001 | partial | `src/willow/proposals.ts`, `src/willow/payroll.ts`; `tests/willow/flows.mjs` (WIL-15/WIL-11) prove bound human approvals and file handoff. Multi-provider agent execution/read-back is missing. |
