@@ -50,7 +50,7 @@
         ],
         "origin": {
           "repository": "https://github.com/runeditrun/base.git",
-          "revision": "4c83ea57efc3a5b462426c6abc88826b72375112",
+          "revision": "d320c1436aaeb95d2485c1a0e69afa00ac8fb51a",
           "path": ".",
           "paths": [
             "foundation/runtime",
@@ -79,7 +79,7 @@
         ],
         "origin": {
           "repository": "https://github.com/runeditrun/base.git",
-          "revision": "4c83ea57efc3a5b462426c6abc88826b72375112",
+          "revision": "d320c1436aaeb95d2485c1a0e69afa00ac8fb51a",
           "path": "modules/import-kit",
           "paths": [
             "src",
@@ -136,7 +136,7 @@
         ],
         "origin": {
           "repository": "https://github.com/runeditrun/base.git",
-          "revision": "756bf5a8544d792a51bb76f6e90a8ee5908a32a5",
+          "revision": "d320c1436aaeb95d2485c1a0e69afa00ac8fb51a",
           "path": "modules/demo",
           "paths": [
             "vite.d.mts",
