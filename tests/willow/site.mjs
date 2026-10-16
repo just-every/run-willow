@@ -13,7 +13,7 @@ const home = site('index.html')
 const primary = home.match(/<a class="hp-pill" href="([^"]+)"/)
 assert.equal(primary?.[1], '/run', 'the hero\'s primary action opens the Run page')
 assert.ok(hrefs(home).includes('/docs'), 'the homepage links the on-site docs')
-assert.ok(site('run.html').includes(`git clone ${pkg.repository.url}.git`), 'the Run page clones the repository package.json names')
+assert.ok(site('run.html').includes(`npx -y @runeditrun/rer dev ${pkg.repository.url.replace('https://github.com/', '')}`), 'the Run page installs the repository package.json names')
 
 const index = hrefs(site('docs.html'))
 for (const page of manifest.sections.flatMap(section => section.pages)) {

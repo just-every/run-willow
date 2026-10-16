@@ -5,8 +5,8 @@ import pkg from '../../package.json'
 export const run: RunData = {
   name: 'Willow',
   repository: pkg.repository.url,
-  clone: `git clone ${pkg.repository.url}.git willow`,
-  folder: 'willow',
+  clone: `npx -y @runeditrun/rer dev ${pkg.repository.url.replace('https://github.com/', '')}`,
+  folder: 'run-willow',
   requirements: 'Needs Node 22 or later and pnpm 10.12.4, on macOS, Linux or Windows with WSL2.',
   licence: 'MIT',
   docs: true,

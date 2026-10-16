@@ -11,11 +11,17 @@ See [ACCEPTANCE.md](ACCEPTANCE.md) for validation boundaries and owner trials.
 
 ## Run it locally
 
-Install the maintained command once with the [RER installer](https://runeditrun.com),
-then run this checkout:
+One line installs the maintained command (the [RER installer](https://runeditrun.com)),
+clones Willow and starts it:
 
 ```sh
-npx -y @runeditrun/rer cli install
+npx -y @runeditrun/rer dev just-every/run-willow
+```
+
+To start it again later, run `cd run-willow && rer dev`. To supply the real owner mailbox, run
+these from the checkout instead:
+
+```sh
 rer install
 rer setup --owner-email you@example.com
 rer dev

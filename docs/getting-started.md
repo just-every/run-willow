@@ -1,21 +1,14 @@
 Willow runs on your own computer with one command, and the same checkout can later go to your own Cloudflare account. It is free and open source under the MIT licence, and it needs no provider account to start.
 
-## Install rer
-
-Willow uses rer, the Run Edit Run command, to install, start, back up and deploy it. Install it once per computer:
-
-```sh
-curl -fsSL https://runeditrun.com/install.sh | sh
-```
-
-Or, if you already use npm: `npm install -g @runeditrun/rer`. Willow needs Node 22 or later and pnpm 10.12.4 on macOS, Linux or Windows with WSL2; rer picks the exact versions the checkout pins.
-
 ## Get Willow and start it
 
+Willow uses rer, the Run Edit Run command, to install, start, back up and deploy it. Willow needs Node 22 or later and pnpm 10.12.4 on macOS, Linux or Windows with WSL2; rer picks the exact versions the checkout pins. One line installs rer, clones Willow and starts it:
+
 ```sh
-git clone https://github.com/just-every/run-willow.git willow
-cd willow && rer dev
+npx -y @runeditrun/rer dev just-every/run-willow
 ```
+
+To start it again later, run `cd run-willow && rer dev`.
 
 The first start installs everything and can take a few minutes. When Willow is ready, `rer dev` prints `RER_READY` with the local address and `RER_OPEN`, a link that opens Willow signed in as the owner. Open that link on the same computer and keep it to yourself: it carries this checkout's private key.
 
@@ -29,7 +22,6 @@ To set up the real owner mailbox instead of the local test owner, run `rer setup
 
 | Step | Where |
 | --- | --- |
-| Install rer | Your terminal, once per computer |
 | Get Willow and start it | Your terminal, in the folder you choose |
 | Finish setup | Your browser, at `/setup` |
 | Your employer | Your browser, the first page of the app |

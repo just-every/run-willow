@@ -249,7 +249,7 @@
       "executable": false
     },
     "docs/getting-started.md": {
-      "sha256": "4b6b52ef66857de7a7c3453eb619aaae84ae27edb2de53a5f67b8a5b478a8b20",
+      "sha256": "adf960d7a80af39b341b060f4643cf0ce284fc8b851a2534213a000df28eba83",
       "executable": false
     },
     "docs/leave.md": {
@@ -525,7 +525,7 @@
       "executable": false
     },
     "README.md": {
-      "sha256": "d5e076455928061b236d09c7ee56ae311565d2dd1d6b1c2e59a239a8d63045de",
+      "sha256": "9c77db3b603b4094888c9a645346301c34d08e34e464bc6507e7bd5671d2cc4d",
       "executable": false
     },
     "RELEASE.json": {
@@ -2181,7 +2181,7 @@
       "executable": false
     },
     "src/site/run.ts": {
-      "sha256": "bc049e1ba426346e24e41027d46a3218d3bd1373367db3ec7c8c681e4ea58cff",
+      "sha256": "017d878b482d001f28702274226cec30bb7a5bced1d24f1e3a74826b56acbf0a",
       "executable": false
     },
     "src/ui/homepage/Actions.tsx": {
@@ -2493,7 +2493,7 @@
       "executable": false
     },
     "tests/willow/site.mjs": {
-      "sha256": "ac6b2f7fdfbbd8042c1ea2912a39c02bb4c2324ab5c53df7182033042ddadaed",
+      "sha256": "c4ed81e4a49f3d516272c64c777ad0ebcf75b1574328711f9421d81a783441f3",
       "executable": false
     },
     "tests/worker-environment.mjs": {
