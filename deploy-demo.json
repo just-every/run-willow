@@ -6,6 +6,5 @@
     "MAIL_PROVIDER": "development",
     "MAIL_FROM": "Willow <people@harbour-field.example>"
   },
-  "instanceType": "basic",
   "ownerEmail": "rowan.hale@harbour-field.example"
 }

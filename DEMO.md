@@ -13,9 +13,9 @@ Names reuse Willow's documented BambooHR fixtures. Dates follow the current day.
 `src/demo.ts` writes native records through Willow's domain operations; no test
 fixture runtime or simulated application implementation is used.
 
-The CLI is the exact published `@runeditrun/rer` 0.2.24 package. All vendored Base runtime modules, including demo,
-local identity, owner-claim, import kit and mail, are refreshed from Base tag `rer-v0.2.24`,
-commit `1ee378e41142c673a9098f60af21664c6d8477d1`, recorded byte for byte in
+The CLI is the exact published `@runeditrun/rer` 0.2.36 package. All vendored Base runtime modules, including demo,
+local identity, owner-claim, import kit and mail, are refreshed from Base tag `rer-v0.2.36`,
+commit `d320c1436aaeb95d2485c1a0e69afa00ac8fb51a`, recorded byte for byte in
 `base-copies.json`. The auth schema adds Base’s owner-sign-in table in forward migration 0019.
 `withDemo` loads first in the Worker. Public internet reads and checks run for
 real; external effects that reach people or third-party accounts return mocked
@@ -25,19 +25,20 @@ Optional model and OIDC providers remain unconfigured in the sample workspace.
 
 The hosted demo uses Base's signed owner claim handler when its runtime supplies
 trusted claim keys; it adds no independent authentication protocol. Each visitor
-gets a private container, session, database and files. Base owns the 60 minute
-lifetime and 15 minute idle policy. The signed owner claim
+gets their own native Worker Loader isolate with its own session, SQLite database
+and files (Willow's `FILES` objects live in the visitor's own Durable Object
+storage). Base owns the 60 minute lifetime and 15 minute idle policy; signing out
+also ends the copy, and its storage is erased. The signed owner claim
 is the visitor's one-click sign-in; mail is suppressed silently.
 
-`.github/workflows/run-demo.yml` reads the `run-demo` environment on manual
+`.github/workflows/run-demo.yml` is Base's `export/run-demo.yml`, recorded in
+`base-copies.json`. It reads the `run-demo` environment (the
+`CLOUDFLARE_ACCOUNT_ID` variable and the deploy secrets) on manual
 `workflow_dispatch`. `test_only` uses a separate `demo-test` Worker at
-`demo.test.run-willow.com` and Cloudflare's published passing Turnstile keys.
-The test deployment records a fifteen-minute operator-tail window before a fresh-start cohort, and refuses the cohort readiness check if another visitor was admitted.
-Production uses the real widget keys at `demo.run-willow.com`. No repository
-variable is needed. `remove_test` with `test_only` removes the test deployment
-and reads back resource absence. All deployments use the RunEditRun account.
+`demo.test.run-willow.com` and Cloudflare's published passing Turnstile keys;
+test starts need the private measurement token. Production uses the real widget
+keys at `demo.run-willow.com`. `remove` removes the chosen demo and reads back
+resource absence. All deployments use the RunEditRun account.
 The demo owner is Rowan Hale (`rowan.hale@harbour-field.example`).
 The front GET sets no cookie; visitor state begins only after the start POST.
-
-The test-only workflow uses the same read/effect policy and sample data as
-production, with passing Turnstile test keys. Its non-credential Google and model settings exercise real public discovery and mocked model sends; it adds no probe route or production binding.
+The test host uses the same read/effect policy and sample data as production.
