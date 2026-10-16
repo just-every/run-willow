@@ -3,8 +3,9 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
-import { mkdtemp, mkdir, rm, writeFile, readdir } from 'node:fs/promises'
+import { mkdtemp, mkdir, rm, writeFile, readFile, readdir } from 'node:fs/promises'
 import { createServer } from 'node:net'
+import tls from 'node:tls'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { createRequire } from 'node:module'
@@ -18,13 +19,24 @@ async function freePort() {
   return port
 }
 
+// A throwaway certificate for 127.0.0.1, trusted by this process alone, so the
+// Worker is reached over real TLS with validation left on.
+async function localTls(directory) {
+  const key = join(directory, 'tls.key'), cert = join(directory, 'tls.crt')
+  execFileSync('openssl', ['req', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:prime256v1', '-nodes', '-days', '2', '-subj', '/CN=127.0.0.1', '-addext', 'subjectAltName=IP:127.0.0.1', '-keyout', key, '-out', cert], { stdio: 'ignore' })
+  const httpsKey = await readFile(key, 'utf8'), httpsCert = await readFile(cert, 'utf8')
+  await rm(key); await rm(cert)
+  tls.setDefaultCACertificates([...tls.getCACertificates('default'), httpsCert])
+  return { httpsKey, httpsCert }
+}
+
 export async function harness({ bindings = {}, provider, persistTo, port: chosenPort } = {}) {
-  // The fake provider edge runs beside the real production Worker on local TLS.
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
   const port = chosenPort ?? await freePort()
   const origin = `https://127.0.0.1:${port}`
   const directory = persistTo ?? await mkdtemp(join(tmpdir(), 'willow-flows-'))
   await mkdir(directory, {recursive:true})
+  // The fake provider edge runs beside the real production Worker on local TLS.
+  const certificate = await localTls(directory)
   const secret = () => randomBytes(32).toString('base64url')
   const vars = { AUTH_LOCAL: 'false', AUTH_ORIGIN: origin, OWNER_EMAIL: 'owner@example.com', SESSION_SECRET: secret(), SETUP_TOKEN: secret(), MAIL_PROVIDER: 'sendgrid', MAIL_API_KEY: 'test-mail-key', MAIL_FROM: 'auth@localhost.test', RER_DEV_KEY: secret(), ...bindings }
   await writeFile(join(directory, 'local.env'), Object.entries(vars).map(([key, value]) => `${key}=${value}`).join('\n') + '\n', { mode: 0o600 })
@@ -54,7 +66,7 @@ export async function harness({ bindings = {}, provider, persistTo, port: chosen
         }
         if (provider) return provider(request)
         throw new Error('Unexpected provider request')
-      }, host: '127.0.0.1', port, https: true,
+      }, host: '127.0.0.1', port, https: true, ...certificate,
       assets: { directory: resolve('dist/client'), routerConfig: { has_user_worker: true } },
     }
     mf = new Miniflare(convertOptions(mfOptions))
