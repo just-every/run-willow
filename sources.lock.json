@@ -205,7 +205,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "132e2b7c18bceaef1b0d387b5e4f1d806506b4c5dc8b57c8343f22aae7ac1161",
+      "sha256": "bcaa822181283ebe5002c31f4f8d56f08bfe17586b3155b3dc1139402971065a",
       "executable": false
     },
     "CLAUDE.md": {
@@ -765,7 +765,7 @@
       "executable": false
     },
     "src/base/contract-style.ts": {
-      "sha256": "41afdf1cb60983b340283b13e414102387eb2a4af022d730220050a4384d0753",
+      "sha256": "4325f4eeabac2bef722808576605d7b657858b918729097c3412393fc6e4941f",
       "executable": false
     },
     "src/base/deployment-health.ts": {
