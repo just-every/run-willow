@@ -2,17 +2,17 @@ Willow runs on your own computer with one command, and the same checkout can lat
 
 ## Get Willow and start it
 
-Willow uses rer, the Run Edit Run command, to install, start, back up and deploy it. Willow needs Node 22 or later and pnpm 10.12.4 on macOS, Linux or Windows with WSL2; rer picks the exact versions the checkout pins. One line installs rer, clones Willow and starts it:
+Willow uses rer, the Run Edit Run command, to install, start, back up and deploy it. Willow runs on macOS, Linux or Windows with WSL2; rer brings Node and pnpm and picks the exact versions the checkout pins. One line installs rer, clones Willow and starts it:
 
 ```sh
 npx -y @runeditrun/rer dev just-every/run-willow
 ```
 
-To start it again later, run `cd run-willow && rer dev`.
+Without Node, `curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-willow` does the same. To start it again later, run `cd run-willow && rer dev`.
 
 The first start installs everything and can take a few minutes. When Willow is ready, `rer dev` prints `RER_READY` with the local address and `RER_OPEN`, a link that opens Willow signed in as the owner. Open that link on the same computer and keep it to yourself: it carries this checkout's private key.
 
-To set up the real owner mailbox instead of the local test owner, run `rer setup` before `rer dev` and answer its prompt. Willow sends no email while it runs locally: sign-in messages wait in a local outbox on your computer.
+To set up the real owner mailbox instead of the local test owner, run `npx -y @runeditrun/rer install just-every/run-willow`, then `rer setup` from the checkout before `rer dev`, and answer its prompt. Willow sends no email while it runs locally: sign-in messages wait in a local outbox on your computer.
 
 ## Finish setup
 

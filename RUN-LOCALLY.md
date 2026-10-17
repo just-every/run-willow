@@ -1,7 +1,6 @@
 # Run it locally
 
-Install the `rer` command once using the [RER installer](https://runeditrun.com).
-`rer` runs every verb with the checkout's exact `@runeditrun/rer` devDependency
+Start Willow from nothing with one line: `npx -y @runeditrun/rer dev just-every/run-willow` (set up only: `npx -y @runeditrun/rer setup just-every/run-willow`; without Node: `curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-willow`). `rer` runs every verb with the checkout's exact `@runeditrun/rer` devDependency
 in `node_modules`. The `OPERATIONS.json` argv and the `package.json` aliases
 use `rer VERB` and form the machine contract.
 
