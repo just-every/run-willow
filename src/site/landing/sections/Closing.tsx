@@ -11,7 +11,7 @@ export function Closing() {
       <p className="closing-free">Free and open source, MIT licensed.</p>
     </div>
     <div className="closing-stage">
-      <Painting className="closing-art" name="closing" widths={[768, 1152, 1536]} sizes="min(100vw, 1920px)" phone={{ name: 'closing-phone', widths: [636], media: '(max-width: 860px)' }} />
+      <Painting className="closing-art" name="closing" widths={[768, 1152, 1536]} sizes="100vw" phone={{ name: 'closing-phone', widths: [636], media: '(max-width: 860px)' }} />
       <p className="closing-tag t1" aria-hidden="true">Devon starts Monday <Tick /></p>
       <p className="closing-tag t2" aria-hidden="true">Payroll sent <Tick /></p>
     </div>

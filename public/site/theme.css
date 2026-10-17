@@ -91,7 +91,7 @@
 /* Base's Run page (/run) and not-found page in the same look: heavy serif
    headline, white step cards on the warm paper, crimson numerals, the plum
    terminal and the tall lantern in the header. */
-body:has(> main > .intro) h1, body:has(> main > .hero) h1 { font-weight: 700; letter-spacing: -.04em; }
+body:has(> main > .intro) h1, body:has(> main > .hero) h1 { font-weight: 700; letter-spacing: -.04em; word-spacing: .04em; }
 body:has(> main > .intro) .step { border-radius: 22px; border-color: var(--line); background: var(--surface); box-shadow: var(--shadow-card); }
 body:has(> main > .intro) .num { background: var(--accent); color: #fff; font-weight: 700; }
 body:has(> main > .intro) .step h2 { font-weight: 700; letter-spacing: -.02em; }

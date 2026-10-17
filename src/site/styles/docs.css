@@ -13,7 +13,7 @@
 .docs-nav a[aria-current="page"]::before { content: ''; position: absolute; left: 12px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: var(--accent); }
 .docs-main { min-width: 0; }
 .docs-section { font-size: 14px; }
-.docs-main h1 { margin-top: 12px; font: 700 clamp(40px, 4.6vw, 64px)/1.02 var(--font-head); letter-spacing: -.04em; color: var(--ink); text-wrap: balance; }
+.docs-main h1 { margin-top: 12px; font: 700 clamp(40px, 4.6vw, 64px)/1.02 var(--font-head); letter-spacing: -.04em; word-spacing: .03em; color: var(--ink); text-wrap: balance; }
 .docs-lead { margin-top: 16px; max-width: 36em; font-size: 21px; line-height: 1.5; color: var(--body); }
 .docs-toc-side { position: sticky; top: 28px; padding-left: 24px; border-left: 1px solid var(--line-strong); min-height: 40vh; }
 .docs-toc-title { margin: 4px 0 12px; font-size: 12.5px; font-weight: 700; letter-spacing: .24em; text-transform: uppercase; color: var(--soft); }

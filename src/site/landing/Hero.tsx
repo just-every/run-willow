@@ -7,7 +7,7 @@ import { Painting } from './parts'
 export function Hero() {
   return <section className="hero" aria-labelledby="hero-title">
     <div className="hero-stage">
-      <Painting className="hero-art" name="hero" widths={[768, 1152, 1536]} sizes="(max-width: 860px) 100vw, min(100vw, 1920px)" eager phone={{ name: 'hero-phone', widths: [750], media: '(max-width: 860px)' }} />
+      <Painting className="hero-art" name="hero" widths={[768, 1152, 1536]} sizes="100vw" eager phone={{ name: 'hero-phone', widths: [750], media: '(max-width: 860px)' }} />
       <SiteHeader onArt />
       <div className="hero-copy">
         <h1 id="hero-title">Look after <span>every person.</span></h1>
