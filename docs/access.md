@@ -10,7 +10,7 @@ Willow shows each member only what their permissions allow, and every permission
 | Manage leave policies, balances and confidential reasons | Policies, opening balances, accruals and reasons |
 | Prepare and hand off payroll changes | Payroll batches and exports |
 | Read every private document category | All private documents, whatever their category |
-| Read organisation-wide summaries | Headcount, movements, leave taken and lifecycle work |
+| Read organization-wide summaries | Headcount, movements, leave taken and lifecycle work |
 | Receive IT lifecycle tasks | Account and device tasks |
 | Read the audit trail | Every change and every private read |
 

@@ -4,7 +4,7 @@ Run `rer setup --owner-email you@example.com`, then `rer demo` and open its
 private `RER_OPEN` link. `rer demo --stop` deletes the disposable state under
 `.rer/demo/`; the installation's `.wrangler/state` is retained. Each start is fresh.
 
-The sample employer is Harbour & Field, with twelve invented people, two
+The sample employer is Harbor & Field, a US employer in Austin and Denver, with twelve invented people, two
 locations, four departments, working schedules, completed onboarding history,
 three upcoming starters, a team move, a departure, leave accounts and requests,
 private welcome documents, an acknowledged payroll handoff, a configured and

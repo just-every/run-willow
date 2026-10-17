@@ -2,7 +2,7 @@ Your first hour in Willow sets up the places, teams and rules it works from. The
 
 ## Name your employer
 
-Willow keeps people records for one employer. **Your employer** asks for its name, time zone, country (a two-letter code such as AU) and currency (a three-letter code such as AUD). Dates of employment and leave use this time zone. Willow encodes no country rules: you supply your own policies. The owner can change these later from **Settings**.
+Willow keeps people records for one employer. **Your employer** asks for its name, time zone, country (a two-letter code such as US) and currency (a three-letter code such as USD). Dates of employment and leave use this time zone. Willow encodes no country rules: you supply your own policies. The owner can change these later from **Settings**.
 
 ## Add your places and teams
 

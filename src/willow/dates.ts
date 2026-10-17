@@ -43,13 +43,13 @@ export function today(zone: string): string {
 }
 
 export function formatInstant(instant: number, zone: string): string {
-  return new Intl.DateTimeFormat('en-AU', { timeZone: zone, dateStyle: 'medium', timeStyle: 'short' }).format(instant)
+  return new Intl.DateTimeFormat('en-US', { timeZone: zone, dateStyle: 'medium', timeStyle: 'short' }).format(instant)
 }
 
 export function formatDate(date: string | null | undefined): string {
   if (!date) return '—'
   const [year, month, day] = date.split('-').map(Number)
-  return new Intl.DateTimeFormat('en-AU', { timeZone: 'UTC', dateStyle: 'medium' }).format(Date.UTC(year, month - 1, day))
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', dateStyle: 'medium' }).format(Date.UTC(year, month - 1, day))
 }
 
 /** Minutes as hours with two decimals, e.g. 450 -> "7.50". */

@@ -22,7 +22,7 @@ A person's page shows **Directory** (name, work email, role, department, locatio
 
 ## Schedule a change
 
-**Schedule a change (mover)** under **Employment** records a promotion, a new manager, new hours or new pay from an **Effective from** date, with its reason and, if you like, a mover case. The change takes effect on its date. Past, current and scheduled versions all stay in the employment table, marked **past**, **in force** or **scheduled**; a scheduled version can be cancelled before it starts.
+**Schedule a change (mover)** under **Employment** records a promotion, a new manager, new hours or new pay from an **Effective from** date, with its reason and, if you like, a mover case. The change takes effect on its date. Past, current and scheduled versions all stay in the employment table, marked **past**, **in force** or **scheduled**; a scheduled version can be canceled before it starts.
 
 ## Record a leaver
 

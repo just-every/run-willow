@@ -1,11 +1,17 @@
 # Fonts
 
-Public Sans is self-hosted under the SIL Open Font License 1.1 in
-`public-sans/LICENSE.txt` (upstream: https://github.com/uswds/public-sans). The
-Latin and Latin Extended variable WOFF2 subsets (weights 100–900) come from
-Fontsource's Public Sans 5.3.0 distribution. It is a plain, highly legible
-face for dense records and forms.
+Four families, each self-hosted under the SIL Open Font License 1.1 with its
+licence beside the files. No page loads fonts from another origin.
 
-The root document and Willow's pages link `/fonts/fonts.css`; `public/rer-theme.css`
-declares the same face for the shared installer, sign-in and `/setup` frames.
-No page loads fonts from another origin.
+| Family | Use | Files | Licence | Upstream |
+| --- | --- | --- | --- | --- |
+| Source Serif 4 | headings and the Willow wordmark (run site, app, sign-in) | `source-serif-4/` (Latin; weights 200–900, optical sizes) | `source-serif-4/LICENSE.txt` | https://github.com/adobe-fonts/source-serif |
+| Figtree | the run site's body text and drawings | `figtree/` (Latin, Latin Extended; weights 300–900) | `figtree/LICENSE.txt` | https://github.com/erikdkennedy/figtree |
+| JetBrains Mono | the run site's terminal and code cards | `jetbrains-mono/` (Latin; weights 100–800) | `jetbrains-mono/LICENSE.txt` | https://github.com/JetBrains/JetBrainsMono |
+| Public Sans | the app's body text | `public-sans/` (Latin, Latin Extended; weights 100–900) | `public-sans/LICENSE.txt` | https://github.com/uswds/public-sans |
+
+The variable WOFF2 subsets come from Fontsource's distributions (5.3.0).
+
+The run site's faces are declared once in `public/site/theme.css` with its
+tokens. The app's pages link `/fonts/fonts.css`; `public/rer-theme.css`
+declares the faces for the shared installer, sign-in and `/setup` frames.

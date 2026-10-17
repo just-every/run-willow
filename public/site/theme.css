@@ -1,0 +1,104 @@
+/* The run site's tokens and faces, defined once: the homepage, the docs, /run
+   and the 404 link this file (Base's Run and not-found pages read its --rer-*
+   tokens). Willow's look (design desk, 17 Oct 2026): warm white paper, plum
+   ink, the lantern's crimson as the accent, Source Serif 4 headings over
+   Figtree, JetBrains Mono in the terminal. Licences: public/fonts/README.md. */
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/source-serif-4/source-serif-4-latin-opsz-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url('/fonts/figtree/figtree-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url('/fonts/figtree/figtree-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono/jetbrains-mono-latin-wght-normal.woff2') format('woff2');
+}
+
+:root {
+  --rer-font-body: 'Figtree', Arial, sans-serif;
+  --rer-font-heading: 'Source Serif 4', Georgia, serif;
+  --rer-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --rer-page: #faf8f6;
+  --rer-surface: #ffffff;
+  --rer-text: #2a0b28;
+  --rer-muted: #5d5466;
+  --rer-border: #9c8f9f;
+  --rer-focus: #b1054f;
+  --rer-link: #2a0b28;
+  --rer-accent: #b1054f;
+  --rer-accent-text: #ffffff;
+  --rer-code-background: #250b23;
+  --rer-code-text: #fbeff5;
+  --rer-wordmark-tracking: -.025em;
+  --rer-logo: url('/brand/mark.svg');
+
+  --paper: var(--rer-page);
+  --surface: var(--rer-surface);
+  --ink: var(--rer-text);
+  --ink-2: #3a2539;
+  --body: #5a5064;
+  --soft: #7d7386;
+  --faint: #b0a7b5;
+  --line: #eeeaee;
+  --line-strong: #e3dde4;
+  --accent: var(--rer-accent);
+  --accent-ink: #c91d55;
+  --accent-soft: #e498b7;
+  --pink-tint: #f9dff0;
+  --pink-ink: #6a2858;
+  --lavender: #ece2fc;
+  --lavender-ink: #4e2a78;
+  --green: #3d9f63;
+  --green-ink: #1f7a44;
+  --green-tint: #e4f3e9;
+  --orange: #ef8a1f;
+  --orange-ink: #c4561a;
+  --orange-tint: #fdf0e4;
+  --terminal: var(--rer-code-background);
+  --terminal-text: var(--rer-code-text);
+
+  --font-head: var(--rer-font-heading);
+  --font-body: var(--rer-font-body);
+  --font-mono: var(--rer-font-mono);
+
+  --radius-card: 18px;
+  --shadow-card: 0 1px 2px rgba(42, 11, 40, .04), 0 22px 48px -26px rgba(74, 16, 56, .28);
+  --shadow-float: 0 2px 6px rgba(42, 11, 40, .08), 0 24px 44px -18px rgba(60, 8, 44, .42);
+  --wrap: 1268px;
+  --gutter: clamp(16px, 5vw, 84px);
+}
+
+/* Base's Run page (/run) and not-found page in the same look: heavy serif
+   headline, white step cards on the warm paper, crimson numerals, the plum
+   terminal and the tall lantern in the header. */
+body:has(> main > .intro) h1, body:has(> main > .hero) h1 { font-weight: 700; letter-spacing: -.04em; }
+body:has(> main > .intro) .step { border-radius: 22px; border-color: var(--line); background: var(--surface); box-shadow: var(--shadow-card); }
+body:has(> main > .intro) .num { background: var(--accent); color: #fff; font-weight: 700; }
+body:has(> main > .intro) .step h2 { font-weight: 700; letter-spacing: -.02em; }
+body:has(> main > .intro) .code { background: var(--terminal); }
+body:has(> main) .brand { gap: 10px; font-weight: 700; }
+body:has(> main) .brand img { width: auto; height: 42px; }
+body:has(> main > .intro), body:has(> main > .hero) {
+  background: radial-gradient(55% 45% at 92% 4%, rgba(249, 142, 152, .16), transparent 70%), radial-gradient(45% 40% at 2% 96%, rgba(236, 74, 116, .08), transparent 70%), var(--paper);
+}
+@media (max-width: 760px) { body:has(> main) .brand img { height: 34px; } }

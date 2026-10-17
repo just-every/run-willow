@@ -1,3 +1,5 @@
+<img src="public/brand/mark.svg" alt="Willow's lantern mark" width="48">
+
 # Willow
 
 Willow keeps one employer's people register, employment history, leave ledger
@@ -16,6 +18,13 @@ clones Willow and starts it:
 
 ```sh
 npx -y @runeditrun/rer dev just-every/run-willow
+```
+
+No Node 22 yet? Install rer, then start Willow with it, as [run-willow.com/run](https://run-willow.com/run) shows:
+
+```sh
+curl -fsSL https://runeditrun.com/install.sh | sh
+rer dev just-every/run-willow
 ```
 
 To start it again later, run `cd run-willow && rer dev`. To supply the real owner mailbox, run
@@ -139,7 +148,8 @@ earlier release lack that source fence and must also be recreated.
 An installed Willow answers `/` with the shared Lobby (Sign in, or Finish setup
 before the owner's claim). The public homepage is the run site,
 run-willow.com: `rer build --site` writes it to `dist/site` from
-`src/site/pages.tsx` — the homepage (`src/ui/homepage`), the Run page and the
+`src/site/pages.tsx` — the homepage (`src/site/landing`, tokens in
+`public/site/theme.css`), the Run page and the
 owner guides at `/docs`, rendered from `docs/*.md` in the order `docs/site.json`
 lists them. `rer dev` serves it locally as `RER_SITE`. Edit a guide in `docs/`;
 a broken docs link fails the build.

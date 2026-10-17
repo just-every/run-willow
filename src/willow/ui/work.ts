@@ -35,7 +35,7 @@ ${batch.status === 'exported' ? form('payroll.acknowledge', `/app/payroll/${id}`
 
 export async function reportsPage(env: Bindings, actor: Actor, url: URL) {
   const report = await summary(env, actor, url) as any
-  const body = h`<h1>Summaries</h1><p>Scope: ${report.scope}. As of ${formatDate(report.filters.asOf)}; range ${formatDate(report.filters.from)} – ${formatDate(report.filters.to)}.</p>
+  const body = h`<h1>Summaries</h1><p>Scope: ${report.scope === 'organisation' ? 'organization' : report.scope}. As of ${formatDate(report.filters.asOf)}; range ${formatDate(report.filters.from)} – ${formatDate(report.filters.to)}.</p>
 <form method="get" action="/app/reports" class="row-form">${field('As of', 'asOf', { type: 'date', value: report.filters.asOf })}${field('From', 'from', { type: 'date', value: report.filters.from })}${field('To', 'to', { type: 'date', value: report.filters.to })}<button type="submit" class="secondary">Update</button></form>
 <div class="grid"><section class="card"><h2>Headcount: ${report.headcount.total}</h2>${table(['Department', 'People'], report.headcount.byDepartment.map((row: any) => [row.group, row.people]))}${table(['Location', 'People'], report.headcount.byLocation.map((row: any) => [row.group, row.people]))}</section>
 <section class="card"><h2>Movements</h2><p>${report.movements.starters} starter(s), ${report.movements.leavers} leaver(s) in the range.</p><h2>Leave taken</h2>${report.leaveTaken.length ? table(['Policy', 'Hours'], report.leaveTaken.map((row: any) => [row.policy, row.hours])) : h`<p class="muted">None.</p>`}<h2>Lifecycle work</h2><p>${report.lifecycleWork.openTasks} open task(s), ${report.lifecycleWork.overdue} overdue.</p></section>

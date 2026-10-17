@@ -10,7 +10,7 @@ import { insist } from '../core'
 import { directory } from '../profile'
 import { area, checks, field, form, h, hidden, page, person, select, table, tag } from './html'
 
-const ZONES = ['Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane', 'Australia/Adelaide', 'Australia/Perth', 'Australia/Hobart', 'Australia/Darwin', 'Pacific/Auckland', 'Europe/London', 'America/New_York', 'UTC']
+const ZONES = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix', 'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu', 'Europe/London', 'Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane', 'Australia/Adelaide', 'Australia/Perth', 'Australia/Hobart', 'Australia/Darwin', 'Pacific/Auckland', 'UTC']
 const zoneOptions = ZONES.map(zone => ({ value: zone, label: zone }))
 
 export async function employerPage(env: Bindings, actor: Actor, url: URL) {
@@ -19,9 +19,9 @@ export async function employerPage(env: Bindings, actor: Actor, url: URL) {
   const body = h`<div class="first-run"><h1>Your employer</h1><p>Willow keeps people records for one employer. Dates of employment and leave use this time zone.</p>
 <section class="card">${form('employer.configure', '/app/settings', [
     field('Employer name', 'name', { value: current?.name ?? '' }),
-    select('Time zone', 'timezone', zoneOptions, current?.timezone ?? 'Australia/Sydney'),
-    field('Country (two-letter code)', 'country', { value: current?.country ?? 'AU', hint: 'For example AU. Willow encodes no country rules: you supply your own policies.' }),
-    field('Currency (three-letter code)', 'currency', { value: current?.currency ?? 'AUD' }),
+    select('Time zone', 'timezone', zoneOptions, current?.timezone ?? 'America/Chicago'),
+    field('Country (two-letter code)', 'country', { value: current?.country ?? 'US', hint: 'For example US. Willow encodes no country rules: you supply your own policies.' }),
+    field('Currency (three-letter code)', 'currency', { value: current?.currency ?? 'USD' }),
   ], 'Save')}</section></div>`
   return page('Employer', actor, body, { current: '/app/settings', url, art: 'frame', showNav: Boolean(current) })
 }

@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
-import { Footer } from '../../ui/homepage/Footer'
-import { Header } from '../../ui/homepage/Header'
+import '../styles/site.css'
+import '../styles/docs.css'
+import { SiteFooter } from '../shell/SiteFooter'
+import { SiteHeader } from '../shell/SiteHeader'
 import { docsSections } from './pages'
 
-// Every docs page: the homepage's header, fronds and footer around the contents
-// list and the page. On a phone the contents fold into a "Contents" row.
+// Every docs page in the homepage's look: its header and footer around the contents list and the page. On a phone the
+// contents fold into a "Contents" row.
 export function DocsFrame({ current, children }: { current?: string; children: ReactNode }) {
   const nav = (
     <nav className="docs-nav" aria-label="Docs">
@@ -21,12 +23,8 @@ export function DocsFrame({ current, children }: { current?: string; children: R
     </nav>
   )
   return (
-    <div className="hp docs">
-      <div className="hp-canopy" aria-hidden="true">
-        <img className="hp-fronds hp-fronds-left" src="/homepage/fronds-left.webp" alt="" />
-        <img className="hp-fronds hp-fronds-right" src="/homepage/fronds-right.webp" alt="" />
-      </div>
-      <Header docs />
+    <div className="site docs">
+      <SiteHeader current="docs" />
       <details className="docs-contents">
         <summary>Contents</summary>
         {nav}
@@ -35,7 +33,7 @@ export function DocsFrame({ current, children }: { current?: string; children: R
         <aside className="docs-side">{nav}</aside>
         {children}
       </div>
-      <Footer />
+      <SiteFooter />
     </div>
   )
 }

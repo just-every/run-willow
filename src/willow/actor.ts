@@ -17,7 +17,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'leave.manage': 'Manage leave policies, balances and confidential reasons',
   'payroll.handoff': 'Prepare and hand off payroll changes',
   'documents.private': 'Read every private document category',
-  'reports.read': 'Read organisation-wide summaries',
+  'reports.read': 'Read organization-wide summaries',
   'it.tasks': 'Receive IT lifecycle tasks',
   'audit.read': 'Read the audit trail',
 }

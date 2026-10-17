@@ -20,4 +20,4 @@ The request appears under **Leave to decide** on the manager's Home and **Waitin
 
 ## Change your mind
 
-A pending request can be withdrawn. Approved leave can be cancelled or its dates corrected; Willow writes a reversing ledger entry rather than deleting anything, so the history stays. Approved leave and reversals go to payroll in hours with the next [payroll handoff](/docs/payroll).
+A pending request can be withdrawn. Approved leave can be canceled or its dates corrected; Willow writes a reversing ledger entry rather than deleting anything, so the history stays. Approved leave and reversals go to payroll in hours with the next [payroll handoff](/docs/payroll).

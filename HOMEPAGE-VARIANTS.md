@@ -11,9 +11,11 @@ Willow has two homepage surfaces:
 
 ## Preserve the product presentation
 
-The homepage components and artwork under `src/ui/homepage` and `public/homepage`
-are Willow's presentation. Preserve their layout, copy and palette when changing
-hosting or command integration. The primary action opens `/run`. The run site
+The homepage (`src/site/landing`, `src/site/shell`, `src/site/styles`) and its
+artwork and tokens under `public/site` are the design desk's approved look (17 Oct
+2026: hero K, mark 6). Preserve their layout, copy and palette when changing
+hosting or command integration. The lantern mark is `public/brand/mark.svg` with
+hand-tuned `favicon-16.svg` and `favicon-32.svg`. The primary action opens `/run`. The run site
 has no links into an installed app's sign-in, setup or private routes.
 
 `src/identity.ts` defines the product identity and shared Lobby assets.

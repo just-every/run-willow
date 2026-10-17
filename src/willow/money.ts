@@ -1,6 +1,6 @@
 // Display formatting for pay: a stored amount in cents plus an ISO currency
-// code reads as a currency amount ("A$85,000 per year"). Storage, the payroll
-// handoff and its CSV keep the plain "85000.00 AUD" form.
+// code reads as a currency amount ("$85,000 per year"). Storage, the payroll
+// handoff and its CSV keep the plain "85000.00 USD" form.
 export type PayBasis = 'salary' | 'hourly' | 'unknown' | string
 
 export function formatMoney(cents: number, currency: string) {

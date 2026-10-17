@@ -51,8 +51,8 @@ export function page(title: string, actor: Actor | null, body: Html, { current =
   const notice = url?.searchParams.get('notice'), error = url?.searchParams.get('error')
   const nav = actor && showNav ? h`<nav aria-label="Main"><ul>${NAV.filter(item => item.show(actor)).map(item => h`<li><a href="${item.href}"${item.href === current ? raw(' aria-current="page"') : ''}>${item.label}</a></li>`)}</ul></nav>` : ''
   const who = actor ? h`<span class="who">${actor.name}</span>` : ''
-  const document = h`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · ${branding.name}</title><link rel="stylesheet" href="/fonts/fonts.css"><link rel="stylesheet" href="/rer-theme.css"><link rel="stylesheet" href="/willow-tokens.css"><link rel="stylesheet" href="/willow.css"><link rel="stylesheet" href="/willow-layouts.css"><link rel="stylesheet" href="/willow-connections.css"></head><body${art ? raw(` class="art-${art}"`) : ''}>
-<header class="top"><div class="top-inner"><a class="brand" href="/app"><img src="/brand/mark.svg" alt="" width="32" height="32"><span data-rer-name>${branding.name}</span></a>${nav}${who}</div></header>
+  const document = h`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · ${branding.name}</title><link rel="stylesheet" href="/fonts/fonts.css"><link rel="stylesheet" href="/rer-theme.css"><link rel="stylesheet" href="/willow-tokens.css"><link rel="stylesheet" href="/willow.css"><link rel="stylesheet" href="/willow-layouts.css"><link rel="stylesheet" href="/willow-connections.css"><link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" type="image/svg+xml" href="/brand/favicon-32.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png"></head><body${art ? raw(` class="art-${art}"`) : ''}>
+<header class="top"><div class="top-inner"><a class="brand" href="/app"><img src="/brand/mark.svg" alt="" width="18" height="32"><span data-rer-name>${branding.name}</span></a>${nav}${who}</div></header>
 <main>${notice ? h`<p class="flash" role="status">${notice}</p>` : ''}${error ? h`<p class="flash error" role="alert">That did not work: ${describeError(error)}</p>` : ''}${body}</main></body></html>`
   return new Response(document.html, { status, headers })
 }
@@ -126,7 +126,9 @@ const TONES: Record<string, 'willow' | 'gold' | 'alert'> = {
 }
 const toneOf = (text: string) => TONES[text.toLowerCase().replace(/^yes \(.*\)$/, 'yes')]
 /** A status chip, toned by its words. */
-export const tag = (text: unknown) => { const tone = toneOf(String(text ?? '')); return h`<span class="tag${tone ? ` tone-${tone}` : ''}">${text}</span>` }
+// Stored statuses keep their spelling; people read US English.
+const US_LABELS: Record<string, string> = { cancelled: 'canceled' }
+export const tag = (text: unknown) => { const tone = toneOf(String(text ?? '')); return h`<span class="tag${tone ? ` tone-${tone}` : ''}">${US_LABELS[String(text)] ?? text}</span>` }
 
 /** A watercolour disc with a person's initials, beside their name (never part of a link's name). */
 export const avatar = (name: string) => h`<span class="avatar" aria-hidden="true">${name.split(/\s+/).filter(Boolean).map(part => part[0]).slice(0, 2).join('').toUpperCase()}</span>`

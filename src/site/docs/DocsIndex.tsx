@@ -6,6 +6,7 @@ export function DocsIndex() {
   return (
     <DocsFrame>
       <main className="docs-main docs-home">
+        <p className="docs-section eyebrow">Docs</p>
         <h1>{docsTitle}</h1>
         <p className="docs-lead">{docsLead}</p>
         {docsSections.map(section => (

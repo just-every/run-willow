@@ -14,7 +14,7 @@ import { propose } from './willow/proposals'
 /** Invented people from tests/willow/fixtures.mjs, expanded into native records.
  * No fixture parser or test dependency ships in the app. Each stage can resume. */
 export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail: string; now: Date }) {
- const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+ const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
  const member = await ensureMember(env, ownerEmail, 'Rowan Hale')
  const actor: Actor = { id: member.id, sessionId: 'demo-seed', email: ownerEmail, name: 'Rowan Hale', owner: true, permissions: new Set(PERMISSIONS), personId: null, reports: new Set(), today: date }
  const input = Input.of
@@ -25,13 +25,13 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
  }
  const named = async (table: string, name: string, create: () => Promise<{id: string}>) =>
   (await one<{id: string}>(env, `SELECT id FROM ${table} WHERE name = ?`, name)) ?? await create()
- await stage('employer', async () => { await configureEmployer(env, actor, input({ name: 'Harbour & Field', timezone: 'Australia/Sydney', country: 'AU', currency: 'AUD' })) })
- const sydney = await named('wl_locations', 'Sydney studio', () => createLocation(env, actor, input({ name: 'Sydney studio', timezone: 'Australia/Sydney' })))
- const brisbane = await named('wl_locations', 'Brisbane workshop', () => createLocation(env, actor, input({ name: 'Brisbane workshop', timezone: 'Australia/Brisbane' })))
+ await stage('employer', async () => { await configureEmployer(env, actor, input({ name: 'Harbor & Field', timezone: 'America/Chicago', country: 'US', currency: 'USD' })) })
+ const austin = await named('wl_locations', 'Austin studio', () => createLocation(env, actor, input({ name: 'Austin studio', timezone: 'America/Chicago' })))
+ const denver = await named('wl_locations', 'Denver workshop', () => createLocation(env, actor, input({ name: 'Denver workshop', timezone: 'America/Denver' })))
  const departments: {id: string}[] = []
  for (const name of ['Operations', 'Customer care', 'Design', 'People & Finance']) departments.push(await named('wl_departments', name, () => createDepartment(env, actor, input({ name }))))
- const week = await named('wl_schedules', 'Full week · 38 hours', () => createSchedule(env, actor, input({ name: 'Full week · 38 hours', mon: '7.6', tue: '7.6', wed: '7.6', thu: '7.6', fri: '7.6' })))
- const part = await named('wl_schedules', 'Four days · 30.4 hours', () => createSchedule(env, actor, input({ name: 'Four days · 30.4 hours', mon: '7.6', tue: '7.6', wed: '7.6', thu: '7.6' })))
+ const week = await named('wl_schedules', 'Full week · 40 hours', () => createSchedule(env, actor, input({ name: 'Full week · 40 hours', mon: '8', tue: '8', wed: '8', thu: '8', fri: '8' })))
+ const part = await named('wl_schedules', 'Four days · 32 hours', () => createSchedule(env, actor, input({ name: 'Four days · 32 hours', mon: '8', tue: '8', wed: '8', thu: '8' })))
  const category = await named('wl_doc_categories', 'Welcome & working together', () => createCategory(env, actor, input({ name: 'Welcome & working together', subjectReads: true, managerReads: true, acknowledgement: true })))
  const template = async (kind: string, name: string, titles: string[], assignees: string[]) => named('wl_templates', name, () => createTemplate(env, actor, input({ kind, name, requiredFields: [], taskTitle: titles, taskAssignee: assignees, taskDueDays: titles.map((_, i) => String(i - 3)), taskEvidence: titles.map(() => 'yes') })))
  const joiner = await template('joiner', 'A thoughtful first week', ['Prepare welcome pack', 'Prepare laptop and workspace', 'Check payroll details'], ['hr', 'it', 'payroll'])
@@ -56,7 +56,7 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
  for (const [i, [name, title, department, offset, salary]] of people.entries()) {
   const email = i === 0 ? ownerEmail : `${name.toLowerCase().replaceAll(' ', '.')}@harbour-field.example`
   const existing = await one<{person: string; period: string; case: string}>(env, `SELECT p.id AS person, e.id AS period, c.id AS "case" FROM wl_people p JOIN wl_periods e ON e.person_id = p.id JOIN wl_cases c ON c.period_id = e.id AND c.kind = 'joiner' WHERE p.work_email = ?`, email)
-  const record = existing ?? await startJoiner(env, actor, input({ template: joiner.id, legalName: name, preferredName: i === 1 ? 'Tam' : '', workEmail: email, employeeNumber: `HF-${101 + i}`, startDate: addDays(date, offset), employmentType: i === 1 ? 'part_time' : 'full_time', payrollId: `PAY-${101 + i}`, jobTitle: title, departmentId: departments[department].id, locationId: i === 2 || i === 9 ? brisbane.id : sydney.id, managerPersonId: i ? records[0].person : '', scheduleId: i === 1 ? part.id : week.id, payBasis: 'salary', payAmount: salary, reason: 'Initial employment terms' }))
+  const record = existing ?? await startJoiner(env, actor, input({ template: joiner.id, legalName: name, preferredName: i === 1 ? 'Tam' : '', workEmail: email, employeeNumber: `HF-${101 + i}`, startDate: addDays(date, offset), employmentType: i === 1 ? 'part_time' : 'full_time', payrollId: `PAY-${101 + i}`, jobTitle: title, departmentId: departments[department].id, locationId: i === 2 || i === 9 ? denver.id : austin.id, managerPersonId: i ? records[0].person : '', scheduleId: i === 1 ? part.id : week.id, payBasis: 'salary', payAmount: salary, reason: 'Initial employment terms' }))
   records.push(record)
   if (offset < 0) await stage(`welcome:${i}`, async () => {
    const tasks = await all<{id: string}>(env, "SELECT id FROM wl_case_tasks WHERE case_id = ? AND status = 'open'", record.case)
@@ -66,8 +66,8 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
  }
  actor.personId = records[0].person
  await stmt(env, 'UPDATE wl_members SET person_id = ? WHERE id = ? AND person_id IS NULL', actor.personId, actor.id).run()
- const policy = await named('wl_leave_policies', 'Annual leave', async () => {
-  const version = await createPolicy(env, actor, input({ name: 'Annual leave', summary: 'Sample company policy: four weeks per year, based on the working schedule. Opening balances reviewed by People & Finance.', accrualWeeks: '4', negativeLimitHours: '0' }))
+ const policy = await named('wl_leave_policies', 'Paid time off', async () => {
+  const version = await createPolicy(env, actor, input({ name: 'Paid time off', summary: 'Sample company policy: four weeks per year, based on the working schedule. Opening balances reviewed by People & Finance.', accrualWeeks: '4', negativeLimitHours: '0' }))
   return { id: version.policy }
  })
  const draft = await one<{id: string}>(env, "SELECT id FROM wl_policy_versions WHERE policy_id = ? AND status = 'draft'", policy.id)
@@ -89,9 +89,9 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
  await stage('move', async () => { await scheduleMover(env, actor, input({ person: records[7].person, period: records[7].period, effectiveFrom: addDays(date, 14), jobTitle: 'Senior Operations Coordinator', reason: 'Taking on workshop scheduling', template: mover.id })) })
  await stage('departure', async () => { await startLeaver(env, actor, input({ person: records[8].person, period: records[8].period, endDate: addDays(date, 28), reason: 'Moving to a new opportunity', template: leaver.id })) })
  await stage('documents', async () => {
-  for (const i of [0, 1, 9, 10]) await addDocument(env, actor, input({ person: records[i].person, category: category.id, title: 'Your first week at Harbour & Field', file: { filename: 'welcome.txt', base64: btoa('Welcome to Harbour & Field.\nMonday: meet your team and settle into your workspace.\nTuesday: customer care and workshop walkthrough.\nFriday: check in with Rowan about your first week.\nThis is an invented sample document for the Willow demo.') } }))
+  for (const i of [0, 1, 9, 10]) await addDocument(env, actor, input({ person: records[i].person, category: category.id, title: 'Your first week at Harbor & Field', file: { filename: 'welcome.txt', base64: btoa('Welcome to Harbor & Field.\nMonday: meet your team and settle into your workspace.\nTuesday: customer care and workshop walkthrough.\nFriday: check in with Rowan about your first week.\nThis is an invented sample document for the Willow demo.') } }))
  })
- await stage('proposal', async () => { await propose(env, actor, input({ kind: 'joiner', summary: 'Prepare a new customer care starter for next month', agent: 'People planning assistant', plan: { template: joiner.id, legalName: 'Nia Lawson', workEmail: 'nia.lawson@harbour-field.example', startDate: addDays(date, 32), employmentType: 'full_time', jobTitle: 'Customer Care Specialist', departmentId: departments[1].id, locationId: sydney.id, scheduleId: week.id, managerPersonId: records[0].person } })) })
+ await stage('proposal', async () => { await propose(env, actor, input({ kind: 'joiner', summary: 'Prepare a new customer care starter for next month', agent: 'People planning assistant', plan: { template: joiner.id, legalName: 'Nia Lawson', workEmail: 'nia.lawson@harbour-field.example', startDate: addDays(date, 32), employmentType: 'full_time', jobTitle: 'Customer Care Specialist', departmentId: departments[1].id, locationId: austin.id, scheduleId: week.id, managerPersonId: records[0].person } })) })
  await stage('payroll-layout', async () => {
   await configureLayout(env, actor, input({ format: 'generic', columns: CSV_COLUMNS.map(source => ({ source, heading: source })) }))
  })

@@ -59,6 +59,9 @@ async function journey(width, ownerOpen, employeeOpen, persona) {
     await shot(owner, 'employer')
     await owner.getByLabel('Employer name').fill('Harbour Freight Co')
     await owner.getByLabel('Time zone').selectOption(zone)
+    // The BambooHR fixtures this journey imports are an Australian employer's.
+    await owner.getByLabel('Country (two-letter code)').fill('AU')
+    await owner.getByLabel('Currency (three-letter code)').fill('AUD')
     await owner.getByRole('button', { name: 'Save' }).click()
     await saved(owner)
   }

@@ -4,13 +4,13 @@ import { docsNeighbours, docsPage } from './pages'
 /** One guide: its section, title and summary, the rendered Markdown, its contents and the next page. */
 export function DocsArticle({ slug }: { slug: string }) {
   const page = docsPage(slug)
-  const { next } = docsNeighbours(slug)
+  const { previous, next } = docsNeighbours(slug)
   const toc = page.toc.filter(entry => entry.depth === 2)
   return (
     <DocsFrame current={slug}>
       <main className="docs-main">
         <article>
-          <p className="docs-section">{page.section}</p>
+          <p className="docs-section eyebrow">{page.section}</p>
           <h1>{page.title}</h1>
           <p className="docs-lead">{page.summary}</p>
           {toc.length ? (
@@ -20,7 +20,10 @@ export function DocsArticle({ slug }: { slug: string }) {
             </nav>
           ) : null}
           <div className="docs-body" dangerouslySetInnerHTML={{ __html: page.html }} />
-          {next ? <a className="docs-next" href={`/docs/${next.slug}`}><span>Next</span>{next.title}</a> : null}
+          <nav className="docs-pager" aria-label="More guides">
+            {previous ? <a className="docs-prev" href={`/docs/${previous.slug}`}><span>Previous</span>{previous.title}</a> : <span />}
+            {next ? <a className="docs-next" href={`/docs/${next.slug}`}><span>Next</span>{next.title}</a> : null}
+          </nav>
         </article>
       </main>
       {toc.length ? (

@@ -16,7 +16,7 @@ Under **New change batch**, enter the pay period start and end and press **Prepa
 | start | a new employment period, with its role, pay and schedule |
 | change | a new version of terms, with each field's old and new value |
 | leave | approved leave in hours |
-| leave reversal | cancelled or corrected leave |
+| leave reversal | canceled or corrected leave |
 | end | the last day of employment |
 
 **Exceptions** lists anything a change cannot go without, such as a missing payroll identifier, with a link to fix it on the person's page.
