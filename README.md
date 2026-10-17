@@ -20,18 +20,9 @@ clones Willow and starts it:
 npx -y @runeditrun/rer dev just-every/run-willow
 ```
 
-No Node 22 yet? Install rer, then start Willow with it, as [run-willow.com/run](https://run-willow.com/run) shows:
+Without Node, `curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-willow` does the same. To start it again later, run `cd run-willow && rer dev`. To supply the real owner mailbox, run `npx -y @runeditrun/rer install just-every/run-willow`, then these from the checkout instead:
 
 ```sh
-curl -fsSL https://runeditrun.com/install.sh | sh
-rer dev just-every/run-willow
-```
-
-To start it again later, run `cd run-willow && rer dev`. To supply the real owner mailbox, run
-these from the checkout instead:
-
-```sh
-rer install
 rer setup --owner-email you@example.com
 rer dev
 ```
