@@ -208,7 +208,7 @@ HR defines typed, validated fields with requiredness, effective dates, employee/
 
 Employees browse and search a scoped directory by name, location, department and role and navigate a manager/report org chart. Current, future and former relationships use the same effective-date rules as the profile. HR previews reorganizations, handles vacant managers and rejects cycles without exposing pay or private contact details.
 
-**Acceptance evidence:** Open directory and org chart at desktop and phone widths; navigate a realistic multi-level team, search a location, inspect a future manager change and try a cycle. Compare chart, directory and profile on the effective date.
+**Acceptance evidence:** Open directory and org chart at desktop and phone widths; navigate a realistic multi-level team, search a location, inspect a future manager change and try a cycle. Compare chart, directory and profile on the effective date. Record a manager change effective today and open the chart that day without any chart edit: it shows the new reporting line, and its people count equals the directory's active count for the same date.
 
 ### PEOPLE-003 — Multi-row record tables and company assets.
 
@@ -220,7 +220,13 @@ Employee records hold dated multi-row tables: several emergency contacts (with a
 
 HR sets alerts on any standard or custom date field (PEOPLE-001/003): visa or work-authorization expiry, probation or introductory-period end, certification/licence expiry, contract end, work anniversary, I-9 reverification (US-001) and benefits eligibility dates. Each alert names the field, its lead times (such as 60, 30 and 7 days before), recipients by role (HR, the manager in force on the date, the employee, a named member) and channels (in-app, email under WIL-18, Slack/Teams under COMMS-001). Recipients are rechecked against the field's visibility each time an alert fires, so a member who cannot read a field never receives its alert and notice content never carries the restricted value. Alerts appear in a scoped upcoming-dates list, can open a FLOW-002 task with an owner and deadline (such as a probation review), fire once per lead time across scheduler restarts and stop when the date changes, the alert is retired or the person leaves.
 
-**Acceptance evidence:** Configure 30- and 7-day alerts on a restricted visa-expiry custom field to HR and a probation-end alert to the manager and HR that opens a review task, then advance the scheduler across every lead time and restart it. HR receives each visa alert once; the manager receives only the probation alert and its task; a manager without access to the visa field receives nothing and no notice contains its value. Move the probation date and end another person's employment; their earlier alerts no longer fire.
+**Acceptance evidence:** Configure 30- and 7-day alerts on a restricted visa-expiry custom field to HR and a probation-end alert to the manager and HR that opens a review task, then advance the scheduler across every lead time and restart it. HR receives each visa alert once; the manager receives only the probation alert and its task; a manager without access to the visa field receives nothing and no notice contains its value. Move the probation date and end another person's employment; their earlier alerts no longer fire. Record an I-9 reverification date (US-001) for a worker whose work authorization expires: HR receives its alert at each lead time, the upcoming-dates list shows it with its owner and due date, and a manager without access to the field sees neither.
+
+### PEOPLE-005 — Any person's record as of a chosen date.
+
+A member opens a person's record and picks any past or future date to see that person as they were, or are scheduled to be, on that day: the employment period, job title, department, location, manager, working schedule and pay in force, the document versions filed by then, leave balances from the ledger up to that date and the lifecycle work open on it, each linked to the version history behind it. The view uses the WIL-07 selection rules (inclusive boundaries, cancelled versions never in force, scheduled versions shown as scheduled) and the reader's current access (WIL-03, ROLE-001): choosing a date never reveals pay, private contact details, reasons or documents the reader cannot read today, and a privileged as-of read is audited like a current one. The page, the JSON door and the agent context accept the same as-of date and return the same values.
+
+**Acceptance evidence:** Give a person a pay change and a manager change last year, a cancelled title change and a transfer scheduled next month, file a document and take leave between them. As HR and as their manager, open the record through the page and `GET /api/willow/people/:id` as of a day before, between and after each boundary: each view shows exactly the period, terms, documents and balance in force that day, the cancelled version is never in force, the scheduled transfer appears only on and after its date, the manager sees no pay on any date and HR's as-of pay read is in the audit.
 
 ### SELF-001 — Employee and manager self-service portal.
 
@@ -238,7 +244,7 @@ Every member's home shows employer announcements (targeted to everyone or a grou
 
 The responsive portal and iOS/Android companion apps let employees update permitted details, read/sign documents, request PTO and complete tasks, and let hourly workers clock in and out and record breaks (TIME-001); managers approve requests and timesheets and see team coverage. Secure push notifications reveal no private employee data on a locked device. Session revocation applies on every device; reconnecting a saved draft revalidates permissions and source revision before submission. Keyboard, screen-reader and 390-pixel journeys meet WCAG 2.2 AA.
 
-**Acceptance evidence:** Use real employee/manager accounts for request, approval, task completion, document access and an hourly worker's clock-in, break and clock-out at 1440 and 390 pixels and on iOS/Android; interrupt a draft, revoke access, reconnect and prove no stale submission or private push content. Complete keyboard and screen-reader checks.
+**Acceptance evidence:** Use real employee/manager accounts for request, approval, task completion, document access and an hourly worker's clock-in, break and clock-out at 1440 and 390 pixels and on iOS/Android; interrupt a draft, revoke access, reconnect and prove no stale submission or private push content. Complete keyboard and screen-reader checks. A manager approves a pending PTO request from the push notice or the home list with one confirming action and no further form, while WIL-09's routed-approver and self-approval rules still hold.
 
 ### LOCALE-001 — Employee-facing languages, starting with Spanish.
 
@@ -390,7 +396,7 @@ HR configures vacation, sick and unpaid leave policies with eligibility, service
 
 Employees and managers have scoped absence/holiday calendars with employer-defined US federal/state/company holidays, partial days and working schedules. Requesting leave shows balance/coverage impact, notifies the effective approver in-app and by the configured channel, and follows substitute approval/reminder rules. Calendar subscriptions and Google Calendar/Microsoft Outlook connections expose only authorized absence labels/dates; cancellation or access loss removes or redacts updates without leaking reasons.
 
-**Acceptance evidence:** Request a partial-day absence over a company holiday, inspect the quote and shared calendar as employee/manager, deliver the manager request notice, delegate approval and cancel it. Read Google Calendar and Outlook updates and revoke access; confidential reasons never appear and stale requests cannot be approved.
+**Acceptance evidence:** Request a partial-day absence over a company holiday, inspect the quote and shared calendar as employee/manager, deliver the manager request notice, delegate approval and cancel it. Read Google Calendar and Outlook updates and revoke access; confidential reasons never appear and stale requests cannot be approved. Request Dec 22 to Jan 2 over company holidays on Dec 25 and Jan 1: the quote, the approved request and the ledger deduct only the scheduled hours of the other working days and show both holidays as not deducted.
 
 ### TIME-001 — Time, shifts and Deputy reconciliation.
 
@@ -430,11 +436,17 @@ An employer whose payroll runs on Paychex Flex connects it through Paychex's app
 
 **Acceptance evidence:** Connect a Paychex Flex employer (provider-edge tests plus a consented employer-account trial) and match an existing roster in which payroll resolves one ambiguous name. Then run the PAYROLL-001 journey: a hire whose Paychex worker reads back with matching fields, a pay change, a leave reversal, a termination, a correction made in Paychex Flex, and authorization revoked mid-sync and restored. Each case closes only on Paychex acknowledgement plus matching read-back, with no duplicate worker, duplicate pay change or false completion.
 
+### PAYROLL-006 — Pre-payday agreement check for every employee.
+
+For each pay period, before the connected provider's processing cutoff, Willow checks every employee in the pay group, not only those with changes, across the systems that feed the paycheck: Willow-owned employment status, pay rate or salary, approved leave hours and the period's handed-off changes (WIL-11) against a fresh payroll read-back (PAYROLL-001–005), and benefit and retirement elections (BENEFITS-002, RETIRE-001) against the deductions payroll will take. The result is one per-period agreement report in which each employee agrees, differs (naming the field, both values, the authoritative system under PAYROLL-001 and the owner who must act) or cannot be checked (stale read-back, missing provider identifier, uncertain submission). The period shows that every system agrees only when every employee agrees on read-backs taken after the last change and before the cutoff; a difference or unchecked employee keeps the period open with its owner under FLOW-002 escalation, and closes only when a new read-back matches. A change or provider-side edit after a passing check reopens it. Willow never alters pay to force agreement; payroll calculation and payment stay with the provider.
+
+**Acceptance evidence:** With a connected payroll provider (provider-edge tests plus a consented employer-account trial) and a 48-person pay group, run the check before cutoff with every system in agreement and see the period marked as agreeing with its read-back time. Then let the provider keep an old salary for one employee, deduct 4% against a 5% retirement election for another and leave a third without a provider identifier: the report lists all three with field, both values, authoritative system and owner, the period does not show agreement, and each item closes only after correction and a matching read-back. Record a pay change after a passing check and confirm the period reopens until checked again.
+
 ### BENEFITS-001 — Enrollment and life events through brokers and carriers.
 
 HR and employees manage eligibility, dependents, plan comparison/costs, open enrollment, new-hire elections, waivers, qualifying life events and termination with effective dates and required documents. Employee Navigator and employer-authorized broker/carrier connections exchange census and elections with contracted US plans, including Aetna, UnitedHealthcare and Anthem where selected. Show per-carrier submitted/accepted/active/rejected coverage evidence, enrollment deadlines and unresolved handoffs. Carrier/API/834 agreements, broker licensing partners and protected-data agreements are delivery work; no unchecked task declares coverage active. Employers whose broker or carrier is not connected still record plans, rates, eligibility rules, waivers and elections in Willow, run open enrollment and export census/election files; each such election stays "recorded, not confirmed" until HR attaches the carrier's confirmation and never shows as active coverage before then.
 
-**Acceptance evidence:** Enroll a new hire, waive a plan, add a dependent after a life event and terminate coverage. Send through Employee Navigator/broker to the selected carrier, ingest acknowledgement and compare active coverage/dates; reject a dependent mismatch and resolve it. Employees read their own elections, HR sees permitted status and managers cannot see health evidence. Without any connection, record a plan and an election, export the census and confirm the status stays recorded, not active, until a carrier confirmation is attached.
+**Acceptance evidence:** Enroll a new hire, waive a plan, add a dependent after a life event and terminate coverage. Send through Employee Navigator/broker to the selected carrier, ingest acknowledgement and compare active coverage/dates; reject a dependent mismatch and resolve it. Employees read their own elections, HR sees permitted status and managers cannot see health evidence. Without any connection, record a plan and an election, export the census and confirm the status stays recorded, not active, until a carrier confirmation is attached. Leave one new hire's elections incomplete as the new-hire enrollment deadline approaches: HR's enrollment view lists the hire as missing enrollment, the hire and HR receive one FLOW-002 reminder per cadence step, and reminders stop once an election or waiver is recorded.
 
 ### BENEFITS-002 — Benefit deductions and payroll mismatch resolution.
 
@@ -452,7 +464,7 @@ For employers at or near 50 full-time and full-time-equivalent employees, Willow
 
 Human Interest and Guideline connections maintain eligible census, employment dates, employee elections/deferrals, employer contribution mappings and payroll-period contribution status. Restricted HR/payroll owners review differences, submission receipts, provider acknowledgements and corrected census/contribution results. Custody, investment advice and plan administration stay with the plan provider while Willow follows the handoff to a verified outcome.
 
-**Acceptance evidence:** For each of Human Interest and Guideline, send a hire/eligibility change, update a deferral, reconcile contribution results and process an exit. Fail one census row and correct it without resending accepted rows; inspect the employee-scoped record and payroll reconciliation report.
+**Acceptance evidence:** For each of Human Interest and Guideline, send a hire/eligibility change, update a deferral, reconcile contribution results and process an exit. Fail one census row and correct it without resending accepted rows; inspect the employee-scoped record and payroll reconciliation report. Record a 5% deferral while payroll deducts 4%: the mismatch is flagged before the payroll cutoff with employee, period and amount, routed to its owner, and closes only after the corrected deduction reads back from payroll and the plan provider.
 
 ## Connected identity and collaboration
 
@@ -460,7 +472,7 @@ Human Interest and Guideline connections maintain eligible census, employment da
 
 Google Workspace, Microsoft 365/Entra ID and Okta connections map immutable employee identities and HR attributes to accounts, groups, licenses and role-based access rules. IT previews grants/changes and approves privileged access; join/move/leave dates drive execution. Exits suspend/disable accounts, revoke sessions/tokens, remove groups/licenses as authorized and verify observed provider state; shared mailbox/data ownership and device-return tasks (from the PEOPLE-003 asset register) have named owners. An uncertain or failed provider action blocks departure completion. Rehire requires new reviewed access and never restores prior privileges automatically.
 
-**Acceptance evidence:** For each named service, approve a joiner, transfer departments and offboard while holding an active external session. Inspect account/group/license read-back and session revocation, inject an API failure and show the open IT exception. Rehire and prove prior grants are not silently restored.
+**Acceptance evidence:** For each named service, approve a joiner, transfer departments and offboard while holding an active external session. Inspect account/group/license read-back and session revocation, inject an API failure and show the open IT exception. Rehire and prove prior grants are not silently restored. The joiner's Google Workspace, Microsoft 365 and Okta accounts become usable on the start date, not before, and the leaver's are disabled by the end of their last day in the employer's time zone; the leaver case lists each connected system with its verified removal state and cannot report access removed while any read-back is pending or still shows the account active.
 
 ### IDENTITY-002 — Google, Microsoft and Okta sign-in controls.
 
@@ -518,7 +530,7 @@ HR builds and saves scoped reports over standard/custom fields, effective-dated 
 
 Named move-in paths cover BambooHR (WIL-16), Rippling, HiBob, Gusto HR, Factorial and Deel HR using approved source APIs/exports. HR maps identities/custom fields and custom/multi-row tables including assets (PEOPLE-003), org/manager history, employment/pay versions, documents, signature templates and certificates, access levels (proposed, assigning nothing until approved), leave policies/balances/requests, benefits elections, goals/reviews/training, open lifecycle work, and open job openings with candidates and application history (from the incumbent, or from Greenhouse, Lever, Workable or JazzHR for employers leaving a separate ATS). Per-source preview lists unsupported fields and originals, reconciles counts and balances, and never substitutes empty data. Source IDs/provenance survive; repeated imports are idempotent, overlap cutover freezes agreed authority and guarded undo cannot destroy subsequent work. Imported history never grants sessions or triggers external actions. At cutover each connected payroll provider's existing roster (Gusto, ADP RUN, ADP Workforce Now, QuickBooks Payroll, Paychex Flex) is matched to the migrated people by provider identifier, then by reviewed name and date-of-birth matches, before any live sync starts; unmatched or ambiguous workers wait in a payroll-owned queue and nothing is created in the provider until they are resolved.
 
-**Acceptance evidence:** For each named source, preview a representative export with current/former/rehired workers, a signed document, balance, historical change, a custom table and an open opening with candidates; resolve conflicts, apply, compare row/document/balance totals and repeat. Edit an imported record and prove undo refusal; close cutover only after HR signs a variance report and all retained originals can be exported. Match a Paychex Flex roster with one unmatched and one ambiguous worker at cutover; no live sync runs and no Paychex worker is created until payroll resolves both.
+**Acceptance evidence:** For each named source, preview a representative export with current/former/rehired workers, a signed document, balance, historical change, a custom table and an open opening with candidates; resolve conflicts, apply, compare row/document/balance totals and repeat. Edit an imported record and prove undo refusal; close cutover only after HR signs a variance report and all retained originals can be exported. Match a Paychex Flex roster with one unmatched and one ambiguous worker at cutover; no live sync runs and no Paychex worker is created until payroll resolves both. Each source's export includes an open onboarding checklist with completed and outstanding tasks; it arrives as one open case whose completed tasks keep their completion and whose outstanding tasks keep assignee and due date, without sending any notice.
 
 ### MIGRATE-002 — Complete BambooHR move-in beyond the current kit.
 
@@ -567,6 +579,12 @@ Willow retains its supported rer install/setup/dev/build/verify/deploy/export/im
 A reference employer works on the owner's hosted deployment: 250 active and 150 former employees, seven years of effective-dated history (at least ten terms versions per person), 40,000 documents totalling 25 GB, the leave ledgers and lifecycle cases that history implies, and 60 concurrent signed-in members. Single documents up to 50 MB upload; migration source files and document archives up to 25 GB upload by resumable multipart transfer and are processed streaming, without holding a whole file in memory. On that data the hosted product meets: directory, profile and self-service pages p95 ≤ 1 s server time; directory search p95 ≤ 500 ms; standard reports and their CSV ≤ 5 s; custom reports ≤ 15 s or a background job with progress; a payroll change-batch preview for every employee ≤ 30 s; a full BambooHR move-in (WIL-16, MIGRATE-002) preview ≤ 30 minutes and apply ≤ 2 hours, resumable after interruption; owner archive export and restore ≤ 4 hours each. Work beyond the reference employer either completes within these bounds or is refused before any write with a named limit (such as `documents.total_bytes`); nothing is silently truncated.
 
 **Acceptance evidence:** Generate the invented reference employer and its BambooHR-shaped export (including a 25 GB documents archive), run move-in, directory, search, standard and custom reports, payroll batch preview, export and restore on a hosted deployment, and record each timing against its bound with complete row/byte reconciliation. Interrupt the move-in and resume it without duplicates; exceed one stated limit and receive the named refusal with no partial write.
+
+### OPEN-001 — Free and open source under the MIT license.
+
+Willow is free and open source under the MIT license: the source repository and the package declare MIT, and anyone may run, modify and redistribute it. Every capability in this contract is available in the open-source product with no license key, seat or employee cap, plan, paid gate or upgrade prompt from Willow's authors; OPS-002 bounds are capacity, not plan limits. Paid third-party services an employer connects (payroll providers, benefits brokers and carriers, retirement providers, Mitratech, Checkr, DocuSign, identity providers, Deputy, TalentLMS and hosting) are billed by those providers, and Willow names the provider as the party that charges before a connection is enabled. Willow replaces BambooHR, Rippling and HiBob through MIGRATE-001 and is not affiliated with them.
+
+**Acceptance evidence:** Verify the repository's `LICENSE` is the MIT license and `package.json` declares MIT; install from the public source with no account or key from Willow's authors and reach every product area as a 48-person employer without a payment, upgrade or license prompt; begin enabling a paid provider connection and verify the screen names that provider as the party that bills for it before activation.
 
 ## Push further: agents that finish approved HR work
 
@@ -641,21 +659,86 @@ Willow does not guarantee legal compliance or let an agent replace employer
 attestation. Human-reviewed rule/form versions, access agreements and provider
 acceptance are part of US-001/002, not implied shipped capabilities.
 
+## Homepage claims
+
+Every capability claim on the approved homepage (`src/site/landing/`, checked against br’s claims truth table of 17 October 2026, rows 1–58 in page order) maps to the clauses that promise it. A claim’s status is `done` when every mapped clause is done, `missing` when every one is missing, and `partial` otherwise. Hero and section cards are illustrations of the same capabilities and are held to them. 58 claims: 12 done, 36 partial, 10 missing.
+
+| # | Claim | Clause(s) | Status |
+| --- | --- | --- | --- |
+| 1 | "keeps your people records" | WIL-03, WIL-04, WIL-07 | done |
+| 2 | "welcomes new hires" | WIL-04, WIL-05 | done |
+| 3 | "handles time off" | WIL-08, WIL-09, WIL-10 | done |
+| 4 | "and changes" | WIL-05, WIL-07, WIL-15 | done |
+| 5 | "makes payroll ... agree" | WIL-11, WIL-21, PAYROLL-001, PAYROLL-006 | partial |
+| 6 | "makes ... benefits ... agree" | BENEFITS-001, BENEFITS-002 | missing |
+| 7 | "makes ... access agree" | WIL-12, IDENTITY-001 | partial |
+| 8 | "100% free, open source alternative to BambooHR, Rippling and HiBob" | OPEN-001, MIGRATE-001 | partial |
+| 9 | Hero card: "Welcome, Priya": laptop shipped, Okta account ready | WIL-05, PEOPLE-003, IDENTITY-001 | partial |
+| 10 | Hero card: time off for Marcus, Dec 22 – Jan 2, approved | WIL-09, WIL-10 | done |
+| 11 | Hero card: raise for Ana to $84,000, payroll and benefits updated | WIL-07, FLOW-004, WIL-11, BENEFITS-002, AGENT-001 | partial |
+| 12 | Hero card: offboarding Sam, access removed in 5 systems | WIL-12, IDENTITY-001 | partial |
+| 13 | Hero card: benefits enrollment missing, reminder sent | BENEFITS-001, FLOW-002 | partial |
+| 14 | Hero card: org chart, 48 people | PEOPLE-002 | partial |
+| 15 | "Job, pay, manager, documents and history live in one place, dated" | WIL-04, WIL-06, WIL-07 | done |
+| 16 | "so you always know what was true and when" | WIL-07 | done |
+| 17 | Card: offer letter signed, W-4 on file | SIGN-001, HIRING-004, US-001 | partial |
+| 18 | Card: I-9 reverification due Nov 30, reminder set | US-001, PEOPLE-004 | missing |
+| 19 | "Every new hire gets a checklist with owners and deadlines" | WIL-05 | done |
+| 20 | "from laptop and accounts to I-9, W-4 and state forms" | WIL-05, PEOPLE-003, IDENTITY-001, US-001, US-002 | partial |
+| 21 | "Willow chases each step until it is done" | FLOW-002, AGENT-003 | partial |
+| 22 | "People request leave" | WIL-09 | done |
+| 23 | "update their details" | SELF-001 | partial |
+| 24 | "find a teammate" | PEOPLE-002 | partial |
+| 25 | "Managers approve in one tap" | WIL-09, MOBILE-001 | partial |
+| 26 | "balances stay right" | WIL-08, WIL-10 | done |
+| 27 | Card: 64 hours PTO balance; Dec 22 to Jan 2 approved | WIL-09, WIL-10 | done |
+| 28 | Card: "Dec 25 and Jan 1 are company holidays · not deducted" | LEAVE-002 | partial |
+| 29 | Card: address updated | SELF-001 | partial |
+| 30 | Card: to do, sign the 2027 handbook | SIGN-002, SELF-002 | missing |
+| 31 | "Offer letters and policies come from your templates" | SIGN-001 | missing |
+| 32 | "go out for e-signature" | SIGN-001, SIGN-002 | missing |
+| 33 | "and land in each person's record" | WIL-06, SIGN-001 | partial |
+| 34 | Card: 2027 handbook 46 of 48 signed, reminders sent to 2 | SIGN-002 | missing |
+| 35 | "Payday · 48 people · every system agrees" | PAYROLL-006, AGENT-001 | partial |
+| 36 | "Live two-way sync with Gusto, ADP RUN and QuickBooks Payroll" | PAYROLL-001, PAYROLL-002, PAYROLL-003, PAYROLL-004 | partial |
+| 37 | "Every change is acknowledged" | WIL-11, PAYROLL-001 | partial |
+| 38 | "any difference is caught before payday" | PAYROLL-006, PAYROLL-001 | partial |
+| 39 | Card: 401(k) for Marcus Hill, 5% vs 4%, corrected | RETIRE-001, BENEFITS-002 | missing |
+| 40 | "Google Workspace, Microsoft 365 and Okta accounts open on day one and close on the last" | IDENTITY-001 | partial |
+| 41 | "Willow checks each one is really gone" | IDENTITY-001 | partial |
+| 42 | "Approve a raise, a move or a leave" | WIL-15, FLOW-004, WIL-09 | partial |
+| 43 | "The agent carries it through payroll, benefits, access and time off, then checks every system agrees" | AGENT-001 | partial |
+| 44 | "Move from BambooHR" | WIL-16, MIGRATE-002 | partial |
+| 45 | "Rippling or HiBob" | MIGRATE-001 | partial |
+| 46 | "with records, history, documents, balances and open checklists" | MIGRATE-001, MIGRATE-002 | partial |
+| 47 | "Payroll reconnects to the same people" | MIGRATE-001, PAYROLL-001 | partial |
+| 48 | "Run Willow on your own computer or server" | OPS-001 | partial |
+| 49 | "keep every record, document and change" | WIL-17, DATA-001, AUDIT-001 | partial |
+| 50 | "Export everything, any time" | WIL-17, DATA-001 | partial |
+| 51 | Org chart: "Always current, straight from the records" | PEOPLE-002 | partial |
+| 52 | Reviews and goals | PERFORM-001 | missing |
+| 53 | Pulse surveys | ENGAGE-001 | missing |
+| 54 | History by date: "See anyone's record as of any day" | PEOPLE-005, WIL-07 | partial |
+| 55 | New-hire reporting: "State forms ready for each hire" | US-002 | missing |
+| 56 | Activity log: "Every change and approval, recorded" | AUDIT-001, WIL-03 | partial |
+| 57 | "Open source HR software for small and mid-size businesses" · "Free and open source, MIT licensed" | OPEN-001 | partial |
+| 58 | Closing art: Devon starts Monday, payroll sent | WIL-05, WIL-11 | done |
+
 ## Status
 
-Judged from the code and tests at commit `59e3d42eb07e99d0f54dd48559056fe0a73d02ac` (17 October 2026).
+Judged from the code and tests at commit `84231c06dc4f709b4a04126fdfc3d43b13c771f2` (17 October 2026).
 
-86 clauses: 21 done, 34 partial, 31 missing. The branch changes only the
+89 clauses: 21 done, 37 partial, 31 missing. The branch changes only the
 contract documents, so the judged code is the branch's code. Evidence cites the
 repository paths that back a done or partial row; a partial citation proves
 only the foundation it names. Published clauses are WIL-01–WIL-21 from the
-released contract; push-further clauses are the agent section.
+released contract; push-further clauses are the agent section. The earlier statuses were judged at `59e3d42eb07e99d0f54dd48559056fe0a73d02ac`; between it and the commit above, `src/willow` and its tests changed only in display (US English labels, US dates and the employer-setup defaults) and the run site was rebuilt, so every earlier status stands. Revised 17 October 2026 so every capability claim on the approved homepage has a clause (see [Homepage claims](#homepage-claims)): PEOPLE-005, PAYROLL-006 and OPEN-001 were added and judged from the commit above, and PEOPLE-002, PEOPLE-004, MOBILE-001, LEAVE-002, BENEFITS-001, RETIRE-001, IDENTITY-001 and MIGRATE-001 were sharpened without changing their statuses.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 21 | 0 | 0 | 21 |
-| Target and push further | 0 | 34 | 31 | 65 |
-| All | 21 | 34 | 31 | 86 |
+| Target and push further | 0 | 37 | 31 | 68 |
+| All | 21 | 37 | 31 | 89 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -684,6 +767,7 @@ released contract; push-further clauses are the agent section.
 | `PEOPLE-002` | Directory and navigable organizational chart | target | partial | `src/willow/profile.ts`, `src/willow/employment.ts`: scoped directory and effective-dated manager relationships | Navigable org chart, reorganization preview, vacant-manager handling and cycle refusal. |
 | `PEOPLE-003` | Multi-row record tables and company assets | target | missing | `src/willow/people.ts` holds one private emergency-contact value | Multi-row tables, custom tables and the asset register with device-return tasks. |
 | `PEOPLE-004` | Date alerts on employee dates | target | missing | | No date-field alerts, lead times, upcoming-dates list or alert-created tasks exist. |
+| `PEOPLE-005` | Any person's record as of a chosen date | target | partial | `src/willow/ui/people.ts`, `src/willow/employment.ts`, `src/willow/reports.ts`; `tests/willow/flows.mjs` (WIL-07, WIL-14): every terms version listed per person as past, in force, scheduled or canceled, and summaries as of a chosen date | A date-selected view of one person's record (page, JSON door and agent context) with that day's documents and balances. |
 | `SELF-001` | Employee and manager self-service portal | target | partial | `src/willow/people.ts`, `src/willow/leave.ts`, `src/willow/ui/home.ts`; `tests/willow/flows.mjs` (WIL-05, WIL-09): own profile, tasks and PTO requests | Approval-based profile/dependent changes and unified pending-change tracking. |
 | `SELF-002` | Company home: announcements, celebrations and shared files | target | missing | `src/willow/ui/home.ts` shows only the member's own tasks, approvals and leave | Announcements, celebrations and shared company folders. |
 | `MOBILE-001` | Mobile work and accessible companion apps | target | partial | `src/willow/ui/leave.ts`; `tests/willow/journey.mjs`: responsive request and approval | Native iOS/Android apps, secure push, mobile clock-in and full accessibility acceptance. |
@@ -717,6 +801,7 @@ released contract; push-further clauses are the agent section.
 | `PAYROLL-003` | Live ADP RUN and Workforce Now connections | target | missing | `src/willow/payroll-layout.ts` implements the ADP RUN file layout only | Neither ADP live connector exists. |
 | `PAYROLL-004` | Live QuickBooks Payroll connection | target | missing | | No QuickBooks Payroll connector exists. |
 | `PAYROLL-005` | Live Paychex Flex connection | target | missing | `src/willow/payroll-layout.ts` offers only the generic mapped file a Paychex employer could upload | No Paychex Flex connection, roster matching, real-time hire creation or read-back exists. |
+| `PAYROLL-006` | Pre-payday agreement check for every employee | target | partial | `src/willow/payroll.ts`; `tests/willow/flows.mjs` (WIL-11): a per-pay-period batch preview, calculated from one source snapshot, listing every change not yet handed off and every exception before handoff | Whole-roster comparison with provider read-back, deduction checks, the per-period agreement result and cutoff timing. |
 | `BENEFITS-001` | Enrollment and life events through brokers and carriers | target | missing | | No benefits enrollment, Employee Navigator or carrier workflow exists. |
 | `BENEFITS-002` | Benefit deductions and payroll mismatch resolution | target | missing | | No benefit deduction mapping or reconciliation exists. |
 | `BENEFITS-003` | ACA full-time measurement and 1095-C data | target | missing | | No ACA measurement, offer-of-coverage records or 1095-C data exists. |
@@ -739,6 +824,7 @@ released contract; push-further clauses are the agent section.
 | `SECURITY-002` | Native second-factor sign-in and an owner MFA policy | target | missing | `src/auth.server.ts` offers email-link and optional OIDC sign-in with one factor | TOTP/passkey enrollment, recovery codes, the owner MFA policy, trusted devices, the enrollment report and delegated resets. |
 | `OPS-001` | Runnable, recoverable employer-owned product | target | partial | `scripts/installer/local.mjs`, `AGENTS.md`, `SEED-COMMAND-CONTRACT.md`; `tests/willow/journey.mjs`, `tests/willow/restore-access.mjs`: current local lifecycle | Upgrade, capacity, accessibility and future-work recovery acceptance. |
 | `OPS-002` | Reference employer capacity with stated bounds | target | partial | `src/willow/documents.ts` (10 MB) and `src/willow/movein/bamboohr.ts` (8 MB) refuse oversize files with file_size before writing | Reference-employer bounds, multipart transfer and hosted measurement. |
+| `OPEN-001` | Free and open source under the MIT license | target | partial | `LICENSE`, `package.json`; `tests/willow/journey.mjs`: a fresh clone installs, sets up and runs with no account or key | No test checks the license or the absence of paid gates across product areas, and no connection screen names a provider's billing before activation. |
 | `AI-001` | Cited HR policy answers under the reader’s authority | push-further | partial | `src/willow/proposals.ts`; `tests/willow/flows.mjs` (WIL-15): scoped, policy-citing context | Interactive policy answers and their provider controls. |
 | `AI-002` | Natural-language workflow building with impact preview | push-further | partial | `src/willow/model-drafts.ts`, `src/willow/proposals.ts`; `tests/willow/phase2.mjs` (WIL-20): controlled checklist drafts | Natural-language conditions, cross-system simulation and publication. |
 | `AGENT-001` | Reconcile an approved employee change until systems agree | push-further | partial | `src/willow/proposals.ts`, `src/willow/payroll.ts`; `tests/willow/flows.mjs` (WIL-15, WIL-11): bound human approvals and file handoff | Multi-provider agent execution and read-back. |
