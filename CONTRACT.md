@@ -643,7 +643,7 @@ acceptance are part of US-001/002, not implied shipped capabilities.
 
 ## Status
 
-Judged from the code and tests at commit `aa18aa05eee369ab3c51e8ec159cb9b532342470` (17 October 2026).
+Judged from the code and tests at commit `59e3d42eb07e99d0f54dd48559056fe0a73d02ac` (17 October 2026).
 
 86 clauses: 21 done, 34 partial, 31 missing. The branch changes only the
 contract documents, so the judged code is the branch's code. Evidence cites the
