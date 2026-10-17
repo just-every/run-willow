@@ -633,7 +633,7 @@
       "executable": false
     },
     "public/site/theme.css": {
-      "sha256": "becafdd513a385315b87ada8fd3433b6f31a4b4063f90fdb27f5445df011c087",
+      "sha256": "8422c65210b504c0c3c21f4029d8ce1545f94b3b6a86fad722be272ce9e7ceda",
       "executable": false
     },
     "public/willow-connections.css": {
@@ -2389,7 +2389,7 @@
       "executable": false
     },
     "src/site/landing/Hero.tsx": {
-      "sha256": "ec74262f3af9c765b005ddbbddde9b2787477d15ff7600b3a6aaec5fd64a0685",
+      "sha256": "ff21ca8668ae82ff3656a2d7520114088865ea0a90c98764f90c3abff7a3bcea",
       "executable": false
     },
     "src/site/landing/HeroCards.tsx": {
@@ -2409,7 +2409,7 @@
       "executable": false
     },
     "src/site/landing/sections/Closing.tsx": {
-      "sha256": "117be6a562b749b7d797c8b263b222df4c8beaf365b85adad8785bf31c16201f",
+      "sha256": "baf229abb9f328693294eeefeb82b045173cda35a95f5428715edacb0ae29453",
       "executable": false
     },
     "src/site/landing/sections/Details.tsx": {
@@ -2469,11 +2469,11 @@
       "executable": false
     },
     "src/site/styles/docs.css": {
-      "sha256": "ea8591a7d79743ac57a8c9ed9e7a01e0df74e417c159b65af57fcd21f7274926",
+      "sha256": "6165b312032b5c2f22dc062a8dd2cb60aefd2cae2a6412a267354fa32a81c1d0",
       "executable": false
     },
     "src/site/styles/landing.css": {
-      "sha256": "5de5c9190b5e8ac480b45007fe2451fae1aefa5fca7d8aa3c800cb6a0e1e3bc3",
+      "sha256": "d134b3f2fb9f0723fb4e185554948d81b3ac64eef30643b6c26ffbd70ef37f17",
       "executable": false
     },
     "src/site/styles/site.css": {
