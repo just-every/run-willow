@@ -249,7 +249,7 @@
       "executable": false
     },
     "docs/getting-started.md": {
-      "sha256": "adf960d7a80af39b341b060f4643cf0ce284fc8b851a2534213a000df28eba83",
+      "sha256": "1b468c622b18b442cdd173357f0d1d6c4cb1a3b57e677ced7e43db2c763698ad",
       "executable": false
     },
     "docs/leave.md": {
@@ -381,7 +381,7 @@
       "executable": false
     },
     "OPERATIONS.md": {
-      "sha256": "09824dfc7b0a216c0d50dca9bdde88357d955532d62c26eb2b6858957deb780d",
+      "sha256": "c3e76ff42ffac2891cdb4a72e83797714ed27a0b32a24b2a9509d25fa16ccad1",
       "executable": false
     },
     "package.json": {
@@ -525,7 +525,7 @@
       "executable": false
     },
     "README.md": {
-      "sha256": "9c77db3b603b4094888c9a645346301c34d08e34e464bc6507e7bd5671d2cc4d",
+      "sha256": "c683095a6bace8548e8f01aed3b3d1c247359d749a7f8b99c4c72f28e064833b",
       "executable": false
     },
     "RELEASE.json": {
@@ -541,7 +541,7 @@
       "executable": false
     },
     "RUN-LOCALLY.md": {
-      "sha256": "4003a541910ed9a8d11d8106f707a2f477dc5ee04674b2946a8bd98bdab1b212",
+      "sha256": "a2e890c72fa00c1a2214e2acafd7e6e074546cf94b47cf3a08b51d85297c2950",
       "executable": false
     },
     "scripts/edition-authoring/base-copies.mjs": {
