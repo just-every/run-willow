@@ -20,7 +20,7 @@ Statuses below distinguish that target from what is implemented today.
   tests against the built Worker with real local D1/R2. Private-field checks
   crawl every current registered read door with different member grants.
 - `WILLOW_TEST_CHECKOUT=1 pnpm run test:journey` runs in a disposable fresh
-  clone through setup, personas, build, preview, export and fresh-clone restore,
+  clone that the test installs and sets up with an answers file, then personas, build, preview, export and fresh-clone restore,
   including ordinary sign-in after recovery at 1440 and 390 pixels.
 - `pnpm run test:phase2-browser` checks connections/payroll views;
   `pnpm run test:site` checks the separate run site. GitHub Verify runs these
@@ -229,7 +229,7 @@ expanded module that cites them as a foundation.
 
 - **OPS-002 — Reference employer capacity with stated bounds. Status: partial.** Generate the invented reference employer and its BambooHR-shaped export (including a 25 GB documents archive), run move-in, directory, search, standard and custom reports, payroll batch preview, export and restore on a hosted deployment, and record each timing against its bound with complete row/byte reconciliation. Interrupt the move-in and resume it without duplicates; exceed one stated limit and receive the named refusal with no partial write. Current evidence: `src/willow/documents.ts` (10 MB) and `src/willow/movein/bamboohr.ts` (8 MB) refuse oversize files with file_size before writing. Remaining: Reference-employer bounds, multipart transfer and hosted measurement.
 
-- **OPEN-001 — Free and open source under the MIT license. Status: partial.** Verify the repository's `LICENSE` is the MIT license and `package.json` declares MIT; install from the public source with no account or key from Willow's authors and reach every product area as a 48-person employer without a payment, upgrade or license prompt; begin enabling a paid provider connection and verify the screen names that provider as the party that bills for it before activation. Current evidence: `LICENSE`, `package.json`; `tests/willow/journey.mjs`: a fresh clone installs, sets up and runs with no account or key. Remaining: No test checks the license or the absence of paid gates across product areas, and no connection screen names a provider's billing before activation.
+- **OPEN-001 — Free and open source under the MIT license. Status: partial.** Verify the repository's `LICENSE` is the MIT license and `package.json` declares MIT; start it from the public source with the one line `npx -y @runeditrun/rer dev just-every/run-willow`, with no account or key from Willow's authors, and reach every product area as a 48-person employer without a payment, upgrade or license prompt; begin enabling a paid provider connection and verify the screen names that provider as the party that bills for it before activation. Current evidence: `LICENSE`, `package.json`; `tests/willow/journey.mjs`: a disposable fresh clone installs, sets up and runs with no account or key, the steps the one-line start performs. Remaining: No test checks the license or the absence of paid gates across product areas, and no connection screen names a provider's billing before activation.
 
 ### Push further: agents that finish approved HR work
 
