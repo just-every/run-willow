@@ -1,8 +1,9 @@
 // The run site (run-willow.com) `rer build --site` writes: the homepage with its Run action, /run, the docs from
-// docs/*.md, and the not-found page. Every page is static, needs no script to read and links to no instance-only
-// route; the installed `/` is the Lobby.
+// docs/*.md, /contract from CONTRACT.md, and the not-found page. Every page is static, needs no script to read and
+// links to no instance-only route; the installed `/` is the Lobby.
 import type { ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { contractPageHtml } from '../base/contract-page'
 import { runPageHtml, siteNotFoundHtml, type SiteBuild, type SiteContext } from '../base/run-site'
 import type { EditionIdentity } from '../base/identity'
 import { identity } from '../identity'
@@ -21,7 +22,7 @@ const SHARE_IMAGE = `${identity.runSite}/site/share.jpg`
 const TITLE = 'Willow — Look after every person.'
 const DESCRIPTION = 'Willow keeps your people records, welcomes new hires, handles time off and changes, and makes payroll, benefits and access agree. 100% free, open source alternative to BambooHR, Rippling and HiBob.'
 
-export function sitePages({ styles }: SiteContext): SiteBuild {
+export function sitePages({ styles, contract }: SiteContext): SiteBuild {
   const document = (title: string, description: string, body: ReactElement, script = '') => '<!doctype html>' + renderToStaticMarkup(
     <html lang="en">
       <head>
@@ -52,10 +53,11 @@ export function sitePages({ styles }: SiteContext): SiteBuild {
   return {
     pages: [
       { path: '/', html: document(TITLE, DESCRIPTION, <Landing />) },
-      { path: '/run', html: runPageHtml(siteIdentity, run) },
+      { path: '/run', html: runPageHtml(siteIdentity, run, contract) },
+      ...(contract ? [{ path: '/contract', html: contractPageHtml(siteIdentity, run, contract) }] : []),
       { path: '/docs', html: document(docsTitle, docsLead, <DocsIndex />) },
       ...docsPages.map(page => ({ path: `/docs/${page.slug}`, html: document(`${page.title} · Willow docs`, page.summary, <DocsArticle slug={page.slug} />, COPY) })),
-      { path: '/404', html: siteNotFoundHtml(siteIdentity, run) },
+      { path: '/404', html: siteNotFoundHtml(siteIdentity, run, contract) },
     ],
     assets: ['fonts', 'brand', 'site', 'favicon.ico', 'apple-touch-icon.png'],
   }

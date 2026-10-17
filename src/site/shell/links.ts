@@ -6,6 +6,7 @@ export const links = {
   home: '/',
   docs: '/docs',
   run: '/run',
+  contract: '/contract',
   demo: 'https://demo.run-willow.com/',
   source: pkg.repository.url,
   licence: `${pkg.repository.url}/blob/main/LICENSE`,

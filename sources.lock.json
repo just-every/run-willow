@@ -205,7 +205,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "6460eb0b6638b98dc667b5b5147e57623ad0f04e3d61542b19904bb7bb3783ec",
+      "sha256": "132e2b7c18bceaef1b0d387b5e4f1d806506b4c5dc8b57c8343f22aae7ac1161",
       "executable": false
     },
     "CLAUDE.md": {
@@ -385,11 +385,11 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "3eb40a908afa1959509033be3cae87286eb2c60dc78a2fe760918031b8ee078a",
+      "sha256": "fc461c1ea3583fc5e34fbe2956fa82fb057dc17d38ed968a20894edf69da0df1",
       "executable": false
     },
     "pnpm-lock.yaml": {
-      "sha256": "c0816dbefcbbb866dfa451995f0071ec951b6c2e45d44f2f3addedd4032e2a1c",
+      "sha256": "34c8057a599063bb3532c1e3cde141d0cd8e20431ff744eec1a895de61a121d6",
       "executable": false
     },
     "public/apple-touch-icon.png": {
@@ -805,7 +805,7 @@
       "executable": false
     },
     "src/base/run-site.ts": {
-      "sha256": "53b3f379b9b35c7736ab7f62e36b2687c61ce135bfc0f3b7fc77f752092bc081",
+      "sha256": "608a6b61630ee1cddfa4bd797f2b6c1880ab699b89c82e37bba18f4690b5ca01",
       "executable": false
     },
     "src/base/setup-state.ts": {
@@ -2417,7 +2417,7 @@
       "executable": false
     },
     "src/site/pages.tsx": {
-      "sha256": "669885431841b264bc37a3d4efe2d46b6c5ff0dee91ba04638cc2995d33d9da5",
+      "sha256": "8fd09fde091c8e93c74b2a923a749346b91ce7ca31dc0b30851cf56e5f4f0116",
       "executable": false
     },
     "src/site/run.ts": {
@@ -2429,7 +2429,7 @@
       "executable": false
     },
     "src/site/shell/links.ts": {
-      "sha256": "53e4cd495545b822d359e66cb11d5b1329089ce25d2737945e70d588575ca228",
+      "sha256": "907188b14246aed02816ca101982d1591d568a666db0864df751806c80572aa7",
       "executable": false
     },
     "src/site/shell/Lockup.tsx": {
@@ -2441,7 +2441,7 @@
       "executable": false
     },
     "src/site/shell/SiteHeader.tsx": {
-      "sha256": "b85b4e21095f0f5932536974b876875cf73114bde32c9280d73aec8a98d73e28",
+      "sha256": "a09be6cc728051d41ebd17f04323694a27e192a7b9971e1bd7a3db4ce39dfe1c",
       "executable": false
     },
     "src/site/styles/cards.css": {
