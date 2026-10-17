@@ -1,66 +1,295 @@
 # Willow release scope and acceptance
 
-Willow supports one employer's people register, effective-dated employment,
-private documents, schedule-based leave, lifecycle work and reviewed payroll
-file handoff. It runs locally without provider accounts. [CONTRACT.md](CONTRACT.md)
-holds clauses WIL-01 to WIL-21 and their verification commands.
+Target: the connected SMB HRIS in [CONTRACT.md](CONTRACT.md), approved
+16 October 2026. The delivered edition has a substantial records, documents,
+leave, lifecycle and reviewed payroll-file foundation. The target also includes
+hiring and background-check orders, self-service in English and Spanish,
+access levels, native second-factor sign-in, an open API and webhooks, live
+payroll (including Paychex Flex)/benefits/access reconciliation, native signed packets, EEO-1 and ACA
+data, a stated reference-employer capacity, performance, engagement and agents
+that finish approved work.
+Statuses below distinguish that target from what is implemented today.
 
 ## Verification
 
-- `rer verify` checks source integrity, copied Base modules, builds, typechecks
-  and runs email-link, Willow flow, regression and optional-connection tests.
-  The built Worker uses real local D1/R2 and public JSON, form and download
-  doors. Private-field checks crawl every registered read door for members
-  with different grants.
+- `node scripts/edition-authoring/cli.mjs check` checks the tracked source lock.
+  After intentional contract edits, regenerate it with the repository’s `lock`
+  command and confirm only the two document entries changed.
+- `rer verify` checks source integrity and copied Base modules, builds,
+  typechecks and runs email-link, Willow flow, regression and optional-connection
+  tests against the built Worker with real local D1/R2. Private-field checks
+  crawl every current registered read door with different member grants.
 - `WILLOW_TEST_CHECKOUT=1 pnpm run test:journey` runs in a disposable fresh
-  clone. It exercises setup, personas, build, preview, export and fresh-clone
-  restore through the maintained command, including access after recovery.
-- `pnpm run test:phase2-browser` exercises the connection and payroll views;
-  `pnpm run test:site` builds and checks the separate run site. GitHub Verify
-  runs these checks and the browser journey.
+  clone through setup, personas, build, preview, export and fresh-clone restore,
+  including ordinary sign-in after recovery at 1440 and 390 pixels.
+- `pnpm run test:phase2-browser` checks connections/payroll views;
+  `pnpm run test:site` checks the separate run site. GitHub Verify runs these
+  and the browser journey. Existing tests remain intact in this document round.
+- Before publication, Base’s publication scan must pass on the exact committed
+  tree. Document integrity and a green existing CI do not prove unimplemented
+  target journeys below.
 
-People and import files in the tests are invented. Mail, OIDC and model
-fixtures replace only provider network edges. These checks cover local
-behavior, not real provider delivery, payroll-account acceptance or hosted
-capacity. Browser artifacts use `WILLOW_EVIDENCE_DIR` outside the checkout.
+People and import files in tests are invented. Fakes replace only provider
+network edges. Each new connector needs public-door tests for authorization,
+identity/mapping, conflict, failure/uncertainty, replay, restart and read-back,
+plus a consented real employer-account trial before production readiness.
+Commercial app review, scopes, protected-data agreements and production partner
+access are implementation tasks, not acceptance exemptions. Browser artifacts
+use `WILLOW_EVIDENCE_DIR` outside the checkout. No hosted capacity, legal
+compliance, inbox receipt or provider certification is inferred from local CI.
+
+## Clause acceptance
+
+Each entry lists the required public-door journey, current status and existing
+proof or missing portion. A future journey has no implied implemented endpoint.
+Existing test names cover their present guarantees only; they do not prove the
+expanded module that cites them as a foundation.
+
+### Retained foundation
+
+- **WIL-01 — Employer setup and explicit membership. Status: done.** From setup, configure an employer, invite a member, grant access, end it and sign in again; former sessions fail and a new sign-in restores no removed grant. Current evidence: `src/willow/employer.ts`, `src/willow/members.ts`; `tests/willow/flows.mjs` (WIL-01), `tests/willow/regressions.mjs`.
+
+- **WIL-02 — Visibility preview without privilege escalation. Status: done.** As HR, preview an employee as a manager, employee and ended member; compare the actual member response and prove values withheld from the previewer never appear. Current evidence: `src/willow/profile.ts`; `tests/willow/flows.mjs` (WIL-02), `tests/willow/regressions.mjs`.
+
+- **WIL-03 — Private records through every public door. Status: done.** As owner, HR, payroll, manager and employee, crawl every registered API/page/download, CSV, preview and agent-context door with planted private values; only entitled readers receive each facet and privileged reads are audited. Current evidence: `src/willow/access.ts`, `src/willow/profile.ts`, `src/willow/doors.ts`; `tests/willow/flows.mjs` (WIL-03).
+
+- **WIL-04 — People and separate employment periods. Status: done.** Create a joiner through the form or JSON action, inspect their person and first period, then attempt duplicate identifiers and overlapping periods; refuse invalid writes without partial records. Current evidence: `src/willow/people.ts`, `src/willow/lifecycle.ts`; `tests/willow/flows.mjs` (WIL-04).
+
+- **WIL-05 — Versioned joiner, mover and leaver cases. Status: done.** Start a case, publish a new template, complete tasks as the right and wrong assignees, and attempt closure with missing evidence; the original template version and incomplete gate remain. Current evidence: `src/willow/lifecycle.ts`; `tests/willow/flows.mjs` (WIL-05).
+
+- **WIL-06 — Private immutable documents and receipt acknowledgements. Status: done.** Upload two private document versions, download as permitted and forbidden members, verify checksums and audit, and acknowledge the latest version; an older receipt cannot stand in for the latest or a signature. Current evidence: `src/willow/documents.ts`; `tests/willow/flows.mjs` (WIL-06).
+
+- **WIL-07 — Effective-dated terms and compensation. Status: done.** Schedule past and future changes, read profiles/directory/reports as of each boundary, cancel a version and inspect history; immutable terms and consistent manager scope survive. Current evidence: `src/willow/people.ts`, `src/willow/employment.ts`; `tests/willow/flows.mjs` (WIL-07), `tests/willow/regressions.mjs`.
+
+- **WIL-08 — Approved leave policies and opening balances. Status: done.** Approve a policy, open an account, refuse requests before balance sign-off, then accrue twice for the same interval; the opening entry and accrual post once. Current evidence: `src/willow/leave.ts`; `tests/willow/flows.mjs` (WIL-08).
+
+- **WIL-09 — Schedule-based requests and routed approval. Status: done.** Request leave over a schedule/manager change, inspect team coverage and the quote, then decide as the routed approver; self-approval and confidential-reason disclosure are refused. Current evidence: `src/willow/leave.ts`; `tests/willow/flows.mjs` (WIL-09), `tests/willow/regressions.mjs`.
+
+- **WIL-10 — Atomic append-only leave ledger. Status: done.** Submit competing requests and decisions, cancel approved leave and correct dates; one spend/decision and exactly one reversal remain in the public ledger. Current evidence: `src/willow/leave.ts`; `tests/willow/flows.mjs` (WIL-10).
+
+- **WIL-11 — Reviewed payroll change batches. Status: done.** Preview and export a batch; change source data before export and prove refusal, race competing exports, cancel before and after handoff, then record acknowledgement; claims and frozen lines stay consistent. Current evidence: `src/willow/payroll.ts`; `tests/willow/flows.mjs` (WIL-11), `tests/willow/regressions.mjs`.
+
+- **WIL-12 — Evidence-gated departure and native access termination. Status: done.** End a period, inspect the leaver case, try closure before IT evidence, and finish the end-access task; sign-in and permissions end while incomplete external work stays visible. Current evidence: `src/willow/lifecycle.ts`; `tests/willow/flows.mjs` (WIL-12).
+
+- **WIL-13 — Rehire without restored authority. Status: done.** Rehire a former person into a new period, inspect prior history and sign-in; the person is reused and prior grants remain ended. Current evidence: `src/willow/lifecycle.ts`; `tests/willow/flows.mjs` (WIL-13), `tests/willow/regressions.mjs`.
+
+- **WIL-14 — Scoped workforce summaries. Status: done.** Open summaries and their CSV as HR, manager and employee, with and without pay.read; counts, filters, as-of rules and withheld compensation match. Current evidence: `src/willow/reports.ts`; `tests/willow/flows.mjs` (WIL-14).
+
+- **WIL-15 — Human-approved agent proposals and restricted context. Status: done.** Propose a joiner/mover via JSON, inspect exact diff and missing fields, approve it as HR, and repeat after changing the source; execution has one bound receipt and stale approval is refused. Current evidence: `src/willow/proposals.ts`; `tests/willow/flows.mjs` (WIL-15).
+
+- **WIL-16 — Reviewed BambooHR move-in with guarded undo. Status: done.** Preview CSV/XLSX people, balance CSV and document ZIP, resolve conflicts, apply, repeat and undo; originals and categories survive, balances require sign-off, and edited imports cannot be undone. Current evidence: `src/willow/movein/bamboohr.ts`, `src/willow/movein/target.ts`; `tests/willow/flows.mjs` (WIL-16).
+
+- **WIL-17 — Complete current-edition archive and restored sign-in. Status: done.** Export a populated installation, refuse corrupt/nonempty restores, import into an empty fresh clone and export again; compare all portable rows and document bytes, then use new ordinary email links for active and ended members and refuse source sessions/tokens. Current evidence: `scripts/installer/local.mjs`; `tests/willow/restore.mjs`, `tests/willow/restore-access.mjs`, `tests/willow/journey.mjs`.
+
+- **WIL-18 — Optional safe business-event email. Status: done.** Enable notices, assign/complete a task, decide leave and prepare payroll; inspect permitted recipients and fixed-copy links, revoke a recipient before dispatch and inject mail failure; business work remains committed and failures visible. Current evidence: `src/willow/notices.ts`; `tests/willow/phase2.mjs` (WIL-18).
+
+- **WIL-19 — Optional OIDC with explicit identity linking. Status: done.** Link a Google OIDC identity with fresh local proof, sign in, unlink and exercise bad configuration/token exchange; member IDs and grants remain stable, provider roles grant nothing and ordinary email sign-in still works. Current evidence: `src/auth.server.ts`, `src/willow/connections.ts`; `tests/willow/phase2.mjs` (WIL-19).
+
+- **WIL-20 — Structural model checklist drafts under human control. Status: done.** With the owner-selected model enabled, request a structural checklist draft, inspect outbound payload, accept/decline valid output and refuse uncited, stale or failed output; no employee/private text leaves and acceptance changes no employment task. Current evidence: `src/willow/model-drafts.ts`; `tests/willow/phase2.mjs` (WIL-20).
+
+- **WIL-21 — Frozen mapped payroll files and ADP RUN compatibility. Status: done.** Map generic columns and ADP RUN company/frequency/earnings codes, preview, mutate source/layout and prove refusal, then export unchanged input and re-download after a mapping edit; exact reviewed bytes survive and unsupported ADP changes are refused. Current evidence: `src/willow/payroll-layout.ts`, `src/willow/payroll.ts`; `tests/willow/phase2.mjs` (WIL-21), `tests/willow/regressions.mjs`.
+
+### People and self-service
+
+- **PEOPLE-001 — Typed custom employee fields. Status: missing.** As HR, create a restricted field, import values, reject an invalid value, change its visibility and inspect employee, manager, agent and export doors; only authorized values appear and history remains reconstructable. Remaining: No custom-field schema or public workflow exists.
+
+- **PEOPLE-002 — Directory and navigable organizational chart. Status: partial.** Open directory and org chart at desktop and phone widths; navigate a realistic multi-level team, search a location, inspect a future manager change and try a cycle. Compare chart, directory and profile on the effective date. Current evidence: `src/willow/profile.ts`, `src/willow/employment.ts`: scoped directory and effective-dated manager relationships. Remaining: Navigable org chart, reorganization preview, vacant-manager handling and cycle refusal.
+
+- **PEOPLE-003 — Multi-row record tables and company assets. Status: missing.** Add two emergency contacts, a certification near expiry and a laptop asset to an employee and read them as the employee, manager and HR under their levels. Start a leaver case and confirm a laptop-return task that cannot close without evidence; let the certification expire and see renewal work; export the tables and import them into a fresh employer. Current evidence: `src/willow/people.ts` holds one private emergency-contact value. Remaining: Multi-row tables, custom tables and the asset register with device-return tasks.
+
+- **PEOPLE-004 — Date alerts on employee dates. Status: missing.** Configure 30- and 7-day alerts on a restricted visa-expiry custom field to HR and a probation-end alert to the manager and HR that opens a review task, then advance the scheduler across every lead time and restart it. HR receives each visa alert once; the manager receives only the probation alert and its task; a manager without access to the visa field receives nothing and no notice contains its value. Move the probation date and end another person's employment; their earlier alerts no longer fire. Remaining: No date-field alerts, lead times, upcoming-dates list or alert-created tasks exist.
+
+- **SELF-001 — Employee and manager self-service portal. Status: partial.** As an employee, change an allowed contact field and submit an approval-required name/dependent change; HR accepts one and rejects another. As manager, clear permitted team work and inspect the employee view. The approved revision feeds the payroll/benefits exception queue; no self-granted privilege is possible. Current evidence: `src/willow/people.ts`, `src/willow/leave.ts`, `src/willow/ui/home.ts`; `tests/willow/flows.mjs` (WIL-05, WIL-09): own profile, tasks and PTO requests. Remaining: Approval-based profile/dependent changes and unified pending-change tracking.
+
+- **SELF-002 — Company home: announcements, celebrations and shared files. Status: missing.** Publish one company-wide and one location-targeted announcement, upload a handbook to a shared folder and open home as employees inside and outside that location; each sees only their targeted content and files. Opt one person into birthday celebrations and another out; only the opted-in month and day appear and no birth year is exposed through any door. Current evidence: `src/willow/ui/home.ts` shows only the member's own tasks, approvals and leave. Remaining: Announcements, celebrations and shared company folders.
+
+- **MOBILE-001 — Mobile work and accessible companion apps. Status: partial.** Use real employee/manager accounts for request, approval, task completion, document access and an hourly worker's clock-in, break and clock-out at 1440 and 390 pixels and on iOS/Android; interrupt a draft, revoke access, reconnect and prove no stale submission or private push content. Complete keyboard and screen-reader checks. Current evidence: `src/willow/ui/leave.ts`; `tests/willow/journey.mjs`: responsive request and approval. Remaining: Native iOS/Android apps, secure push, mobile clock-in and full accessibility acceptance.
+
+- **LOCALE-001 — Employee-facing languages, starting with Spanish. Status: missing.** As an hourly employee, switch to Spanish and complete a PTO request, a preboarding packet with a native signature and EEO self-ID, and a phone clock-in; every screen, validation message, consent text and notice appears in Spanish and the signed copy's certificate records Spanish. As HR, translate a custom field label and an announcement; Spanish readers see the translations, an untranslated custom field is marked untranslated, and the employee's stored values and report totals are identical in English and Spanish. Current evidence: `src/willow/ui/html.ts` renders every page in English only. Remaining: Member language choice, Spanish screens, notices and consent, administrator translations and signing-language records.
+
+### Access levels and the open API
+
+- **ROLE-001 — Named access levels with field-level rights. Status: partial.** Create a custom level with view-only job fields, edit-with-approval personal fields and no compensation access, assign it, and crawl every API/page/download/CSV/preview/agent-context door as that member; withheld fields never appear and an approval-required edit lands in HR's queue. Change the level and repeat the crawl in the same session; every door reflects the change and the audit names who changed it. Current evidence: `src/willow/actor.ts` (fixed permission set and preset bundles), `src/willow/access.ts`, `src/willow/members.ts`; `tests/willow/flows.mjs` (WIL-01, WIL-03): explicit per-member permissions with facet enforcement. Remaining: Named and custom levels, field-level rights, edit-with-approval and level editing with impact preview.
+
+- **ROLE-002 — Group-scoped levels and bulk assignment. Status: partial.** Scope a custom level to one location, assign it to ten members in one step after reviewing the preview, and verify they read only that location's employees through every door. Schedule a transfer out of that location and check access on each side of the effective date; revert the bulk assignment and confirm the prior levels return. Current evidence: `src/willow/actor.ts` derives manager scope from effective-dated terms; `tests/willow/flows.mjs` (WIL-07). Remaining: Location, department and custom-field group scopes and bulk assignment with revert.
+
+- **ROLE-003 — Default self-service access and delegated access administration. Status: partial.** Set Employee as the default, import 50 employees and hire one candidate; every new active person has the default level and exactly one invitation at the configured time, and former rows get none. As a delegated HR administrator assign a custom level to a group, then try to raise your own rights, edit the owner and grant pay access alone; each escalation is refused and audited. Current evidence: `src/willow/members.ts` lets people.manage holders give access per person with no permissions; `tests/willow/flows.mjs` (WIL-01). Remaining: Default levels, automatic and bulk invitations, delegated level administration and the delegated second-factor reset right.
+
+- **API-001 — Employer-issued API credentials bound to an access level. Status: missing.** Issue a key bound to a custom level and confirm the API returns only that level's data; try to issue a key wider than your own rights and be refused. Rotate the key, revoke it and receive 401 on the next call; end the issuer's access and prove their remaining keys stop; inspect the audit and confirm no secret appears in logs, exports or archives. Current evidence: `src/willow/http.ts` and `src/willow/actor.ts` resolve every JSON request to a signed-in member session. Remaining: Employer-issued API keys, OAuth clients and credential audit.
+
+- **API-002 — Documented employee and roster API. Status: partial.** Read the roster with a key whose level withholds compensation and private contact fields, page through it and fetch changes since a cursor after a hire and a transfer; restricted fields never appear and each change appears once. Submit an edit-with-approval change through the API and see it wait in HR's queue; every response validates against the published OpenAPI description. Current evidence: `src/willow/doors.ts`, `src/willow/http.ts`; `tests/willow/flows.mjs` (WIL-03): session JSON doors return only permitted facets. Remaining: Credential access, a published OpenAPI description, cursors and changed-since sync.
+
+- **API-003 — Signed, replay-protected outbound webhooks. Status: missing.** Register a permissioned webhook from a key scoped to one location, hire and terminate a person there and verify two signed events whose signatures check and whose payloads omit restricted fields; a hire elsewhere sends nothing. Re-send a captured event after the tolerance window and confirm the documented verification rejects it; fail the endpoint and observe retries, pause and manual replay; revoke the key and confirm the webhook stops. Remaining: No outbound webhooks exist.
+
+### Hiring
+
+- **HIRING-001 — Accepted-hire handoffs from Greenhouse, Lever, Workable and JazzHR. Status: missing.** For each of Greenhouse, Lever, Workable and JazzHR, accept an offer, preview the hire in Willow, resolve a former-worker match, approve and inspect the packet plus returned status. Replay the event and withdraw the offer; neither duplicates the person nor retains unauthorized preboarding access. Remaining: No Greenhouse, Lever, Workable or JazzHR handoff exists.
+
+- **HIRING-002 — Job openings, careers page and job-board posting. Status: missing.** Request and approve an opening in a pay-transparency state, publish it and read it back on the careers page and from Indeed, ZipRecruiter and LinkedIn posting status (provider-edge tests plus a consented employer-account trial). Apply once from the careers page and once from a board, then close the opening; both candidates appear once with their source and every posting reports withdrawn. Remaining: No job openings, careers page or Indeed/ZipRecruiter/LinkedIn posting exists.
+
+- **HIRING-003 — Candidate pipeline, hiring-team review and candidate email. Status: missing.** Move two applicants through stages as a hiring manager, record two interviewer scorecards, schedule an interview against a connected calendar and send templated acknowledgement and rejection emails. Prove an employee outside the hiring team and the manager of a different opening cannot read the candidates, a repeat application merges into the earlier record, and no automated ranking or rejection exists. Remaining: No candidate pipeline, scorecards, interview scheduling or candidate email exists.
+
+- **HIRING-004 — Offer approval and hire into preboarding without re-keying. Status: partial.** Send an offer from the pipeline, approve and sign it on a phone, and inspect the joiner proposal, preboarding invitation and filed signed offer; every carried field equals the candidate record and nothing is re-entered. Decline a second offer and confirm no person or packet exists; hire a former worker and confirm the existing person is reused. Current evidence: `src/willow/proposals.ts`, `src/willow/lifecycle.ts`; `tests/willow/flows.mjs` (WIL-15, WIL-13): reviewed joiner proposals with missing-field lists and rehire reuse. Remaining: Candidate and offer sources, signed offers and the preboarding hand-off.
+
+- **HIRING-005 — Background checks on the offer stage through Checkr. Status: missing.** Order a Checkr check for an offer-stage candidate (provider-edge tests plus a consented employer-account trial) and receive invited, pending, consider and clear statuses by webhook, including a replayed one; one status timeline results. Verify the hiring manager, the later employee record, agent context and a standard export hold no report content and only HR with screening rights opens the agency link. A "consider" result leaves the candidate in the pipeline until HR starts the agency's pre-adverse action, and a start gated on the check waits until it completes. Remaining: No background-check ordering, Checkr connection, restricted screening category or start gate exists.
+
+### Workflows, documents and US onboarding
+
+- **FLOW-001 — Conditional workflows with reviewed publication. Status: partial.** Build and preview a multi-state joiner workflow, publish it, start two cases and change the template. Approve a pay step as payroll and an access step as IT, fail one provider step and verify dependent work remains blocked and existing cases retain their version. Current evidence: `src/willow/lifecycle.ts`, `src/willow/proposals.ts`; `tests/willow/flows.mjs` (WIL-05, WIL-15): versioned templates and reviewed plans. Remaining: Conditional editor, external dependencies and reviewed publication.
+
+- **FLOW-002 — Persistent reminders, escalation and coverage. Status: partial.** Create a due case, advance the scheduler across quiet hours and restart it, then make the assignee unavailable. Observe one permitted reminder/escalation, assign cover, complete the task and prove later ticks send nothing. Refuse an unauthorized recipient and expose failed delivery. Current evidence: `src/willow/lifecycle.ts`, `src/willow/notices.ts`; `tests/willow/phase2.mjs` (WIL-18): task progress and notices. Remaining: Timed reminders, quiet hours, coverage and escalation.
+
+- **FLOW-003 — Role-specific preboarding packets. Status: partial.** Send two role-specific packets to personal mailboxes, complete one on a phone, let the other expire/withdraw, then start employment. Inspect packet progress and prove only approved data becomes the employment record and expired links cannot read it. Current evidence: `src/willow/lifecycle.ts` creates dated employee tasks; `tests/willow/flows.mjs` (WIL-05). Remaining: Dedicated preboarding access, packets and the personal-email invitation lifecycle.
+
+- **FLOW-004 — Manager-initiated change requests through approval chains. Status: partial.** As a manager, request a promotion with a 10% raise for a direct report effective next month; it routes to the manager's manager, then HR, then payroll. The manager's manager approves, HR sends it back, the manager edits the amount and the chain restarts; after all three approve, exactly one effective-dated terms version with the approved title and pay exists, the mover case has started and the payroll queue shows the change. A skip-level approver without pay rights sees the request with pay withheld, the requester cannot approve their own request, and a declined request writes nothing. Current evidence: `src/willow/proposals.ts`, `src/willow/people.ts`; `tests/willow/flows.mjs` (WIL-15, WIL-07): an HR-approved mover plan bound to its exact diff writes one effective-dated terms version. Remaining: Manager initiation, configurable multi-step chains, send-back and per-approver field scoping.
+
+- **SIGN-001 — Offer and policy templates with native e-signature. Status: missing.** With no DocuSign connection configured, approve an offer from a template, sign as the employee on a phone and countersign as HR; retrieve the sealed copy and certificate from the chosen category through permitted doors and verify the digest. Void and reissue a changed offer, replay an older signing link and prove it cannot complete the new version; exercise decline, expiry and consent withdrawal. Repeat the send through a connected DocuSign account and replay an older callback. Current evidence: `src/willow/documents.ts` provides immutable checksummed versions and receipt acknowledgements only (WIL-06). Remaining: Signature templates, native signing, the audit certificate and the DocuSign option.
+
+- **SIGN-002 — Cohort signature requests and the signed-documents report. Status: missing.** Without DocuSign, send a policy to one location of five people, sign as two of them (one on a phone) and confirm each signed copy is filed in the chosen category. Open the signed-documents report as HR and as a manager, advance the scheduler and see one reminder to each pending signer only, add a new joiner at that location and see their request, then cancel the remainder; signed copies remain and later ticks send nothing. Remaining: No cohort signature requests or signed-documents report; WIL-06 receipts are per person and are not signatures.
+
+- **US-001 — I-9, E-Verify and W-4 through completion. Status: missing.** From a US hire packet, complete employee and representative I-9 steps with Mitratech, exercise a pending E-Verify referral and a correction, and return the signed records/status to HR. Submit and replace W-4, observe payroll receipt and deny manager access to tax/identity documents. Missing provider action prevents completion. Remaining: No statutory-form collection, Mitratech connection or payroll form acknowledgement exists.
+
+- **US-002 — State new-hire reporting and employer administration. Status: missing.** Under two legal entities with different FEINs, onboard and rehire workers in California and Texas, preview the applicable forms/report destination and deadlines, approve and submit, reject/correct one report and inspect the acceptance receipt. Attempt to complete an unsubmitted report and to expose FEIN/SSN to a manager; both fail, and each worker's records and reports carry their own entity. Remaining: No US legal entities, FEINs, contractor classification workflows or state new-hire reporting.
+
+- **EEO-001 — Voluntary EEO self-identification. Status: missing.** Send preboarding packets to two hires; one completes self-ID and the other declines. Verify HR with EEO access sees each answer and its source while the manager, hiring team, directory, agent context and a standard CSV export receive nothing, and HR's read appears in the audit. Change an answer through self-service and inspect its history. Remaining: No EEO self-identification fields, restricted EEO facet or applicant self-ID.
+
+- **EEO-002 — EEO job categories and the EEO-1 Component 1 report. Status: missing.** Map titles for a two-location employer, choose a snapshot pay period containing a hire, a leaver and a contractor, and run the report; counts by category reconcile to the roster for that period, the contractor is excluded and the declined hire is flagged. Map one missing title and rerun, validate the download against the EEOC's published data-file specification and record a confirmation; a manager cannot open the report or its drill-down. Remaining: No EEO job-category mapping, establishments or EEO-1 report.
+
+### Leave, time and workforce planning
+
+- **LEAVE-001 — US PTO policies and scheduled accrual. Status: partial.** Publish policies for salaried and hourly workers in two states, accrue across a tier/carryover boundary, restart the scheduler and compare employee balances and ledger. Transfer a worker and correct a schedule; show the calculation and require approval for an override. Open a protected-leave case (such as FMLA) with a restricted medical certification, record intermittent absences against the case's entitlement and see the remaining entitlement; the manager sees only absence dates while HR with leave rights sees the case and certification, and nothing labels the case legally approved. Current evidence: `src/willow/leave.ts`; `tests/willow/flows.mjs` (WIL-08, WIL-10): approved policy versions and deterministic accrual. Remaining: Scheduled accrual, tier/cap/carryover rules and protected-leave case administration.
+
+- **LEAVE-002 — Shared absence calendars and approval follow-up. Status: partial.** Request a partial-day absence over a company holiday, inspect the quote and shared calendar as employee/manager, deliver the manager request notice, delegate approval and cancel it. Read Google Calendar and Outlook updates and revoke access; confidential reasons never appear and stale requests cannot be approved. Current evidence: `src/willow/ui/leave.ts`, `src/willow/leave.ts`, `src/willow/notices.ts`; `tests/willow/flows.mjs` (WIL-09), `tests/willow/phase2.mjs` (WIL-18): team coverage and decision notices. Remaining: Shared holidays and calendars, request notices, delegation and Google/Outlook calendar connections.
+
+- **TIME-001 — Time, shifts and Deputy reconciliation. Status: partial.** Publish a week of shifts, clock in and out from a phone (one punch made offline and synced later) and correct a missed break, approve a swap/timesheet and send hours to payroll. Compare Deputy and Willow roster/leave/time, create an overtime mismatch and resolve it; denied/late edits cannot silently change approved payroll. Current evidence: `src/willow/employer.ts` working schedules and `src/willow/leave.ts` schedule quotes; `tests/willow/flows.mjs` (WIL-01, WIL-09). Remaining: Web and mobile clocks, shifts, timesheets and Deputy synchronization.
+
+### Connected payroll and benefits
+
+- **PAYROLL-001 — Two-way payroll authority and reconciliation. Status: partial.** Approve a hire, salary change, leave reversal and termination through a connected payroll account. Change a provider-owned field remotely, create a conflicting salary edit, duplicate callbacks and interrupt submission. The HR/payroll queue resolves conflicts by authority and closes only after provider acknowledgement and matching read-back; money and tax execution remain with payroll. Current evidence: `src/willow/payroll.ts`, `src/willow/payroll-layout.ts`; `tests/willow/regressions.mjs`, `tests/willow/phase2.mjs` (WIL-21): snapshot/file mapping and manual acknowledgement. Remaining: Live two-way sync and provider read-back.
+
+- **PAYROLL-002 — Live Gusto connection. Status: missing.** Connect an employer Gusto tenant, match an existing roster, create a hire and scheduled pay change, receive a provider-side correction and terminate access to the connection. Compare acknowledged and read-back records, refusal/expiry states and permission boundaries using provider-edge tests plus a consented production-account trial. Remaining: No Gusto connector or public connection journey exists.
+
+- **PAYROLL-003 — Live ADP RUN and Workforce Now connections. Status: missing.** Run the hire/pay/leave/termination reconciliation journey separately in ADP RUN and ADP Workforce Now employer accounts. Reject a wrong company/code and ambiguous identity, recover an expired authorization and confirm provider read-back. Exercise live provider-edge tests and a consented account trial for each product. Current evidence: `src/willow/payroll-layout.ts` implements the ADP RUN file layout only. Remaining: Neither ADP live connector exists.
+
+- **PAYROLL-004 — Live QuickBooks Payroll connection. Status: missing.** Connect a QuickBooks Payroll employer, match existing workers and reconcile a hire, pay update, leave change and exit. Return a provider correction, revoke access mid-sync and restore it; no duplicate employee or false completion results. Prove payroll-specific acknowledgement/read-back in edge tests and a consented account trial. Remaining: No QuickBooks Payroll connector exists.
+
+- **PAYROLL-005 — Live Paychex Flex connection. Status: missing.** Connect a Paychex Flex employer (provider-edge tests plus a consented employer-account trial) and match an existing roster in which payroll resolves one ambiguous name. Then run the PAYROLL-001 journey: a hire whose Paychex worker reads back with matching fields, a pay change, a leave reversal, a termination, a correction made in Paychex Flex, and authorization revoked mid-sync and restored. Each case closes only on Paychex acknowledgement plus matching read-back, with no duplicate worker, duplicate pay change or false completion. Current evidence: `src/willow/payroll-layout.ts` offers only the generic mapped file a Paychex employer could upload. Remaining: No Paychex Flex connection, roster matching, real-time hire creation or read-back exists.
+
+- **BENEFITS-001 — Enrollment and life events through brokers and carriers. Status: missing.** Enroll a new hire, waive a plan, add a dependent after a life event and terminate coverage. Send through Employee Navigator/broker to the selected carrier, ingest acknowledgement and compare active coverage/dates; reject a dependent mismatch and resolve it. Employees read their own elections, HR sees permitted status and managers cannot see health evidence. Without any connection, record a plan and an election, export the census and confirm the status stays recorded, not active, until a carrier confirmation is attached. Remaining: No benefits enrollment, Employee Navigator or carrier workflow exists.
+
+- **BENEFITS-002 — Benefit deductions and payroll mismatch resolution. Status: missing.** Change a benefit mid-period, preview deduction impact in USD, approve it, ingest payroll and carrier results and inspect a deliberately mismatched deduction. Resolve and re-read both systems; the mismatch remains open until evidence agrees and a duplicate event creates no duplicate adjustment. Remaining: No benefit deduction mapping or reconciliation exists.
+
+- **BENEFITS-003 — ACA full-time measurement and 1095-C data. Status: missing.** For an invented employer with full-time, part-time and variable-hour staff over 12 months, compute monthly ALE counts, complete a look-back that makes one variable-hour worker full-time for the stability period, record offers and a waiver, and generate 1095-C lines that reconcile to the inputs. Hand the file to the filer and record their acknowledgement; a missing month of hours is flagged, not assumed. Remaining: No ACA measurement, offer-of-coverage records or 1095-C data exists.
+
+- **RETIRE-001 — Retirement census and contribution handoff. Status: missing.** For each of Human Interest and Guideline, send a hire/eligibility change, update a deferral, reconcile contribution results and process an exit. Fail one census row and correct it without resending accepted rows; inspect the employee-scoped record and payroll reconciliation report. Remaining: No Human Interest or Guideline connector or retirement census workflow exists.
+
+### Connected identity and collaboration
+
+- **IDENTITY-001 — Provisioning and verified deprovisioning. Status: partial.** For each named service, approve a joiner, transfer departments and offboard while holding an active external session. Inspect account/group/license read-back and session revocation, inject an API failure and show the open IT exception. Rehire and prove prior grants are not silently restored. Current evidence: `src/willow/lifecycle.ts`; `tests/willow/flows.mjs` (WIL-12, WIL-13): native access ending and evidence-required manual IT tasks. Remaining: External provider actions and read-back.
+
+- **IDENTITY-002 — Google, Microsoft and Okta sign-in controls. Status: partial.** Exercise Google, Entra ID and Okta sign-in separately, then enforce MFA/session policy, change groups, relink and revoke a member. Verify unchanged member/person IDs, no unapproved grants, refusal of wrong issuer/tenant and owner recovery without ended-member access. Current evidence: `src/auth.server.ts`, `src/modules/operator-auth/identity/oidc/presets.mjs`; `tests/willow/phase2.mjs` (WIL-19): Google and generic OIDC. Remaining: Entra ID and Okta journeys, SAML and enterprise session-policy acceptance.
+
+- **COMMS-001 — Slack and Microsoft Teams work notifications. Status: missing.** Connect each service, request PTO and deliver a manager reminder, follow an approval link as the right/wrong actor and revoke the connection. Replay an interaction and inject delivery failure; only one authorized decision occurs, failures remain visible and private fields never appear in channel content. Remaining: No Slack or Microsoft Teams integration; WIL-18 is email only.
+
+### Performance and HR modules
+
+- **PERFORM-001 — Performance reviews, goals and feedback. Status: missing.** Launch a review cycle for two teams, request self/peer/manager inputs, complete a goal check-in, escalate a late review, calibrate and release results. Change a manager midway, test confidential peer visibility, export the completed cycle and retain its locked history after an employee exit. Remaining: No performance, goals or feedback module exists.
+
+- **ENGAGE-001 — Engagement surveys and accountable action. Status: missing.** Run named onboarding and anonymous engagement surveys, collect responses, try small/overlapping cohort filters and inspect manager/HR exports. Publish a theme/action plan, assign an owner and measure the next pulse; suppression holds and no individual inference appears in AI context. Remaining: No survey collection, anonymity controls or action plans exist.
+
+- **COMP-001 — Compensation bands and planning. Status: partial.** Create bands and a merit budget, have two managers submit proposals, inspect out-of-band/over-budget exceptions, approve a cycle and reconcile the scheduled changes with payroll. An employee or manager without pay authority cannot read another team’s amounts. Run a pay-equity report for one job level by sex and race/ethnicity: it shows its cohort, controls and calculation, suppresses small cells, reads EEO values only for EEO-access levels and proposes no pay change. Current evidence: `src/willow/people.ts`, `src/willow/reports.ts`; `tests/willow/flows.mjs` (WIL-07, WIL-14): pay terms and totals. Remaining: Bands, budgets, planning cycles and pay-equity reports.
+
+- **LEARN-001 — Training assignments and TalentLMS connection. Status: missing.** Assign a hire to role-specific TalentLMS courses, ingest completion and a certificate, expire one certification and observe the renewal task. Suspend a departed learner and export the retained training record; a lost/duplicate callback cannot fabricate or duplicate completion. Remaining: No training roster, certification tracking or TalentLMS connection exists.
+
+### Integration operation, reporting and portability
+
+- **CONNECT-001 — Operable connections and attribute rules. Status: partial.** Connect a provider, change an attribute/access rule after preview, rotate credentials, lose a scope and replay a webhook. Restart during a change and inspect fresh/stale/error state and one durable outcome; no private payload/credential appears in logs, exports or unauthorized agent context. Current evidence: `src/willow/connections.ts`, `src/willow/payroll-layout.ts`; `tests/willow/phase2.mjs`: optional connection diagnostics and file mappings. Remaining: General connector execution, health and reconciliation.
+
+- **REPORT-001 — Custom workforce reporting and operational dashboards. Status: partial.** Build and schedule a report joining custom fields, headcount, leave and open exceptions; reconcile totals and drill-down to source records at a past date. Remove a recipient’s rights before dispatch and prove pay/private rows remain withheld in page, file and delivery. Open a diversity breakdown as HR with EEO access and as a manager without it; the manager is refused and HR sees suppressed small cells, never individual values. Current evidence: `src/willow/reports.ts`; `tests/willow/flows.mjs` (WIL-14): fixed scoped summaries and CSV. Remaining: Report builder, saved and scheduled reports and broader dashboards.
+
+- **MIGRATE-001 — Switch from each incumbent without losing history. Status: partial.** For each named source, preview a representative export with current/former/rehired workers, a signed document, balance, historical change, a custom table and an open opening with candidates; resolve conflicts, apply, compare row/document/balance totals and repeat. Edit an imported record and prove undo refusal; close cutover only after HR signs a variance report and all retained originals can be exported. Match a Paychex Flex roster with one unmatched and one ambiguous worker at cutover; no live sync runs and no Paychex worker is created until payroll resolves both. Current evidence: `src/willow/movein/bamboohr.ts`, `src/willow/movein/target.ts`; `tests/willow/flows.mjs` (WIL-16): BambooHR-shaped people, balances and documents. Remaining: Other named kits, expanded history types and payroll-roster matching at cutover.
+
+- **MIGRATE-002 — Complete BambooHR move-in beyond the current kit. Status: partial.** From a BambooHR-shaped API fixture and export set with job history, a custom table, two assets, signed documents, open openings with candidates and three access levels, preview, map and apply; reconcile every table, document byte and balance, confirm the proposed level mapping assigns nothing until approved and that no invitation, webhook or posting fires. From a BambooHR Payroll-shaped export, import pay history and year-to-date totals as restricted history, hand them to a newly connected provider and reconcile its first roster and totals; a manager cannot read the history. Repeat and undo as in WIL-16. Current evidence: `src/willow/movein/bamboohr.ts`, `src/willow/movein/target.ts`; `tests/willow/flows.mjs` (WIL-16): employee report, balances and documents ZIP within 8 MB. Remaining: API source, history and custom tables, signatures, access levels, ATS data, BambooHR Payroll history and large archives.
+
+- **DATA-001 — Usable employee exports and complete target-product portability. Status: partial.** Export selected employee fields as HR and manager and compare with their permitted records. Archive a populated target HRIS, restore into an empty installation, compare all portable records/files and re-sign in. Confirm old sessions/credentials fail and scheduled provider work stays paused until explicitly reauthorized. Current evidence: `src/willow/reports.ts`, `scripts/installer/local.mjs`; `tests/willow/restore.mjs`, `tests/willow/restore-access.mjs`: current owner archive. Remaining: General employee export and future-module/no-replay coverage.
+
+- **DATA-002 — Retention, legal holds and complete erasure. Status: missing.** Place one document class on hold, erase an otherwise eligible former worker, inspect all public reads/downloads/import custody and export again. Attempt to restore an older archive with the later journal; the erased person cannot return. Verify held material is restricted, receipt counts are complete and a failed provider deletion remains open. Remaining: No Willow erasure or retention action; vendored import-kit erasure helpers alone do not cover native records, blobs and restores.
+
+- **AUDIT-001 — Traceable HR and automation history. Status: partial.** Follow one approved employee change from its profile request through approvals, document signing and all provider acknowledgements using the audit door. Deny an unauthorized read, interrupt a provider action and perform erasure; the exported chronology is complete without secrets or the erased identity. Current evidence: `src/willow/core.ts`, `src/willow/views.ts`; `tests/willow/flows.mjs`: business and private-read audit with rollback. Remaining: Cross-provider history and erasure anonymization.
+
+- **SECURITY-001 — Private-by-default HR operation and Base guarantees. Status: partial.** Exercise all registered doors with an access-level matrix (built-in and custom levels and API keys) including restricted benefits/review/EEO fields, hostile text/uploads and cross-origin writes; revoke access mid-session and inspect downloads, logs and connector/model payloads. Prove the core HRIS works without optional providers and document each explicit Base replacement with its public-door proof. Current evidence: `src/willow/access.ts`, `src/willow/profile.ts`, `src/willow/http.ts`, `src/willow/input.ts`; `tests/willow/flows.mjs` (WIL-03): the private core. Remaining: Future modules, complete erasure and wider security/egress coverage.
+
+- **SECURITY-002 — Native second-factor sign-in and an owner MFA policy. Status: missing.** With no SSO configured, require a second factor for the HR administrator and Payroll administrator levels. An HR administrator holding only a valid email link is refused by every page, API and download door until a TOTP or passkey challenge passes, while an employee-only member signs in with the link alone. Trust a device, advance the clock past the period and receive a fresh challenge. A delegated administrator resets the HR administrator's lost factor (audited, sessions ended); the member's own reset attempt and the delegate's reset of their own factor are refused. Remove the requirement from HR administrator for a member who also holds Payroll administrator; they are still challenged. The enrollment report matches the member list, an API key keeps working without a challenge, and an owner archive contains no factor secret or recovery code. Current evidence: `src/auth.server.ts` offers email-link and optional OIDC sign-in with one factor. Remaining: TOTP/passkey enrollment, recovery codes, the owner MFA policy, trusted devices, the enrollment report and delegated resets.
+
+- **OPS-001 — Runnable, recoverable employer-owned product. Status: partial.** Use the supported commands to set up, run, stop, upgrade and recover a populated employer, compare records/grants/files and inspect missing-dependency diagnostics. Restart with pending work and verify no false completion/replay; run desktop/phone and keyboard journeys, and pass the OPS-002 reference-employer run before claiming production capacity. Current evidence: `scripts/installer/local.mjs`, `AGENTS.md`, `SEED-COMMAND-CONTRACT.md`; `tests/willow/journey.mjs`, `tests/willow/restore-access.mjs`: current local lifecycle. Remaining: Upgrade, capacity, accessibility and future-work recovery acceptance.
+
+- **OPS-002 — Reference employer capacity with stated bounds. Status: partial.** Generate the invented reference employer and its BambooHR-shaped export (including a 25 GB documents archive), run move-in, directory, search, standard and custom reports, payroll batch preview, export and restore on a hosted deployment, and record each timing against its bound with complete row/byte reconciliation. Interrupt the move-in and resume it without duplicates; exceed one stated limit and receive the named refusal with no partial write. Current evidence: `src/willow/documents.ts` (10 MB) and `src/willow/movein/bamboohr.ts` (8 MB) refuse oversize files with file_size before writing. Remaining: Reference-employer bounds, multipart transfer and hosted measurement.
+
+### Push further: agents that finish approved HR work
+
+- **AI-001 — Cited HR policy answers under the reader’s authority. Status: partial.** As employee and manager, ask about PTO eligibility and a policy conflict using restricted records, then change the approved policy version. Verify cited sources/calculation, withheld facets and HR escalation; planted prompt instructions cannot reveal confidential reasons or execute an action. Current evidence: `src/willow/proposals.ts`; `tests/willow/flows.mjs` (WIL-15): scoped, policy-citing context. Remaining: Interactive policy answers and their provider controls.
+
+- **AI-002 — Natural-language workflow building with impact preview. Status: partial.** Ask for a two-state onboarding workflow, inspect its typed graph, missing mappings and per-person impact, then approve. Change the source template/connector scope before publication and prove refusal; an injected document instruction cannot bypass HR or grant access. Current evidence: `src/willow/model-drafts.ts`, `src/willow/proposals.ts`; `tests/willow/phase2.mjs` (WIL-20): controlled checklist drafts. Remaining: Natural-language conditions, cross-system simulation and publication.
+
+- **AGENT-001 — Reconcile an approved employee change until systems agree. Status: partial.** Approve a location/pay change affecting PTO, payroll, benefits and access. Let the agent discover a missing code, obtain the responsible owner’s input, execute approved steps, encounter one rejection and reopen it. Compare the original expected state with fresh provider read-back and ledger; the case closes only when all required outcomes agree, or remains owned/blocked. Revoke authority mid-run and prove execution stops. Current evidence: `src/willow/proposals.ts`, `src/willow/payroll.ts`; `tests/willow/flows.mjs` (WIL-15, WIL-11): bound human approvals and file handoff. Remaining: Multi-provider agent execution and read-back.
+
+- **AGENT-002 — Policy simulation and expected-versus-observed outcomes. Status: partial.** Preview a carryover/eligibility policy over an hourly worker, a future transfer and a rehire with missing provider data. Confirm no live balance or task changes before approval, publish the reviewed version and compare predictions with accrual/payroll/benefits results. A changed input invalidates the prior preview; deviations remain visible to HR. Current evidence: `src/willow/leave.ts`, `src/willow/proposals.ts`; `tests/willow/flows.mjs` (WIL-08, WIL-15): versioned policies and exact change diffs. Remaining: Cross-person policy simulation and outcome measurement.
+
+- **AGENT-003 — Recover stalled onboarding with controlled outreach. Status: partial.** Stall one signature, one IT account and one benefits handoff. Enable an approved chase policy, inspect each message/recipient and proposed substitute, resolve the items and verify provider/document evidence before completion. Restart and replay events; there is no duplicate outreach, autonomous access grant or continued reminder after closure. Current evidence: `src/willow/lifecycle.ts`, `src/willow/notices.ts`; `tests/willow/phase2.mjs` (WIL-18): progress and notices. Remaining: Agent detection, chasing, substitutions and external verification.
+
+### Honest boundaries
+
+- **BOUNDARY-001 — US-first HRIS with accountable external execution. Status: partial.** Walk a US hire/change/exit through the employee, HR, payroll, benefits and IT doors; inspect the system of record, external owner, USD amounts, required approval, receipt and final observed outcome for each step. An unconnected or unacknowledged dependency remains open, and the UI never claims payroll payment, insurance coverage or legal compliance from a checked task. Current evidence: `src/willow/payroll.ts`, `src/willow/lifecycle.ts`; `tests/willow/flows.mjs` (WIL-11, WIL-12): current provider and manual-work boundaries. Remaining: Connected execution and US entity/classification workflows.
 
 ## Upgrade and recovery
 
 Existing installations upgrade in place. Stop dev and preview, keep a private
 export and retain the release that made it: an export restores with that
 release. Update the existing checkout, run `rer install`, then `rer setup` to
-apply forward migrations while retaining the owner and data. For recovery,
-restore on the original release before upgrading the restored installation.
-Applied migrations 0001–0008 retain their original bytes; 0009–0018 add the
-current auth, token-health and import-kit structures.
+apply forward migrations while retaining owner/data. For recovery restore on
+the original release before upgrading. Applied migrations 0001–0008 retain
+their original bytes; 0009–0018 carry the current identity/import structures.
 
-An upgrade needs a populated installation check: compare records, grants,
-employment history, leave ledger, lifecycle work, payroll history, audit,
-import custody and stored document bytes before and after the migration.
-Fresh setup and export/import checks do not replace that comparison. Never
-reactivate inactive sign-in identities or carry sessions and credentials into
-an archive.
+A populated upgrade compares records, grants, effective employment history,
+leave ledger, lifecycle work, payroll history, audit, import custody and stored
+document bytes before/after. Fresh setup/export-import do not replace that
+comparison. Future modules extend the comparison to signatures, access levels,
+hiring, EEO, benefits, performance, surveys, time, webhooks, provider outcomes
+and agent approvals; API credentials, like sessions, never carry over. Never
+reactivate an ended sign-in or carry sessions/credentials into an archive;
+restore must pause external work until reauthorization (DATA-001). Erasure
+requires held-record handling and restore fences (DATA-002).
 
 ## Owner trials before live use
 
-- Reconcile a real BambooHR employee report, balances and documents. The kit
-  uses documented employee field names; the balance CSV and document manifest
-  are Willow's own documented shapes. Confirm actual column labels, pay-rate
-  formats and dates against [IMPORTING.md](IMPORTING.md).
-- Reconcile one real payroll handoff with the provider before retiring the
-  prior process. Check the [field authority and cutover checklist](FIELD-AUTHORITY.md).
-  ADP output implements a documented file format, not live account certification.
-- Review leave policies and schedules for the employer's jurisdiction. Willow
-  contains no award or statutory entitlement engine. People, lifecycle and
-  the reconciled leave ledger belong in Willow; payroll owns payments and tax.
-- Validate hosted operation, real mail delivery and any optional OIDC/model
-  connection with the owner's accounts. Review retention and privacy needs
-  with appropriate advice and complete an accessibility audit.
+- Reconcile real exports for BambooHR, Rippling, HiBob, Gusto HR, Factorial
+  and Deel HR against MIGRATE-001; verify history, document bytes/signatures,
+  counts and leave balances before closing cutover. Current BambooHR shapes
+  are documented in [IMPORTING.md](IMPORTING.md); other kits remain work.
+- Reconcile a live hire/change/leave/exit with Gusto, ADP RUN, ADP Workforce
+  Now, QuickBooks Payroll and Paychex Flex separately, matching each existing
+  provider roster at cutover first. Check [field authority and cutover](FIELD-AUTHORITY.md),
+  provider acknowledgement and fresh read-back. An ADP file does not prove
+  either ADP live integration. Test benefits, deductions, retirement and
+  identity with the employer’s chosen named services as their clauses require.
+- Review employer US policies, work-state forms, accrual/holiday and retention
+  rules with the responsible professionals. Exercise Mitratech, state reporting,
+  W-4/payroll receipt, native signing (and DocuSign where chosen), EEO-1 upload
+  and ACA 1095-C handoff through rejection and correction.
+- Post a real opening to Indeed, ZipRecruiter and LinkedIn and hire through it
+  (HIRING-002–004); connect the employer's downstream tools through API keys
+  and webhooks (API-001–003) before switching off the incumbent.
+- Run the OPS-002 reference employer on the owner's hosted account and record
+  every bound before inviting the real workforce.
+  Employer decisions, payroll execution, brokerage and official verification
+  remain with their accountable people/providers, while Willow completes its
+  own handoffs.
+- Validate hosted operation, backups/upgrades, real mail, mobile apps, SSO,
+  the native second-factor policy (SECURITY-002) for HR and payroll levels
+  without SSO, Spanish employee screens and accessibility with
+  owner-authorized accounts. Review each optional model’s
+  exact data scope/retention and enforce human approval of employment, pay,
+  benefits and access decisions. A checked task cannot establish coverage,
+  payment, account revocation or legal compliance.
 
-Leave-policy model answers, Personio and HiBob move-in kits, and live
-payroll/HRIS/account connectors are outside the delivered scope. Optional
-models draft checklists from controlled structural context; they do not
-make employment decisions or interpret policy for a person.
-
-Willow keeps records and coordinates work. It does not calculate pay or tax,
-make employment decisions or claim that a checklist is a compliance guarantee.
+Current clause totals: **21 done / 34 partial / 31 missing (86 total)**. Missing/partial journeys remain in the build target; they are not outside scope.
