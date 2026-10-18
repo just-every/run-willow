@@ -10,13 +10,13 @@ import { readFile } from 'node:fs/promises'
 const env = () => ({ ...process.env, WRANGLER_SEND_METRICS: 'false' })
 const redact = output => output.replace(/(rer-dev=|token=|RER_DEV_KEY=)[^&\s"']+/g, '$1[redacted]').slice(-4000)
 
-export async function command(root, args, { refuse = false } = {}) {
+export async function command(root, args, { refuse = false, expectedExit = 0 } = {}) {
   const child = spawn(process.execPath, __rerTestEntryArgs([__rerTestEntry, ...args]), { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], env: env() })
   let output = ''
   for (const stream of [child.stdout, child.stderr]) stream.on('data', chunk => { output += chunk })
   const code = await new Promise(resolve => child.once('exit', resolve))
   if (refuse) assert.notEqual(code, 0, `${args[0]} must refuse`)
-  else assert.equal(code, 0, `rer ${args[0]} failed (exit ${code}):\n${redact(output)}`)
+  else assert.equal(code, expectedExit, `rer ${args[0]} failed (exit ${code}):\n${redact(output)}`)
   return output
 }
 

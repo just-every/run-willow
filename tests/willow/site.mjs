@@ -13,7 +13,11 @@ const home = site('index.html')
 const primary = home.match(/<a class="site-pill" href="([^"]+)"/)
 assert.equal(primary?.[1], '/run', 'the hero\'s primary action opens the Run page')
 assert.ok(hrefs(home).includes('/docs'), 'the homepage links the on-site docs')
-assert.ok(site('run.html').includes(`npx -y @runeditrun/rer dev ${pkg.repository.url.replace('https://github.com/', '')}`), 'the Run page installs the repository package.json names')
+const run = site('run.html')
+const repository = pkg.repository.url.replace('https://github.com/', '')
+const commands = [...run.matchAll(/<code>([\s\S]*?)<\/code>/g)].map(([, html]) => html.replace(/<[^>]+>/g, ''))
+assert.ok(commands.includes(`npx -y @runeditrun/rer dev ${repository}`), 'the Run page shows the whole public launch command')
+assert.ok(run.includes(`data-copy="rer dev ${repository}"`), 'Copy keeps the repository launch command intact')
 
 const index = hrefs(site('docs.html'))
 for (const page of manifest.sections.flatMap(section => section.pages)) {

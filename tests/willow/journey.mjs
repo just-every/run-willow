@@ -223,11 +223,16 @@ try {
   assert.equal((await fetch(`${origin}/health`)).status, 200)
   assert.equal((await fetch(`${origin}/signin`)).status, 200)
   await server.stop(); server = null
-  // A dry run without production mail goes ahead (rer 0.2.34+) and names the mail key a real deploy still needs.
-  assert.match(await command(root, ['deploy', '--dry-run']), /MAIL_API_KEY/)
+  // Dry runs build the artifact, then refuse when target secret bindings cannot be checked.
+  const dryRun = await command(root, ['deploy', '--dry-run'], { expectedExit: 3 })
+  assert.match(dryRun, /CLOUDFLARE_ACCOUNT_ID/)
+  assert.match(dryRun, /CLOUDFLARE_API_TOKEN/)
+  assert.match(dryRun, /MAIL_API_KEY/)
   await mkdir(join(root,'exports'), {recursive:true})
   await writeFile(join(root,'exports/production-test.env'), 'MAIL_API_KEY=test-no-network-mail-key\n', {mode:0o600})
-  await command(root, ['deploy', '--dry-run', '--env-file', 'exports/production-test.env'])
+  const suppliedMail = await command(root, ['deploy', '--dry-run', '--env-file', 'exports/production-test.env'], { expectedExit: 3 })
+  assert.match(suppliedMail, /CLOUDFLARE_ACCOUNT_ID/)
+  assert.match(suppliedMail, /CLOUDFLARE_API_TOKEN/)
   await restoreJourney({ root, target: join(scratch, 'target'), port })
 } finally {
   await browser?.close()
