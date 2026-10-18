@@ -7,7 +7,7 @@ import type { Bindings } from '../auth.server'
 import { can, requirePermission, type Actor, type Permission } from './actor'
 import { sees } from './access'
 import { all, commit, guard, insist, json, newId, now, one, stmt, type Row } from './core'
-import { addDays, requireDate } from './dates'
+import { addDays, requireDate, today } from './dates'
 import { requireEmployer } from './employer'
 import type { Input } from './input'
 import { endAccessStatements } from './members'
@@ -213,9 +213,14 @@ export async function caseDetail(env: Bindings, actor: Actor, id: string) {
   }
 }
 
-export async function casesFor(env: Bindings, personId: string) {
-  return (await all(env, 'SELECT c.*, (SELECT COUNT(*) FROM wl_case_tasks t WHERE t.case_id = c.id AND t.status = ?) AS open_tasks FROM wl_cases c WHERE c.person_id = ? ORDER BY c.opened_at DESC', 'open', personId))
-    .map(row => ({ id: row.id, kind: row.kind, status: row.status, anchorDate: row.anchor_date, openTasks: row.open_tasks }))
+export async function casesFor(env: Bindings, personId: string, asOf?: { date: string; zone: string }) {
+  const rows = await all(env, 'SELECT * FROM wl_cases WHERE person_id = ? ORDER BY opened_at DESC', personId)
+  const tasks = await all(env, 'SELECT t.* FROM wl_case_tasks t JOIN wl_cases c ON c.id = t.case_id WHERE c.person_id = ?', personId)
+  return rows.filter(row => !asOf || today(asOf.zone, row.opened_at) <= asOf.date).map(row => {
+    const completed = row.completed_at && (!asOf || today(asOf.zone, row.completed_at) <= asOf.date)
+    return { id: row.id, kind: row.kind, status: completed ? 'completed' : 'open', anchorDate: row.anchor_date,
+      openTasks: tasks.filter(task => task.case_id === row.id && (!task.completed_at || (asOf && today(asOf.zone, task.completed_at) > asOf.date))).length }
+  })
 }
 
 /** Open tasks this member answers for, across every case. */

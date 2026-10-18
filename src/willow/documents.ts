@@ -6,6 +6,7 @@ import { requirePermission, type Actor } from './actor'
 import { readsCategory, sees } from './access'
 import { all, auditRead, commit, insist, newId, now, one, stmt } from './core'
 import { serve, store } from './files'
+import { today } from './dates'
 import type { Input } from './input'
 
 export const ACK_STATEMENT = 'I received this document. This is a receipt acknowledgement, not a signature.'
@@ -57,14 +58,14 @@ export async function acknowledge(env: Bindings, actor: Actor, input: Input) {
 }
 
 /** Documents of a person the member may read, by category. */
-export async function documentsFor(env: Bindings, actor: Actor, personId: string, categoryFilter?: (category: Record<string, any>) => boolean) {
+export async function documentsFor(env: Bindings, actor: Actor, personId: string, categoryFilter?: (category: Record<string, any>) => boolean, asOf?: { date: string; zone: string }) {
   const readable = categoryFilter ?? ((category: Record<string, any>) => readsCategory(actor, personId, category))
   const documents = (await all(env, 'SELECT d.*, c.name AS category, c.subject_reads, c.manager_reads, c.acknowledgement FROM wl_documents d JOIN wl_doc_categories c ON c.id = d.category_id WHERE d.person_id = ? ORDER BY c.name, d.title', personId)).filter(readable)
   if (!documents.length) return []
   const ids = documents.map(document => document.id)
-  const versions = await all(env, `SELECT v.*, (SELECT a.at FROM wl_acknowledgements a WHERE a.version_id = v.id AND a.person_id = ?) AS acknowledged_at FROM wl_document_versions v WHERE v.document_id IN (${ids.map(() => '?').join(', ')}) ORDER BY v.number DESC`, personId, ...ids)
-  return documents.map(document => ({
+  const versions = (await all(env, `SELECT v.*, (SELECT a.at FROM wl_acknowledgements a WHERE a.version_id = v.id AND a.person_id = ?) AS acknowledged_at FROM wl_document_versions v WHERE v.document_id IN (${ids.map(() => '?').join(', ')}) ORDER BY v.number DESC`, personId, ...ids)).filter(version => !asOf || today(asOf.zone, version.uploaded_at) <= asOf.date)
+  return documents.filter(document => versions.some(version => version.document_id === document.id)).map(document => ({
     id: document.id, title: document.title, category: document.category, acknowledgementRequested: !!document.acknowledgement,
-    versions: versions.filter(version => version.document_id === document.id).map(version => ({ id: version.id, number: version.number, filename: version.filename, mediaType: version.media_type, size: version.size, sha256: version.sha256, uploadedAt: version.uploaded_at, acknowledgedAt: version.acknowledged_at })),
+    versions: versions.filter(version => version.document_id === document.id).map(version => ({ id: version.id, number: version.number, filename: version.filename, mediaType: version.media_type, size: version.size, sha256: version.sha256, uploadedAt: version.uploaded_at, acknowledgedAt: version.acknowledged_at && (!asOf || today(asOf.zone, version.acknowledged_at) <= asOf.date) ? version.acknowledged_at : null })),
   }))
 }

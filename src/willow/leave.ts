@@ -342,19 +342,19 @@ export async function leaveDetail(env: Bindings, actor: Actor, id: string) {
 }
 
 /** A person's leave accounts with balances, ledger and requests (the leave facet). */
-export async function leaveFor(env: Bindings, actor: Actor, personId: string, withReason = sees(actor, personId, 'leave_reason')) {
+export async function leaveFor(env: Bindings, actor: Actor, personId: string, withReason = sees(actor, personId, 'leave_reason'), asOf?: string) {
   const accounts = await all(env, 'SELECT a.*, l.name AS policy_name, v.version AS policy_version, v.summary AS policy_summary FROM wl_leave_accounts a JOIN wl_periods p ON p.id = a.period_id JOIN wl_leave_policies l ON l.id = a.policy_id JOIN wl_policy_versions v ON v.id = a.policy_version_id WHERE p.person_id = ? ORDER BY a.created_at', personId)
-  const ledger = accounts.length ? await all(env, `SELECT * FROM wl_ledger WHERE account_id IN (${accounts.map(() => '?').join(', ')}) ORDER BY ${LEDGER_ORDER}`, ...accounts.map(account => account.id)) : []
+  const ledger = (accounts.length ? await all(env, `SELECT * FROM wl_ledger WHERE account_id IN (${accounts.map(() => '?').join(', ')}) ORDER BY ${LEDGER_ORDER}`, ...accounts.map(account => account.id)) : []).filter(entry => !asOf || entry.effective_date <= asOf)
   const requests = await all(env, `${REQUESTS} WHERE r.person_id = ? ORDER BY r.start_date DESC`, personId)
   const reasons = withReason ? await reasonsFor(env, actor, requests) : new Map<string, string>()
   return {
-    accounts: accounts.map(account => ({
+    accounts: accounts.filter(account => !asOf || account.cutover_date <= asOf).map(account => ({
       id: account.id, period: account.period_id, policy: { id: account.policy_id, name: account.policy_name, version: account.policy_version, versionId: account.policy_version_id },
       cutoverDate: account.cutover_date, openingMinutes: account.opening_minutes, openingStatus: account.opening_status, accruedThrough: account.accrued_through,
       balanceMinutes: ledger.filter(entry => entry.account_id === account.id).reduce((sum, entry) => sum + entry.minutes, 0),
       ledger: ledger.filter(entry => entry.account_id === account.id).map(entry => ({ id: entry.id, kind: entry.kind, minutes: entry.minutes, effectiveDate: entry.effective_date, request: entry.request_id, reverses: entry.reverses, note: entry.note })),
     })),
-    requests: requests.map(row => requestView(row, reasons.get(row.id), withReason)),
+    requests: requests.filter(row => !asOf || row.start_date <= asOf).map(row => requestView(row, reasons.get(row.id), withReason)),
   }
 }
 

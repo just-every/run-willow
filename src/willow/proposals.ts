@@ -138,10 +138,10 @@ export async function proposalDetail(env: Bindings, actor: Actor, id: string) {
  * read, the names of facets withheld from them, and the policy versions the
  * leave figures come from. Nothing outside the member's access is selected.
  */
-export async function context(env: Bindings, actor: Actor, personId: string) {
+export async function context(env: Bindings, actor: Actor, personId: string, asOf?: string) {
   const id = personId === 'me' ? actor.personId : personId
   insist(id, 'not_found', 404)
-  const view = await personView(env, actor, id)
+  const view = await personView(env, actor, id, { asOf })
   const visible = facets(actor, id)
   const leave = view.leave as { accounts: { policy: { versionId: string } }[] } | undefined
   const versions = leave?.accounts.length ? await all(env, `SELECT v.id, v.version, v.summary, v.accrual_weeks_hundredths, v.negative_limit_minutes, p.name FROM wl_policy_versions v JOIN wl_leave_policies p ON p.id = v.policy_id WHERE v.id IN (${leave.accounts.map(() => '?').join(', ')})`, ...leave.accounts.map(account => account.policy.versionId)) : []

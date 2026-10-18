@@ -183,3 +183,5 @@ try {
   })
 } finally { await h.close() }
 if (failures) process.exitCode = 1
+
+await import("./people.mjs")

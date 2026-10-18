@@ -38,8 +38,8 @@ export function weekday(date: string): number {
   return (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7
 }
 
-export function today(zone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(Date.now())
+export function today(zone: string, instant = Date.now()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(instant)
 }
 
 export function formatInstant(instant: number, zone: string): string {

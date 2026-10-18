@@ -3,7 +3,8 @@
 // the values those facets allow. Reads of someone else's private contact
 // details or pay are audited.
 import type { Bindings } from '../auth.server'
-import type { Actor } from './actor'
+import { employerZone, type Actor } from './actor'
+import { requireDate } from './dates'
 import { facets as facetsOf, readsCategory, seesEveryone, type Facet } from './access'
 import { all, auditRead, insist, one, type Row } from './core'
 import { selectedPeriods } from './employment'
@@ -13,6 +14,7 @@ import { casesFor } from './lifecycle'
 import { PRIVATE_FIELDS, currentTerms, displayName, personNames, statusOf } from './people'
 
 export interface ViewOptions {
+  asOf?: string
   audit?: boolean
   /** Preview admission is the selected member's; reads/audits remain the real viewer's. */
   admissionActor?: Actor
@@ -58,30 +60,35 @@ async function employmentView(env: Bindings, periods: Row[], current: Row | unde
 }
 
 export async function personView(env: Bindings, actor: Actor, personId: string, options: ViewOptions = {}) {
+  const date = options.asOf === undefined ? actor.today : requireDate(options.asOf, 'invalid_asOf')
+  const zone = options.asOf === undefined ? undefined : await employerZone(env)
   const [person, look, periods, currentRows, selectedRows] = await Promise.all([
     one(env, 'SELECT id, legal_name, preferred_name, work_email, employee_number, revision FROM wl_people WHERE id = ?', personId),
     lookups(env),
     all(env, 'SELECT id, start_date, end_date, employment_type, payroll_id, end_reason FROM wl_periods WHERE person_id = ? ORDER BY start_date DESC', personId),
-    currentTerms(env, actor.today),
-    selectedPeriods(env, actor.today),
+    currentTerms(env, date),
+    selectedPeriods(env, date),
   ])
   insist(person, 'not_found', 404)
   const current = currentRows.get(personId), selected = selectedRows.get(personId)
   const admitted = options.admissionActor ?? actor
   // Former employees appear only to members who see everyone.
-  insist(statusOf(selected, admitted.today) !== 'former' || seesEveryone(admitted) || admitted.personId === personId || facetsOf(admitted, personId).has('employment'), 'not_found', 404)
+  const admittedPeriod = (await selectedPeriods(env, admitted.today)).get(personId)
+  insist(statusOf(admittedPeriod, admitted.today) !== 'former' || seesEveryone(admitted) || admitted.personId === personId || facetsOf(admitted, personId).has('employment'), 'not_found', 404)
   const visible = options.facets ?? facetsOf(actor, personId)
   // Resolve independent facets together, after admission and before rendering.
   const [employment, privateValues, leave, cases, documents] = await Promise.all([
-    visible.has('employment') ? employmentView(env, periods, current, look, visible, actor.today) : undefined,
+    visible.has('employment') ? employmentView(env, periods, current, look, visible, date) : undefined,
     visible.has('private') ? one(env, `SELECT ${PRIVATE_FIELDS.join(', ')} FROM wl_person_private WHERE person_id = ?`, personId) : undefined,
-    visible.has('leave') ? leaveFor(env, actor, personId, visible.has('leave_reason')) : undefined,
-    visible.has('lifecycle') ? casesFor(env, personId) : undefined,
-    visible.has('documents') ? documentsFor(env, actor, personId, options.categories ?? (category => readsCategory(actor, personId, category))) : undefined,
+    visible.has('leave') ? leaveFor(env, actor, personId, visible.has('leave_reason'), options.asOf === undefined ? undefined : date) : undefined,
+    visible.has('lifecycle') ? casesFor(env, personId, options.asOf === undefined ? undefined : { date, zone: zone! }) : undefined,
+    visible.has('documents') ? documentsFor(env, actor, personId, options.categories ?? (category => readsCategory(actor, personId, category)), options.asOf === undefined ? undefined : { date, zone: zone! }) : undefined,
   ])
   const view: Record<string, unknown> = {
     id: person.id, revision: person.revision, name: displayName(person), legalName: person.legal_name, preferredName: person.preferred_name, workEmail: person.work_email,
-    status: statusOf(selected, actor.today), current: termsSummary(current, look), facets: [...visible],
+    asOf: date, status: statusOf(selected, date), selectedPeriod: selected?.id ?? null,
+    current: current ? { id: current.id, effectiveFrom: current.effective_from, scheduled: current.effective_from > actor.today, ...termsSummary(current, look),
+      ...(visible.has('employment') ? { schedule: current.schedule_id ? { id: current.schedule_id, ...look.schedules.get(current.schedule_id) } : null } : {}) } : null, facets: [...visible],
     ...(employment ? { employeeNumber: person.employee_number, ...employment } : {}),
     ...(visible.has('private') ? { private: Object.fromEntries(PRIVATE_FIELDS.map(field => [field, privateValues?.[field] ?? null])) } : {}),
     ...(visible.has('leave') ? { leave } : {}),
@@ -89,7 +96,7 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
     ...(visible.has('documents') ? { documents } : {}),
   }
   if (options.audit !== false && actor.personId !== personId && (visible.has('private') || visible.has('pay'))) {
-    await auditRead(env, actor.id, 'person.private.read', personId, { private: visible.has('private'), pay: visible.has('pay') })
+    await auditRead(env, actor.id, 'person.private.read', personId, { private: visible.has('private'), pay: visible.has('pay'), asOf: date })
   }
   return view
 }

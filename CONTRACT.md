@@ -730,8 +730,7 @@ Every capability claim on the approved homepage (`src/site/landing/`, checked ag
 
 Judged from the code and tests at commit `84231c06dc4f709b4a04126fdfc3d43b13c771f2` (17 October 2026).
 
-89 clauses: 21 done, 37 partial, 31 missing. The branch changes only the
-contract documents, so the judged code is the branch's code. Evidence cites the
+89 clauses: 22 done, 36 partial, 31 missing. PEOPLE-005 was completed on 19 October 2026 with its named public-door proof; the remaining statuses retain their prior judgment. Evidence cites the
 repository paths that back a done or partial row; a partial citation proves
 only the foundation it names. Published clauses are WIL-01–WIL-21 from the
 released contract; push-further clauses are the agent section. The earlier statuses were judged at `59e3d42eb07e99d0f54dd48559056fe0a73d02ac`; between it and the commit above, `src/willow` and its tests changed only in display (US English labels, US dates and the employer-setup defaults) and the run site was rebuilt, so every earlier status stands. Revised 17 October 2026 so every capability claim on the approved homepage has a clause (see [Homepage claims](#homepage-claims)): PEOPLE-005, PAYROLL-006 and OPEN-001 were added and judged from the commit above, and PEOPLE-002, PEOPLE-004, MOBILE-001, LEAVE-002, BENEFITS-001, RETIRE-001, IDENTITY-001 and MIGRATE-001 were sharpened without changing their statuses.
@@ -739,8 +738,8 @@ released contract; push-further clauses are the agent section. The earlier statu
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 21 | 0 | 0 | 21 |
-| Target and push further | 0 | 37 | 31 | 68 |
-| All | 21 | 37 | 31 | 89 |
+| Target and push further | 1 | 36 | 31 | 68 |
+| All | 22 | 36 | 31 | 89 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -769,7 +768,7 @@ released contract; push-further clauses are the agent section. The earlier statu
 | `PEOPLE-002` | Directory and navigable organizational chart | target | partial | `src/willow/profile.ts`, `src/willow/employment.ts`: scoped directory and effective-dated manager relationships | Navigable org chart, reorganization preview, vacant-manager handling and cycle refusal. |
 | `PEOPLE-003` | Multi-row record tables and company assets | target | missing | `src/willow/people.ts` holds one private emergency-contact value | Multi-row tables, custom tables and the asset register with device-return tasks. |
 | `PEOPLE-004` | Date alerts on employee dates | target | missing | | No date-field alerts, lead times, upcoming-dates list or alert-created tasks exist. |
-| `PEOPLE-005` | Any person's record as of a chosen date | target | partial | `src/willow/ui/people.ts`, `src/willow/employment.ts`, `src/willow/reports.ts`; `tests/willow/flows.mjs` (WIL-07, WIL-14): every terms version listed per person as past, in force, scheduled or canceled, and summaries as of a chosen date | A date-selected view of one person's record (page, JSON door and agent context) with that day's documents and balances. |
+| `PEOPLE-005` | Any person's record as of a chosen date | target | done | `src/willow/profile.ts`, `src/willow/documents.ts`, `src/willow/leave.ts`, `src/willow/lifecycle.ts`, `src/willow/ui/people.ts`, `src/willow/views.ts`, `src/willow/proposals.ts`; `tests/willow/people.mjs` (PEOPLE-005): shared as-of page/JSON/context, version boundaries, canceled/future terms, dated documents/ledger/cases and current permissions/audit | |
 | `SELF-001` | Employee and manager self-service portal | target | partial | `src/willow/people.ts`, `src/willow/leave.ts`, `src/willow/ui/home.ts`; `tests/willow/flows.mjs` (WIL-05, WIL-09): own profile, tasks and PTO requests | Approval-based profile/dependent changes and unified pending-change tracking. |
 | `SELF-002` | Company home: announcements, celebrations and shared files | target | missing | `src/willow/ui/home.ts` shows only the member's own tasks, approvals and leave | Announcements, celebrations and shared company folders. |
 | `MOBILE-001` | Mobile work and accessible companion apps | target | partial | `src/willow/ui/leave.ts`; `tests/willow/journey.mjs`: responsive request and approval | Native iOS/Android apps, secure push, mobile clock-in and full accessibility acceptance. |
