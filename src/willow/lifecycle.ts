@@ -11,6 +11,7 @@ import { addDays, requireDate, today } from './dates'
 import { requireEmployer } from './employer'
 import type { Input } from './input'
 import { endAccessStatements } from './members'
+import { managerChangeGuard } from './organization'
 import { PRIVATE_FIELDS, createPersonStatements, displayName, prepareTerms, readPerson, startPeriodStatements, termsOn } from './people'
 
 export const ASSIGNEES = ['hr', 'manager', 'it', 'payroll', 'employee'] as const
@@ -134,9 +135,11 @@ export async function startLeaver(env: Bindings, actor: Actor, input: Input) {
   const end = requireDate(input.text('endDate', { max: 10 }), 'invalid_endDate')
   insist(end >= period.start_date, 'end_before_start')
   const template = await activeTemplate(env, input.text('template', { max: 100 }), 'leaver')
+  const organizationGuard = await managerChangeGuard(env, { period: { id: periodId, personId: period.person_id, startDate: period.start_date, endDate: end } })
   const terms = await termsOn(env, periodId, end)
   const opened = await caseStatements(env, actor, template, period.person_id, periodId, end, terms?.manager_person_id ?? null)
   await commit(env, [
+    organizationGuard,
     guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_periods WHERE id = ? AND revision = ? AND end_date IS NULL)", periodId, period.revision),
     guard(env, 'stale', "NOT EXISTS(SELECT 1 FROM wl_terms WHERE period_id = ? AND status = 'active' AND effective_from > ?)", periodId, end),
     stmt(env, 'UPDATE wl_periods SET end_date = ?, end_reason = ?, revision = ? WHERE id = ?', end, input.text('reason', { max: 300 }), newId(), periodId),

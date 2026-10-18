@@ -5,7 +5,7 @@
 export const API_DOORS: [string, string][] = [
   ['^connections$', 'connections'], ['^payroll-layout$', 'payrollLayout'], ['^model-drafts$', 'modelDrafts'], ['^model-drafts/([\\w-]+)$', 'modelDraft'],
   ['^me$', 'me'], ['^permissions$', 'permissions'], ['^settings$', 'settings'], ['^members$', 'members'], ['^preview$', 'preview'],
-  ['^people$', 'people'], ['^people/([\\w-]+)$', 'person'], ['^context/([\\w-]+)$', 'context'], ['^templates$', 'templates'], ['^cases/([\\w-]+)$', 'case'],
+  ['^people$', 'people'], ['^organization$', 'organization'], ['^people/([\\w-]+)$', 'person'], ['^context/([\\w-]+)$', 'context'], ['^templates$', 'templates'], ['^cases/([\\w-]+)$', 'case'],
   ['^tasks$', 'tasks'], ['^policies$', 'policies'], ['^leave/([\\w-]+)$', 'leave'], ['^approvals$', 'approvals'], ['^quote$', 'quote'],
   ['^payroll$', 'payroll'], ['^payroll/([\\w-]+)$', 'batch'], ['^reports$', 'reports'], ['^proposals$', 'proposals'], ['^proposals/([\\w-]+)$', 'proposal'],
   ['^imports$', 'imports'], ['^audit$', 'audit'],

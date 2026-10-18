@@ -99,7 +99,7 @@ Rules that hold everywhere:
 Every page action has a JSON twin, so an agent can run Willow with a
 signed-in session cookie and sees exactly what that member may see. Reads are
 `GET /api/willow/` plus a path from `src/willow/doors.ts` (`me`, `people`,
-`people/:id`, `context/:id`, `cases/:id`, `tasks`, `leave/:id`, `approvals`,
+`people/:id`, `context/:id`, `organization`, `cases/:id`, `tasks`, `leave/:id`, `approvals`,
 `quote?account&startDate&endDate`, `payroll`, `payroll/:id`, `reports`,
 `proposals`, `proposals/:id`, `imports`, `audit`, `settings`, `policies`,
 `templates`, `members`, `preview?member&person`, `permissions`). Writes are
@@ -123,3 +123,5 @@ check per clause, with fakes only at provider edges. Private-field access, effec
 are high-stakes: they keep their real proofs. No pin tests (hashes, versions,
 file lists, UI copy, thresholds). Prove a one-off fix with before/after
 evidence instead of a new permanent test.
+
+People records and agent contexts accept `?asOf=YYYY-MM-DD` with current reader permissions. The directory accepts the same date plus `q`, `name`, `location`, `department`, `role` and `status`; `GET /api/willow/organization?asOf=YYYY-MM-DD` returns directory-only manager/report links and its active count. Manager changes and cancellations refuse effective-date cycles, including through BambooHR move-in.

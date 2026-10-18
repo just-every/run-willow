@@ -11,6 +11,7 @@ import { members, visibilityPreview } from './members'
 import { importJobs } from './movein/bamboohr'
 import { batchDetail, batches } from './payroll'
 import { directory, personView } from './profile'
+import { directoryFilters, filterDirectory, organizationChart } from './organization'
 import { API_DOORS, match } from './doors'
 import { context, proposalDetail, proposals } from './proposals'
 import { summary } from './reports'
@@ -38,7 +39,14 @@ export const views: Record<string, View> = {
   settings: env => settings(env),
   members: (env, actor, request) => members(env, actor, request),
   preview: (env, actor, _request, _id, url) => visibilityPreview(env, actor, url.searchParams.get('member') ?? '', url.searchParams.get('person') ?? ''),
-  people: (env, actor) => directory(env, actor),
+  people: async (env, actor, _request, _id, url) => {
+    const filters = directoryFilters(url.searchParams, actor.today)
+    return filterDirectory(await directory(env, actor, filters.date), filters)
+  },
+  organization: async (env, actor, _request, _id, url) => {
+    const filters = directoryFilters(url.searchParams, actor.today)
+    return organizationChart(await directory(env, actor, filters.date), filters.date)
+  },
   person: (env, actor, _request, id, url) => personView(env, actor, id === 'me' ? actor.personId ?? '' : id, { asOf: url.searchParams.get('asOf') ?? undefined }),
   context: (env, actor, _request, id, url) => context(env, actor, id, url.searchParams.get('asOf') ?? undefined),
   templates: async (env, actor) => { requirePermission(actor, 'people.manage'); return await templates(env) },

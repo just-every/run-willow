@@ -7,6 +7,7 @@ import { can, requirePermission, type Actor } from './actor'
 import { all, commit, guard, insist, newId, now, one, stmt, type Row } from './core'
 import { isDate, requireDate } from './dates'
 import { CURRENT_TERMS } from './employment'
+import { managerChangeGuard } from './organization'
 import type { Input } from './input'
 
 export const EMPLOYMENT_TYPES = ['full_time', 'part_time', 'casual', 'fixed_term'] as const
@@ -129,9 +130,11 @@ export async function startPeriodStatements(env: Bindings, actor: Actor, input: 
   const terms = await readTerms(env, input, null, start, 'Start of employment')
   const pay = readPay(actor, input) ?? { basis: 'unknown' as const, amountCents: null }
   const periodId = newId(), termId = newId()
+  const organizationGuard = await managerChangeGuard(env, { period: { id: periodId, personId, startDate: start, endDate: null }, term: { id: termId, effectiveFrom: start, managerPersonId: terms.managerPersonId } })
   return {
     periodId, termId, start, type, terms, pay,
     statements: [
+      organizationGuard,
       // Periods never overlap: a rehire starts only after the previous period has ended.
       guard(env, 'period_overlap', 'NOT EXISTS(SELECT 1 FROM wl_periods WHERE person_id = ? AND (end_date IS NULL OR end_date >= ?))', personId, start),
       stmt(env, 'INSERT INTO wl_periods (id, person_id, start_date, employment_type, payroll_id, revision, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', periodId, personId, start, type, payrollId, newId(), now()),
@@ -160,9 +163,11 @@ export async function prepareTerms(env: Bindings, actor: Actor, input: Input) {
   const previousPay = (await one<{ pay_basis: PayInput['basis']; amount_cents: number | null; currency: string }>(env, 'SELECT pay_basis, amount_cents, currency FROM wl_term_pay WHERE term_id = ?', base.id))!
   const currency = pay ? (await one<{ currency: string }>(env, 'SELECT currency FROM wl_employer'))!.currency : previousPay.currency
   const termId = newId()
+  const organizationGuard = await managerChangeGuard(env, { period: { id: periodId, personId: period.person_id, startDate: period.start_date, endDate: period.end_date }, term: { id: termId, effectiveFrom: effective, managerPersonId: terms.managerPersonId } })
   return {
     period, base, terms, termId, effective,
     statements: [
+      organizationGuard,
       guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_periods WHERE id = ? AND revision = ?)', periodId, period.revision),
       guard(env, 'stale', "NOT EXISTS(SELECT 1 FROM wl_terms WHERE period_id = ? AND effective_from = ? AND status = 'active')", periodId, effective),
       ...termsStatements(env, termId, periodId, terms, pay ?? { basis: previousPay.pay_basis, amountCents: previousPay.amount_cents }, currency, actor.id),
@@ -175,11 +180,13 @@ export async function prepareTerms(env: Bindings, actor: Actor, input: Input) {
 export async function cancelTerms(env: Bindings, actor: Actor, input: Input) {
   requirePermission(actor, 'people.manage')
   const id = input.text('terms', { max: 100 })
-  const row = await one(env, 'SELECT t.*, p.start_date FROM wl_terms t JOIN wl_periods p ON p.id = t.period_id WHERE t.id = ?', id)
+  const row = await one(env, 'SELECT t.*, p.start_date, p.end_date, p.person_id FROM wl_terms t JOIN wl_periods p ON p.id = t.period_id WHERE t.id = ?', id)
   insist(row, 'terms_not_found', 404)
   insist(row.status === 'active', 'already_cancelled', 409)
   insist(row.effective_from !== row.start_date, 'initial_terms_fixed', 409)
+  const organizationGuard = await managerChangeGuard(env, { period: { id: row.period_id, personId: row.person_id, startDate: row.start_date, endDate: row.end_date }, cancelTermId: id })
   await commit(env, [
+    organizationGuard,
     guard(env, 'already_handed_off', "NOT EXISTS(SELECT 1 FROM wl_payroll_items WHERE source_kind = 'terms' AND source_id = ?)", id),
     stmt(env, "UPDATE wl_terms SET status = 'cancelled', cancelled_by = ?, cancelled_at = ? WHERE id = ? AND status = 'active'", actor.id, now(), id),
     stmt(env, 'UPDATE wl_periods SET revision = ? WHERE id = ?', newId(), row.period_id),

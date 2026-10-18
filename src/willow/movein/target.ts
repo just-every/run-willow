@@ -5,6 +5,7 @@
 // every later native record that depends on it, so undo (strict) refuses to
 // remove anything a person has since edited or built on: those need a
 // compensating change in Willow first.
+import { ORGANIZATION_ACYCLIC } from '../organization-import'
 import type { D1Database, D1Sql, D1TargetAdapter, Json, TargetRow } from '../../modules/import-kit/src/d1/index'
 
 const sql = (text: string, ...params: unknown[]): D1Sql => ({ sql: text, params })
@@ -116,6 +117,7 @@ const period: Kind = {
     sql("INSERT INTO wl_periods (id, person_id, start_date, end_date, end_reason, employment_type, payroll_id, origin, revision, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'import', ?, ?)", id, value.person, value.startDate, value.endDate, value.endReason, value.employmentType, value.payrollId, revision, Date.now()),
     sql("INSERT INTO wl_terms (id, period_id, effective_from, job_title, department_id, location_id, manager_person_id, schedule_id, reason, status, origin, recorded_by, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'import', 'import', ?)", value.terms.id, id, value.startDate, value.terms.jobTitle, value.terms.departmentId, value.terms.locationId, value.terms.managerPersonId, value.terms.scheduleId, value.terms.reason, value.terms.status, Date.now()),
     sql('INSERT INTO wl_term_pay (term_id, pay_basis, amount_cents, currency) VALUES (?, ?, ?, ?)', value.terms.id, value.pay.basis, value.pay.amountCents, value.pay.currency),
+    sql(`INSERT INTO wl_guard (code, ok) SELECT 'stale', CASE WHEN (${ORGANIZATION_ACYCLIC}) THEN 1 ELSE 0 END`),
   ],
   remove: id => [
     sql("DELETE FROM wl_term_pay WHERE term_id IN (SELECT id FROM wl_terms WHERE period_id = ? AND origin = 'import')", id),

@@ -6,6 +6,7 @@
 // originals, re-import that adds nothing, and strict undo that removes only an
 // untouched batch. Balances arrive as proposals that a leave manager signs
 // off; documents land in their private category, never the directory.
+import { validateImportedOrganization } from '../organization-import'
 import type { Bindings } from '../../auth.server'
 import { planD1Import, createD1ImportJob, applyD1ImportBatches, resumeD1Import, undoD1Import, canonicalJson, sha256, type D1ImportContext, type SourceBundle, type SourceRecord, type Json, type TargetEffect } from '../../modules/import-kit/src/d1/index'
 import { requirePermission, type Actor } from '../actor'
@@ -311,6 +312,7 @@ async function build(env: Bindings, actor: Actor, input: Input) {
     ],
     carry,
   }
+  await validateImportedOrganization(env, plan.entries)
   return { plan, preview, context, files, hashes }
 }
 

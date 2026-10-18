@@ -102,14 +102,16 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
 }
 
 /** The directory: current and upcoming people for every member; former people too for members who see everyone. */
-export async function directory(env: Bindings, actor: Actor) {
+export async function directory(env: Bindings, actor: Actor, asOf = actor.today) {
+  const date = requireDate(asOf, 'invalid_asOf')
   const look = await lookups(env)
   const people = await all(env, 'SELECT id, legal_name, preferred_name, work_email FROM wl_people ORDER BY COALESCE(preferred_name, legal_name)')
-  const selected = await selectedPeriods(env, actor.today)
-  const current = await currentTerms(env, actor.today)
+  const selected = await selectedPeriods(env, date)
+  const current = await currentTerms(env, date)
   const everyone = seesEveryone(actor)
+  const admitted = await selectedPeriods(env, actor.today)
   return people
-    .map(person => ({ person, status: statusOf(selected.get(person.id), actor.today) }))
-    .filter(({ status }) => everyone || status === 'active' || status === 'upcoming')
+    .map(person => ({ person, status: statusOf(selected.get(person.id), date) }))
+    .filter(({ person }) => everyone || ['active', 'upcoming'].includes(statusOf(admitted.get(person.id), actor.today)))
     .map(({ person, status }) => ({ id: person.id, name: displayName(person), workEmail: person.work_email, status, ...termsSummary(current.get(person.id), look) }))
 }

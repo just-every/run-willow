@@ -680,7 +680,7 @@ Every capability claim on the approved homepage (`src/site/landing/`, checked ag
 | 11 | Hero card: raise for Ana to $84,000, payroll and benefits updated | WIL-07, FLOW-004, WIL-11, BENEFITS-002, AGENT-001 | partial |
 | 12 | Hero card: offboarding Sam, access removed in 5 systems | WIL-12, IDENTITY-001 | partial |
 | 13 | Hero card: benefits enrollment missing, reminder sent | BENEFITS-001, FLOW-002 | partial |
-| 14 | Hero card: org chart, 48 people | PEOPLE-002 | partial |
+| 14 | Hero card: org chart, 48 people | PEOPLE-002 | done |
 | 15 | "Job, pay, manager, documents and history live in one place, dated" | WIL-04, WIL-06, WIL-07 | done |
 | 16 | "so you always know what was true and when" | WIL-07 | done |
 | 17 | Card: offer letter signed, W-4 on file | SIGN-001, HIRING-004, US-001 | partial |
@@ -690,7 +690,7 @@ Every capability claim on the approved homepage (`src/site/landing/`, checked ag
 | 21 | "Willow chases each step until it is done" | FLOW-002, AGENT-003 | partial |
 | 22 | "People request leave" | WIL-09 | done |
 | 23 | "update their details" | SELF-001 | partial |
-| 24 | "find a teammate" | PEOPLE-002 | partial |
+| 24 | "find a teammate" | PEOPLE-002 | done |
 | 25 | "Managers approve in one tap" | WIL-09, MOBILE-001 | partial |
 | 26 | "balances stay right" | WIL-08, WIL-10 | done |
 | 27 | Card: 64 hours PTO balance; Dec 22 to Jan 2 approved | WIL-09, WIL-10 | done |
@@ -717,10 +717,10 @@ Every capability claim on the approved homepage (`src/site/landing/`, checked ag
 | 48 | "Run Willow on your own computer or server" | OPS-001 | partial |
 | 49 | "keep every record, document and change" | WIL-17, DATA-001, AUDIT-001 | partial |
 | 50 | "Export everything, any time" | WIL-17, DATA-001 | partial |
-| 51 | Org chart: "Always current, straight from the records" | PEOPLE-002 | partial |
+| 51 | Org chart: "Always current, straight from the records" | PEOPLE-002 | done |
 | 52 | Reviews and goals | PERFORM-001 | missing |
 | 53 | Pulse surveys | ENGAGE-001 | missing |
-| 54 | History by date: "See anyone's record as of any day" | PEOPLE-005, WIL-07 | partial |
+| 54 | History by date: "See anyone's record as of any day" | PEOPLE-005, WIL-07 | done |
 | 55 | New-hire reporting: "State forms ready for each hire" | US-002 | missing |
 | 56 | Activity log: "Every change and approval, recorded" | AUDIT-001, WIL-03 | partial |
 | 57 | "Open source HR software for small and mid-size businesses" · "Free and open source, MIT licensed" | OPEN-001 | partial |
@@ -730,7 +730,7 @@ Every capability claim on the approved homepage (`src/site/landing/`, checked ag
 
 Judged from the code and tests at commit `84231c06dc4f709b4a04126fdfc3d43b13c771f2` (17 October 2026).
 
-89 clauses: 22 done, 36 partial, 31 missing. PEOPLE-005 was completed on 19 October 2026 with its named public-door proof; the remaining statuses retain their prior judgment. Evidence cites the
+89 clauses: 23 done, 35 partial, 31 missing. PEOPLE-002 and PEOPLE-005 were completed on 19 October 2026 with their named public-door proofs; the remaining statuses retain their prior judgment. Evidence cites the
 repository paths that back a done or partial row; a partial citation proves
 only the foundation it names. Published clauses are WIL-01–WIL-21 from the
 released contract; push-further clauses are the agent section. The earlier statuses were judged at `59e3d42eb07e99d0f54dd48559056fe0a73d02ac`; between it and the commit above, `src/willow` and its tests changed only in display (US English labels, US dates and the employer-setup defaults) and the run site was rebuilt, so every earlier status stands. Revised 17 October 2026 so every capability claim on the approved homepage has a clause (see [Homepage claims](#homepage-claims)): PEOPLE-005, PAYROLL-006 and OPEN-001 were added and judged from the commit above, and PEOPLE-002, PEOPLE-004, MOBILE-001, LEAVE-002, BENEFITS-001, RETIRE-001, IDENTITY-001 and MIGRATE-001 were sharpened without changing their statuses.
@@ -738,8 +738,8 @@ released contract; push-further clauses are the agent section. The earlier statu
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 21 | 0 | 0 | 21 |
-| Target and push further | 1 | 36 | 31 | 68 |
-| All | 22 | 36 | 31 | 89 |
+| Target and push further | 2 | 35 | 31 | 68 |
+| All | 23 | 35 | 31 | 89 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -765,7 +765,7 @@ released contract; push-further clauses are the agent section. The earlier statu
 | `WIL-20` | Structural model checklist drafts under human control | published | done | `src/willow/model-drafts.ts`; `tests/willow/phase2.mjs` (WIL-20) | |
 | `WIL-21` | Frozen mapped payroll files and ADP RUN compatibility | published | done | `src/willow/payroll-layout.ts`, `src/willow/payroll.ts`; `tests/willow/phase2.mjs` (WIL-21), `tests/willow/regressions.mjs` | |
 | `PEOPLE-001` | Typed custom employee fields | target | missing | | No custom-field schema or public workflow exists. |
-| `PEOPLE-002` | Directory and navigable organizational chart | target | partial | `src/willow/profile.ts`, `src/willow/employment.ts`: scoped directory and effective-dated manager relationships | Navigable org chart, reorganization preview, vacant-manager handling and cycle refusal. |
+| `PEOPLE-002` | Directory and navigable organizational chart | target | done | `src/willow/profile.ts`, `src/willow/organization.ts`, `src/willow/people.ts`, `src/willow/ui/organization.ts`, `src/willow/ui/people.ts`; `tests/willow/people.mjs` (PEOPLE-002): scoped field search, dated manager/report navigation, active counts, vacancies, current/future/canceled-version cycle refusal and competing writes | |
 | `PEOPLE-003` | Multi-row record tables and company assets | target | missing | `src/willow/people.ts` holds one private emergency-contact value | Multi-row tables, custom tables and the asset register with device-return tasks. |
 | `PEOPLE-004` | Date alerts on employee dates | target | missing | | No date-field alerts, lead times, upcoming-dates list or alert-created tasks exist. |
 | `PEOPLE-005` | Any person's record as of a chosen date | target | done | `src/willow/profile.ts`, `src/willow/documents.ts`, `src/willow/leave.ts`, `src/willow/lifecycle.ts`, `src/willow/ui/people.ts`, `src/willow/views.ts`, `src/willow/proposals.ts`; `tests/willow/people.mjs` (PEOPLE-005): shared as-of page/JSON/context, version boundaries, canceled/future terms, dated documents/ledger/cases and current permissions/audit | |

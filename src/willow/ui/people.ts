@@ -11,6 +11,8 @@ import { templates } from '../lifecycle'
 import { EMPLOYMENT_TYPES, PRIVATE_FIELDS, PRIVATE_LABELS } from '../people'
 import { formatPay } from '../money'
 import { directory, personView } from '../profile'
+import { directoryFilters, filterDirectory, organizationChart } from '../organization'
+import { organizationSection } from './organization'
 import { area, field, fileField, form, h, hidden, page, person as personName, select, table, tag, type Html } from './html'
 
 const TYPE_LABELS: Record<string, string> = { full_time: 'Full time', part_time: 'Part time', casual: 'Casual', fixed_term: 'Fixed term', unknown: 'Unknown (from import)' }
@@ -39,13 +41,19 @@ function termsFields(options: Awaited<ReturnType<typeof choices>>, required: boo
 }
 
 export async function directoryPage(env: Bindings, actor: Actor, url: URL) {
-  const people = await directory(env, actor)
+  const filters = directoryFilters(url.searchParams, actor.today)
+  const allPeople = await directory(env, actor, filters.date)
+  const people = filterDirectory(allPeople, filters)
+  const chart = organizationChart(allPeople, filters.date)
+  const organization = url.searchParams.get('view') === 'organization'
   const manage = can(actor, 'people.manage')
   const joinerTemplates = manage ? (await templates(env)).filter(template => template.kind === 'joiner' && template.status === 'active') : []
   const options = manage ? await choices(env, actor) : null
   const body = h`<h1>People</h1>
-<section class="card">${people.length ? table(['Name', 'Role', 'Department', 'Location', 'Manager', 'Status'], people.map(person => [personName(person.name, `/app/people/${person.id}`), person.jobTitle ?? '—', person.department?.name ?? '—', person.location?.name ?? '—', person.manager?.name ?? '—', tag(person.status)])) : h`<p class="muted">No people yet.${manage ? h` Start a joiner below, or <a href="/app/import">move in from BambooHR</a>.` : ''}</p>`}</section>
-${manage ? h`<section class="card"><h2>Start a joiner</h2>${joinerTemplates.length ? form('joiner.start', '/app/cases/{id}', [
+<section class="card"><nav aria-label="People views"><a href="/app/people?asOf=${filters.date}">Directory</a> · <a href="/app/people?view=organization&asOf=${filters.date}">Organization chart</a></nav>
+<form method="get" action="/app/people">${hidden('view', organization ? 'organization' : 'directory')}${field('Record as of', 'asOf', { type: 'date', value: filters.date })}${!organization ? [field('Search name, location, department or role', 'q', { required: false, value: filters.q }), field('Name', 'name', { required: false, value: filters.name }), field('Location', 'location', { required: false, value: filters.location }), field('Department', 'department', { required: false, value: filters.department }), field('Role', 'role', { required: false, value: filters.role }), select('Status', 'status', [{ value: 'all', label: 'All visible records' }, { value: 'active', label: 'Active' }, { value: 'upcoming', label: 'Upcoming' }, { value: 'former', label: 'Former' }], filters.status)] : ''}<button type="submit">${organization ? 'Preview date' : 'Search'}</button></form><p>${chart.activeCount} active people${!organization ? ` · ${people.length} matching records` : ''}</p></section>
+${organization ? organizationSection(chart, actor, url) : h`<section class="card">${people.length ? table(['Name', 'Role', 'Department', 'Location', 'Manager', 'Status'], people.map(person => [personName(person.name, `/app/people/${person.id}${url.searchParams.has('asOf') ? `?asOf=${filters.date}` : ''}`), person.jobTitle ?? '—', person.department?.name ?? '—', person.location?.name ?? '—', person.manager?.name ?? '—', tag(person.status)])) : h`<p class="muted">No people yet.${manage ? h` Start a joiner below, or <a href="/app/import">move in from BambooHR</a>.` : ''}</p>`}</section>`}
+${manage && !organization ? h`<section class="card"><h2>Start a joiner</h2>${joinerTemplates.length ? form('joiner.start', '/app/cases/{id}', [
     select('Joiner template', 'template', joinerTemplates.map(template => ({ value: template.id, label: `${template.name} (v${template.version})` }))),
     field('Legal name', 'legalName'), field('Preferred name', 'preferredName', { required: false }), field('Work email', 'workEmail', { type: 'email', required: false }), field('Employee number', 'employeeNumber', { required: false }),
     field('Start date', 'startDate', { type: 'date' }), select('Employment type', 'employmentType', EMPLOYMENT_TYPES.map(value => ({ value, label: TYPE_LABELS[value] }))), field('Payroll identifier', 'payrollId', { required: false, hint: 'The employee’s identifier in your payroll provider, if known.' }),
