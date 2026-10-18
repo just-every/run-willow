@@ -62,7 +62,8 @@ label.check { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; 
 input[type=text], input[type=email], input[type=date], input[type=time], input[type=number], input[type=file], select, textarea { display: block; width: 100%; max-width: 40rem; height: 44px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--r-input); background: var(--card); color: var(--ink); font: 400 15px/1.4 var(--sans); }
 input[type=file] { height: auto; padding: 10px 14px; }
 input[type=file]::file-selector-button { margin-right: 12px; padding: 6px 14px; border: 1px solid var(--line-strong); border-radius: var(--r-pill); background: var(--paper); color: var(--ink); font: 500 14px var(--sans); cursor: pointer; }
-select { appearance: none; padding-right: 40px; background: var(--card) url('/icons/chevron-down.svg') right 14px center / 16px no-repeat; }
+/* Single-choice selects: chevron 14px in from the border, in --rer-muted; multiple and size>1 lists stay native. */
+select:not([multiple]):not([size]), select[size="1"]:not([multiple]) { -webkit-appearance: none; appearance: none; padding-right: 40px; background-image: url('/icons/select-chevron.svg'); background-repeat: no-repeat; background-position: right 14px center; background-size: 12px 8px; }
 textarea { height: auto; min-height: 104px; padding: 10px 14px; resize: vertical; }
 input:hover, select:hover, textarea:hover { border-color: rgb(31 42 35 / .32); }
 .card textarea { max-width: none; }

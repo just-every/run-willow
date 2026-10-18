@@ -516,6 +516,10 @@
       "sha256": "cab927d69f9eb12d63b12ecaf0a094960baa0f8a306a5c9953f00bfa8797bb4f",
       "executable": false
     },
+    "public/icons/select-chevron.svg": {
+      "sha256": "b787a5e6760d56124fc170c9180bf4d6aeafa6c6c6c0e79e9f4ea299f510f0e7",
+      "executable": false
+    },
     "public/rer-theme.css": {
       "sha256": "d404e07b4e9ab9447c9baad8ef60c8ff085b05be0d2125db9ca9d5bb99c36988",
       "executable": false
@@ -653,7 +657,7 @@
       "executable": false
     },
     "public/willow.css": {
-      "sha256": "557e62ac58e1c79faee90d04e7da1cb22e8823dc7cf5e8435f418740231b4308",
+      "sha256": "5e4891dc6f4ed0835a3ee3ab5350b1c95202b969c065f253ed49501d3a886652",
       "executable": false
     },
     "README.md": {
