@@ -41,44 +41,53 @@ function termsSummary(terms: Row | undefined, look: Lookups) {
   }
 }
 
+async function employmentView(env: Bindings, periods: Row[], current: Row | undefined, look: Lookups, visible: Set<Facet>, date: string) {
+  const terms = periods.length ? await all(env, `SELECT * FROM wl_terms WHERE period_id IN (${periods.map(() => '?').join(', ')}) ORDER BY effective_from DESC, recorded_at DESC`, ...periods.map(period => period.id)) : []
+  const pay = visible.has('pay') && terms.length ? new Map((await all(env, `SELECT * FROM wl_term_pay WHERE term_id IN (${terms.map(() => '?').join(', ')})`, ...terms.map(row => row.id))).map(row => [row.term_id, row])) : null
+  const employment = periods.map(period => ({
+    id: period.id, startDate: period.start_date, endDate: period.end_date, employmentType: period.employment_type, status: statusOf(period, date),
+    ...(visible.has('payroll') ? { payrollId: period.payroll_id } : {}),
+    ...(visible.has('private') ? { endReason: period.end_reason } : {}),
+    terms: terms.filter(row => row.period_id === period.id).map(row => ({
+      id: row.id, effectiveFrom: row.effective_from, status: row.status, reason: row.reason, inForce: row.id === current?.id,
+      ...termsSummary(row, look), schedule: row.schedule_id ? { id: row.schedule_id, ...look.schedules.get(row.schedule_id) } : null, recordedAt: row.recorded_at,
+      ...(pay ? { pay: pay.get(row.id) ? { basis: pay.get(row.id)!.pay_basis, amountCents: pay.get(row.id)!.amount_cents, currency: pay.get(row.id)!.currency } : null } : {}),
+    })),
+  }))
+  return { employment, ...(pay ? { pay: true } : {}) }
+}
+
 export async function personView(env: Bindings, actor: Actor, personId: string, options: ViewOptions = {}) {
-  const person = await one(env, 'SELECT id, legal_name, preferred_name, work_email, employee_number, revision FROM wl_people WHERE id = ?', personId)
+  const [person, look, periods, currentRows, selectedRows] = await Promise.all([
+    one(env, 'SELECT id, legal_name, preferred_name, work_email, employee_number, revision FROM wl_people WHERE id = ?', personId),
+    lookups(env),
+    all(env, 'SELECT id, start_date, end_date, employment_type, payroll_id, end_reason FROM wl_periods WHERE person_id = ? ORDER BY start_date DESC', personId),
+    currentTerms(env, actor.today),
+    selectedPeriods(env, actor.today),
+  ])
   insist(person, 'not_found', 404)
-  const look = await lookups(env)
-  const periods = await all(env, 'SELECT id, start_date, end_date, employment_type, payroll_id, end_reason FROM wl_periods WHERE person_id = ? ORDER BY start_date DESC', personId)
-  const current = (await currentTerms(env, actor.today)).get(personId)
-  const selected = (await selectedPeriods(env, actor.today)).get(personId)
+  const current = currentRows.get(personId), selected = selectedRows.get(personId)
   const admitted = options.admissionActor ?? actor
   // Former employees appear only to members who see everyone.
   insist(statusOf(selected, admitted.today) !== 'former' || seesEveryone(admitted) || admitted.personId === personId || facetsOf(admitted, personId).has('employment'), 'not_found', 404)
   const visible = options.facets ?? facetsOf(actor, personId)
+  // Resolve independent facets together, after admission and before rendering.
+  const [employment, privateValues, leave, cases, documents] = await Promise.all([
+    visible.has('employment') ? employmentView(env, periods, current, look, visible, actor.today) : undefined,
+    visible.has('private') ? one(env, `SELECT ${PRIVATE_FIELDS.join(', ')} FROM wl_person_private WHERE person_id = ?`, personId) : undefined,
+    visible.has('leave') ? leaveFor(env, actor, personId, visible.has('leave_reason')) : undefined,
+    visible.has('lifecycle') ? casesFor(env, personId) : undefined,
+    visible.has('documents') ? documentsFor(env, actor, personId, options.categories ?? (category => readsCategory(actor, personId, category))) : undefined,
+  ])
   const view: Record<string, unknown> = {
     id: person.id, revision: person.revision, name: displayName(person), legalName: person.legal_name, preferredName: person.preferred_name, workEmail: person.work_email,
     status: statusOf(selected, actor.today), current: termsSummary(current, look), facets: [...visible],
+    ...(employment ? { employeeNumber: person.employee_number, ...employment } : {}),
+    ...(visible.has('private') ? { private: Object.fromEntries(PRIVATE_FIELDS.map(field => [field, privateValues?.[field] ?? null])) } : {}),
+    ...(visible.has('leave') ? { leave } : {}),
+    ...(visible.has('lifecycle') ? { cases } : {}),
+    ...(visible.has('documents') ? { documents } : {}),
   }
-  if (visible.has('employment')) {
-    view.employeeNumber = person.employee_number
-    const terms = periods.length ? await all(env, `SELECT * FROM wl_terms WHERE period_id IN (${periods.map(() => '?').join(', ')}) ORDER BY effective_from DESC, recorded_at DESC`, ...periods.map(period => period.id)) : []
-    const pay = visible.has('pay') && terms.length ? new Map((await all(env, `SELECT * FROM wl_term_pay WHERE term_id IN (${terms.map(() => '?').join(', ')})`, ...terms.map(row => row.id))).map(row => [row.term_id, row])) : null
-    view.employment = periods.map(period => ({
-      id: period.id, startDate: period.start_date, endDate: period.end_date, employmentType: period.employment_type, status: statusOf(period, actor.today),
-      ...(visible.has('payroll') ? { payrollId: period.payroll_id } : {}),
-      ...(visible.has('private') ? { endReason: period.end_reason } : {}),
-      terms: terms.filter(row => row.period_id === period.id).map(row => ({
-        id: row.id, effectiveFrom: row.effective_from, status: row.status, reason: row.reason, inForce: row.id === current?.id,
-        ...termsSummary(row, look), schedule: row.schedule_id ? { id: row.schedule_id, ...look.schedules.get(row.schedule_id) } : null, recordedAt: row.recorded_at,
-        ...(pay ? { pay: pay.get(row.id) ? { basis: pay.get(row.id)!.pay_basis, amountCents: pay.get(row.id)!.amount_cents, currency: pay.get(row.id)!.currency } : null } : {}),
-      })),
-    }))
-    if (pay) view.pay = true
-  }
-  if (visible.has('private')) {
-    const values = await one(env, `SELECT ${PRIVATE_FIELDS.join(', ')} FROM wl_person_private WHERE person_id = ?`, personId)
-    view.private = Object.fromEntries(PRIVATE_FIELDS.map(field => [field, values?.[field] ?? null]))
-  }
-  if (visible.has('leave')) view.leave = await leaveFor(env, actor, personId, visible.has('leave_reason'))
-  if (visible.has('lifecycle')) view.cases = await casesFor(env, personId)
-  if (visible.has('documents')) view.documents = await documentsFor(env, actor, personId, options.categories ?? (category => readsCategory(actor, personId, category)))
   if (options.audit !== false && actor.personId !== personId && (visible.has('private') || visible.has('pay'))) {
     await auditRead(env, actor.id, 'person.private.read', personId, { private: visible.has('private'), pay: visible.has('pay') })
   }

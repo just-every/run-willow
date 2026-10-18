@@ -3,7 +3,7 @@
 // member lacks are absent, not hidden.
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
-import { all } from '../core'
+import { one } from '../core'
 import { formatDate, hours } from '../dates'
 import { settings } from '../employer'
 import { policies } from '../leave'
@@ -55,18 +55,23 @@ ${manage ? h`<section class="card"><h2>Start a joiner</h2>${joinerTemplates.leng
 }
 
 export async function personPage(env: Bindings, actor: Actor, id: string, url: URL) {
-  const view = await personView(env, actor, id) as Record<string, any>
   const manage = can(actor, 'people.manage'), self = actor.personId === id
-  const options = manage ? await choices(env, actor) : null
-  const allTemplates = manage ? await templates(env) : []
+  const [projection, options, allTemplates, member, policyList] = await Promise.all([
+    personView(env, actor, id),
+    manage ? choices(env, actor) : null,
+    manage ? templates(env) : [],
+    manage ? one(env, 'SELECT status FROM wl_members WHERE person_id = ?', id) : null,
+    can(actor, 'leave.manage') ? policies(env) : [],
+  ])
+  const view = projection as Record<string, any>
   const ofKind = (kind: string) => allTemplates.filter(template => template.kind === kind && template.status === 'active').map(template => ({ value: template.id, label: `${template.name} (v${template.version})` }))
   const periods = (view.employment ?? []) as any[]
   const live = periods.find(period => !period.endDate)
   const sections: Html[] = []
   sections.push(h`<section class="card facet-directory"><h2>Directory</h2><dl class="facts"><dt>Name</dt><dd>${view.name}${view.preferredName ? h` <span class="muted">(legal name ${view.legalName})</span>` : ''}</dd><dt>Work email</dt><dd>${view.workEmail ?? '—'}</dd><dt>Role</dt><dd>${view.current?.jobTitle ?? '—'}</dd><dt>Department</dt><dd>${view.current?.department?.name ?? '—'}</dd><dt>Location</dt><dd>${view.current?.location?.name ?? '—'}</dd><dt>Manager</dt><dd>${view.current?.manager ? h`<a href="/app/people/${view.current.manager.id}">${view.current.manager.name}</a>` : '—'}</dd><dt>Status</dt><dd>${tag(view.status)}</dd>${view.employeeNumber !== undefined ? h`<dt>Employee number</dt><dd>${view.employeeNumber ?? '—'}</dd>` : ''}</dl>
-${manage ? h`<details><summary>Edit directory details</summary>${form('person.update', `/app/people/${id}`, [hidden('person', id), hidden('revision', await revisionOf(env, id)), field('Legal name', 'legalName', { value: view.legalName }), field('Preferred name', 'preferredName', { value: view.preferredName ?? '', required: false }), field('Work email', 'workEmail', { type: 'email', value: view.workEmail ?? '', required: false }), field('Employee number', 'employeeNumber', { value: view.employeeNumber ?? '', required: false })], 'Save details', { secondary: true })}</details>` : ''}</section>`)
+${manage ? h`<details><summary>Edit directory details</summary>${form('person.update', `/app/people/${id}`, [hidden('person', id), hidden('revision', view.revision), field('Legal name', 'legalName', { value: view.legalName }), field('Preferred name', 'preferredName', { value: view.preferredName ?? '', required: false }), field('Work email', 'workEmail', { type: 'email', value: view.workEmail ?? '', required: false }), field('Employee number', 'employeeNumber', { value: view.employeeNumber ?? '', required: false })], 'Save details', { secondary: true })}</details>` : ''}</section>`)
   if (view.private) sections.push(h`<section class="card private facet-private"><h2>Private details</h2><dl class="facts">${PRIVATE_FIELDS.map(field => h`<dt>${PRIVATE_LABELS[field]}</dt><dd>${view.private[field] ?? '—'}</dd>`)}</dl>
-${self || (manage && can(actor, 'people.private')) ? h`<details><summary>Edit private details</summary>${form('person.update', `/app/people/${id}`, [hidden('person', id), hidden('revision', await revisionOf(env, id)), hidden('private', 'yes'), ...PRIVATE_FIELDS.map(name => field(PRIVATE_LABELS[name], name, { type: name === 'date_of_birth' ? 'date' : name === 'personal_email' ? 'email' : 'text', value: view.private[name] ?? '', required: false }))], 'Save private details', { secondary: true })}</details>` : ''}</section>`)
+${self || (manage && can(actor, 'people.private')) ? h`<details><summary>Edit private details</summary>${form('person.update', `/app/people/${id}`, [hidden('person', id), hidden('revision', view.revision), hidden('private', 'yes'), ...PRIVATE_FIELDS.map(name => field(PRIVATE_LABELS[name], name, { type: name === 'date_of_birth' ? 'date' : name === 'personal_email' ? 'email' : 'text', value: view.private[name] ?? '', required: false }))], 'Save private details', { secondary: true })}</details>` : ''}</section>`)
   if (view.employment) sections.push(h`<section class="card facet-employment"><h2>Employment</h2>${periods.map(period => h`<h3 class="period"><span>${formatDate(period.startDate)} – ${period.endDate ? formatDate(period.endDate) : 'ongoing'}</span> ${tag(TYPE_LABELS[period.employmentType])} ${tag(period.status)}</h3>
 ${period.payrollId !== undefined ? h`<p>Payroll identifier: ${period.payrollId ?? h`<strong>not set</strong>`}</p>` : ''}${period.endReason !== undefined && period.endReason ? h`<p class="private">End reason: ${period.endReason}</p>` : ''}
 ${table(['From', 'Role', 'Department', 'Location', 'Manager', 'Schedule', ...(view.pay ? ['Pay'] : []), 'Reason', 'Status', ''], period.terms.map((terms: any) => [formatDate(terms.effectiveFrom), terms.jobTitle, terms.department?.name ?? '—', terms.location?.name ?? '—', terms.manager?.name ?? '—', terms.schedule?.name ?? '—', ...(view.pay ? [money(terms.pay)] : []), terms.reason,
@@ -76,26 +81,21 @@ ${manage || can(actor, 'payroll.handoff') ? h`<details><summary>Set payroll iden
 ${manage && live ? h`<details><summary>Schedule a change (mover)</summary>${form('mover.schedule', `/app/people/${id}`, [hidden('period', live.id), field('Effective from', 'effectiveFrom', { type: 'date' }), field('Reason', 'reason'), ...termsFields(options!, false, actor).map(item => item), select('Mover template', 'template', ofKind('mover'), '', { required: false, blank: 'No case' })], 'Schedule change')}</details>
 <details><summary>Record a leaver</summary>${ofKind('leaver').length ? form('leaver.start', `/app/people/${id}`, [hidden('period', live.id), field('Last day of employment', 'endDate', { type: 'date' }), field('Reason (private)', 'reason'), select('Leaver template', 'template', ofKind('leaver'))], 'Start leaver') : h`<p class="muted">Create a leaver template in Settings first.</p>`}</details>` : ''}
 ${manage && !live && periods.length ? h`<details><summary>Rehire</summary>${ofKind('joiner').length ? form('joiner.start', '/app/cases/{id}', [hidden('person', id), select('Joiner template', 'template', ofKind('joiner')), field('Start date', 'startDate', { type: 'date' }), select('Employment type', 'employmentType', EMPLOYMENT_TYPES.map(value => ({ value, label: TYPE_LABELS[value] }))), field('Payroll identifier', 'payrollId', { required: false }), ...termsFields(options!, true, actor)], 'Start rehire') : ''}<p class="muted">A rehire is a new employment period. Earlier periods stay as they were, and Willow access is not restored automatically.</p></details>` : ''}</section>`)
-  if (view.leave) sections.push(await leaveSection(env, actor, id, view, live))
+  if (view.leave) sections.push(leaveSection(actor, id, view, live, policyList))
   if (view.documents) sections.push(h`<section class="card facet-documents"><h2>Documents</h2>${view.documents.length ? view.documents.map((document: any) => h`<h3>${document.title} ${tag(document.category)}</h3><ul>${document.versions.map((version: any) => h`<li><a href="/app/files/document/${version.id}?download=1">Version ${version.number}: ${version.filename}</a>${document.acknowledgementRequested ? (version.acknowledgedAt ? h` ${tag('receipt acknowledged')}` : self && version.number === document.versions[0].number ? form('document.acknowledge', `/app/people/${id}`, [hidden('version', version.id)], 'I received this document', { secondary: true }) : h` ${tag('receipt not yet acknowledged')}`) : ''}</li>`)}</ul>${manage ? h`<details><summary>Upload a new version</summary>${form('document.add', `/app/people/${id}`, [hidden('document', document.id), fileField('File', 'file', { required: true })], 'Upload version', { multipart: true, secondary: true })}</details>` : ''}`) : h`<p class="muted">No documents you can read.</p>`}
 <p class="muted">Acknowledging receipt records that a document was received. It is not a signature.</p>
 ${manage && options!.categories.length ? h`<details><summary>Add a document</summary>${form('document.add', `/app/people/${id}`, [hidden('person', id), select('Category', 'category', options!.categories), field('Title', 'title'), fileField('File', 'file', { required: true })], 'Add document', { multipart: true })}</details>` : ''}</section>`)
   if (view.cases) sections.push(h`<section class="card facet-cases"><h2>Joiner, mover and leaver cases</h2>${view.cases.length ? h`<ul class="cases">${view.cases.map((item: any) => h`<li><a href="/app/cases/${item.id}">${item.kind} from ${formatDate(item.anchorDate)}</a> — ${item.status}${item.openTasks ? `, ${item.openTasks} open task(s)` : ''}</li>`)}</ul>` : h`<p class="muted">No cases.</p>`}</section>`)
   if (manage) {
-    const member = (await all(env, 'SELECT status FROM wl_members WHERE person_id = ?', id))[0]
     sections.push(h`<section class="card facet-access"><h2>Willow access</h2><p>${member ? (member.status === 'active' ? 'Has access.' : 'Access ended.') : 'No access.'}</p>${member?.status === 'active' ? form('access.end', `/app/people/${id}`, [hidden('person', id)], 'End access', { secondary: true }) : view.workEmail ? form('access.give', `/app/people/${id}`, [hidden('person', id)], member ? 'Give access again' : 'Give access') : h`<p class="muted">Add a work email to give access.</p>`}</section>`)
   }
   const body = h`<p class="back"><a href="/app/people">← People</a></p><h1>${view.name}</h1><div class="person-grid">${sections}</div>`
   return page(view.name, actor, body, { current: '/app/people', url })
 }
 
-async function revisionOf(env: Bindings, id: string) {
-  return (await all<{ revision: string }>(env, 'SELECT revision FROM wl_people WHERE id = ?', id))[0]?.revision ?? ''
-}
-
-async function leaveSection(env: Bindings, actor: Actor, id: string, view: any, live: any) {
+function leaveSection(actor: Actor, id: string, view: any, live: any, availablePolicies: Awaited<ReturnType<typeof policies>>) {
   const leaveManager = can(actor, 'leave.manage')
-  const policyList = leaveManager ? (await policies(env)).filter(policy => policy.versions.some(version => version.status === 'approved')) : []
+  const policyList = availablePolicies.filter(policy => policy.versions.some(version => version.status === 'approved'))
   return h`<section class="card facet-leave"><h2>Leave</h2>${view.leave.accounts.length ? view.leave.accounts.map((account: any) => h`<h3>${account.policy.name} ${tag(`policy v${account.policy.version}`)}</h3>
 <p>Balance: <strong>${hours(account.balanceMinutes)} hours</strong> · opening ${hours(account.openingMinutes)} h at ${formatDate(account.cutoverDate)} ${tag(account.openingStatus === 'approved' ? 'signed off' : 'awaiting sign-off')} · accrued through ${formatDate(account.accruedThrough)}</p>
 ${leaveManager && account.openingStatus === 'proposed' ? form('account.approve', `/app/people/${id}`, [hidden('account', account.id)], 'Sign off opening balance') : ''}

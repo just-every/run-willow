@@ -2601,7 +2601,7 @@
       "executable": false
     },
     "src/willow/profile.ts": {
-      "sha256": "91d05cac83ea430f02a1dab39100634dbef300f4d81dcd8d61083facf128c1c0",
+      "sha256": "6efde2d0fda114b0d3c838a14d6e467ace0db45c7ef4902f1e739d349e3a8dbd",
       "executable": false
     },
     "src/willow/proposals.ts": {
@@ -2645,7 +2645,7 @@
       "executable": false
     },
     "src/willow/ui/people.ts": {
-      "sha256": "4416b04a69cff15d1de4737fcd97cef9dc296de94a5f6641303ffc980d53216a",
+      "sha256": "5481be639523afc367f7e5e3a89b1a29c06b063c5249ec1a96e17c04fd2622f9",
       "executable": false
     },
     "src/willow/ui/settings.ts": {
