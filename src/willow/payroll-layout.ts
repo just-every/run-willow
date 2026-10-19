@@ -6,6 +6,7 @@ import { commit, guard, insist, json, WillowError, newId, one, stmt } from './co
 import type { Input } from './input'
 import { guardPayrollSources, decodePayrollSources, payrollSources } from './payroll-sources'
 import { batchCsv, CSV_COLUMNS, type Line } from './payroll'
+import { customColumnSources, payrollCustomColumnOptions, payrollCustomValues, type PayrollColumn } from './payroll-custom-fields'
 
 export const ADP_GUIDE = 'https://support.adp.com/adp_payroll/content/hybrid/@runcomplete/doc/pdf/GTS_payroll_guide.pdf'
 export const ADP_COLUMNS = ['IID','Pay Frequency','Pay Period Start Date','Pay Period End Date','Employee ID','Earnings Code','Pay Hours','Dollars','Separate Check','Worked In Dept','Rate Code']
@@ -23,8 +24,19 @@ export async function configureLayout(env: Bindings, actor: Actor, input: Input)
   insist(['generic','adp-run'].includes(format), 'invalid_layout')
   let mapping: any = { employeeIdentifier: 'employment.payrollId', units: 'hours' }
   if (format === 'generic') {
-    const columns = (input.has('columns') ? input.json('columns') : input.list('columnSource').map((source,index) => ({ source, heading: input.list('columnHeading', {keepEmpty:true})[index], order: Number(input.list('columnOrder', {keepEmpty:true})[index]) })).sort((a,b) => a.order-b.order)) as {source:string;heading:string}[]
-    insist(Array.isArray(columns) && columns.length === CSV_COLUMNS.length && new Set(columns.map(c => c?.source)).size === CSV_COLUMNS.length && new Set(columns.map(c => c?.heading)).size === CSV_COLUMNS.length && columns.every(c => c && CSV_COLUMNS.includes(c.source) && typeof c.heading === 'string' && /^[A-Za-z][A-Za-z0-9 _-]{0,59}$/.test(c.heading)), 'complete_column_mapping_required')
+    const eligible = await payrollCustomColumnOptions(env, actor)
+    const headings = input.list('columnHeading', { keepEmpty: true }), orders = input.list('columnOrder', { keepEmpty: true })
+    const formColumns = () => {
+      const standard = input.list('columnSource').map((source, index) => ({ source, heading: headings[index], order: Number(orders[index]) }))
+      const custom = input.list('customColumn').map(source => ({ source, heading: input.text(`heading.${source}`, { max: 60 }), order: input.integer(`order.${source}`, { min: 1, max: 10000 })! }))
+      insist(standard.every(column => Number.isSafeInteger(column.order) && column.order > 0), 'invalid_column_order')
+      return [...standard, ...custom].sort((left, right) => left.order - right.order)
+    }
+    const columns = (input.has('columns') ? input.json('columns') : formColumns()) as PayrollColumn[]
+    insist(Array.isArray(columns) && columns.length >= CSV_COLUMNS.length && columns.length <= CSV_COLUMNS.length + eligible.length &&
+      new Set(columns.map(c => c?.source)).size === columns.length && new Set(columns.map(c => c?.heading)).size === columns.length &&
+      CSV_COLUMNS.every(source => columns.some(column => column?.source === source)) &&
+      columns.every(c => c && (CSV_COLUMNS.includes(c.source) || eligible.some(field => field.source === c.source)) && typeof c.heading === 'string' && /^[A-Za-z][A-Za-z0-9 _-]{0,59}$/.test(c.heading)), 'complete_column_mapping_required')
     mapping = { ...mapping, columns: columns.map(c => ({source:c.source,heading:c.heading})) }
   }
   if (format === 'adp-run') {
@@ -67,17 +79,20 @@ export async function previewPayroll(env: Bindings, actor: Actor, input: Input) 
   insist(batch?.status === 'draft', 'batch_not_draft', 409)
   const layout = await payrollLayout(env)
   insist(layout, 'payroll_layout_required', 409)
-  const data = json<{lines: Line[]; sources?: string; calculatedFromSources?: boolean}>(batch.lines, { lines: [] })
+  const data = json<{lines: Line[]; sources?: string; calculatedFromSources?: boolean; customColumns?: string[]}>(batch.lines, { lines: [] })
   insist(data.sources && data.calculatedFromSources, 'stale', 409)
   insist(json<any[]>(batch.exceptions, []).length === 0, 'payroll_source_exceptions', 409)
-  const file = layout.format === 'generic' ? batchCsv(data.lines, JSON.parse(layout.mapping).columns) : renderAdp(data.lines, JSON.parse(layout.mapping), batch.period_start, batch.period_end, data.sources)
+  const mapping = JSON.parse(layout.mapping)
+  const customColumns = layout.format === 'generic' ? customColumnSources(mapping.columns) : []
+  const file = layout.format === 'generic' ? batchCsv(data.lines, mapping.columns,
+    payrollCustomValues(decodePayrollSources(data.sources), actor, mapping.columns, data.lines, batch.period_end)) : renderAdp(data.lines, mapping, batch.period_start, batch.period_end, data.sources)
   const previewRevision = newId()
-  await commit(env, [guardPayrollSources(env, data.sources), guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_payroll_layout WHERE singleton=1 AND revision=?)', layout.revision), guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_payroll_batches WHERE id=? AND status='draft' AND revision=?)", batch.id, batch.revision), stmt(env, 'UPDATE wl_payroll_batches SET file_preview=?,layout_revision=?,layout_format=?,revision=? WHERE id=?', file, layout.revision, layout.format, previewRevision, batch.id)], { actor: actor.id, action: 'payroll.preview', subject: batch.id, detail: { format: layout.format } })
+  await commit(env, [guardPayrollSources(env, data.sources, actor), guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_payroll_layout WHERE singleton=1 AND revision=?)', layout.revision), guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_payroll_batches WHERE id=? AND status='draft' AND revision=?)", batch.id, batch.revision), stmt(env, 'UPDATE wl_payroll_batches SET file_preview=?,layout_revision=?,layout_format=?,revision=?,lines=? WHERE id=?', file, layout.revision, layout.format, previewRevision, JSON.stringify({ ...data, customColumns }), batch.id)], { actor: actor.id, action: 'payroll.preview', subject: batch.id, detail: { format: layout.format } })
   return { id: batch.id, format: layout.format, file, previewRevision }
 }
 
 /** The page explains every current blocker before the owner attempts export. */
-export async function payrollPreviewStatus(env: Bindings, batch: import('./core').Row) {
+export async function payrollPreviewStatus(env: Bindings, batch: import('./core').Row, actor: Actor) {
   if (batch.status !== 'draft') return { issues: [] as string[], stale: false }
   const layout = await payrollLayout(env), data = json<{lines:Line[];sources?:string}>(batch.lines,{lines:[]})
   const issues: string[] = []
@@ -88,7 +103,7 @@ export async function payrollPreviewStatus(env: Bindings, batch: import('./core'
     try { renderAdp(data.lines,JSON.parse(layout.mapping),batch.period_start,batch.period_end,data.sources) }
     catch (error) { if (error instanceof WillowError && error.code === 'payroll_layout_exceptions') issues.push(...(error.detail as {exceptions:{reason:string}[]}).exceptions.map(e=>e.reason)); else throw error }
   }
-  const stale = !!batch.file_preview && (batch.layout_revision !== layout?.revision || data.sources !== await payrollSources(env))
+  const stale = !!batch.file_preview && (batch.layout_revision !== layout?.revision || data.sources !== await payrollSources(env, actor))
   if (stale) issues.push('The source or layout changed after this preview. Changed sources require a fresh batch; changed mappings require another preview.')
   return {issues:[...new Set(issues)],stale}
 }

@@ -71,6 +71,42 @@ in Willow; documents keep its access and never appear in the directory.
 Dates are read as `YYYY-MM-DD` (BambooHR's API form) unless you choose
 day/month/year or month/day/year in the preview. Files up to 8 MB each.
 
+## Typed custom fields: PEOPLE-001 acceptance
+
+The approved custom-field interface below is part of PEOPLE-001's required
+acceptance. Its status remains missing until implementation and public-door
+proof are accepted; this section does not add current evidence.
+
+Define the field in Willow before importing its values. An employee-report
+header `custom:<key>` identifies that field. To use a different source header,
+set `customColumn_<key>` to its exact column name in the same import bundle.
+Set `customEffectiveFrom=YYYY-MM-DD` for the imported values; when omitted it
+defaults to today in the employer's time zone. Custom dates remain valid
+Gregorian ISO dates regardless of the legacy standard-field date format.
+Numbers are exact decimal strings checked against inclusive declared bounds.
+
+The preview must use the shared effective definition versions and reject
+invalid values or missing required values without partial native records.
+Definition and mapping changes require a fresh review. Applied values retain
+their source identity, effective date and definition version; repeat imports
+are idempotent. Corrections append immutable versions. Retirement preserves
+the old definition and values rather than making their history unreadable.
+
+Schema management requires `people.manage`; writing HR/private values also
+requires `people.private`, and writing payroll values also requires `pay.read`.
+The owner has all field rights. Classification/sensitivity cannot be changed;
+self/manager visibility flags apply only to general fields. Neither imported
+values nor historical reads bypass current visibility or grants, and custom
+fields never enter the directory or org chart. Strict undo includes custom
+values: an untouched import can be reversed, while native edits or later work
+depending on those values block destructive undo.
+
+CONNECT-001 and MIGRATE-001/002 require every future provider/source mapping
+to preserve these same definition, validation, permission, dated-history,
+retirement, provenance and guarded-undo guarantees before shipping. This
+first BambooHR report interface does not claim the expanded API adapter or
+any other incumbent kit is implemented.
+
 ## What the preview reports
 
 Active, upcoming and former employment periods; departments and locations to

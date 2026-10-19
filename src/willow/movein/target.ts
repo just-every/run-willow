@@ -5,6 +5,7 @@
 // every later native record that depends on it, so undo (strict) refuses to
 // remove anything a person has since edited or built on: those need a
 // compensating change in Willow first.
+import { customPersonGuard, writeImportedCustomValues } from '../custom-fields/import'
 import { ORGANIZATION_ACYCLIC } from '../organization-import'
 import { PRIVATE, DEPENDENTS, readTarget, listTargets, matchesTargetSet } from './target-list'
 import type { D1Database, D1Sql, D1TargetAdapter, Json, TargetRow } from '../../modules/import-kit/src/d1/index'
@@ -50,14 +51,16 @@ const person: Kind = {
     const main = eq([['legal_name', value.legalName], ['preferred_name', value.preferredName], ['work_email', value.workEmail], ['employee_number', value.employeeNumber], ['revision', revision]])
     const contact = eq(PRIVATE.map(field => [field, value.private?.[field]]))
     const free = noDependents(PERSON_DEPENDENTS, id)
-    return sql(`EXISTS(SELECT 1 FROM wl_people WHERE id = ? AND origin = 'import' AND ${main.text}) AND EXISTS(SELECT 1 FROM wl_person_private WHERE person_id = ? AND ${contact.text}) AND ${free.text}`, id, ...main.params, id, ...contact.params, ...free.params)
+    const custom=customPersonGuard(value,id)
+    return sql(`EXISTS(SELECT 1 FROM wl_people WHERE id = ? AND origin = 'import' AND ${main.text}) AND EXISTS(SELECT 1 FROM wl_person_private WHERE person_id = ? AND ${contact.text}) AND ${free.text} AND ${custom.map(g=>`(${g.sql})`).join(' AND ')}`, id, ...main.params, id, ...contact.params, ...free.params,...custom.flatMap(g=>g.params??[]))
   },
   absent: id => sql('NOT EXISTS(SELECT 1 FROM wl_people WHERE id = ?) AND NOT EXISTS(SELECT 1 FROM wl_person_private WHERE person_id = ?)', id, id),
   write: (value, id, revision) => [
     sql("INSERT INTO wl_people (id, legal_name, preferred_name, work_email, employee_number, origin, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'import', ?, ?, ?) ON CONFLICT(id) DO UPDATE SET legal_name = excluded.legal_name, preferred_name = excluded.preferred_name, work_email = excluded.work_email, employee_number = excluded.employee_number, revision = excluded.revision, updated_at = excluded.updated_at WHERE wl_people.origin = 'import'", id, value.legalName, value.preferredName, value.workEmail, value.employeeNumber, revision, Date.now(), Date.now()),
     sql(`INSERT INTO wl_person_private (person_id, ${PRIVATE.join(', ')}) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(person_id) DO UPDATE SET ${PRIVATE.map(field => `${field} = excluded.${field}`).join(', ')} WHERE EXISTS(SELECT 1 FROM wl_people WHERE id = excluded.person_id AND origin = 'import')`, id, ...PRIVATE.map(field => value.private?.[field] ?? null)),
+    ...writeImportedCustomValues(value,id),
   ],
-  remove: id => [sql('DELETE FROM wl_person_private WHERE person_id = ?', id), sql("DELETE FROM wl_people WHERE id = ? AND origin = 'import'", id)],
+  remove: id => [sql("DELETE FROM wl_custom_field_values WHERE person_id=? AND origin='import'",id),sql('DELETE FROM wl_person_private WHERE person_id = ?', id), sql("DELETE FROM wl_people WHERE id = ? AND origin = 'import'", id)],
   table: 'wl_people',
 }
 

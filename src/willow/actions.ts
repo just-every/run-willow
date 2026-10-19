@@ -1,3 +1,4 @@
+import { defineField, writeFieldValues } from './custom-fields/actions'
 import { configureDoor } from './movein/authority'
 // Every state change in Willow, by name. The same handler serves the HTML form
 // door (/app/do/NAME) and the JSON door (/api/willow/NAME) used by agents.
@@ -26,6 +27,8 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'customField.define': defineField,
+  'customField.write': writeFieldValues,
   'work.policy': approveWorkPolicy,
   'work.schedule': scheduleWork,
   'work.run': runWorkNow,

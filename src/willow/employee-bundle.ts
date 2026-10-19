@@ -29,6 +29,8 @@ export async function employeeBundle(env: Bindings, actor: Actor, url: URL, requ
   }
   for (const person of data.records) {
     const record: Record<string, unknown> = { personId: person.id, revision: person.revision, asOf: data.asOf, withheldSections: [] }
+    // The shared projection contains only explicitly selected and currently readable custom fields.
+    if (data.fields.some(key => key.startsWith('custom.'))) record.customFields = person.customFields
     for (const section of sections as (keyof typeof EXPORT_SECTIONS)[]) {
       if (!person.facets.includes(SECTION_FACETS[section])) {
         (record.withheldSections as string[]).push(section)

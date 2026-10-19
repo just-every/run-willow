@@ -1,5 +1,7 @@
 // Employer setup, settings (places, teams, schedules, document categories,
 // lifecycle templates, leave policies) and access (permissions and preview).
+import { listFieldDefinitions } from '../custom-fields/store'
+import { fieldDefinitionSection } from './custom-fields'
 import type { Bindings } from '../../auth.server'
 import { PERMISSIONS, PERMISSION_LABELS, PRESETS, can, requireOwner, type Actor } from '../actor'
 import { WEEKDAYS, employer, settings } from '../employer'
@@ -37,6 +39,7 @@ export async function settingsPage(env: Bindings, actor: Actor, url: URL) {
   const assigneeOptions = ASSIGNEES.map(value => ({ value, label: assignee(value) }))
   const taskRow = (index: number) => h`<fieldset><legend>Task ${index}</legend>${field('Task', 'taskTitle', { required: index === 1 })}${select('Who does it', 'taskAssignee', assigneeOptions, index === 1 ? 'hr' : 'manager', { required: false })}${field('Due (days after the start, end or change date; negative for before)', 'taskDueDays', { value: '0', required: false })}${select('Needs evidence', 'taskEvidence', [{ value: 'no', label: 'No' }, { value: 'yes', label: 'Yes' }], 'no', { required: false })}${field('External system or device (always needs evidence)', 'taskSystem', { required: false })}${field('Only this job title (optional)', 'taskJobTitle', { required: false })}${field('Only this US work state (optional)', 'taskWorkState', { required: false })}${select('Only this employment type', 'taskEmploymentType', EMPLOYMENT_TYPES.map(value => ({ value, label: TYPE_LABELS[value] })), '', { required: false, blank: 'Any' })}${select('Only this location', 'taskLocation', data.locations.map(row => ({ value: row.id, label: row.name })), '', { required: false, blank: 'Any' })}${field('After earlier task numbers (comma separated)', 'taskDependencies', { required: false, hint: 'For example 1, 2. Tasks skipped by conditions do not block work.' })}${select('Willow action', 'taskAction', [{ value: 'end_access', label: 'End this person’s Willow access' }], '', { required: false, blank: 'None' })}</fieldset>`
   const body = h`<h1>Settings</h1>${await workflowReviewPanel(env, actor, url)}${data.employer ? h`<p class="lead">${data.employer.name} · ${data.employer.timezone} · ${data.employer.country} · ${data.employer.currency}${actor.owner ? h` · <a href="/app/employer">Change</a>` : ''}</p>` : ''}
+${manage ? h`<section class="card"><h2>Custom fields</h2><p>Define dated fields, control access and review their versions.</p><a href="/app/custom-fields">Manage custom fields</a></section>` : ''}
 <div class="grid settings-grid">
 <section class="card"><h2>Locations</h2>${data.locations.length ? h`<ul>${data.locations.map(row => h`<li>${row.name} <span class="muted">(${row.timezone}${row.workState ? `; ${row.workState}` : ''})</span></li>`)}</ul>` : h`<p class="muted">No locations yet.</p>`}
 ${manage ? form('location.create', '/app/settings', [field('Location name', 'name'), select('Location time zone', 'timezone', zoneOptions, data.employer?.timezone), field('US work state (two letters, optional)', 'workState', { required: false })], 'Add location') : ''}</section>
@@ -56,6 +59,11 @@ ${templateList.filter(template => template.status === 'draft').map(template => h
   return page('Settings', actor, body, { current: '/app/settings', url })
 }
 
+export async function customFieldsPage(env: Bindings, actor: Actor, url: URL) {
+  const definitions = await listFieldDefinitions(env, actor, url.searchParams.get('asOf') ?? actor.today)
+  return page('Custom fields', actor, h`<p class="back"><a href="/app/settings">← Settings</a></p><h1>Custom fields</h1>${fieldDefinitionSection(definitions, actor)}`, { current: '/app/settings', url })
+}
+
 export async function accessPage(env: Bindings, actor: Actor, request: Request, url: URL) {
   const list = await members(env, actor, request)
   const people = await directory(env, actor)
@@ -66,6 +74,6 @@ export async function accessPage(env: Bindings, actor: Actor, request: Request, 
     member.owner ? tag('Owner (everything)') : member.permissions.length ? member.permissions.map((permission: string) => PERMISSION_LABELS[permission as keyof typeof PERMISSION_LABELS] ?? permission).join('; ') : tag('None (employee)'),
     actor.owner && !member.owner && member.status === 'active' ? h`<details><summary>Change</summary>${form('member.permissions', '/app/access', [hidden('member', member.id), checks('Permissions', 'permissions', PERMISSIONS.map(value => ({ value, label: PERMISSION_LABELS[value] })), member.permissions)], 'Save permissions', { secondary: true })}<p class="muted">Bundles: HR = ${PRESETS.hr.join(', ')}; payroll = ${PRESETS.payroll.join(', ')}; IT = ${PRESETS.it.join(', ')}.</p></details>` : '']))}</section>
 <section class="card"><h2>Preview what a member sees</h2><form method="get" action="/app/access" class="row-form">${select('Member', 'member', list.map(member => ({ value: member.id, label: member.name })), previewMember ?? '')}${select('About this person', 'person', people.map(person => ({ value: person.id, label: person.name })), previewPerson ?? '')}<button type="submit">Preview</button></form>
-${preview ? h`<h3>${preview.member.name} ${preview.member.isThisPerson ? '(this person)' : preview.member.managesThisPerson ? '(their manager)' : ''}</h3>${table(['What', 'Visible to them'], preview.facets.map(facet => [facet.label, tag(facet.visible ? (facet.withheldFromYou ? 'Yes (withheld from you)' : 'Yes') : 'No')]))}<details><summary>Exactly what they would receive (your access applies)</summary><pre>${JSON.stringify(preview.view, null, 2)}</pre></details>` : ''}</section>`
+${preview ? h`<h3>${preview.member.name} ${preview.member.isThisPerson ? '(this person)' : preview.member.managesThisPerson ? '(their manager)' : ''}</h3>${table(['What', 'Visible to them'], preview.facets.map(facet => [facet.label, tag(facet.visible ? (facet.withheldFromYou ? 'Yes (withheld from you)' : 'Yes') : 'No')]))}${preview.customFields.length ? table(['Custom field', 'Visible to them'], preview.customFields.map(field => [field.label, tag(field.visible ? (field.withheldFromYou ? 'Yes (withheld from you)' : 'Yes') : 'No')])) : ''}<details><summary>Exactly what they would receive (your access applies)</summary><pre>${JSON.stringify(preview.view, null, 2)}</pre></details>` : ''}</section>`
   return page('Access', actor, body, { current: '/app/access', url })
 }

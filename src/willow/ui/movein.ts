@@ -1,3 +1,4 @@
+import { effectiveFieldDefinitions } from '../custom-fields/store'
 import { insist } from '../core'
 import { doorCall, uploadAndPlan } from '../movein/door'
 import { doorSettings } from '../movein/authority'
@@ -10,13 +11,13 @@ import { employer, settings } from '../employer'
 import type { Input } from '../input'
 import { policies } from '../leave'
 import { importJobs, prepareBamboohr } from '../movein/bamboohr'
-import { fileField, form, h, hidden, page, select, table, tag, type Html } from './html'
+import { fileField, field, form, h, hidden, page, select, table, tag, type Html } from './html'
 
 const DATE_FORMATS = [{ value: 'YMD', label: 'Year-month-day (2025-12-31), as BambooHR’s API writes them' }, { value: 'DMY', label: 'Day/month/year (31/12/2025)' }, { value: 'MDY', label: 'Month/day/year (12/31/2025)' }]
 
 export async function importPage(env: Bindings, actor: Actor, url: URL) {
   requireOwner(actor)
-  const [jobs, data, company, business] = await Promise.all([importJobs(env, actor), settings(env), employer(env), doorSettings(env, actor)])
+  const [jobs, data, company, business, custom] = await Promise.all([importJobs(env, actor), settings(env), employer(env), doorSettings(env, actor),effectiveFieldDefinitions(env,actor.today)])
   const body = h`<h1>Move in from BambooHR</h1><p>Bring your people, their employment, time-off balances and documents across. Uploads are retained privately. No people or employment records change until you review and apply a plan. Balances arrive as proposals for a leave manager to sign off; documents keep their private category. Keep BambooHR read-only until Willow has produced one reconciled payroll handoff.</p>
 <section class="card"><h2>1. Preview</h2><form method="post" action="/app/import/preview" enctype="multipart/form-data">
 ${fileField('Employee report (.csv or .xlsx) with BambooHR fields such as id, employeeNumber, firstName, lastName, workEmail, hireDate, terminationDate, jobTitle, department, location, supervisorEId, payRate, payType, paidPer', 'employees', { required: true, accept: '.csv,.xlsx' })}
@@ -24,6 +25,7 @@ ${fileField('Time-off balances (.csv: id, timeOffType, balance, units, asOf) —
 ${fileField('Documents (.zip with manifest.csv: file, id, category, title) — optional', 'documents', { accept: '.zip' })}
 ${select('Dates in these files', 'dateFormat', DATE_FORMATS, 'YMD')}
 ${select('Working schedule for imported employment', 'schedule', data.schedules.map(row => ({ value: row.id, label: row.name })), '', { required: false, blank: 'None (set later)' })}
+${custom.length?h`<details><summary>Custom field columns</summary><p>Column names default to custom:&lt;key&gt;. Values use the shared field definition on the effective date; required or invalid values reject that person.</p>${field('Custom values effective date','customEffectiveFrom',{value:actor.today,type:'date',required:true})}${custom.filter(d=>!d.retired).map(d=>field(`${d.label} (${d.type}${d.required?', required':''})`,`customColumn_${d.key}`,{value:`custom:${d.key}`}))}</details>`:''}
 <label><input type="checkbox" name="catchup" value="yes"> Compare with the previous import (catch-up)</label><button type="submit">Preview import</button></form></section>
 <section class="card"><h2>Imports</h2>${jobs.length ? table(['Applied', 'State', 'Records', '', 'Approval'], jobs.map(job => [formatInstant(job.appliedAt, company?.timezone ?? 'UTC'), tag(job.state), job.effects,
     job.state === 'completed' ? (job.blockers.length ? h`<p>Undo is blocked until these are reversed in Willow:</p><ul>${job.blockers.map(blocker => h`<li>${blocker.kind}: ${blocker.reason}</li>`)}</ul>` : h`${job.planId ? importForm([hidden('action','reconcile'),hidden('planId',job.planId)],'Reconcile',{secondary:true}) : ''}${importForm([hidden('job', job.id), hidden('action', job.planId ? 'undo' : 'legacy-undo'), hidden('planId', job.planId ?? '')], 'Undo this import', { secondary: true })}`)

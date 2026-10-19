@@ -7,6 +7,10 @@ import type { Bindings } from '../auth.server'
 import { can, type Actor } from './actor'
 import { all, auditRead, insist } from './core'
 import { hours, isDate } from './dates'
+import { personCustomFields } from './custom-fields/read'
+import { effectiveFieldDefinitions } from './custom-fields/store'
+import { employeeCsv } from './export-formats'
+import { selectedCustomFields } from './employee-export'
 import { currentTerms } from './people'
 
 export async function summary(env: Bindings, actor: Actor, url: URL) {
@@ -54,6 +58,26 @@ export async function summary(env: Bindings, actor: Actor, url: URL) {
     result.compensation = { note: 'Annualized: salary as recorded; hourly rate x scheduled weekly hours x 52. People with unknown pay are counted separately.', byDepartment: [...totals].sort().map(([group, value]) => ({ group, people: value.people, annual: (value.annualCents / 100).toFixed(2), unknownPay: value.unknown, currency: value.currency })) }
     await auditRead(env, actor.id, 'report.compensation.read', 'organisation', { asOf })
   }
+  const selected = selectedCustomFields(url)
+  if (selected.length) {
+    insist(new Set(selected).size === selected.length, 'invalid_report_fields')
+    const definitions = (await effectiveFieldDefinitions(env, asOf)).filter(definition => selected.includes(definition.key))
+    insist(definitions.length === selected.length, 'invalid_report_fields')
+    const activePeople = [...new Set(periods.filter(period => active.has(period.id)).map(period => period.person_id as string))]
+    const people = await all(env, 'SELECT id, legal_name, preferred_name FROM wl_people')
+    const rows = await Promise.all(activePeople.map(async personId => {
+      const projection = await personCustomFields(env, actor, personId, asOf, definition => selected.includes(definition.key))
+      const person = people.find(person => person.id === personId)!
+      return { personId, name: person.preferred_name || person.legal_name,
+        values: Object.fromEntries(projection.fields.map(field => [field.key, field.value])),
+        withheldFields: selected.filter(key => !projection.fields.some(field => field.key === key)),
+        definitions: projection.fields.map(field => ({ key: field.key, definition: field.definition })) }
+    }))
+    result.customFields = { columns: definitions.map(definition => {
+      const readable = rows.some(row => !row.withheldFields.includes(definition.key))
+      return { key: definition.key, label: readable ? definition.label : `custom.${definition.key}`, type: readable ? definition.type : null }
+    }), rows }
+  }
   return result
 }
 
@@ -66,5 +90,10 @@ export function summaryCsv(report: Record<string, any>) {
   for (const row of report.leaveTaken) rows.push(['leave taken (hours)', row.policy, row.hours])
   rows.push(['open lifecycle tasks', '', report.lifecycleWork.openTasks], ['overdue lifecycle tasks', '', report.lifecycleWork.overdue])
   for (const row of report.compensation?.byDepartment ?? []) rows.push(['annualised compensation', row.group, row.annual])
-  return rows.map(row => row.map(value => /[",\r\n]/.test(String(value)) ? `"${String(value).replace(/"/g, '""')}"` : String(value)).join(',')).join('\r\n') + '\r\n'
+  const customRows: string[][] = []
+  for (const person of report.customFields?.rows ?? []) {
+    for (const column of report.customFields.columns) customRows.push([`custom.${column.key}`, person.personId,
+      person.withheldFields.includes(column.key) ? 'withheld' : person.values[column.key] === null ? '' : String(person.values[column.key] ?? '')])
+  }
+  return rows.map(row => row.map(value => /[",\r\n]/.test(String(value)) ? `"${String(value).replace(/"/g, '""')}"` : String(value)).join(',')).join('\r\n') + '\r\n' + employeeCsv(customRows)
 }

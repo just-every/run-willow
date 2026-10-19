@@ -49,6 +49,56 @@ async function confirm(base, cookie) {
   const r = await fetch(`${base}/setup`, { method: 'POST', redirect: 'manual', headers: { cookie, origin: base, 'content-type': 'application/x-www-form-urlencoded' }, body: 'confirm=yes' }); assert.equal(r.status, 303)
 }
 
+async function archiveCustomFields(api, owner, person) {
+  const common = { classification: 'general', effectiveFrom: day(-80), required: false, employeeRead: true, managerRead: false, retired: false }
+  const definitions = [
+    { key: 'archive_text', label: 'Recovery note', type: 'text', validation: { minLength: 1, maxLength: 200 } },
+    { key: 'archive_number', label: 'Exact recovery amount', type: 'number', validation: { min: '0', max: '10000000000000000' } },
+    { key: 'archive_date', label: 'Recovery date', type: 'date', validation: { min: day(-100), max: day(100) } },
+    { key: 'archive_boolean', label: 'Recovery acknowledgement', type: 'boolean', validation: {} },
+    { key: 'archive_select', label: 'Recovery credential', type: 'select', validation: { options: [{ value: 'paper', label: 'Paper' }, { value: 'badge', label: 'Badge' }] } },
+  ].map(definition => ({ ...common, ...definition }))
+  const created = []
+  for (const definition of definitions) created.push(await api('customField.define', owner, { definition }))
+  const values = { archive_text: 'ARCHIVE-ORIGINAL', archive_number: '9007199254740993.125', archive_date: day(-30), archive_boolean: true, archive_select: 'paper' }
+  await api('customField.write', owner, { person, effectiveFrom: day(-70), values })
+  const corrected = { archive_text: 'ARCHIVE-CORRECTED', archive_number: '9007199254740993.375', archive_date: day(-15), archive_boolean: false, archive_select: 'badge' }
+  await api('customField.write', owner, { person, effectiveFrom: day(-70), values: corrected })
+  const revised = { ...definitions[4], id: created[4].id, effectiveFrom: day(-60), label: 'Recovery credential format',
+    validation: { options: [{ value: 'badge', label: 'Physical badge' }, { value: 'digital', label: 'Digital credential' }] } }
+  const revisedSchema = await api('customField.define', owner, { definition: revised })
+  await api('customField.write', owner, { person, effectiveFrom: day(-50), values: { archive_select: 'digital' } })
+  await api('customField.write', owner, { person, effectiveFrom: day(-40), values: { archive_text: null } })
+  const retiredSchema = await api('customField.define', owner, { definition: { ...revised, effectiveFrom: day(-20), retired: true } })
+  const snapshots = []
+  for (const asOf of [day(-65), day(-35), day(0)]) {
+    snapshots.push((await api(`people/${person}?asOf=${asOf}`, owner)).customFields)
+  }
+  const current = snapshots.at(-1)
+  assert.equal(current.fields.length, definitions.length, 'DATA-001: the recovery fixture contains every custom field type')
+  for (const [index, definition] of definitions.entries()) {
+    const field = current.fields.find(field => field.id === created[index].id)
+    assert.equal(field.definition.type, definition.type)
+    const original = field.history.find(row => row.value === values[definition.key])
+    const correction = field.history.find(row => row.correctsId === original?.id)
+    assert.ok(original && correction, 'DATA-001: native same-date correction retains its original revision')
+    assert.equal(correction.value, corrected[definition.key])
+    assert.equal(correction.definitionVersionId, created[index].versionId)
+    assert.equal(correction.effectiveFrom, original.effectiveFrom)
+  }
+  const selected = current.fields.find(field => field.id === created[4].id)
+  assert.equal(selected.value, 'digital')
+  assert.equal(selected.definition.retired, true, 'DATA-001: retired definitions retain readable values and history')
+  assert.deepEqual(selected.definitions.map(definition => definition.id), [retiredSchema.versionId, revisedSchema.versionId, created[4].versionId])
+  assert.equal(selected.history[0].definitionVersionId, revisedSchema.versionId)
+  assert.equal(current.fields.find(field => field.id === created[1].id).value, corrected.archive_number, 'DATA-001: exact decimal survives the native value path')
+  assert.equal(current.fields.find(field => field.id === created[3].id).value, false)
+  assert.equal(current.fields.find(field => field.id === created[0].id).value, null)
+  assert.equal(snapshots[0].fields.find(field => field.id === selected.id).value, 'badge')
+  assert.equal(snapshots[0].fields.find(field => field.id === selected.id).definition.definitionVersionId, created[4].versionId)
+  return snapshots
+}
+
 try {
   await clone(source); await setup(source, 45931)
   server = await harness({persistTo:join(source,'.wrangler/state'),port:45931,bindings:modelBindings,provider:provider('source')})
@@ -58,6 +108,7 @@ try {
   const api = apiAt(origin)
   const f = await fixture({ api, signIn: (email,options) => server.signIn(email,options) }, owner)
   const { staff: s } = f
+  const customSnapshots = await archiveCustomFields(api, owner, s.employee.person)
   const leave = await api('leave.request', s.employee.cookie, { account: s.employee.account, startDate: day(3), endDate: day(3), reason: 'RESTORE-CONFIDENTIAL' })
   await api('leave.decide', owner, { request: leave.id, decision: 'approve' })
   await api('access.end', owner, { person: s.ended.person })
@@ -99,6 +150,7 @@ try {
   assert.equal(sourceConnections.notices, true)
   assert.equal(sourceConnections.model.selected, 'restore-proof-model', 'export leaves source authority unchanged')
   assert.deepEqual(await api('import-settings', sourceOwner), sourceImportSettings, 'DATA-001: export leaves source Business authority and revoked keys unchanged')
+  for (const snapshot of customSnapshots) assert.deepEqual((await api(`people/${s.employee.person}?asOf=${snapshot.asOf}`, sourceOwner)).customFields, snapshot, 'DATA-001: export leaves source custom metadata, corrections and retirement unchanged')
   await server.close(); server = null
   await clone(target)
   await mkdir(join(target, 'exports'), { recursive: true }); await copyFile(join(source, 'exports/access.rer'), join(target, 'exports/access.rer'))
@@ -161,6 +213,12 @@ try {
   const allMembers = await after('members', newOwner)
   assert.equal(allMembers.find(m => m.id === s.hr.member).signIn, 'active')
   const self = await after(`people/${s.employee.person}`, cookies.employee)
+  assert.deepEqual(self.customFields, customSnapshots.at(-1), 'DATA-001: ordinary restored employee reads the complete custom schema and value history')
+  for (const snapshot of customSnapshots) {
+    const path = `people/${s.employee.person}?asOf=${snapshot.asOf}`
+    assert.deepEqual((await after(path, newOwner)).customFields, snapshot, 'DATA-001: archive restores custom metadata and dated values through the owner profile')
+    assert.deepEqual((await after(path, cookies.employee)).customFields, snapshot, 'DATA-001: restored employee retains original definitions, corrections, clears and retirement')
+  }
   assert.deepEqual(self.private, before.private)
   assert.deepEqual(self.employment, before.employment.map(({ payrollId, ...period }) => period))
   assert.deepEqual(self.leave.accounts[0].ledger, before.leave.accounts[0].ledger)
@@ -216,11 +274,11 @@ try {
   const resumed = await after('connections', newOwner)
   assert.equal(resumed.model.selected, 'restore-proof-model')
   for (const notice of noticeHistory) assert.deepEqual(resumed.history.find(row => row.id === notice.id), notice, 'old deliveries never replay')
-  console.log('DATA-001 restore pause: PASS; source unchanged, old enabled archive normalized and reported, preserved work/history, no replay, owner reauthorization')
+  console.log('DATA-001 restore pause: PASS; source unchanged, old enabled archive normalized and reported, typed custom metadata/value history and retirement preserved, preserved work/history, no replay, owner reauthorization')
   console.log('restore-access: PASS; ordinary identities, roles, private/pay/document/leave boundaries and HR invitation work')
 } finally {
   if (browser) await browser.close()
   if (destination) await destination.close()
   if (server) await server.close()
-  await rm(work, { recursive: true, force: true })
+  await rm(work, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 })
 }

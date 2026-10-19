@@ -5,6 +5,8 @@ import { seesEveryone, type Facet } from './access'
 import { auditRead, insist } from './core'
 import { directoryFilters, filterDirectory } from './organization'
 import { directory, personView } from './profile'
+import { readsCustomField } from './custom-fields/read'
+import { effectiveField, effectiveFieldDefinitions, fieldSchemas, type EffectiveField } from './custom-fields/store'
 import { employeeCsv, employeeXlsx } from './export-formats'
 
 type Person = Record<string, any>
@@ -40,16 +42,36 @@ export const EMPLOYEE_EXPORT_FIELDS: Record<string, Column> = {
 export const organizationExport = (actor: Actor) => seesEveryone(actor)
 export const DEFAULT_EXPORT_FIELDS = ['name', 'workEmail', 'jobTitle', 'department', 'location', 'manager', 'status']
 
+/** Display choices use current visibility even when the export date is historic. */
+export async function employeeCustomColumns(env: Bindings, actor: Actor, asOf = actor.today) {
+  return (await fieldSchemas(env, asOf)).flatMap(schema => {
+    const definition = effectiveField(schema), current = schema.versions.find(version => version.effectiveFrom <= actor.today)
+    const policy = current ? effectiveField(schema, current) : definition ? { ...definition, employeeRead: false, managerRead: false } : null
+    const visible = policy && [actor.personId ?? '', ...actor.reports].some(personId => readsCustomField(actor, personId, policy))
+    return definition && visible ? [{ key: `custom.${schema.key}`, label: definition.label, definition }] : []
+  })
+}
+
+export function selectedCustomFields(url: URL): string[] {
+  return url.searchParams.getAll('fields').flatMap(value => value.split(',')).filter(key => key.startsWith('custom.')).map(key => key.slice(7))
+}
+
+
 export async function employeeExportData(env: Bindings, actor: Actor, url: URL) {
   const scope = url.searchParams.get('scope')
   insist(['self', 'team', 'organization'].includes(scope ?? ''), 'export_scope_required')
   insist(scope !== 'organization' || organizationExport(actor), 'forbidden', 403)
   insist(scope !== 'team' || actor.reports.size > 0, 'forbidden', 403)
   insist(scope !== 'self' || actor.personId, 'forbidden', 403)
-  const fields = url.searchParams.getAll('fields').flatMap(value => value.split(','))
-  insist(fields.length > 0 && fields.length <= Object.keys(EMPLOYEE_EXPORT_FIELDS).length
-    && new Set(fields).size === fields.length && fields.every(key => Object.hasOwn(EMPLOYEE_EXPORT_FIELDS, key)), 'invalid_export_fields')
   const filters = directoryFilters(url.searchParams, actor.today)
+  const customDefinitions = await effectiveFieldDefinitions(env, filters.date)
+  const columns: Record<string, Column> = { ...EMPLOYEE_EXPORT_FIELDS, ...Object.fromEntries(customDefinitions.map(definition => [
+    `custom.${definition.key}`, { label: definition.label, value: (person: Person) => person.customFields?.fields.find((item: EffectiveField) => item.key === definition.key)?.value },
+  ])) }
+  const fields = url.searchParams.getAll('fields').flatMap(value => value.split(','))
+  insist(fields.length > 0 && fields.length <= Object.keys(columns).length
+    && new Set(fields).size === fields.length && fields.every(key => Object.hasOwn(columns, key)), 'invalid_export_fields')
+  const customKeys = new Set(selectedCustomFields(url))
   const scoped = (await directory(env, actor, filters.date)).filter(person =>
     scope === 'organization' || (scope === 'self' ? person.id === actor.personId : actor.reports.has(person.id)))
   const selected = url.searchParams.getAll('person')
@@ -58,10 +80,10 @@ export async function employeeExportData(env: Bindings, actor: Actor, url: URL) 
   const rows: string[][] = [['person_id', 'as_of', 'scope', 'withheld_fields', ...fields]]
   const records: Person[] = []
   for (const person of people) {
-    const view = await personView(env, actor, person.id, { asOf: filters.date }) as Person
+    const view = await personView(env, actor, person.id, { asOf: filters.date, customFields: definition => customKeys.has(definition.key) }) as Person
     records.push(view)
-    const withheld = fields.filter(key => EMPLOYEE_EXPORT_FIELDS[key].facet && !view.facets.includes(EMPLOYEE_EXPORT_FIELDS[key].facet!))
-    rows.push([person.id, filters.date, scope!, withheld.join(';'), ...fields.map(key => withheld.includes(key) ? '' : String(EMPLOYEE_EXPORT_FIELDS[key].value(view) ?? ''))])
+    const withheld = fields.filter(key => key.startsWith('custom.') ? !view.customFields.fields.some((item: EffectiveField) => `custom.${item.key}` === key) : columns[key].facet && !view.facets.includes(columns[key].facet!))
+    rows.push([person.id, filters.date, scope!, withheld.join(';'), ...fields.map(key => withheld.includes(key) ? '' : String(columns[key].value(view) ?? ''))])
   }
   return { scope: scope!, asOf: filters.date, fields, rows, records }
 }

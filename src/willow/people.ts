@@ -1,6 +1,7 @@
 // Flows 3 and 6: people, employment periods and effective-dated terms.
 // A person is separate from each employment period; terms are complete
 // versions effective from a date, never edited in place.
+import { customValueStatements, customValuesInput } from './custom-fields/store'
 import type { Bindings } from '../auth.server'
 import { normalizeEmail } from '../modules/operator-auth/index.mjs'
 import { can, requirePermission, type Actor } from './actor'
@@ -115,6 +116,13 @@ export async function updatePerson(env: Bindings, actor: Actor, input: Input) {
     const values = readPrivate(input)
     statements.push(stmt(env, `UPDATE wl_person_private SET ${PRIVATE_FIELDS.map(field => `${field} = ?`).join(', ')} WHERE person_id = ?`, ...PRIVATE_FIELDS.map(field => values[field]), id))
     changed.push('private')
+  }
+  const customInput = customValuesInput(input)
+  const hasCustom = input.has('customValues') || input.has('values') || input.list('customField').length > 0
+  if (can(actor, 'people.manage') || hasCustom) {
+    const custom = await customValueStatements(env, actor, id, customInput, input.has('effectiveFrom') ? input.text('effectiveFrom') : actor.today, { requireAll: true })
+    statements.push(...custom.guards, ...custom.statements)
+    if (hasCustom) changed.push('customFields')
   }
   insist(changed.length, 'nothing_to_change')
   statements.push(stmt(env, 'UPDATE wl_people SET revision = ?, updated_at = ? WHERE id = ?', next, now(), id))

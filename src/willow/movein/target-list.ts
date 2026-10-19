@@ -1,5 +1,6 @@
 // Internal import snapshots only: these include private fields for exact fences,
 // and must never be returned through a native person/profile read door.
+import { customImportInventory, customImportValue, customSetGuards } from '../custom-fields/import'
 import type { D1Database, D1Sql, Json, TargetRow } from '../../modules/import-kit/src/d1/index'
 
 export const PRIVATE = ['personal_email', 'phone', 'address', 'date_of_birth', 'emergency_contact'] as const
@@ -8,7 +9,7 @@ export const DEPENDENTS = {
   location: "(SELECT COUNT(*) FROM wl_terms WHERE location_id = ?1 AND origin = 'native')",
   person: `((SELECT COUNT(*) FROM wl_periods WHERE person_id = ?1 AND origin = 'native') + (SELECT COUNT(*) FROM wl_documents WHERE person_id = ?1 AND origin = 'native')
     + (SELECT COUNT(*) FROM wl_members WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_terms WHERE manager_person_id = ?1 AND origin = 'native')
-    + (SELECT COUNT(*) FROM wl_cases WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_leave_requests WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_acknowledgements WHERE person_id = ?1))`,
+    + (SELECT COUNT(*) FROM wl_cases WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_leave_requests WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_acknowledgements WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_custom_field_values WHERE person_id = ?1 AND origin = 'native'))`,
   period: `((SELECT COUNT(*) FROM wl_terms WHERE period_id = ?1 AND origin = 'native') + (SELECT COUNT(*) FROM wl_leave_accounts WHERE period_id = ?1 AND origin = 'native')
     + (SELECT COUNT(*) FROM wl_cases WHERE period_id = ?1) + (SELECT COUNT(*) FROM wl_payroll_items WHERE source_id = ?1 AND source_kind IN ('start', 'end')))`,
   account: '((SELECT COUNT(*) FROM wl_ledger WHERE account_id = ?1) + (SELECT COUNT(*) FROM wl_leave_requests WHERE account_id = ?1))',
@@ -69,14 +70,18 @@ function valueOf(kind: string, row: Value): Record<string, Json> {
 }
 export async function readTarget(db: D1Database, kind: string, id: string) {
   const row = await db.prepare(`${query(kind)} AND r.id = ?`).bind(id).first<Value>()
-  return row ? { value: valueOf(kind, row), revision: row.revision as string } : undefined
+  if(!row) return undefined
+  const value=valueOf(kind,row)
+  if(kind==='person') { const inventory=await customImportInventory(db); Object.assign(value,customImportValue(inventory.values.filter(v=>v.person_id===id),inventory.latest)) }
+  return {value,revision:row.revision as string}
 }
-// Six reads regardless of import size; each includes owned rows and dependents.
+// A fixed set of reads regardless of import size, including typed owned history.
 export async function listTargets(db: D1Database, destination: string): Promise<TargetRow[]> {
   const rows: TargetRow[] = []
+  const inventory=await customImportInventory(db)
   for (const kind of Object.keys(projections)) {
     const result = await db.prepare(`${query(kind)} ORDER BY r.id`).all<Value>()
-    rows.push(...result.results.map(row => ({ destination, targetKind: kind, targetId: row.id as string, revision: row.revision as string, value: valueOf(kind, row) })))
+    rows.push(...result.results.map(row => ({ destination, targetKind: kind, targetId: row.id as string, revision: row.revision as string, value: {...valueOf(kind,row),...(kind==='person'?customImportValue(inventory.values.filter(v=>v.person_id===row.id),inventory.latest):{})} })))
   }
   return rows
 }
@@ -104,5 +109,5 @@ export function matchesTargetSet(rows: TargetRow[], destination: string): D1Sql[
       { sql: `(SELECT hex(CAST(coalesce(group_concat(${bytes}, '' ORDER BY id), '') AS BLOB)) FROM (${query(kind)})) = ?`, params: [hex(expected)] },
     )
   }
-  return guards
+  return [...guards,...customSetGuards(rows)]
 }

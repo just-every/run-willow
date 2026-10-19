@@ -9,9 +9,10 @@ import { employer } from '../employer'
 import { displayPayText, formatMoney } from '../money'
 import { batchDetail, batches } from '../payroll'
 import { proposalDetail, proposals } from '../proposals'
+import { employeeCustomColumns } from '../employee-export'
 import { summary } from '../reports'
 import { audit } from '../views'
-import { field, form, h, hidden, page, table, tag } from './html'
+import { field, form, h, hidden, page, raw, table, tag } from './html'
 import { KIND_LABELS, actionLabel, displayValue, sentence } from './labels'
 
 export async function payrollPage(env: Bindings, actor: Actor, url: URL) {
@@ -37,12 +38,17 @@ ${batch.status === 'exported' ? form('payroll.acknowledge', `/app/payroll/${id}`
 
 export async function reportsPage(env: Bindings, actor: Actor, url: URL) {
   const report = await summary(env, actor, url) as any
+  const customColumns = await employeeCustomColumns(env, actor, report.filters.asOf)
+  const selected = new Set(url.searchParams.getAll('fields').flatMap(value => value.split(',')))
+  const csvQuery = new URLSearchParams({ asOf: report.filters.asOf, from: report.filters.from, to: report.filters.to })
+  for (const value of selected) csvQuery.append('fields', value)
   const body = h`<h1>Reports</h1><p>Scope: ${report.scope === 'organisation' ? 'organization' : report.scope}. As of ${formatDate(report.filters.asOf)}; range ${formatDate(report.filters.from)} – ${formatDate(report.filters.to)}.</p>
-<form method="get" action="/app/reports" class="row-form">${field('As of', 'asOf', { type: 'date', value: report.filters.asOf })}${field('From', 'from', { type: 'date', value: report.filters.from })}${field('To', 'to', { type: 'date', value: report.filters.to })}<button type="submit" class="secondary">Update</button></form>
+<form method="get" action="/app/reports" class="row-form">${field('As of', 'asOf', { type: 'date', value: report.filters.asOf })}${field('From', 'from', { type: 'date', value: report.filters.from })}${field('To', 'to', { type: 'date', value: report.filters.to })}${customColumns.length ? h`<fieldset><legend>Custom columns</legend>${customColumns.map(column => h`<label class="check"><input type="checkbox" name="fields" value="${column.key}"${selected.has(column.key) ? raw(' checked') : ''}> ${column.label}</label>`)}</fieldset>` : ''}<button type="submit" class="secondary">Update</button></form>
 <div class="grid"><section class="card"><h2>Headcount: ${report.headcount.total}</h2>${table(['Department', 'People'], report.headcount.byDepartment.map((row: any) => [row.group, row.people]))}${table(['Location', 'People'], report.headcount.byLocation.map((row: any) => [row.group, row.people]))}</section>
 <section class="card"><h2>Movements</h2><p>${report.movements.starters} starter(s), ${report.movements.leavers} leaver(s) in the range.</p><h2>Leave taken</h2>${report.leaveTaken.length ? table(['Policy', 'Hours'], report.leaveTaken.map((row: any) => [row.policy, row.hours])) : h`<p class="muted">None.</p>`}<h2>Lifecycle work</h2><p>${report.lifecycleWork.openTasks} open task(s), ${report.lifecycleWork.overdue} overdue.</p></section>
 ${report.compensation ? h`<section class="card"><h2>Compensation</h2><p class="muted">${report.compensation.note}</p>${table(['Department', 'People', 'Annualized', 'Unknown pay'], report.compensation.byDepartment.map((row: any) => [row.group, row.people, formatMoney(Math.round(Number(row.annual) * 100), row.currency), row.unknownPay]))}</section>` : ''}</div>
-<p class="muted">${report.calculation}</p><p><a href="/app/reports.csv?asOf=${report.filters.asOf}&amp;from=${report.filters.from}&amp;to=${report.filters.to}">Download as CSV</a></p>`
+${report.customFields ? h`<section class="card"><h2>Custom fields</h2>${table(['Person', ...report.customFields.columns.map((column: any) => column.label)], report.customFields.rows.map((row: any) => [h`<a href="/app/people/${row.personId}">${row.name}</a>`, ...report.customFields.columns.map((column: any) => row.withheldFields.includes(column.key) ? 'Withheld' : row.values[column.key] === null ? 'Not recorded' : String(row.values[column.key] ?? ''))]))}</section>` : ''}
+<p class="muted">${report.calculation}</p><p><a href="/app/reports.csv?${csvQuery.toString()}">Download as CSV</a></p>`
   return page('Reports', actor, body, { current: '/app/reports', url })
 }
 

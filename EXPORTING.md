@@ -60,6 +60,40 @@ XLSX is an Office Open XML workbook with an Employees sheet. Every cell is a
 literal string, preserving identifiers, dates, decimals and leading zeros
 without executing formulas. No macro, external reference or formula is emitted.
 
+## Typed custom fields: PEOPLE-001 acceptance
+
+The approved custom-field export interface uses `custom.<key>` in `fields`,
+alongside standard keys and in the requested column order. PEOPLE-001 remains
+missing until its implementation and public-door proof are accepted; these
+requirements do not add current export evidence or complete DATA-001.
+
+CSV, XLSX, bundles and reports must use the same definitions and dated values
+as the profile and agent context. Select the latest definition effective on
+or before `asOf`, choosing the highest version on a same-date tie. Immutable
+value revisions and corrections retain their definition version, so retired
+fields and historical validation retain their meaning. Numbers remain exact
+decimal strings and dates valid Gregorian ISO dates. The profile's
+`customFields` representation carries field definitions and value history
+with version IDs; readable bundle history must preserve that meaning too.
+
+Every download, historical selection and agent read rechecks current field
+visibility and current reader grants. HR/private values require
+`people.private`; payroll values require `pay.read`; self/manager flags apply
+only to general fields. The owner can read all fields. Withheld custom values
+must not appear in exported cells, history, report groups or agent context.
+Classification/sensitivity is immutable, and no custom field enters directory
+or org-chart output. Definition management and value writes require
+`people.manage`, with the matching restricted-value grant for writes.
+
+An owner may explicitly select permission-checked general custom fields as
+optional generic payroll columns using the same `custom.<key>` source keys.
+The reviewed batch freezes values and definition versions at its period end;
+changed sources or mappings require another review. Current visibility and
+reader authority are rechecked when downloading the frozen file. ADP RUN
+retains its fixed schema. Before a future connector/source mapping ships,
+CONNECT-001 and MIGRATE-001/002 require these same shared-definition,
+validation, effective-date/history, retirement and current-permission rules.
+
 ## Records and document bundles
 
 The same People form offers **Download records and files ZIP**. Choose which

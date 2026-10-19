@@ -34,7 +34,8 @@
           "src/demo.ts",
           "migrations/core/0019_work_followup.sql",
           "migrations/core/0020_conditional_workflows.sql",
-          "migrations/core/0021_import_door.sql"
+          "migrations/core/0021_import_door.sql",
+          "migrations/core/0022_custom_fields.sql"
         ]
       }
     },

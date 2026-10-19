@@ -20,7 +20,7 @@ import { casePage, homePage, tasksPage } from './ui/home'
 import { leavePage, requestPage } from './ui/leave'
 import { importPage, previewPage } from './ui/movein'
 import { directoryPage, personPage } from './ui/people'
-import { accessPage, employerPage, settingsPage } from './ui/settings'
+import { accessPage, customFieldsPage, employerPage, settingsPage } from './ui/settings'
 import { auditPage, batchPage, payrollPage, proposalPage, proposalsPage, reportsPage } from './ui/work'
 import { PAGE_DOORS, match } from './doors'
 import { route } from './views'
@@ -111,6 +111,7 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  customFields: (env, actor, _request, url) => customFieldsPage(env, actor, url),
   employeeBundle: (env, actor, request, url) => employeeBundle(env, actor, url, request),
   employeeCsv: (env, actor, _request, url) => employeeExport(env, actor, url, 'csv'),
   employeeXlsx: (env, actor, _request, url) => employeeExport(env, actor, url, 'xlsx'),

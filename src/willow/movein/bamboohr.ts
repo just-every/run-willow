@@ -1,3 +1,4 @@
+import { customImportSource } from '../custom-fields/import'
 import { doorHistory } from './authority'
 // Move-in kit 1: BambooHR. Reads an employee report (CSV or XLSX) using
 // BambooHR's documented field names (or their report column labels), an
@@ -180,6 +181,8 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
   const nameOf = (row: { field: (name: string) => string }) => [row.field('firstName'), row.field('lastName')].filter(Boolean).join(' ')
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: employer.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(Date.now())
 
+  const custom=await customImportSource(env,input,today)
+
   // Pre-pass: which rows will produce a person, so managers and balances can refer to them.
   const accepted = new Map<string, (typeof rows)[number]>()
   for (const row of rows) {
@@ -222,13 +225,15 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
           const existing = existingPeople.find(person => person.id !== personId && ((workEmail && person.work_email === workEmail) || (row.field('employeeNumber') && person.employee_number === row.field('employeeNumber'))))
           if (existing) return reject(source, `already in Willow as ${existing.legal_name} (same ${existing.work_email === workEmail ? 'work email' : 'employee number'}): resolve before importing this row`)
           if (conflict('person', personId, source)) return reject(source, 'already imported earlier with different values; edit the person in Willow instead')
+          let customValue:Record<string,string>
+          try { customValue=custom.forPerson(personId,payload.cells,source.payloadHash) } catch(error) { if(error instanceof WillowError) return reject(source,`custom field: ${error.code}`); throw error }
           if (workEmail) emails.set(workEmail, row.row)
           personOf.set(key, personId)
           const dob = row.field('dateOfBirth') ? parseDate(row.field('dateOfBirth'), order) : null
           if (row.field('dateOfBirth') && !dob) attention.push({ location: at(source), reason: `unreadable date of birth "${row.field('dateOfBirth')}"; left empty` })
           const address = [row.field('address1'), row.field('address2'), row.field('city'), row.field('state'), row.field('zipcode'), row.field('country')].filter(Boolean).join(', ') || null
           for (const [field, value] of [['work email', workEmail], ['personal email', row.field('homeEmail')], ['phone', row.field('mobilePhone')], ['address', address], ['date of birth', dob]] as const) if (!value) unknown(label, field)
-          return { effects: [effect('person', personId, { legalName: nameOf(row), preferredName: row.field('preferredName') || null, workEmail, employeeNumber: row.field('employeeNumber') || null, private: { personal_email: row.field('homeEmail').toLowerCase() || null, phone: row.field('mobilePhone') || null, address, date_of_birth: dob, emergency_contact: null } })] }
+          return { effects: [effect('person', personId, { ...customValue, legalName: nameOf(row), preferredName: row.field('preferredName') || null, workEmail, employeeNumber: row.field('employeeNumber') || null, private: { personal_email: row.field('homeEmail').toLowerCase() || null, phone: row.field('mobilePhone') || null, address, date_of_birth: dob, emergency_contact: null } })] }
         }
         // Employment: one period from hireDate, with an end date when terminated.
         if (!personOf.has(key)) return reject(source, 'the person row was not imported')
@@ -317,7 +322,7 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
       'Working schedules, emergency contacts and payroll identifiers are not part of these BambooHR fields; set them in Willow.',
       'Keep BambooHR read-only until Willow has produced one reconciled payroll handoff.',
     ],
-    carry,
+    carry:{...carry,...custom.carry},
   }
   return { records, preview, files, hashes, mapping: { version: mappingVersion, map(source: SourceRecord): MappingResult {
     // Base may remove credentials while reading; never recover their original values from this parser cache.

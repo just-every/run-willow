@@ -7,6 +7,8 @@ import { PERMISSIONS, actorFor, requireOwner, requirePermission, type Actor, typ
 import { FACET_LABELS, facets, readsCategory, type Facet } from './access'
 import { all, commit, insist, newId, now, one, stmt } from './core'
 import type { Input } from './input'
+import { effectiveFieldDefinitions } from './custom-fields/store'
+import { readsCustomField } from './custom-fields/read'
 import { personView } from './profile'
 
 export async function members(env: Bindings, actor: Actor, request: Request) {
@@ -100,9 +102,11 @@ export async function visibilityPreview(env: Bindings, actor: Actor, memberId: s
   const target = await actorFor(env, { id: member.id, email: member.email, name: member.name, owner, personId: member.person_id, sessionId: '' })
   const theirs = facets(target, personId), mine = facets(actor, personId)
   const both = new Set([...theirs].filter(facet => mine.has(facet)))
-  const view = await personView(env, actor, personId, { admissionActor: target, facets: both, categories: category => readsCategory(target, personId, category) && readsCategory(actor, personId, category) })
+  const view = await personView(env, actor, personId, { admissionActor: target, facets: both, categories: category => readsCategory(target, personId, category) && readsCategory(actor, personId, category), customFields: definition => readsCustomField(target, personId, definition) })
+  const customDefinitions = await effectiveFieldDefinitions(env, actor.today)
   return {
     member: { id: member.id, name: member.name, status: member.status, permissions: [...target.permissions] as Permission[], managesThisPerson: target.reports.has(personId), isThisPerson: target.personId === personId },
+    customFields: customDefinitions.map(definition => ({ id: definition.id, key: definition.key, label: definition.label, visible: readsCustomField(target, personId, definition), withheldFromYou: readsCustomField(target, personId, definition) && !readsCustomField(actor, personId, definition) })),
     facets: (Object.keys(FACET_LABELS) as Facet[]).map(facet => ({ facet, label: FACET_LABELS[facet], visible: theirs.has(facet), withheldFromYou: theirs.has(facet) && !mine.has(facet) })),
     view,
   }

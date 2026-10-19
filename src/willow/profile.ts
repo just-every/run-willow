@@ -2,6 +2,8 @@
 // context of a person is built here from the viewer's facets, selecting only
 // the values those facets allow. Reads of someone else's private contact
 // details or pay are audited.
+import { personCustomFields } from './custom-fields/read'
+import type { EffectiveField } from './custom-fields/store'
 import type { Bindings } from '../auth.server'
 import { employerZone, type Actor } from './actor'
 import { requireDate } from './dates'
@@ -21,6 +23,8 @@ export interface ViewOptions {
   /** A narrower facet set (visibility previews). Defaults to the actor's own facets. */
   facets?: Set<Facet>
   categories?: (category: Record<string, any>) => boolean
+  /** Intersects current custom-field access for previews and explicit export selections. */
+  customFields?: (definition: EffectiveField) => boolean
 }
 
 async function lookups(env: Bindings) {
@@ -77,14 +81,16 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
   insist(statusOf(admittedPeriod, admitted.today) !== 'former' || seesEveryone(admitted) || admitted.personId === personId || facetsOf(admitted, personId).has('employment'), 'not_found', 404)
   const visible = options.facets ?? facetsOf(actor, personId)
   // Resolve independent facets together, after admission and before rendering.
-  const [employment, privateValues, leave, cases, documents] = await Promise.all([
+  const [employment, privateValues, leave, cases, documents, customFields] = await Promise.all([
     visible.has('employment') ? employmentView(env, periods, current, look, visible, date) : undefined,
     visible.has('private') ? one(env, `SELECT ${PRIVATE_FIELDS.join(', ')} FROM wl_person_private WHERE person_id = ?`, personId) : undefined,
     visible.has('leave') ? leaveFor(env, actor, personId, visible.has('leave_reason'), options.asOf === undefined ? undefined : date) : undefined,
     visible.has('lifecycle') ? casesFor(env, personId, options.asOf === undefined ? undefined : { date, zone: zone! }) : undefined,
     visible.has('documents') ? documentsFor(env, actor, personId, options.categories ?? (category => readsCategory(actor, personId, category)), options.asOf === undefined ? undefined : { date, zone: zone! }) : undefined,
+    personCustomFields(env, actor, personId, date, options.customFields),
   ])
   const view: Record<string, unknown> = {
+    customFields,
     id: person.id, revision: person.revision, name: displayName(person), legalName: person.legal_name, preferredName: person.preferred_name, workEmail: person.work_email,
     asOf: date, status: statusOf(selected, date), selectedPeriod: selected?.id ?? null,
     current: current ? { id: current.id, effectiveFrom: current.effective_from, scheduled: current.effective_from > actor.today, ...termsSummary(current, look),
