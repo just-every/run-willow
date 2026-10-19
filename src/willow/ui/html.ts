@@ -3,6 +3,7 @@ import branding from '../../branding.json'
 import { can, type Actor } from '../actor'
 import { formatInstant } from '../dates'
 import { iconPaths, type IconName } from '../../ui/icon-paths'
+import { sentence } from './labels'
 
 export const esc = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!))
 
@@ -146,10 +147,10 @@ const TONES: Record<string, 'done' | 'wait' | 'alert'> = {
   overdue: 'alert', unresolved: 'alert', failed: 'alert',
 }
 const toneOf = (text: string) => TONES[text.toLowerCase().replace(/^yes \(.*\)$/, 'yes')]
-/** A status chip, toned by its words. */
+/** A status chip, toned by its words and shown in sentence case ("overdue" -> "Overdue"). */
 // Stored statuses keep their spelling; people read US English.
 const US_LABELS: Record<string, string> = { cancelled: 'canceled' }
-export const tag = (text: unknown) => { const tone = toneOf(String(text ?? '')); return h`<span class="tag${tone ? ` tone-${tone}` : ''}">${US_LABELS[String(text)] ?? text}</span>` }
+export const tag = (text: unknown) => { const tone = toneOf(String(text ?? '')); return h`<span class="tag${tone ? ` tone-${tone}` : ''}">${sentence(US_LABELS[String(text)] ?? String(text ?? ''))}</span>` }
 
 /** An initials disc beside a person's name (never part of a link's name), tinted by the name. */
 export const avatar = (name: string) => {

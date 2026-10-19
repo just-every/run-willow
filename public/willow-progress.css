@@ -2,7 +2,7 @@
    the selected change on the right with its timeline, expected vs observed and the
    Willow card. Parts come from willow.css; this file arranges them. */
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.progress { display: grid; grid-template-columns: minmax(0, 1fr) 384px; grid-template-rows: auto 1fr; gap: 16px; align-items: start; padding-top: 26px; }
+.progress { --panel: clamp(320px, 30vw - 110px, 440px); display: grid; grid-template-columns: minmax(0, 1fr) var(--panel); grid-template-rows: auto 1fr; gap: 16px; align-items: start; padding-top: 26px; }
 .board-head { grid-column: 1; margin: 0 4px 2px; }
 .board-head h1 { margin: 0; font-size: 50px; line-height: 1.2; }
 .board-head p { margin: 6px 0 0; color: var(--ink); font: 400 24px/1.3 var(--serif); }
@@ -11,14 +11,16 @@
 .progress:has(.empty), .progress:not(:has(.selected-change)) { grid-template-columns: minmax(0, 1fr); }
 .board > .card { margin: 0; }
 
-/* The table */
-.changes { grid-column: 1; min-width: 0; padding: 4px 12px 6px; }
+/* The table. Its columns are sized to the card (container queries below), so it never
+   scrolls sideways: two lines a cell when the card is roomy, as in the pick. */
+.changes { grid-column: 1; min-width: 0; padding: 4px 12px 6px; container: changes / inline-size; }
 .changes .table-wrap { margin: 0; }
-.changes td[data-label="Effective"] { white-space: nowrap; color: var(--ink-2); font-size: 13.5px; }
+.changes td[data-label="Effective"] { color: var(--ink-2); font-size: 13.5px; }
+.changes .day { white-space: nowrap; }
 .who-cell .lines > span { white-space: nowrap; }
 .changes td a { overflow-wrap: normal; }
-.changes th { padding: 16px 6px 12px; font-size: 14px; }
-.changes td { height: 64px; padding: 10px 6px; font-size: 14px; color: var(--ink); }
+.changes th { padding: 16px 5px 12px; font-size: 14px; }
+.changes td { height: 64px; padding: 10px 5px; font-size: 14px; color: var(--ink); overflow-wrap: normal; }
 .changes th:first-child, .changes td:first-child { padding-left: 12px; }
 .changes th:last-child, .changes td:last-child { padding-right: 12px; }
 .changes tbody tr:hover td { background: var(--paper); }
@@ -26,22 +28,24 @@
 .changes tbody tr.selected td:first-child { border-radius: 12px 0 0 12px; }
 .changes tbody tr.selected td:last-child { border-radius: 0 12px 12px 0; }
 .lines { display: grid; line-height: 1.3; min-width: 0; }
+.lines > small { overflow-wrap: normal; }
 .lines > span { color: var(--ink); }
 .lines small { color: var(--ink-3); font-size: 13px; }
-.until { display: block; color: var(--ink-3); font-size: 13px; }
-.who-cell { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
-.who-cell .avatar { width: 38px; height: 38px; font-size: 12px; }
+.until { display: block; color: var(--ink-3); font-size: 13px; white-space: nowrap; }
+.who-cell { display: flex; align-items: center; gap: 9px; min-width: 0; color: var(--ink); text-decoration: none; }
+.who-cell .avatar { width: 34px; height: 34px; font-size: 12px; }
 .who-cell .lines > span { font-weight: 500; }
 .who-cell:hover .lines > span { text-decoration: underline; text-underline-offset: 3px; }
-.owner { display: flex; align-items: center; gap: 8px; }
+.owner { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.owner .lines > * { white-space: nowrap; }
 .owner .avatar { width: 30px; height: 30px; font-size: 11px; }
 .owner .lines small { font-size: 12.5px; }
-.status { display: flex; align-items: flex-start; gap: 8px; }
+.status { display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
 .status .lines > span { color: var(--ink-2); font-size: 13.5px; }
 .status .lines small { font-size: 12.5px; white-space: nowrap; }
 .status-alert .lines > span { color: var(--orange-ink); font-size: 14.5px; font-weight: 500; }
 .dash { color: var(--line-strong); font-size: 18px; padding-left: 4px; }
-.mark { flex: none; display: block; width: 19px; height: 19px; margin-top: 1px; }
+.mark { flex: none; display: block; width: 18px; height: 18px; margin-top: 1px; }
 .mark svg { display: block; width: 100%; height: 100%; }
 .mark-done .disc { fill: var(--green); }
 .mark-alert .disc { fill: var(--orange); }
@@ -49,6 +53,30 @@
 .mark .ring { fill: none; stroke: var(--ink-3); stroke-width: 1.6; }
 .mark .hands { fill: none; stroke: var(--ink-3); stroke-width: 1.6; stroke-linecap: round; }
 .mark-wait .ring, .mark-wait .hands { stroke: var(--amber); }
+
+/* Column widths by the card's own width. Narrow (a 1360-1420 px window beside the
+   panel, or a tablet): details may wrap to a second line and the owner shows without
+   a disc. Roomy (800 px and up): every cell is two lines, and a long role or template
+   name stops short with its full text in its title. Wide (1000 px and up): the owner's
+   disc returns. */
+@media (min-width: 720px) {
+  .changes table { table-layout: fixed; }
+  .changes th:nth-child(1) { width: 21%; } .changes th:nth-child(2) { width: 16.5%; } .changes th:nth-child(3) { width: 11.5%; }
+  .changes th:nth-child(4) { width: 15.5%; } .changes th:nth-child(5) { width: 12.5%; } .changes th:nth-child(6) { width: 12.5%; } .changes th:nth-child(7) { width: 10.5%; }
+  .changes .owner .avatar { display: none; }
+  .who-cell .lines > span { white-space: normal; }
+}
+@container changes (min-width: 800px) {
+  .changes th:nth-child(1) { width: 25%; } .changes th:nth-child(2) { width: 18%; } .changes th:nth-child(3) { width: 10.3%; }
+  .changes th:nth-child(4) { width: 14%; } .changes th:nth-child(5) { width: 11.3%; } .changes th:nth-child(6) { width: 12.2%; } .changes th:nth-child(7) { width: 9.2%; }
+  .changes .lines > small, .who-cell .lines > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .changes .owner .lines > *, .changes .status-alert .lines > * { overflow: visible; text-overflow: clip; }
+}
+@container changes (min-width: 1000px) {
+  .changes th:nth-child(1) { width: 24%; } .changes th:nth-child(2) { width: 18%; } .changes th:nth-child(3) { width: 10%; }
+  .changes th:nth-child(4) { width: 13%; } .changes th:nth-child(5) { width: 10.5%; } .changes th:nth-child(6) { width: 11.5%; } .changes th:nth-child(7) { width: 13%; }
+  .changes .owner .avatar { display: inline-grid; }
+}
 
 /* The selected change */
 .selected-change { grid-column: 2; grid-row: 1 / span 2; min-width: 0; padding: 22px 12px 14px; position: sticky; top: 28px; }
@@ -93,32 +121,58 @@
 .agent h3 { margin: 0 0 4px; font-size: 19px; font-weight: 700; }
 .agent p { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.45; }
 .agent p + p { margin-top: 4px; }
-.agent-actions { display: grid; grid-template-columns: auto auto auto; gap: 8px; margin: 12px 4px 0; }
+.agent p.checked { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--accent-line); color: var(--ink); }
+/* The three actions sit in one row, as in the pick, once the panel has room; in a
+   narrower panel the primary action takes the first row and the other two share the next. */
+.selected-change { container: panel / inline-size; }
+.agent-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 4px 0; }
 .agent-actions form { display: contents; }
-.agent-actions button, .agent-actions .button { width: 100%; margin: 0; min-height: 48px; padding: 0 6px; font-size: 13.5px; }
+.agent-actions button, .agent-actions .button { width: 100%; margin: 0; min-height: 48px; padding: 0 10px; font-size: 13.5px; white-space: nowrap; }
+.agent-actions form button:only-of-type { grid-column: 1 / -1; }
+@container panel (min-width: 380px) {
+  .agent-actions { grid-template-columns: auto auto auto; }
+  .agent-actions form button:only-of-type { grid-column: auto; }
+}
+.agent-actions .button[aria-current] { background: var(--accent-wash); border-color: var(--accent); }
+.explain { margin: 14px 4px 0; padding: 16px 16px 6px; border: 1px solid var(--line); border-radius: 12px; scroll-margin-top: 20px; }
+.explain h3 { margin-bottom: 6px; }
+.explain h4 { margin: 14px 0 4px; color: var(--ink-3); font: 500 13px/1.35 var(--sans); }
+.explain p { margin: 0 0 6px; color: var(--ink-2); font-size: 14.5px; line-height: 1.45; }
+.explain details { margin-top: 12px; }
+.explain .explain-close { margin: 8px 0 6px; font-size: 14px; }
 .empty { max-width: 640px; padding: 40px 32px; text-align: center; }
 .empty img { display: block; width: 34px; height: auto; margin: 0 auto 14px; }
 .empty h2 { margin-bottom: 8px; }
 .empty p { margin: 0 auto; color: var(--ink-2); max-width: 48ch; }
 
-@media (max-width: 1279px) {
+@media (max-width: 1359px) {
   .progress { grid-template-columns: minmax(0, 1fr); }
   .selected-change { grid-column: 1; grid-row: auto; position: static; }
 }
 @media (max-width: 719px) {
-  .progress { padding-top: 22px; gap: 16px; }
-  .board-head { margin: 0; }
+  /* The table's rows join the page's column so the selected change's panel can follow
+     its own row: rows up to the selected one, the panel, then the rest. */
+  .progress { display: flex; flex-direction: column; align-items: stretch; padding-top: 22px; gap: 0; }
+  .board .changes, .changes .table-wrap, .changes table, .changes tbody { display: contents; }
+  .changes .table-wrap tbody tr { background: var(--card); border: solid var(--line); border-width: 0 1px 1px; padding: 14px 16px; }
+  .changes .table-wrap tbody tr:first-child, .changes .table-wrap tbody tr.selected + tr { border-top-width: 1px; border-radius: var(--r-card) var(--r-card) 0 0; padding-top: 14px; }
+  .changes .table-wrap tbody tr:last-child, .changes .table-wrap tbody tr:has(+ tr.selected) { border-radius: 0 0 var(--r-card) var(--r-card); }
+  .changes .table-wrap tbody tr:first-child:last-child { border-radius: var(--r-card); }
+  .changes .table-wrap tbody tr.selected { margin: 12px 0 0; border: 1px solid var(--accent-line); border-radius: var(--r-card); background: var(--accent-wash); }
+  .changes .table-wrap tbody tr.selected:first-child { margin-top: 0; }
+  .changes .table-wrap tbody tr.selected + tr { margin-top: 16px; }
+  .changes .table-wrap tbody tr.after { order: 2; }
+  .board > .selected-change { order: 1; margin-top: 8px; }
+  .board-head { margin: 0 0 16px; }
   .board-head h1 { font-size: 38px; }
   .board-head p { font-size: 18px; }
   .board-head strong { font-size: 18px; }
   .pair { gap: 8px; }
   .pair > div { padding: 10px; min-width: 0; }
-  .changes { padding: 4px 12px; }
-  .changes .table-wrap tr { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; padding: 14px 4px; }
+  .changes .table-wrap tr { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
   .changes .table-wrap td { height: auto; padding: 0; background: none !important; border-radius: 0 !important; }
   .changes .table-wrap td[data-label="Person"], .changes .table-wrap td[data-label="What"] { grid-column: 1 / -1; }
   .changes .table-wrap td[data-label="Person"]::before { display: none; }
-  .changes tbody tr.selected { margin: 0 -8px; padding: 14px 12px; border-radius: 12px; background: var(--accent-wash); }
   .selected-change { padding: 16px 10px 14px; }
   .case-box { padding: 2px 14px 14px; }
   .panel-head .avatar { width: 52px; height: 52px; font-size: 17px; }

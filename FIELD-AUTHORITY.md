@@ -21,7 +21,7 @@ payroll provider owns pay runs, tax and payments.
 | External accounts and devices | Their own systems; Willow records the evidence of each action | task assignees |
 | Private documents | Willow (category access) | per category; documents.private |
 
-Willow does not encode award, agreement or statutory leave rules, public
+Willow does not encode state or federal leave law, union agreements, public
 holidays or retention periods: you supply reviewed policies and schedules, and
 retention follows your own legal advice.
 

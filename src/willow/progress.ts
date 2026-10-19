@@ -11,6 +11,7 @@ import { caseDetail } from './lifecycle'
 import { directory } from './profile'
 import { workList } from './work'
 import { followup, type Followup } from './progress-followup'
+import { ASSIGNEE_LABELS, KIND_LABELS, hoursLabel } from './ui/labels'
 
 export type CellState = 'done' | 'wait' | 'open' | 'alert' | 'none'
 export interface Cell { state: CellState; text: string; detail?: string }
@@ -26,18 +27,17 @@ interface Row {
   exception: string | null; needsYou: boolean; source: string | null; case?: Case; request?: Request
 }
 
-const KIND_LABELS: Record<string, string> = { joiner: 'Joiner', mover: 'Mover', leaver: 'Leaver' }
-const ASSIGNEE_LABELS: Record<string, string> = { hr: 'HR', it: 'IT', payroll: 'Payroll', manager: 'Manager', employee: 'Employee' }
 const NONE: Cell = { state: 'none', text: 'Not applicable' }
 
 const overdueDays = (task: Task, today: string) => task.status === 'open' && task.dueDate < today ? daysBetween(task.dueDate, today) : 0
-const pastDue = (days: number) => `${days} day${days === 1 ? '' : 's'} past due`
+const dayCount = (days: number) => `${days}\u00a0day${days === 1 ? '' : 's'}`
+const pastDue = (days: number) => `${dayCount(days)} past due`
 
 /** One system's tasks in a case: overdue first, then open, then done. */
 function tasksCell(tasks: Task[], today: string, doneText = 'Done'): Cell {
   if (!tasks.length) return NONE
   const late = tasks.find(task => overdueDays(task, today))
-  if (late) return { state: 'alert', text: 'Overdue', detail: pastDue(overdueDays(late, today)) }
+  if (late) return { state: 'alert', text: 'Overdue', detail: dayCount(overdueDays(late, today)) }
   const open = tasks.filter(task => task.status === 'open')
   if (open.length) return { state: open.length === tasks.length ? 'open' : 'wait', text: open.length === tasks.length ? 'Open' : `${tasks.length - open.length} of ${tasks.length} done`, detail: `due ${formatDay(open[0].dueDate, today).replace(/^\w+, /, '')}` }
   return { state: 'done', text: doneText }
@@ -107,7 +107,7 @@ export async function progress(env: Bindings, actor: Actor, selected = '') {
     const accountable = items.get(`leave:${request.id}`)
     rows.push({
       key: `leave:${request.id}`, kind: 'leave', path: `/app/leave/${request.id}`, person: { id: request.person, name: request.name, role: named.get(request.person)?.jobTitle ?? null },
-      what: 'Leave', detail: `${request.policy} · ${request.hours} h`, effective: request.startDate, endDate: request.endDate,
+      what: 'Leave', detail: `${request.policy} · ${hoursLabel(request.hours)}`, effective: request.startDate, endDate: request.endDate,
       payroll: NONE, records: NONE, access: NONE,
       owner: accountable ? { name: accountable.ownerName, role: 'Approver' } : null,
       exception: null, needsYou: true, source: accountable?.source ?? null, request,
@@ -148,7 +148,7 @@ async function detail(env: Bindings, actor: Actor, row: Row, work: Work, items: 
       observed = { title: `${done} of ${row.case.tasks.length} done`, detail: row.case.missing.length ? `${row.case.missing.length} required field(s) missing` : 'Required information complete' }
     }
   } else if (row.request) {
-    steps.push({ state: 'done', title: `Requested ${row.request.hours} hours of ${row.request.policy}`, detail: formatInstant(row.request.requestedAt, work.timezone) })
+    steps.push({ state: 'done', title: `Requested ${hoursLabel(row.request.hours)} of ${row.request.policy}`, detail: formatInstant(row.request.requestedAt, work.timezone) })
     steps.push({ state: 'wait', title: `Waiting for ${row.owner?.name ?? 'a decision'}`, detail: 'Approve or decline on the request' })
   }
   if (agent?.next) steps.push({ state: 'none', title: 'Willow checks again', detail: agent.next })

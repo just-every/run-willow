@@ -114,6 +114,7 @@ ul.cases { list-style: none; padding: 0; }
 .batch-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .batch-actions > form, .batch-actions > p { margin: 0; }
 .batch-actions button, .batch-actions .button { margin: 0; }
+.batch-actions > form + form { margin: 0; padding: 0; border: 0; }
 .batch-actions > form:has(input[name=reference]) { flex-basis: 100%; }
 
 /* First run (no nav yet): the lantern above one quiet card in the middle of the paper */

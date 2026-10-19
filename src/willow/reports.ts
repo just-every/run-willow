@@ -51,7 +51,7 @@ export async function summary(env: Bindings, actor: Actor, url: URL) {
       else entry.unknown++
       totals.set(key, entry)
     }
-    result.compensation = { note: 'Annualised: salary as recorded; hourly rate x scheduled weekly hours x 52. People with unknown pay are counted separately.', byDepartment: [...totals].sort().map(([group, value]) => ({ group, people: value.people, annual: (value.annualCents / 100).toFixed(2), unknownPay: value.unknown, currency: value.currency })) }
+    result.compensation = { note: 'Annualized: salary as recorded; hourly rate x scheduled weekly hours x 52. People with unknown pay are counted separately.', byDepartment: [...totals].sort().map(([group, value]) => ({ group, people: value.people, annual: (value.annualCents / 100).toFixed(2), unknownPay: value.unknown, currency: value.currency })) }
     await auditRead(env, actor.id, 'report.compensation.read', 'organisation', { asOf })
   }
   return result

@@ -4,7 +4,7 @@
   "name": "Willow",
   "settings": {
     "MAIL_PROVIDER": "development",
-    "MAIL_FROM": "Willow <people@harbour-field.example>"
+    "MAIL_FROM": "Willow <people@harbor-field.example>"
   },
-  "ownerEmail": "rowan.hale@harbour-field.example"
+  "ownerEmail": "rowan.hale@harbor-field.example"
 }

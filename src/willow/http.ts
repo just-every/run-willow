@@ -81,10 +81,10 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
     const input = await Input.from(request)
     const returnTo = safeReturnTo(input.text('returnTo', { optional: true, max: 300 }) || '/app', '/app')
     try {
-      const result = await action(env, actor, input, request) as { id?: string } | null
+      const result = await action(env, actor, input, request) as { id?: string; notice?: string } | null
       const notices = await notifyAction(env, name!, result)
       const failed = notices?.failure || notices?.deliveries?.some(item => ['failed','refused'].includes(item.status))
-      return redirect(env, returnTo.replace('{id}', encodeURIComponent(result?.id ?? '')), 'notice', failed ? 'Saved. Email notice delivery failed; continue the work in Willow.' : 'Saved.')
+      return redirect(env, returnTo.replace('{id}', encodeURIComponent(result?.id ?? '')), 'notice', failed ? 'Saved. Email notice delivery failed; continue the work in Willow.' : result?.notice ?? 'Saved.')
     } catch (error) {
       const { code, status } = failure(error)
       if (status >= 500) throw error

@@ -5,6 +5,7 @@ import { formatDate, hours } from '../dates'
 import { Input } from '../input'
 import { approvals, leaveDetail, leaveFor, quote } from '../leave'
 import { area, avatar, field, form, h, hidden, page, select, table, tag } from './html'
+import { sentence } from './labels'
 
 export async function leavePage(env: Bindings, actor: Actor, url: URL) {
   const mine = actor.personId ? await leaveFor(env, actor, actor.personId) : null
@@ -29,7 +30,7 @@ export async function requestPage(env: Bindings, actor: Actor, id: string, url: 
   const body = h`<p class="back"><a href="/app/leave">← Leave</a></p><h1>${request.name}: ${request.policy}</h1>
 <section class="card"><dl class="facts"><dt>Dates</dt><dd>${formatDate(request.startDate)} – ${formatDate(request.endDate)}</dd><dt>Hours</dt><dd>${request.hours}</dd><dt>Status</dt><dd>${tag(request.status)}</dd>${request.corrects ? h`<dt>Corrects</dt><dd><a href="/app/leave/${request.corrects}">earlier request</a></dd>` : ''}${'reason' in request ? h`<dt>Reason (confidential)</dt><dd>${request.reason ?? '—'}</dd>` : ''}${request.decisionNote ? h`<dt>Decision note</dt><dd>${request.decisionNote}</dd>` : ''}${request.cancelNote ? h`<dt>Cancellation</dt><dd>${request.cancelNote}</dd>` : ''}${request.balanceMinutes === undefined ? '' : h`<dt>Balance now</dt><dd>${hours(request.balanceMinutes)} h</dd>`}</dl>
 <details><summary>Calculation</summary>${table(['Day', 'Scheduled hours'], (calculation.days ?? []).map(day => [formatDate(day.date), hours(day.minutes)]))}</details>
-<details><summary>Ledger entries</summary>${table(['Entry', 'Hours', 'Date'], request.ledger.map(entry => [entry.kind, hours(entry.minutes), formatDate(entry.effective_date)]))}</details></section>
+<details><summary>Ledger entries</summary>${table(['Entry', 'Hours', 'Date'], request.ledger.map(entry => [sentence(String(entry.kind).replace(/_/g, ' ')), hours(entry.minutes), formatDate(entry.effective_date)]))}</details></section>
 ${request.coverage.length ? h`<section class="card"><h2>Also away</h2><ul>${request.coverage.map(item => h`<li>${item.name}: ${formatDate(item.startDate)} – ${formatDate(item.endDate)} (${item.status})</li>`)}</ul></section>` : ''}
 ${request.canDecide ? h`<section class="card"><h2>Decide</h2>${form('leave.decide', `/app/leave/${id}`, [hidden('request', id), hidden('decision', 'approve'), field('Note', 'note', { required: false })], 'Approve')}${form('leave.decide', `/app/leave/${id}`, [hidden('request', id), hidden('decision', 'decline'), field('Note', 'note', { required: false })], 'Decline', { secondary: true })}</section>` : ''}
 ${request.status === 'pending' && request.person === actor.personId ? h`<section class="card">${form('leave.withdraw', `/app/leave/${id}`, [hidden('request', id)], 'Withdraw request', { secondary: true })}</section>` : ''}

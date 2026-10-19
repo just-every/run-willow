@@ -39,6 +39,6 @@ is the visitor's one-click sign-in; mail is suppressed silently.
 test starts need the private measurement token. Production uses the real widget
 keys at `demo.run-willow.com`. `remove` removes the chosen demo and reads back
 resource absence. All deployments use the RunEditRun account.
-The demo owner is Rowan Hale (`rowan.hale@harbour-field.example`).
+The demo owner is Rowan Hale (`rowan.hale@harbor-field.example`).
 The front GET sets no cookie; visitor state begins only after the start POST.
 The test host uses the same read/effect policy and sample data as production.

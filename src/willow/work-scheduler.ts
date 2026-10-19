@@ -57,4 +57,20 @@ export async function runWorkScheduler(env: Bindings, instant=now()) {
  }
  return {attempted}
 }
-export async function runWorkNow(env: Bindings,actor:Actor) {requireOwner(actor);return runWorkScheduler(env)}
+const clock = (zone: string, instant: number) => new Intl.DateTimeFormat('en-US', { timeZone: zone, hour: 'numeric', minute: '2-digit' }).format(instant)
+
+/** What a manual check did, in Willow's own words, and when it checks next. */
+function checkOutcome(result: { attempted: number; reason?: string }, zone: string, quietEnd: number | null, instant: number) {
+ const at = `I checked at ${clock(zone, instant)}.`
+ if (result.reason === 'policy_not_approved') return `${at} Reminders are paused until HR approves a reminder cadence and quiet hours, so I sent none.`
+ if (result.reason === 'quiet_hours') { const end = `${(quietEnd! + 11) % 12 + 1}:00 ${quietEnd! < 12 ? 'AM' : 'PM'}`; return `${at} Quiet hours run until ${end}, so I sent no reminders; I check again at ${end}.` }
+ if (!result.attempted) return `${at} Nothing was due, so I sent no reminders; I check again within 15 minutes.`
+ return `${at} ${result.attempted} reminder${result.attempted === 1 ? ' was' : 's were'} due and I handled ${result.attempted === 1 ? 'it' : 'them'}; I check again within 15 minutes.`
+}
+
+export async function runWorkNow(env: Bindings,actor:Actor) {
+ requireOwner(actor)
+ const instant = now(), result = await runWorkScheduler(env, instant)
+ const policy = (await workState(env)).policy
+ return { ...result, notice: checkOutcome(result, await employerZone(env), policy?.quiet_end ?? null, instant) }
+}
