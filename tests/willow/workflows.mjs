@@ -64,6 +64,7 @@ try {
   assert.equal(previewNY.tasks[2].system, 'Identity provider')
   assert.ok(previewNY.tasks[2].evidenceRequired)
   assert.equal((await api(`cases/${originalNY.case}`)).tasks.length, 1, 'Preview does not apply a workflow')
+  assert.equal((await h.raw(`/app/settings?review=${preview.id}`, { cookie: s.hr.cookie })).status, 404, 'Another authorized HR member cannot read this member-bound preview')
   await h.api('template.publish', s.hr.cookie, { review: preview.id }, 404)
   await api('department.create', { name: 'Field operations' })
   await api('template.publish', { review: preview.id }, 409)
