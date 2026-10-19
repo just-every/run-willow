@@ -8,7 +8,7 @@ import { WillowError, all, insist, newId, now, one, stmt } from './core'
 import { today } from './dates'
 import { CURRENT_TERMS } from './employment'
 
-export const PERMISSIONS = ['people.manage', 'people.private', 'pay.read', 'leave.manage', 'payroll.handoff', 'documents.private', 'reports.read', 'it.tasks', 'audit.read'] as const
+export const PERMISSIONS = ['people.manage', 'people.private', 'pay.read', 'leave.manage', 'payroll.handoff', 'documents.private', 'reports.read', 'eeo.read', 'it.tasks', 'audit.read'] as const
 export type Permission = typeof PERMISSIONS[number]
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
@@ -19,6 +19,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'payroll.handoff': 'Prepare and hand off payroll changes',
   'documents.private': 'Read every private document category',
   'reports.read': 'Read organization-wide summaries',
+  'eeo.read': 'Read protected aggregate diversity reports (also requires reports access)',
   'it.tasks': 'Receive IT lifecycle tasks',
   'audit.read': 'Read the audit trail',
 }
