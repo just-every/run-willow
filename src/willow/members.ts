@@ -2,6 +2,7 @@
 // ending a person's access, and previewing exactly what a member can see.
 // Sign-in accounts are Base operator-auth operators: HR holders are admins
 // (they can invite and deactivate members); only the owner sets permissions.
+import { readsTable } from './record-tables/schema'
 import { operatorAuth, type Bindings } from '../auth.server'
 import { PERMISSIONS, actorFor, requireOwner, requirePermission, type Actor, type Permission } from './actor'
 import { FACET_LABELS, facets, readsCategory, type Facet } from './access'
@@ -102,7 +103,7 @@ export async function visibilityPreview(env: Bindings, actor: Actor, memberId: s
   const target = await actorFor(env, { id: member.id, email: member.email, name: member.name, owner, personId: member.person_id, sessionId: '' })
   const theirs = facets(target, personId), mine = facets(actor, personId)
   const both = new Set([...theirs].filter(facet => mine.has(facet)))
-  const view = await personView(env, actor, personId, { admissionActor: target, facets: both, categories: category => readsCategory(target, personId, category) && readsCategory(actor, personId, category), customFields: definition => readsCustomField(target, personId, definition) })
+  const view = await personView(env, actor, personId, { admissionActor: target, facets: both, categories: category => readsCategory(target, personId, category) && readsCategory(actor, personId, category), customFields: definition => readsCustomField(target, personId, definition), recordTables: table => readsTable(target, personId, table) })
   const customDefinitions = await effectiveFieldDefinitions(env, actor.today)
   return {
     member: { id: member.id, name: member.name, status: member.status, permissions: [...target.permissions] as Permission[], managesThisPerson: target.reports.has(personId), isThisPerson: target.personId === personId },

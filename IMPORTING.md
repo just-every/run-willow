@@ -68,6 +68,18 @@ balance that a leave manager signs off.
 `category`, `title`, and the files it names. The category must already exist
 in Willow; documents keep its access and never appear in the directory.
 
+**Record tables** (optional, PEOPLE-003): a `.zip` holding `tables/<table>.csv`
+files (such as a Willow records bundle exported with its `tables` section), or
+one `<table>.csv`. Each file names the person by `employeeNumber` (or a
+BambooHR `id` column), may carry `effectiveFrom` and `row_id`, and has one
+column per table column key; other columns are ignored. Rows are validated
+against the destination's table definitions: emergency contacts, education,
+certifications and assets are built in, and a custom table must be defined in
+Willow first or its rows are refused by name. A second primary emergency
+contact for one person is refused. Imported rows keep their table's access,
+repeat without duplicates and undo strictly; a later change in Willow blocks
+undo.
+
 Dates are read as `YYYY-MM-DD` (BambooHR's API form) unless you choose
 day/month/year or month/day/year in the preview. Files up to 8 MB each.
 
@@ -116,8 +128,8 @@ in days, unmapped time-off types, unknown categories or missing files);
 managers not in the export; unknowns per person (work email, private details,
 employment type, department, location, manager, schedule, pay); and gaps:
 fields BambooHR leaves out for users who cannot see them, missing former
-employees (reports default to active people), schedules, emergency contacts and
-payroll identifiers, which are not part of these fields.
+employees (reports default to active people), schedules and payroll
+identifiers, which are not part of these fields, and a missing record-table file.
 
 ## Re-import and undo
 

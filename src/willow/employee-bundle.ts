@@ -8,9 +8,12 @@ import { employeeExportData } from './employee-export'
 import { employeeCsv } from './export-formats'
 import { exportZipStream, type ZipStreamFile } from './export-zip-stream'
 import { caseDetail } from './lifecycle'
+import { tableRows } from './record-tables/report'
+import type { Column } from './record-tables/schema'
 
-export const EXPORT_SECTIONS = { employment: 'Employment history', leave: 'Leave accounts, ledger and requests', lifecycle: 'Lifecycle cases and tasks', documents: 'Document versions and receipts' } as const
-const SECTION_FACETS = { employment: 'employment', leave: 'leave', lifecycle: 'lifecycle', documents: 'documents' }
+export const EXPORT_SECTIONS = { employment: 'Employment history', leave: 'Leave accounts, ledger and requests', lifecycle: 'Lifecycle cases and tasks', documents: 'Document versions and receipts', tables: 'Record tables (contacts, education, certifications, assets, custom tables)' } as const
+// Record tables carry their own per-table access in the shared projection.
+const SECTION_FACETS: Record<string, string | null> = { employment: 'employment', leave: 'leave', lifecycle: 'lifecycle', documents: 'documents', tables: null }
 const encoder = new TextEncoder()
 
 export async function employeeBundle(env: Bindings, actor: Actor, url: URL, request: Request) {
@@ -21,7 +24,8 @@ export async function employeeBundle(env: Bindings, actor: Actor, url: URL, requ
   const zone = await employerZone(env)
   const files: ZipStreamFile[] = []
   const manifestFiles: Record<string, unknown>[] = []
-  const records = []
+  const records: Record<string, unknown>[] = []
+  const tableFiles = new Map<string, { columns: Column[]; rows: Parameters<typeof tableRows>[1] }>()
   const addText = async (path: string, content: string, mediaType: string) => {
     const bytes = encoder.encode(content)
     files.push({ name: path, size: bytes.length, open: async () => new Blob([bytes]).stream() })
@@ -32,11 +36,19 @@ export async function employeeBundle(env: Bindings, actor: Actor, url: URL, requ
     // The shared projection contains only explicitly selected and currently readable custom fields.
     if (data.fields.some(key => key.startsWith('custom.'))) record.customFields = person.customFields
     for (const section of sections as (keyof typeof EXPORT_SECTIONS)[]) {
-      if (!person.facets.includes(SECTION_FACETS[section])) {
+      if (SECTION_FACETS[section] && !person.facets.includes(SECTION_FACETS[section]!)) {
         (record.withheldSections as string[]).push(section)
         continue
       }
       if (section === 'employment') record.employment = person.employment
+      if (section === 'tables') {
+        record.tables = person.recordTables
+        for (const item of person.recordTables.tables) {
+          const file = tableFiles.get(item.key) ?? { columns: item.columns as Column[], rows: [] as Parameters<typeof tableRows>[1] }
+          file.rows.push(...item.rows.map((row: Record<string, any>) => ({ personId: person.id, employeeNumber: person.employeeNumber ?? null, rowId: row.id, effectiveFrom: row.effectiveFrom, values: row.values })))
+          tableFiles.set(item.key, file)
+        }
+      }
       if (section === 'leave') record.leave = person.leave
       if (section === 'lifecycle') {
         const cases = []
@@ -69,6 +81,8 @@ export async function employeeBundle(env: Bindings, actor: Actor, url: URL, requ
     records.push(record)
   }
   await addText('employees.csv', employeeCsv(data.rows), 'text/csv; charset=utf-8')
+  // The same layout as the record-table report; BambooHR move-in reads tables/<key>.csv back.
+  for (const [key, file] of tableFiles) await addText(`tables/${key}.csv`, employeeCsv(tableRows(file.columns, file.rows)), 'text/csv; charset=utf-8')
   await addText('records.json', JSON.stringify({ schema: 'willow.employee-records/v1', records }, null, 2) + '\n', 'application/json')
   const manifest = encoder.encode(JSON.stringify({ schema: 'willow.employee-bundle/v1', project: 'people/willow', exportedAt: now(), asOf: data.asOf,
     scope: data.scope, fields: data.fields, sections, people: records.length, files: manifestFiles,

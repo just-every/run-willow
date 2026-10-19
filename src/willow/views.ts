@@ -1,4 +1,6 @@
 import { listFieldDefinitions } from './custom-fields/store'
+import { listRecordTables } from './record-tables/schema'
+import { tableReport } from './record-tables/rows'
 import { doorSettings } from './movein/authority'
 // Read models served at GET /api/willow/... Every view applies the same access
 // rules as the pages that render it.
@@ -36,6 +38,8 @@ import { progress } from './progress'
 
 export const views: Record<string, View> = {
   customFields: (env, actor, _request, _id, url) => listFieldDefinitions(env, actor, url.searchParams.get('asOf') ?? actor.today),
+  recordTables: (env, actor) => listRecordTables(env, actor),
+  recordReport: async (env, actor, _request, id, url) => { const asOf = url.searchParams.get('asOf') ?? actor.today; return tableReport(env, actor, id, asOf, await directory(env, actor, asOf)) },
   work: workList,
   progress: (env, actor, _request, _id, url) => progress(env, actor, url.searchParams.get('select') ?? ''),
   connections,

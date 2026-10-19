@@ -15,6 +15,7 @@ import { managerChangeGuard } from './organization'
 import { editorTaskRules, parseTaskRules } from './workflow-rules'
 import { blockedBy, plannedTasks, workflowContext, type WorkflowContext } from './workflow-plan'
 import { customValueStatements, customValuesInput } from './custom-fields/store'
+import { assetReturnStatements, heldAssets } from './record-tables/rows'
 import { PRIVATE_FIELDS, createPersonStatements, displayName, prepareTerms, readPerson, startPeriodStatements, termsOn } from './people'
 
 export const ASSIGNEES = ['hr', 'manager', 'it', 'payroll', 'employee'] as const
@@ -149,13 +150,18 @@ export async function startLeaver(env: Bindings, actor: Actor, input: Input) {
   const organizationGuard = await managerChangeGuard(env, { period: { id: periodId, personId: period.person_id, startDate: period.start_date, endDate: end } })
   const terms = await termsOn(env, periodId, end)
   const opened = await caseStatements(env, actor, template, period.person_id, periodId, end, terms?.manager_person_id ?? null)
+  // PEOPLE-003: every asset the person still holds becomes an IT return task that closes only with return evidence.
+  const assets = await heldAssets(env, period.person_id)
+  const returns = assets.map((asset, index) => stmt(env, "INSERT INTO wl_case_tasks (id, case_id, position, title, assignee, due_date, evidence_required, system, action, record_row_id, dependencies, created_at, status) VALUES (?, ?, ?, ?, 'it', ?, 1, NULL, 'asset_return', ?, '[]', ?, 'open')",
+    newId(), opened.caseId, 1000 + index, `Return ${asset.values.type} ${asset.values.serial}`, end, asset.rowId, now()))
   await commit(env, [
     organizationGuard,
     guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_periods WHERE id = ? AND revision = ? AND end_date IS NULL)", periodId, period.revision),
     guard(env, 'stale', "NOT EXISTS(SELECT 1 FROM wl_terms WHERE period_id = ? AND status = 'active' AND effective_from > ?)", periodId, end),
     stmt(env, 'UPDATE wl_periods SET end_date = ?, end_reason = ?, revision = ? WHERE id = ?', end, input.text('reason', { max: 300 }), newId(), periodId),
     ...opened.statements,
-  ], { actor: actor.id, action: 'leaver.start', subject: period.person_id, detail: { period: periodId, endDate: end, case: opened.caseId } })
+    ...returns,
+  ], { actor: actor.id, action: 'leaver.start', subject: period.person_id, detail: { period: periodId, endDate: end, case: opened.caseId, assetReturns: assets.length } })
   return { id: opened.caseId, case: opened.caseId, period: periodId, endDate: end }
 }
 
@@ -185,6 +191,7 @@ export async function completeTask(env: Bindings, actor: Actor, input: Input, re
   ]
   // The one local action a task can run: ending the person's Willow access.
   if (task.action === 'end_access') statements.push(...await endAccessStatements(env, actor, request, caseRow.person_id))
+  if (task.action === 'asset_return') statements.push(...await assetReturnStatements(env, actor, task.record_row_id, input))
   await commit(env, statements, { actor: actor.id, action: 'task.complete', subject: task.id, detail: { case: caseRow.id, evidence: !!evidence, action: task.action } })
   return { id: task.id, case: caseRow.id, status: 'done' }
 }
@@ -228,7 +235,7 @@ export async function caseDetail(env: Bindings, actor: Actor, id: string) {
     template: { id: template.id, family: template.family_id, name: template.name, version: template.version },
     missing: sees(actor, caseRow.person_id, 'lifecycle') ? await missingFields(env, caseRow, template) : [],
     upgrades: await all(env, 'SELECT from_template,to_template,at,detail FROM wl_workflow_upgrades WHERE case_id=? ORDER BY at', id),
-    tasks: await Promise.all(tasks.map(async task => ({ id: task.id, title: task.title, assignee: task.assignee, dueDate: task.due_date, evidenceRequired: !!task.evidence_required, system: task.system, action: task.action, status: task.status, evidence: task.evidence, completedAt: task.completed_at, mine: answersFor(actor, task, caseRow), failure: task.failure, blockedBy: await blockedBy(env, task) }))),
+    tasks: await Promise.all(tasks.map(async task => ({ id: task.id, assetRow: task.record_row_id, title: task.title, assignee: task.assignee, dueDate: task.due_date, evidenceRequired: !!task.evidence_required, system: task.system, action: task.action, status: task.status, evidence: task.evidence, completedAt: task.completed_at, mine: answersFor(actor, task, caseRow), failure: task.failure, blockedBy: await blockedBy(env, task) }))),
   }
 }
 

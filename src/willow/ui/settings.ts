@@ -1,5 +1,7 @@
 // Employer setup, settings (places, teams, schedules, document categories,
 // lifecycle templates, leave policies) and access (permissions and preview).
+import { listRecordTables } from '../record-tables/schema'
+import { recordTableDefinitions } from './record-tables'
 import { listFieldDefinitions } from '../custom-fields/store'
 import { fieldDefinitionSection } from './custom-fields'
 import type { Bindings } from '../../auth.server'
@@ -61,7 +63,8 @@ ${templateList.filter(template => template.status === 'draft').map(template => h
 
 export async function customFieldsPage(env: Bindings, actor: Actor, url: URL) {
   const definitions = await listFieldDefinitions(env, actor, url.searchParams.get('asOf') ?? actor.today)
-  return page('Custom fields', actor, h`<p class="back"><a href="/app/settings">← Settings</a></p><h1>Custom fields</h1>${fieldDefinitionSection(definitions, actor)}`, { current: '/app/settings', url })
+  const tables = await listRecordTables(env, actor)
+  return page('Custom fields', actor, h`<p class="back"><a href="/app/settings">← Settings</a></p><h1>Custom fields and tables</h1>${fieldDefinitionSection(definitions, actor)}${recordTableDefinitions(tables, actor)}`, { current: '/app/settings', url })
 }
 
 export async function accessPage(env: Bindings, actor: Actor, request: Request, url: URL) {

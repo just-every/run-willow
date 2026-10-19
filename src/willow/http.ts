@@ -15,6 +15,7 @@ import { employer } from './employer'
 import { Input } from './input'
 import { batchFile } from './payroll'
 import { summary, summaryCsv } from './reports'
+import { tableReportCsv } from './record-tables/report'
 import { h, page } from './ui/html'
 import { casePage, homePage, tasksPage } from './ui/home'
 import { leavePage, requestPage } from './ui/leave'
@@ -131,6 +132,7 @@ const pages: Record<string, Page> = {
   batchFile: (env, actor, _request, _url, id) => batchFile(env, actor, id),
   batch: (env, actor, _request, url, id) => batchPage(env, actor, id, url),
   reports: (env, actor, _request, url) => reportsPage(env, actor, url),
+  recordReportFile: async (env, actor, _request, url, id) => csv(await tableReportCsv(env, actor, id, url.searchParams.get('asOf') ?? actor.today), `willow-${id}.csv`),
   reportsFile: async (env, actor, _request, url) => csv(summaryCsv(await summary(env, actor, url)), 'willow-summary.csv'),
   proposals: (env, actor, _request, url) => proposalsPage(env, actor, url),
   proposal: (env, actor, _request, url, id) => proposalPage(env, actor, id, url),

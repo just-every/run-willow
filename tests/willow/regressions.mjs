@@ -211,3 +211,5 @@ await import("./work-followup.mjs")
 await import("./workflows.mjs")
 
 await import("./custom-fields.mjs")
+
+await import("./record-tables.mjs")

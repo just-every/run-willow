@@ -1,5 +1,7 @@
 import { defineField, writeFieldValues } from './custom-fields/actions'
 import { configureDoor } from './movein/authority'
+import { defineTable } from './record-tables/schema'
+import { writeRow } from './record-tables/rows'
 // Every state change in Willow, by name. The same handler serves the HTML form
 // door (/app/do/NAME) and the JSON door (/api/willow/NAME) used by agents.
 import type { Bindings } from '../auth.server'
@@ -29,6 +31,8 @@ import { runWorkNow } from './work-scheduler'
 export const actions: Record<string, Handler> = {
   'customField.define': defineField,
   'customField.write': writeFieldValues,
+  'recordTable.define': defineTable,
+  'recordRow.write': writeRow,
   'work.policy': approveWorkPolicy,
   'work.schedule': scheduleWork,
   'work.run': runWorkNow,

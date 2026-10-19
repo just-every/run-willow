@@ -100,7 +100,7 @@ The same People form offers **Download records and files ZIP**. Choose which
 history sections to include using its checkboxes. The signed-in door is
 `/app/exports/employees.zip`, using the same `scope`, `fields`, date, filters and
 optional `person` selections as CSV/XLSX. It also requires `history`, repeated
-or comma-separated: `employment`, `leave`, `lifecycle`, `documents`.
+or comma-separated: `employment`, `leave`, `lifecycle`, `documents`, `tables`.
 
 The ZIP is a readable export, not an installation backup. It contains:
 
@@ -135,6 +135,18 @@ transfer remains OPS-002 work. Only selected sections that exist in this edition
 are exported; custom tables, signatures, performance, benefits and other future
 modules, complete target-product archives and restore send fences remain the
 outstanding DATA-001 target.
+
+## Record tables: PEOPLE-003
+
+The `tables` section adds each person's readable record tables to
+`records.json` (rows in force on the export date plus every dated version) and
+one `tables/<key>.csv` per table: `person_id`, `employeeNumber` (only where the
+reader sees employment), `row_id`, `effectiveFrom` and one column per table
+column. Tables the reader may not read are absent, never blank: managers never
+receive emergency contacts or HR/payroll custom tables. Reports offer the same
+CSV per table at `/app/reports/tables/<key>.csv?asOf=YYYY-MM-DD` and JSON at
+`/api/willow/record-tables/<key>`. BambooHR move-in reads the ZIP back into
+another employer (IMPORTING.md).
 
 ## Owner archives and restored connection consent
 

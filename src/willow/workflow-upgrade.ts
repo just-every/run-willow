@@ -50,7 +50,7 @@ export async function applyUpgrade(env: Bindings, actor: Actor, input: Input) {
   await commit(env, [
     ...reviewGuards(env, actor, review),
     guard(env, 'review_stale', "EXISTS(SELECT 1 FROM wl_cases WHERE id=? AND revision=? AND status='open')", plan.current.id, review.detail.revision),
-    stmt(env, "UPDATE wl_case_tasks SET superseded_at=? WHERE case_id=? AND status='open' AND superseded_at IS NULL", at, plan.current.id),
+    stmt(env, "UPDATE wl_case_tasks SET superseded_at=? WHERE case_id=? AND status='open' AND superseded_at IS NULL AND action IS NOT 'asset_return'", at, plan.current.id),
     ...plan.selected.filter(t => !t.retained).map((t, i) => stmt(env, "INSERT INTO wl_case_tasks(id,case_id,position,title,assignee,assignee_person_id,due_date,evidence_required,system,action,status,dependencies,source_task,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,'open',?,?,?)", ids.get(t.position), plan.current.id, maximum + i + 1, t.title, t.assignee, t.manager, t.dueDate, t.evidence_required, t.system, t.action, JSON.stringify(t.dependencies.filter(p => ids.has(p)).map(p => ids.get(p))), t.key, at)),
     stmt(env, 'UPDATE wl_cases SET template_id=?,revision=? WHERE id=?', plan.template.id, newId(), plan.current.id),
     stmt(env, 'INSERT INTO wl_workflow_upgrades(id,case_id,from_template,to_template,actor,at,detail) VALUES(?,?,?,?,?,?,?)', newId(), plan.current.id, plan.current.template_id, plan.template.id, actor.id, at, JSON.stringify(review.detail)),

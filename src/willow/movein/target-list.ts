@@ -9,10 +9,11 @@ export const DEPENDENTS = {
   location: "(SELECT COUNT(*) FROM wl_terms WHERE location_id = ?1 AND origin = 'native')",
   person: `((SELECT COUNT(*) FROM wl_periods WHERE person_id = ?1 AND origin = 'native') + (SELECT COUNT(*) FROM wl_documents WHERE person_id = ?1 AND origin = 'native')
     + (SELECT COUNT(*) FROM wl_members WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_terms WHERE manager_person_id = ?1 AND origin = 'native')
-    + (SELECT COUNT(*) FROM wl_cases WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_leave_requests WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_acknowledgements WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_custom_field_values WHERE person_id = ?1 AND origin = 'native'))`,
+    + (SELECT COUNT(*) FROM wl_cases WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_leave_requests WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_acknowledgements WHERE person_id = ?1) + (SELECT COUNT(*) FROM wl_custom_field_values WHERE person_id = ?1 AND origin = 'native') + (SELECT COUNT(*) FROM wl_record_rows WHERE person_id = ?1 AND origin = 'native'))`,
   period: `((SELECT COUNT(*) FROM wl_terms WHERE period_id = ?1 AND origin = 'native') + (SELECT COUNT(*) FROM wl_leave_accounts WHERE period_id = ?1 AND origin = 'native')
     + (SELECT COUNT(*) FROM wl_cases WHERE period_id = ?1) + (SELECT COUNT(*) FROM wl_payroll_items WHERE source_id = ?1 AND source_kind IN ('start', 'end')))`,
   account: '((SELECT COUNT(*) FROM wl_ledger WHERE account_id = ?1) + (SELECT COUNT(*) FROM wl_leave_requests WHERE account_id = ?1))',
+  record: "((SELECT COUNT(*) FROM wl_record_row_versions WHERE row_id = ?1 AND origin = 'native') + (SELECT COUNT(*) FROM wl_case_tasks WHERE record_row_id = ?1))",
   document: '((SELECT COUNT(*) FROM wl_document_versions WHERE document_id = ?1 AND number > 1) + (SELECT COUNT(*) FROM wl_acknowledgements a JOIN wl_document_versions v ON v.id = a.version_id WHERE v.document_id = ?1))',
 }
 
@@ -49,6 +50,11 @@ const projections: Record<string, Projection> = {
     table: 'wl_documents', joins: 'LEFT JOIN wl_document_versions v ON v.document_id = r.id AND v.number = 1',
     fields: [['person', 'r.person_id'], ['category', 'r.category_id'], ['title', 'r.title'], ['version.id', 'v.id'], ['version.filename', 'v.filename'], ['version.mediaType', 'v.media_type'], ['version.size', 'v.size'], ['version.sha256', 'v.sha256']],
     valid: 'v.id IS NOT NULL',
+  },
+  record: {
+    table: 'wl_record_rows', joins: "LEFT JOIN wl_record_row_versions v ON v.row_id = r.id AND v.sequence = 1 AND v.origin = 'import'",
+    fields: [['person', 'r.person_id'], ['table', 'r.table_id'], ['version.id', 'v.id'], ['version.tableVersion', 'v.table_version_id'], ['version.effectiveFrom', 'v.effective_from'], ['version.values', 'v.values_json']],
+    valid: "v.id IS NOT NULL AND v.removed = 0 AND (SELECT COUNT(*) FROM wl_record_row_versions WHERE row_id = r.id) = 1",
   },
 }
 const projection = (kind: string) => { const found = projections[kind]; if (!found) throw new Error(`TARGET_KIND_UNKNOWN: ${kind}`); return found }

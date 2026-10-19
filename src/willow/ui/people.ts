@@ -5,6 +5,7 @@ import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
 import { effectiveField, fieldSchemas, writesCustomField } from '../custom-fields/store'
 import { customPersonSection, customValueInputs } from './custom-fields'
+import { recordTablesSection } from './record-tables'
 import { one } from '../core'
 import { formatDate, hours, requireDate } from '../dates'
 import { settings } from '../employer'
@@ -92,6 +93,7 @@ ${manage ? h`<details><summary>Edit directory details</summary>${form('person.up
   if (view.private) sections.push(h`<section class="card private facet-private"><h2>Private details</h2><dl class="facts">${PRIVATE_FIELDS.map(field => h`<dt>${PRIVATE_LABELS[field]}</dt><dd>${view.private[field] ?? '—'}</dd>`)}</dl>
 ${!dated && (self || (manage && can(actor, 'people.private'))) ? h`<details><summary>Edit private details</summary>${form('person.update', `/app/people/${id}`, [hidden('person', id), hidden('revision', view.revision), hidden('private', 'yes'), ...PRIVATE_FIELDS.map(name => field(PRIVATE_LABELS[name], name, { type: name === 'date_of_birth' ? 'date' : name === 'personal_email' ? 'email' : 'text', value: view.private[name] ?? '', required: false }))], 'Save private details', { secondary: true })}</details>` : ''}</section>`)
   if (view.customFields) sections.push(customPersonSection(view.customFields, dated ? undefined : actor, id))
+  if (view.recordTables) sections.push(recordTablesSection(view.recordTables, dated ? undefined : actor, id))
   if (view.employment) sections.push(h`<section class="card facet-employment"><h2>Employment</h2>${periods.map(period => h`<h3 class="period"><span>${formatDate(period.startDate)} – ${period.endDate ? formatDate(period.endDate) : 'ongoing'}</span> ${tag(TYPE_LABELS[period.employmentType])} ${tag(period.status)}</h3>
 ${period.payrollId !== undefined ? h`<p>Payroll identifier: ${period.payrollId ?? h`<strong>not set</strong>`}</p>` : ''}${period.endReason !== undefined && period.endReason ? h`<p class="private">End reason: ${period.endReason}</p>` : ''}
 ${table(['From', 'Role', 'Department', 'Location', 'Manager', 'Schedule', ...(view.pay ? ['Pay'] : []), 'Reason', 'Status', ''], period.terms.map((terms: any) => [h`<span id="terms-${terms.id}">${formatDate(terms.effectiveFrom)}</span>`, terms.jobTitle, terms.department?.name ?? '—', terms.location?.name ?? '—', terms.manager?.name ?? '—', terms.schedule?.name ?? '—', ...(view.pay ? [money(terms.pay)] : []), terms.reason,

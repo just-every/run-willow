@@ -6,6 +6,8 @@ import { all, json, type Row } from './core'
 import { addDays, today } from './dates'
 import { blockedBy } from './workflow-plan'
 import { answersFor, missingFields } from './lifecycle'
+import { renewalsDue } from './record-tables/rows'
+import { CERTIFICATIONS, readsTable, recordTables } from './record-tables/schema'
 
 export interface WorkSource {
  key: string; kind: string; title: string; path: string; due: string; preferred?: string | null
@@ -60,5 +62,8 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  for (const r of notices) add('notice-failure',r,'Investigate email delivery failure','/app/connections',deadline(r.created_at),a=>a.owner,a=>a.owner,null,'Delivery failed; business work remains independent')
  for (const r of await all(env,'SELECT provider_id AS id,failing_since FROM oa_identity_provider_health WHERE failing_since IS NOT NULL')) add('identity-failure',r,'Restore identity connection','/app/connections',deadline(r.failing_since),a=>a.owner,a=>a.owner,null,'Provider unavailable; ordinary email sign-in remains available')
  for (const r of await all(env,'SELECT provider_id AS id,observed_at FROM wl_identity_token_health WHERE failed=1')) add('identity-token-failure',r,'Investigate refused token exchange','/app/connections',deadline(r.observed_at),a=>a.owner,a=>a.owner,null,'Token exchange unavailable')
+ // PEOPLE-003: certifications expiring within the renewal lead are HR work until a renewed (or removed) row replaces them.
+ const certifications = (await recordTables(env)).find(t => t.id === CERTIFICATIONS)!
+ for (const r of await renewalsDue(env, today(zone, Date.now()))) add('renewal',r,'Renew certification',`/app/people/${r.person_id}`,r.due,a=>readsTable(a,r.person_id,certifications) && (hr(a) || a.personId===r.person_id),a=>hr(a) && readsTable(a,r.person_id,certifications),null,'Certification expiring; record the renewal on the person’s record')
  return result
 }

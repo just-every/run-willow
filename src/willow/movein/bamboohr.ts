@@ -19,6 +19,7 @@ import type { Input } from '../input'
 import { readCsv, readXlsx, unzip, type Table } from './tables'
 import { sourceIdentity } from '../../modules/import-kit/src/provenance/identity'
 import { KINDS, willowTargets } from './target'
+import { recordTables, validateRowValues, CONTACTS } from '../record-tables/schema'
 
 const namespace = 'bamboohr', mappingVersion = 'bamboohr-people-1', destination = 'people'
 const FILE_BYTES = 8_000_000
@@ -78,6 +79,7 @@ export const targetIds = {
   period: (key: string, start: string) => hex(`willow:bamboohr:period:${key}:${start}`),
   account: (key: string, type: string) => hex(`willow:bamboohr:account:${key}:${type.toLowerCase()}`),
   document: (key: string, file: string) => hex(`willow:bamboohr:document:${key}:${file}`),
+  record: (key: string, table: string, row: string) => hex(`willow:bamboohr:record:${key}:${table}:${row}`),
 }
 
 export interface Preview {
@@ -90,6 +92,7 @@ export interface Preview {
   attention: { location: string; reason: string }[]
   balances: { person: string; type: string; hours: string; asOf: string; policy: string }[]
   documents: { person: string; title: string; category: string }[]
+  tables: { person: string; table: string; rows: number }[]
   gaps: string[]
   carry: Record<string, string>
 }
@@ -102,7 +105,7 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
   const scheduleId = input.text('schedule', { optional: true, max: 100 }) || null
   if (scheduleId) insist(await one(env, 'SELECT 1 FROM wl_schedules WHERE id = ?', scheduleId), 'schedule_not_found', 404)
   const employees = (await kitFile(input, 'employees', false))!
-  const balances = await kitFile(input, 'balances', true), documents = await kitFile(input, 'documents', true)
+  const balances = await kitFile(input, 'balances', true), documents = await kitFile(input, 'documents', true), tableFile = await kitFile(input, 'tables', true)
   const carry: Record<string, string> = { dateFormat: order, ...(scheduleId ? { schedule: scheduleId } : {}) }
   const occurrences=new Map<string,number>()
   const artifacts: SourceBundle['artifacts'] = [], records: SourceRecord[] = []
@@ -159,6 +162,25 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
     }
     manifest.rows.slice(1).forEach((cells, index) => record('document', `document:${index + 2}`, { row: index + 2, manifest: manifestEntry, cells: Object.fromEntries(manifest.rows[0].map((header, column) => [header, cells[column] ?? ''])) }, hash, documents.filename, index + 2))
   }
+
+  // PEOPLE-003: record tables as one CSV per table (tables/<key>.csv inside a ZIP, such as Willow's own records bundle, or a single <key>.csv).
+  if (tableFile) {
+    const hash = await addArtifact(tableFile, 'tables')
+    const sheets: { key: string; name: string; sheet: Table }[] = []
+    if (tableFile.bytes[0] === 0x50 && tableFile.bytes[1] === 0x4b) {
+      for (const [name, open] of await unzip(tableFile.bytes)) {
+        const key = name.match(/(?:^|\/)tables\/([a-z][a-z0-9_]{0,63})\.csv$/)?.[1]
+        if (key) sheets.push({ key, name, sheet: readCsv(await open(), name) })
+      }
+    } else {
+      const key = tableFile.filename.match(/^([a-z][a-z0-9_]{0,63})\.csv$/i)?.[1]?.toLowerCase()
+      insist(key, 'tables_file_name')
+      sheets.push({ key, name: tableFile.filename, sheet: readCsv(tableFile.bytes, tableFile.filename) })
+    }
+    insist(sheets.length, 'tables_empty')
+    for (const { key, name, sheet } of sheets) sheet.rows.slice(1).forEach((cells, index) => record('record', `record:${key}:${name}:${index + 2}`, { table: key, row: index + 2, cells: Object.fromEntries(sheet.rows[0].map((header, column) => [header, cells[column] ?? ''])) }, hash, name, index + 2))
+  }
+  const knownTables = await recordTables(env), tableList = new Map<string, { person: string; table: string; rows: number }>(), primaries = new Set<string>()
 
   // What already exists in Willow: native people (duplicate conflicts), earlier imports, settings to map onto.
   const existingPeople = await all(env, 'SELECT id, legal_name, work_email, employee_number, origin FROM wl_people')
@@ -295,6 +317,29 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
         balanceList.push({ person: label, type, hours: (minutes / 60).toFixed(2), asOf, policy: policy.name })
         return { effects: [effect('account', id, { period: periodOf.get(key)!, policy: policy.id, policyVersion: policy.version, cutoverDate: asOf, openingMinutes: minutes, openingNote: `BambooHR ${type} balance at ${asOf} (proposed; needs sign-off)`, openingStatus: 'proposed', accruedThrough: asOf })] }
       }
+      if (source.kind === 'record') {
+        // Willow's own export names the person by employeeNumber; a BambooHR id column also works.
+        const ownerKey = get('id') ? `id:${get('id')}` : cells.employeeNumber ? `number:${cells.employeeNumber}` : ''
+        const person = [...accepted].find(([candidate, row]) => candidate === ownerKey || (cells.employeeNumber && row.field('employeeNumber') === cells.employeeNumber))
+        if (!person || !personOf.has(person[0])) return reject(source, `no imported person for ${ownerKey || 'this row'}`)
+        const table = knownTables.find(item => item.key === payload.table)
+        if (!table || table.current.retired) return reject(source, `no Willow record table "${payload.table}": define it first`)
+        let values
+        try { values = validateRowValues(table.current.columns, Object.fromEntries(table.current.columns.map(column => [column.key, cells[column.key] ?? '']))) }
+        catch (error) { if (error instanceof WillowError) return reject(source, `${table.key}: ${error.code}`); throw error }
+        if (table.id === CONTACTS && values.primary === true) {
+          if (primaries.has(person[0])) return reject(source, 'a second primary emergency contact for this person')
+          primaries.add(person[0])
+        }
+        const effectiveFrom = cells.effectiveFrom ? parseDate(cells.effectiveFrom, order) : today
+        if (!effectiveFrom) return reject(source, `unreadable effectiveFrom "${cells.effectiveFrom}"`)
+        const id = targetIds.record(person[0], table.key, cells.row_id || String(payload.row))
+        if (conflict('record', id, source)) return reject(source, 'already imported earlier')
+        const label = nameOf(person[1]), listed = tableList.get(`${label}:${table.key}`) ?? { person: label, table: table.current.label, rows: 0 }
+        listed.rows++
+        tableList.set(`${label}:${table.key}`, listed)
+        return { effects: [effect('record', id, { person: personOf.get(person[0])!, table: table.id, version: { id: hex(`${id}:v1`), tableVersion: table.current.id, effectiveFrom, values: canonicalJson(values) } })] }
+      }
       // Document manifest row.
       if (!owner || !personOf.has(key)) return reject(source, `no imported person for ${key || 'this row'}`)
       const fileName = get('file'), bytes = files.get(fileName)
@@ -312,14 +357,15 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
   const entries = [...mapped.values()]
   await validateImportedOrganization(env, entries)
   const preview: Preview = {
-    fingerprint: '', counts: {}, people, create, rejected, attention, balances: balanceList, documents: documentList,
+    fingerprint: '', counts: {}, people, create, rejected, attention, balances: balanceList, documents: documentList, tables: [...tableList.values()],
     unknowns: [...unknowns].map(([person, missing]) => ({ person, missing: [...missing] })),
     gaps: [
       'BambooHR reports leave out fields the exporting user cannot see; check that every column you need is present.',
       ...(people.former === 0 ? ['No former employees are in this export. BambooHR reports default to active employees: include inactive employees to keep their history.'] : []),
       ...(balances ? [] : ['No time-off balance file: open leave accounts and enter signed-off opening balances in Willow.']),
       'Opening balances are proposals until a leave manager signs each one off at its cutover date.',
-      'Working schedules, emergency contacts and payroll identifiers are not part of these BambooHR fields; set them in Willow.',
+      'Working schedules and payroll identifiers are not part of these BambooHR fields; set them in Willow.',
+      ...(tableFile ? [] : ['No record-table file: emergency contacts, education, certifications, assets and custom tables can be added in Willow or imported as tables/<key>.csv.']),
       'Keep BambooHR read-only until Willow has produced one reconciled payroll handoff.',
     ],
     carry:{...carry,...custom.carry},

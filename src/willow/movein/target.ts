@@ -24,7 +24,7 @@ interface Kind {
 }
 
 const eq = (pairs: [string, unknown][]) => ({ text: pairs.map(([column]) => `${column} IS ?`).join(' AND '), params: pairs.map(([, value]) => value ?? null) })
-const { department: DEPARTMENT_DEPENDENTS, location: LOCATION_DEPENDENTS, person: PERSON_DEPENDENTS, period: PERIOD_DEPENDENTS, account: ACCOUNT_DEPENDENTS, document: DOCUMENT_DEPENDENTS } = DEPENDENTS
+const { department: DEPARTMENT_DEPENDENTS, location: LOCATION_DEPENDENTS, person: PERSON_DEPENDENTS, period: PERIOD_DEPENDENTS, account: ACCOUNT_DEPENDENTS, document: DOCUMENT_DEPENDENTS, record: RECORD_DEPENDENTS } = DEPENDENTS
 const noDependents = (expression: string, id: string) => ({ text: `${expression.replace(/\?1/g, '?')} = 0`, params: Array((expression.match(/\?1?/g) ?? []).length).fill(id) })
 
 const department: Kind = {
@@ -126,7 +126,26 @@ const document: Kind = {
   table: 'wl_documents',
 }
 
-export const KINDS: Record<string, Kind> = { department, location, person, period, account, document }
+// PEOPLE-003: one imported record-table row with its first dated version.
+const record: Kind = {
+  read: (db, id) => readTarget(db, 'record', id),
+  matches(value, id, revision) {
+    const main = eq([['table_id', value.table], ['person_id', value.person], ['revision', revision]])
+    const version = eq([['id', value.version.id], ['row_id', id], ['sequence', 1], ['table_version_id', value.version.tableVersion], ['effective_from', value.version.effectiveFrom], ['values_json', value.version.values], ['removed', 0]])
+    const free = noDependents(RECORD_DEPENDENTS, id)
+    return sql(`EXISTS(SELECT 1 FROM wl_record_rows WHERE id = ? AND origin = 'import' AND ${main.text}) AND EXISTS(SELECT 1 FROM wl_record_row_versions WHERE origin = 'import' AND ${version.text}) AND (SELECT COUNT(*) FROM wl_record_row_versions WHERE row_id = ?) = 1 AND ${free.text}`, id, ...main.params, ...version.params, id, ...free.params)
+  },
+  absent: id => sql('NOT EXISTS(SELECT 1 FROM wl_record_rows WHERE id = ?) AND NOT EXISTS(SELECT 1 FROM wl_record_row_versions WHERE row_id = ?)', id, id),
+  write: (value, id, revision) => [
+    sql("DELETE FROM wl_record_row_versions WHERE row_id = ? AND origin = 'import' AND EXISTS(SELECT 1 FROM wl_record_rows WHERE id = ? AND origin = 'import')", id, id),
+    sql("INSERT INTO wl_record_rows (id, table_id, person_id, origin, revision, created_at) VALUES (?, ?, ?, 'import', ?, ?) ON CONFLICT(id) DO UPDATE SET table_id = excluded.table_id, person_id = excluded.person_id, revision = excluded.revision WHERE wl_record_rows.origin = 'import'", id, value.table, value.person, revision, Date.now()),
+    sql("INSERT INTO wl_record_row_versions (id, row_id, sequence, table_version_id, effective_from, values_json, removed, origin, recorded_at, recorded_by) VALUES (?, ?, 1, ?, ?, ?, 0, 'import', ?, 'import')", value.version.id, id, value.version.tableVersion, value.version.effectiveFrom, value.version.values, Date.now()),
+  ],
+  remove: id => [sql("DELETE FROM wl_record_row_versions WHERE row_id = ? AND origin = 'import'", id), sql("DELETE FROM wl_record_rows WHERE id = ? AND origin = 'import'", id)],
+  table: 'wl_record_rows',
+}
+
+export const KINDS: Record<string, Kind> = { department, location, person, period, account, document, record }
 const kindOf = (name: string) => { const kind = KINDS[name]; if (!kind) throw new Error(`TARGET_KIND_UNKNOWN: ${name}`); return kind }
 
 export const willowTargets: D1TargetAdapter = {
