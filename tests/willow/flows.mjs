@@ -4,6 +4,7 @@ const queued = await queuedEntrypoint(import.meta.url, 'test:flows'); if (queued
 // form door, pages and downloads) against the built Worker with real local D1
 // and R2. No provider is involved. All people are invented.
 import assert from 'node:assert/strict'
+import { publishTemplate } from './publish-template.mjs'
 import { createHash } from 'node:crypto'
 import { API_DOORS, PAGE_DOORS } from '../../src/willow/doors.ts'
 import { balancesCsv, contractPdf, documentsZip, employeesCsv, pdf } from './fixtures.mjs'
@@ -43,10 +44,10 @@ try {
     ids.medical = (await h.api('category.create', cookie.owner, { name: 'Medical certificates' })).id
     ids.notes = (await h.api('category.create', cookie.owner, { name: 'Team notes', managerReads: true })).id
     const tasks = (rows) => ({ taskTitle: rows.map(row => row[0]), taskAssignee: rows.map(row => row[1]), taskDueDays: rows.map(row => String(row[2])), taskEvidence: rows.map(row => row[3] ? 'yes' : 'no'), taskSystem: rows.map(row => row[4] ?? ''), taskAction: rows.map(row => row[5] ?? '') })
-    const joiner = await h.api('template.create', cookie.owner, { kind: 'joiner', name: 'New starter', requiredFields: ['phone', 'emergency_contact', 'payroll_id'], ...tasks([['Prepare contract', 'hr', -7, false], ['Plan first week', 'manager', -3, false], ['Create email account', 'it', -2, true, 'Email'], ['Read the handbook', 'employee', 5, false]]) })
+    const joiner = await publishTemplate(h, cookie.owner, { kind: 'joiner', name: 'New starter', requiredFields: ['phone', 'emergency_contact', 'payroll_id'], ...tasks([['Prepare contract', 'hr', -7, false], ['Plan first week', 'manager', -3, false], ['Create email account', 'it', -2, true, 'Email'], ['Read the handbook', 'employee', 5, false]]) })
     ids.joinerTemplate = joiner.id; ids.joinerFamily = joiner.family
-    ids.leaverTemplate = (await h.api('template.create', cookie.owner, { kind: 'leaver', name: 'Departure', requiredFields: [], ...tasks([['Disable email account', 'it', 0, false, 'Email'], ['Collect laptop', 'manager', 0, false, 'Laptop'], ['End Willow access', 'hr', 0, false, '', 'end_access']]) })).id
-    ids.moverTemplate = (await h.api('template.create', cookie.owner, { kind: 'mover', name: 'Team change', requiredFields: [], ...tasks([['Brief the new team', 'manager', 0, false]]) })).id
+    ids.leaverTemplate = (await publishTemplate(h, cookie.owner, { kind: 'leaver', name: 'Departure', requiredFields: [], ...tasks([['Disable email account', 'it', 0, false, 'Email'], ['Collect laptop', 'manager', 0, false, 'Laptop'], ['End Willow access', 'hr', 0, false, '', 'end_access']]) })).id
+    ids.moverTemplate = (await publishTemplate(h, cookie.owner, { kind: 'mover', name: 'Team change', requiredFields: [], ...tasks([['Brief the new team', 'manager', 0, false]]) })).id
 
     // Staff are people first; access is given to a person through their work email.
     const staff = { hana: ['Hana Reid', ids.people], pat: ['Pat Okoro', ids.people], ivan: ['Ivan Ruiz', ids.ops], mia: ['Mia Chen', ids.ops] }
@@ -116,7 +117,7 @@ try {
     await h.api('task.complete', cookie.hana, { task: task('hr') })
     assert.equal((await h.api('case.complete', cookie.hana, { case: ids.samCase }, 409)).error, 'required_information_missing')
     // A new template version leaves the open case on the version it started from.
-    const v2 = await h.api('template.create', cookie.hana, { family: ids.joinerFamily, name: 'New starter', requiredFields: ['phone'], taskTitle: ['Prepare contract'], taskAssignee: ['hr'], taskDueDays: ['-7'], taskEvidence: ['no'], taskSystem: [''], taskAction: [''] })
+    const v2 = await publishTemplate(h, cookie.hana, { family: ids.joinerFamily, name: 'New starter', requiredFields: ['phone'], taskTitle: ['Prepare contract'], taskAssignee: ['hr'], taskDueDays: ['-7'], taskEvidence: ['no'], taskSystem: [''], taskAction: [''] })
     assert.equal(v2.version, 2)
     ids.joinerTemplate = v2.id
     assert.equal((await h.api(`cases/${ids.samCase}`, cookie.hana)).template.version, 1)

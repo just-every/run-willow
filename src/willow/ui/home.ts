@@ -5,12 +5,13 @@ import { formatDate, hours } from '../dates'
 import { employer } from '../employer'
 import { one } from '../core'
 import { approvals, leaveFor } from '../leave'
-import { caseDetail, myTasks } from '../lifecycle'
+import { caseDetail, myTasks, templates } from '../lifecycle'
+import { workflowReviewPanel } from './workflow-review'
 import { followupPanel } from './work-followup'
-import { area, avatar, form, h, hidden, page, person, table, tag } from './html'
+import { area, avatar, form, h, hidden, page, person, select, table, tag } from './html'
 
 function taskList(tasks: Awaited<ReturnType<typeof myTasks>>) {
-  return tasks.length ? table(['Due', 'Task', 'Person', ''], tasks.map(task => [h`${formatDate(task.dueDate)}${task.overdue ? h` ${tag('overdue')}` : ''}`, h`${task.title}${task.system ? h` <span class="muted">(${task.system})</span>` : ''}`, person(task.person), h`<a class="chip-link" href="/app/cases/${task.case}">Open ${task.kind} case</a>`])) : h`<p class="muted">Nothing waiting for you.</p>`
+  return tasks.length ? table(['Due', 'Task', 'Person', ''], tasks.map(task => [h`${formatDate(task.dueDate)}${task.overdue ? h` ${tag('overdue')}` : ''}`, h`${task.title}${task.failure ? h`<br><strong>Failed; still open:</strong> ${task.failure}` : ''}${task.blockedBy.length ? h`<br><span class="muted">Blocked by: ${task.blockedBy.map(t => t.title).join(', ')}</span>` : ''}${task.system ? h` <span class="muted">(${task.system})</span>` : ''}`, person(task.person), h`<a class="chip-link" href="/app/cases/${task.case}">Open ${task.kind} case</a>`])) : h`<p class="muted">Nothing waiting for you.</p>`
 }
 
 export async function homePage(env: Bindings, actor: Actor, url: URL) {
@@ -34,11 +35,14 @@ export async function tasksPage(env: Bindings, actor: Actor, url: URL) {
 
 export async function casePage(env: Bindings, actor: Actor, id: string, url: URL) {
   const item = await caseDetail(env, actor, id)
-  const body = h`<p class="back"><a href="/app/people/${item.person.id}">← ${item.person.name}</a></p><h1>${item.kind[0].toUpperCase()}${item.kind.slice(1)}: ${item.person.name}</h1>
+  const upgrades = can(actor, 'people.manage') && item.status === 'open' ? (await templates(env)).filter(t => t.family === item.template.family && t.status === 'active' && t.id !== item.template.id) : []
+  const body = h`${await workflowReviewPanel(env, actor, url)}<p class="back"><a href="/app/people/${item.person.id}">← ${item.person.name}</a></p><h1>${item.kind[0].toUpperCase()}${item.kind.slice(1)}: ${item.person.name}</h1>
 <p>${item.template.name} (template v${item.template.version}) · from ${formatDate(item.anchorDate)} · ${tag(item.status)}</p>
 ${item.missing.length ? h`<section class="card"><h2>Information still needed</h2><ul>${item.missing.map(field => h`<li>${field.replace(/_/g, ' ')}</li>`)}</ul><p class="muted">Add it on <a href="/app/people/${item.person.id}">the person’s record</a>.</p></section>` : ''}
-<section class="card"><h2>Tasks</h2>${table(['Due', 'Task', 'Who', 'Status', ''], item.tasks.map(task => [formatDate(task.dueDate), h`${task.title}${task.system ? h`<br><span class="muted">System: ${task.system} — completed only with evidence; Willow does not act on it</span>` : ''}`, task.assignee, task.status === 'done' ? h`${tag('done')}${task.evidence ? h`<br><span class="muted">${task.evidence}</span>` : ''}` : tag('open'),
-    task.status === 'open' && task.mine ? form('task.complete', `/app/cases/${id}`, [hidden('task', task.id), area(task.evidenceRequired ? 'Evidence (required)' : 'Note', 'evidence', '', task.evidenceRequired)], task.action === 'end_access' ? 'End access and mark done' : 'Mark done', { secondary: true }) : '']))}</section>
+<section class="card"><h2>Tasks</h2>${table(['Due', 'Task', 'Who', 'Status', '', ''], item.tasks.map(task => [formatDate(task.dueDate), h`${task.title}${task.failure ? h`<br><strong>Failed; still open:</strong> ${task.failure}` : ''}${task.blockedBy.length ? h`<br><span class="muted">Blocked by: ${task.blockedBy.map(t => t.title).join(', ')}</span>` : ''}${task.system ? h`<br><span class="muted">System: ${task.system} — completed only with evidence; Willow does not act on it</span>` : ''}`, task.assignee, task.status === 'done' ? h`${tag('done')}${task.evidence ? h`<br><span class="muted">${task.evidence}</span>` : ''}` : tag('open'),
+    task.status === 'open' && task.mine && !task.blockedBy.length ? form('task.complete', `/app/cases/${id}`, [hidden('task', task.id), area(task.evidenceRequired ? 'Evidence (required)' : 'Note', 'evidence', '', task.evidenceRequired)], task.action === 'end_access' ? 'End access and mark done' : 'Mark done', { secondary: true }) : '', task.status === 'open' && task.mine ? h`<details><summary>Record failed work</summary>${form('task.fail', `/app/cases/${id}`, [hidden('task', task.id), area('Failure and next action', 'failure')], 'Keep task open', { secondary: true })}</details>` : '']))}</section>
+${upgrades.length ? h`<section class="card"><h2>Upgrade this case</h2>${form('case.upgrade.preview', `/app/cases/${id}?review={id}`, [hidden('case', id), select('Published version', 'template', upgrades.map(t => ({ value: t.id, label: `${t.name} v${t.version}` })))], 'Review case upgrade')}</section>` : ''}
+${item.upgrades.length ? h`<section class="card"><h2>Upgrade history</h2><ul>${item.upgrades.map(u => h`<li>${new Date(u.at).toISOString()} — completed work and superseded tasks retained</li>`)}</ul></section>` : ''}
 ${item.status === 'open' && can(actor, 'people.manage') ? h`<section class="card">${form('case.complete', `/app/cases/${id}`, [hidden('case', id)], 'Complete case')}<p class="muted">A case completes only when every task is done.</p></section>` : ''}`
   return page('Case', actor, body, { current: '/app/people', url })
 }

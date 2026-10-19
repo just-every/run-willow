@@ -17,6 +17,9 @@ import { configureNotices, configureModel, configureIdentity } from './connectio
 import { configureLayout, previewPayroll } from './payroll-layout'
 import { createModelDraft, decideModelDraft } from './model-drafts'
 
+import { previewTemplate, publishTemplate } from './workflow-review'
+import { previewUpgrade, applyUpgrade, failTask } from './workflow-upgrade'
+
 type Handler = (env: Bindings, actor: Actor, input: Input, request: Request) => Promise<unknown>
 
 import { approveWorkPolicy, scheduleWork } from './work'
@@ -44,6 +47,11 @@ export const actions: Record<string, Handler> = {
   'person.update': (env, actor, input) => updatePerson(env, actor, input),
   'period.payroll': (env, actor, input) => setPayrollId(env, actor, input),
   'terms.cancel': (env, actor, input) => cancelTerms(env, actor, input),
+  'template.preview': previewTemplate,
+  'template.publish': publishTemplate,
+  'case.upgrade.preview': previewUpgrade,
+  'case.upgrade': applyUpgrade,
+  'task.fail': failTask,
   'template.create': (env, actor, input) => createTemplate(env, actor, input),
   'joiner.start': (env, actor, input) => startJoiner(env, actor, input),
   'mover.schedule': (env, actor, input) => scheduleMover(env, actor, input),

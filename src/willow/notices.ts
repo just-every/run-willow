@@ -50,7 +50,7 @@ export async function notifyAction(env: Bindings, action: string, result: any) {
     if (caseId) {
       const c = await one(env, 'SELECT * FROM wl_cases WHERE id=?', caseId)
       if (!c) return undefined
-      const tasks = await all(env, 'SELECT * FROM wl_case_tasks WHERE case_id=?', caseId)
+      const tasks = await all(env, 'SELECT * FROM wl_case_tasks WHERE case_id=? AND superseded_at IS NULL', caseId)
       kind = action === 'task.complete' ? 'completion' : 'assignment'
       subject = caseId; path = '/app/tasks'
       allowed = a => tasks.some(t => (kind === 'assignment' ? t.status === 'open' : t.id === result.id) && answersFor(a, t, c))
