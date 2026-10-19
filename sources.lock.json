@@ -2598,6 +2598,10 @@
       "sha256": "8073d9cb1ad52400227d798ca39e1226d27072327f8ab177f0bf62bfd16a05a3",
       "executable": false
     },
+    "src/willow/explain.ts": {
+      "sha256": "2c87d7496de5dc900e3946c2123ff84f31edaffd840104712409f1cb08268ee3",
+      "executable": false
+    },
     "src/willow/export-formats.ts": {
       "sha256": "f3e90243f73690092160d99314b793c68f46c3dd76d27a43f38e6ecee8b8b358",
       "executable": false
@@ -2732,6 +2736,10 @@
     },
     "src/willow/ui/html.ts": {
       "sha256": "72555fcea3addac560504d1fb3b62a45af38c6398cd767f01e2687cb3cceb73c",
+      "executable": false
+    },
+    "src/willow/ui/labels.ts": {
+      "sha256": "bc623f9aa526accd57da78114b5d5d03a672becfaa528743769112c06f944879",
       "executable": false
     },
     "src/willow/ui/leave.ts": {
