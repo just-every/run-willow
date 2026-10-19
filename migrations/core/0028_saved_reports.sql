@@ -1,0 +1,7 @@
+-- REPORT-001: immutable saved definitions, reviewed schedules and per-occurrence delivery custody.
+CREATE TABLE wl_saved_reports (id TEXT PRIMARY KEY,created_by TEXT NOT NULL,created_at INTEGER NOT NULL);
+CREATE TABLE wl_report_versions (id TEXT PRIMARY KEY,report_id TEXT NOT NULL REFERENCES wl_saved_reports(id),version INTEGER NOT NULL,definition_json TEXT NOT NULL CHECK(json_valid(definition_json)),recorded_by TEXT NOT NULL,recorded_at INTEGER NOT NULL,UNIQUE(report_id,version));
+CREATE TABLE wl_report_schedules (report_id TEXT PRIMARY KEY REFERENCES wl_saved_reports(id),version_id TEXT NOT NULL REFERENCES wl_report_versions(id),recipients_json TEXT NOT NULL CHECK(json_valid(recipients_json)),first_date TEXT NOT NULL,cadence_days INTEGER NOT NULL CHECK(cadence_days>0),enabled INTEGER NOT NULL CHECK(enabled IN(0,1)),revision TEXT NOT NULL,approved_by TEXT NOT NULL,approved_at INTEGER NOT NULL);
+CREATE TABLE wl_report_deliveries (id TEXT PRIMARY KEY,report_id TEXT NOT NULL,version_id TEXT NOT NULL,schedule_revision TEXT NOT NULL,occurrence TEXT NOT NULL,recipient TEXT NOT NULL,status TEXT NOT NULL,failure TEXT,created_at INTEGER NOT NULL,completed_at INTEGER,UNIQUE(report_id,schedule_revision,occurrence,recipient));
+CREATE TRIGGER wl_report_versions_immutable BEFORE UPDATE ON wl_report_versions BEGIN SELECT RAISE(ABORT,'willow_immutable'); END;
+CREATE TRIGGER wl_report_versions_keep BEFORE DELETE ON wl_report_versions BEGIN SELECT RAISE(ABORT,'willow_immutable'); END;

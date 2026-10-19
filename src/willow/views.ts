@@ -1,8 +1,16 @@
+import { protectedCases, protectedCase } from './protected-leave/records'
+import { leaveOverrides } from './protected-leave/overrides'
+import { savedReports, savedReport } from './reporting/definitions'
+import { runReport } from './reporting/execute'
+import { scheduleStatus } from './reporting/schedule'
+import { eeoSelf, diversityReport } from './eeo'
+import { selfChanges, selfChange, selfExceptions } from './self-service/view'
 import { listFieldDefinitions } from './custom-fields/store'
 import { listRecordTables } from './record-tables/schema'
 import { tableReport } from './record-tables/rows'
 import { doorSettings } from './movein/authority'
 import { changeRequest, changeRequests } from './change-requests/view'
+import { upcomingDates } from './date-alerts/view'
 // Read models served at GET /api/willow/... Every view applies the same access
 // rules as the pages that render it.
 import type { Bindings } from '../auth.server'
@@ -38,9 +46,20 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  protectedCases,
+  protectedCase: (env,actor,_request,id) => protectedCase(env,actor,id),
+  leaveOverrides,
+  customReports: savedReports,
+  customReport: async (env,actor,_request,id) => {const report=await savedReport(env,actor,id);return {report,result:await runReport(env,actor,report.definition),schedule:await scheduleStatus(env,actor,id)}},
+  eeoSelf: (env,actor,_request,_id,url) => { if([...url.searchParams.keys()].length) throw new WillowError('eeo_filters_not_allowed');return eeoSelf(env,actor) },
+  eeoReport: (env,actor,_request,_id,url) => diversityReport(env,actor,Object.fromEntries(url.searchParams.size?url.searchParams:[['asOf',actor.today]]) as {asOf:string}),
+  selfChanges,
+  selfChange: (env,actor,_request,id) => selfChange(env,actor,id),
+  selfExceptions,
   customFields: (env, actor, _request, _id, url) => listFieldDefinitions(env, actor, url.searchParams.get('asOf') ?? actor.today),
   recordTables: (env, actor) => listRecordTables(env, actor),
   recordReport: async (env, actor, _request, id, url) => { const asOf = url.searchParams.get('asOf') ?? actor.today; return tableReport(env, actor, id, asOf, await directory(env, actor, asOf)) },
+  upcomingDates: (env, actor) => upcomingDates(env, actor),
   changeRequests: (env, actor) => changeRequests(env, actor),
   changeRequest: (env, actor, _request, id) => changeRequest(env, actor, id),
   work: workList,

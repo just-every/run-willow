@@ -1,3 +1,5 @@
+import { runLeaveScheduler } from './willow/leave-policy'
+import { runReportScheduler } from './willow/reporting/schedule'
 import { withDemo } from './modules/demo/index.mjs'
 import { seedDemo } from './demo'
 import start from '@tanstack/react-start/server-entry'
@@ -28,6 +30,8 @@ api.get('/health', (context) => context.json({ status: 'ok', ...deploymentHealth
 
 export default withDemo({
   async scheduled(event, env) {
+    await runLeaveScheduler(runtimeBindings(env), event.scheduledTime)
+    await runReportScheduler(runtimeBindings(env), event.scheduledTime)
     await runWorkScheduler(runtimeBindings(env), event.scheduledTime)
   },
   async fetch(request, env, execution) {

@@ -1,3 +1,4 @@
+import { readRules } from './leave-policy'
 // Agent-native workflows without a model account. The owner's own agent (or a
 // person) prepares a joiner or mover through the JSON door: Willow validates
 // the plan with the same code that executes it, lists missing information,
@@ -148,7 +149,7 @@ export async function context(env: Bindings, actor: Actor, personId: string, asO
   return {
     subject: id, record: view,
     withheld: (Object.keys(FACET_LABELS) as Facet[]).filter(facet => !visible.has(facet)).map(facet => FACET_LABELS[facet]),
-    policies: versions.map(version => ({ id: version.id, policy: version.name, version: version.version, summary: version.summary, accrualWeeksPerYear: version.accrual_weeks_hundredths / 100, negativeLimitMinutes: version.negative_limit_minutes })),
+    policies: await Promise.all(versions.map(async version => ({ id: version.id, policy: version.name, version: version.version, summary: version.summary, accrualWeeksPerYear: version.accrual_weeks_hundredths / 100, negativeLimitMinutes: version.negative_limit_minutes, scheduledRules: await readRules(env,version.id) }))),
     rules: ['Answer only from this record and these policy versions; cite the policy version for any leave figure.', 'Withheld facets are not available to this member: say so rather than infer them.', 'Managerial rank never implies access to pay or private details.'],
   }
 }

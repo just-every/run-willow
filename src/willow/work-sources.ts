@@ -1,3 +1,4 @@
+import { reviewsSelfChanges, handlesSelfExceptions } from './self-service/view'
 // Adapters for every shipped work source. No private values enter this projection.
 import type { Bindings } from '../auth.server'
 import { actorFor, can, employerZone, type Actor } from './actor'
@@ -9,6 +10,7 @@ import { answersFor, missingFields } from './lifecycle'
 import { renewalsDue } from './record-tables/rows'
 import { CERTIFICATIONS, readsTable, recordTables } from './record-tables/schema'
 import { mayApprove, mayRead, type ResolvedStep } from './change-requests/chain'
+import { answersTask } from './date-alerts/alerts'
 
 export interface WorkSource {
  key: string; kind: string; title: string; path: string; due: string; preferred?: string | null
@@ -31,6 +33,9 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  const deadline = (instant: number) => addDays(today(zone, instant), defaultDays)
  const hr = (a: Actor) => can(a,'people.manage'), payroll = (a: Actor) => can(a,'payroll.handoff') && can(a,'pay.read')
  const add = (kind: string, row: Row, title: string, path: string, due: string, visible: WorkSource['visible'], responsible = visible, preferred?: string | null, progress = 'Awaiting action') => result.push({ key: `${kind}:${row.id}`, kind, title, path, due, visible, responsible, preferred, progress, personId: row.person_id??null, next: title })
+ for (const r of await all(env,"SELECT c.*,d.outcome FROM wl_self_changes c LEFT JOIN wl_self_decisions d ON d.change_id=c.id WHERE d.change_id IS NULL")) add('self-change',r,'Review private profile change',`/app/self-changes/${r.id}`,r.due_date,a=>a.personId===r.person_id||can(a,'people.private'),a=>reviewsSelfChanges(a)&&a.id!==r.requested_by&&a.personId!==r.person_id)
+ for (const r of await all(env,"SELECT c.* FROM wl_self_changes c JOIN wl_self_decisions d ON d.change_id=c.id WHERE d.outcome='approved' AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation r WHERE r.change_id=c.id)")) add('self-exception',r,'Reconcile approved profile revision','/app/self-changes',r.due_date,a=>a.personId===r.person_id||handlesSelfExceptions(a),handlesSelfExceptions,null,'Approved revision awaits a recorded downstream handoff; no provider confirmation')
+ for (const r of await all(env,"SELECT o.*,p.person_id FROM wl_leave_overrides o JOIN wl_leave_accounts a ON a.id=o.account_id JOIN wl_periods p ON p.id=a.period_id WHERE NOT EXISTS(SELECT 1 FROM wl_leave_override_decisions d WHERE d.override_id=o.id)")) add('leave-override',r,'Review leave balance override','/app/leave#overrides',deadline(r.requested_at),a=>can(a,'leave.manage'),a=>a.owner)
  const tasks = await all(env, `SELECT t.*,c.person_id FROM wl_case_tasks t JOIN wl_cases c ON c.id=t.case_id WHERE t.status='open' AND t.superseded_at IS NULL AND c.status='open'`)
  for (const t of tasks) {
  const blocked = await blockedBy(env,t)
@@ -46,6 +51,12 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
   add('leave',r,'Review time-off request',`/app/leave/${r.id}`,r.start_date,a=>decide(a) || a.id===r.requested_by || a.personId===r.person_id,decide,r.approver_member_id)
  }
  for (const r of await all(env,"SELECT id,proposed_at FROM wl_proposals WHERE status='pending'")) add('proposal',r,'Review employee change',`/app/proposals/${r.id}`,deadline(r.proposed_at),hr)
+ // PEOPLE-004: an alert's review task is work for its role holder who may read the date.
+ for (const r of await all(env,"SELECT * FROM wl_date_alert_tasks WHERE status='open'")) {
+  const answer = new Map<string,boolean>()
+  for (const a of await workMembers(env)) answer.set(a.id, await answersTask(env,a,r))
+  add('date-alert-task',r,r.title,'/app/dates',r.date,a=>!!answer.get(a.id),a=>!!answer.get(a.id))
+ }
  // FLOW-004: the current chain step is approver work; a returned request is the requester's.
  for (const r of await all<{id:string;person_id:string;requested_by:string;steps_json:string;step:number;status:string;updated_at:number}>(env,"SELECT id,person_id,requested_by,steps_json,step,status,updated_at FROM wl_change_requests WHERE status IN ('pending','returned')")) {
   const steps = json<ResolvedStep[]>(r.steps_json,[]), step = r.status==='pending' ? steps[r.step] : undefined, decide = new Map<string,boolean>()

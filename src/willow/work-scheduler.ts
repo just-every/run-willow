@@ -7,8 +7,11 @@ import { commit, newId, now, stmt } from './core'
 import { addDays, today } from './dates'
 import { esc } from './ui/html'
 import { freshWork, memberUnavailable, workHistory, workPolicy, workState } from './work'
+import { runDateAlerts } from './date-alerts/alerts'
 
 export async function runWorkScheduler(env: Bindings, instant=now()) {
+ // PEOPLE-004 alerts fire first, in any hour; their review tasks then follow the FLOW-002 cadence.
+ await runDateAlerts(env, instant)
  const state = await workState(env), policy = state.policy
  if (!policy) return {attempted:0,reason:'policy_not_approved'}
  const zone = await employerZone(env), date = today(zone,instant)

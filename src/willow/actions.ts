@@ -1,8 +1,15 @@
+import { openProtected, recordProtectedAbsence, reverseProtectedAbsence, certifyProtected } from './protected-leave/records'
+import { decideOverride } from './protected-leave/overrides'
+import { saveReport } from './reporting/definitions'
+import { scheduleReport } from './reporting/schedule'
+import { writeEeoSelf } from './eeo'
+import { proposeSelfChange, decideSelfChange, reconcileSelfChange } from './self-service/requests'
 import { defineField, writeFieldValues } from './custom-fields/actions'
 import { configureDoor } from './movein/authority'
 import { defineTable } from './record-tables/schema'
 import { writeRow } from './record-tables/rows'
 import { configureChain } from './change-requests/chain'
+import { completeAlertTask, defineAlert, retireAlert } from './date-alerts/alerts'
 import { decideChange, editChange, requestChange } from './change-requests/requests'
 // Every state change in Willow, by name. The same handler serves the HTML form
 // door (/app/do/NAME) and the JSON door (/api/willow/NAME) used by agents.
@@ -31,6 +38,20 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'protected.open': openProtected,
+  'protected.absence': recordProtectedAbsence,
+  'protected.reverse': reverseProtectedAbsence,
+  'protected.certify': certifyProtected,
+  'leave.override.decide': decideOverride,
+  'report.save': saveReport,
+  'report.schedule': scheduleReport,
+  'eeo.self.write': writeEeoSelf,
+  'self.request': proposeSelfChange,
+  'self.decide': decideSelfChange,
+  'self.reconcile': reconcileSelfChange,
+  'dateAlert.define': defineAlert,
+  'dateAlert.retire': retireAlert,
+  'dateAlert.task': completeAlertTask,
   'change.chain': configureChain,
   'change.request': requestChange,
   'change.edit': editChange,

@@ -49,7 +49,7 @@ function rowInput(input: Input, table: RecordTable): unknown {
   return Object.fromEntries(table.current.columns.map(column => [column.key, input.text(`col.${column.key}`, { optional: true, max: 10000 })]))
 }
 
-export async function writeRow(env: Bindings, actor: Actor, input: Input) {
+export async function prepareRow(env: Bindings, actor: Actor, input: Input) {
   const personId = input.text('person', { max: 100 }), effectiveFrom = input.text('effectiveFrom', { optional: true, max: 10 }) || actor.today
   insist(isDate(effectiveFrom), 'invalid_effectiveFrom')
   insist(await one(env, 'SELECT 1 FROM wl_people WHERE id = ?', personId), 'not_found', 404)
@@ -76,8 +76,13 @@ export async function writeRow(env: Bindings, actor: Actor, input: Input) {
     personId, table.id, (await one<{ n: number }>(env, 'SELECT COUNT(*) AS n FROM wl_record_row_versions v JOIN wl_record_rows r ON r.id = v.row_id WHERE r.person_id = ? AND r.table_id = ?', personId, table.id))!.n))
   if (!rowId) statements.push(stmt(env, "INSERT INTO wl_record_rows (id, table_id, person_id, origin, revision, created_at) VALUES (?, ?, ?, 'native', ?, ?)", id, table.id, personId, newId(), now()))
   statements.push(versionStatement(env, id, sequence, table.current.id, effectiveFrom, values, remove, actor.id))
-  await commit(env, statements, { actor: actor.id, action: remove ? 'recordRow.remove' : 'recordRow.write', subject: personId, detail: { table: table.key, row: id, effectiveFrom } })
-  return { id, person: personId, table: table.key, effectiveFrom, sequence }
+  return { statements, audit: { actor: actor.id, action: remove ? 'recordRow.remove' : 'recordRow.write', subject: personId, detail: { table: table.key, row: id, effectiveFrom } }, result: { id, person: personId, table: table.key, effectiveFrom, sequence } }
+}
+
+export async function writeRow(env: Bindings, actor: Actor, input: Input) {
+  const prepared = await prepareRow(env, actor, input)
+  await commit(env, prepared.statements, prepared.audit)
+  return prepared.result
 }
 
 const versionStatement = (env: Bindings, rowId: string, sequence: number, tableVersionId: string, effectiveFrom: string, values: Record<string, FieldValue>, removed: boolean, by: string) =>

@@ -1,3 +1,10 @@
+import { protectedListPage, protectedDetailPage } from './ui/protected-leave'
+import { protectedCertification } from './protected-leave/records'
+import { customReportsPage, customReportPage } from './ui/custom-reports'
+import { customReportFile } from './reporting/files'
+import { eeoSelf, diversityReport } from './eeo'
+import { eeoSelfPage, diversityReportPage } from './ui/eeo'
+import { selfChangesPage, selfChangePage } from './ui/self-service'
 import { importForm } from './movein/forms'
 // Willow's public doors: /app pages, /app/do/ACTION form posts, /api/willow
 // JSON, and access-checked downloads. Every request resolves the signed-in
@@ -29,6 +36,7 @@ import { connectionsPage } from './ui/connections'
 import { progressPage } from './ui/progress'
 import { changeRequestPage, changeRequestsPage } from './ui/change-requests'
 import { changeAttachment } from './change-requests/view'
+import { datesPage } from './ui/date-alerts'
 
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } })
 
@@ -114,10 +122,21 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  protectedList: (env,actor,_request,url) => protectedListPage(env,actor,url),
+  protectedDetail: (env,actor,_request,url,id) => url.searchParams.has('certificate') ? protectedCertification(env,actor,id,url.searchParams.get('certificate')==='1'?undefined:url.searchParams.get('certificate')!) : protectedDetailPage(env,actor,id,url),
+  customReports: (env,actor,_request,url) => customReportsPage(env,actor,url),
+  customReport: (env,actor,_request,url,id) => customReportPage(env,actor,id,url),
+  customReportCsv: (env,actor,_request,_url,id) => customReportFile(env,actor,id,'csv'),
+  customReportXlsx: (env,actor,_request,_url,id) => customReportFile(env,actor,id,'xlsx'),
+  eeoSelf: async (env,actor,_request,url) => {if(url.searchParams.has('person')) throw new WillowError('eeo_filters_not_allowed');return eeoSelfPage(actor,await eeoSelf(env,actor),url)},
+  eeoReport: async (env,actor,_request,url) => diversityReportPage(actor,await diversityReport(env,actor,Object.fromEntries([...url.searchParams].filter(([k])=>!['notice','error'].includes(k)).length?url.searchParams:[['asOf',actor.today]]) as {asOf:string}),url),
+  selfChanges: (env,actor,_request,url) => selfChangesPage(env,actor,url),
+  selfChange: (env,actor,_request,url,id) => selfChangePage(env,actor,id,url),
   customFields: (env, actor, _request, url) => customFieldsPage(env, actor, url),
   employeeBundle: (env, actor, request, url) => employeeBundle(env, actor, url, request),
   employeeCsv: (env, actor, _request, url) => employeeExport(env, actor, url, 'csv'),
   employeeXlsx: (env, actor, _request, url) => employeeExport(env, actor, url, 'xlsx'),
+  dates: (env, actor, _request, url) => datesPage(env, actor, url),
   changes: (env, actor, _request, url) => changeRequestsPage(env, actor, url),
   change: (env, actor, _request, url, id) => url.searchParams.has('attachment') ? changeAttachment(env, actor, id, url.searchParams.get('attachment')!) : changeRequestPage(env, actor, id, url),
   connections: (env, actor, _request, url) => connectionsPage(env, actor, url),

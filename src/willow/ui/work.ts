@@ -1,3 +1,4 @@
+import { selfExceptions } from '../self-service/view'
 import { modelDraftSection } from './model-drafts'
 import { payrollLayoutSection } from './payroll-layout'
 // Payroll handoff, summaries, agent proposals and the audit trail.
@@ -21,7 +22,9 @@ import { KIND_LABELS, actionLabel, displayValue, sentence } from './labels'
 export async function payrollPage(env: Bindings, actor: Actor, url: URL) {
   const list = await batches(env, actor)
   const mapping = await payrollLayoutSection(env, actor)
+  const revisions = await selfExceptions(env, actor)
   const body = h`<h1>Payroll handoff</h1><p>Willow hands approved changes to your payroll provider; the provider calculates pay, tax and payments.</p>${mapping}
+<section class="card"><h2>Approved profile revisions</h2><p>Private values remain with HR. Review each revision with HR and record the downstream handoff; this is not a provider confirmation.</p>${revisions.length ? table(['Person','Revision','Due','Outcome'],revisions.map(r=>[h`<a href="/app/people/${r.personId}">Person record</a>`,r.kind==='legalName'?'Legal name':'Dependent',formatDate(r.dueDate),r.status==='resolved'?h`${tag('resolved')} ${r.reference}`:form('self.reconcile','/app/payroll',[hidden('change',r.id),field('Handoff reference','reference')],'Record handoff',{secondary:true})])) : h`<p class="muted">No profile revisions.</p>`}</section>
 <section class="card"><h2>New change batch</h2>${form('payroll.draft', '/app/payroll/{id}', [field('Pay period start', 'periodStart', { type: 'date' }), field('Pay period end', 'periodEnd', { type: 'date' })], 'Prepare draft', { layout: 'row-form' })}<p class="muted">A draft gathers every change effective by the period end that has not been handed off yet.</p></section>
 <section class="card"><h2>Batches</h2>${list.length ? table(['Period', 'Status', 'Lines', 'Exceptions', 'Provider reference'], list.map(batch => [h`<a href="/app/payroll/${batch.id}">${formatDate(batch.periodStart)} – ${formatDate(batch.periodEnd)}</a>`, tag(batch.status), batch.lines, batch.exceptions, batch.providerReference ?? '—'])) : h`<p class="muted">No batches yet.</p>`}</section>`
   return page('Payroll', actor, body, { current: '/app/payroll', url })
@@ -47,7 +50,7 @@ export async function reportsPage(env: Bindings, actor: Actor, url: URL) {
   for (const value of selected) csvQuery.append('fields', value)
   const people = await directory(env, actor, report.filters.asOf)
   const tables = (await Promise.all((await recordTables(env)).map(item => tableReport(env, actor, item.key, report.filters.asOf, people)))).filter(item => item.people > 0)
-  const body = h`<h1>Reports</h1><p>Scope: ${report.scope === 'organisation' ? 'organization' : report.scope}. As of ${formatDate(report.filters.asOf)}; range ${formatDate(report.filters.from)} – ${formatDate(report.filters.to)}.</p>
+  const body = h`<h1>Reports</h1><p><a class="button" href="/app/reports/custom">Build and schedule a report</a></p><p>Scope: ${report.scope === 'organisation' ? 'organization' : report.scope}. As of ${formatDate(report.filters.asOf)}; range ${formatDate(report.filters.from)} – ${formatDate(report.filters.to)}.</p>
 <form method="get" action="/app/reports" class="row-form">${field('As of', 'asOf', { type: 'date', value: report.filters.asOf })}${field('From', 'from', { type: 'date', value: report.filters.from })}${field('To', 'to', { type: 'date', value: report.filters.to })}${customColumns.length ? h`<fieldset><legend>Custom columns</legend>${customColumns.map(column => h`<label class="check"><input type="checkbox" name="fields" value="${column.key}"${selected.has(column.key) ? raw(' checked') : ''}> ${column.label}</label>`)}</fieldset>` : ''}<button type="submit" class="secondary">Update</button></form>
 <div class="grid"><section class="card"><h2>Headcount: ${report.headcount.total}</h2>${table(['Department', 'People'], report.headcount.byDepartment.map((row: any) => [row.group, row.people]))}${table(['Location', 'People'], report.headcount.byLocation.map((row: any) => [row.group, row.people]))}</section>
 <section class="card"><h2>Movements</h2><p>${report.movements.starters} starter(s), ${report.movements.leavers} leaver(s) in the range.</p><h2>Leave taken</h2>${report.leaveTaken.length ? table(['Policy', 'Hours'], report.leaveTaken.map((row: any) => [row.policy, row.hours])) : h`<p class="muted">None.</p>`}<h2>Lifecycle work</h2><p>${report.lifecycleWork.openTasks} open task(s), ${report.lifecycleWork.overdue} overdue.</p></section>

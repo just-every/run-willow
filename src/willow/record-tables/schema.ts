@@ -19,6 +19,7 @@ export interface RecordTable { id: string; key: string; classification: TableCla
 
 export const CERTIFICATIONS = 'table-certifications'
 export const ASSETS = 'table-assets'
+export const DEPENDENTS = 'table-dependents'
 export const CONTACTS = 'table-emergency-contacts'
 /** Renewal work opens this many days before a certification's expiry date (inclusive). */
 export const RENEWAL_LEAD_DAYS = 30
@@ -75,6 +76,7 @@ export function readsTable(actor: Actor, personId: string, table: RecordTable): 
 }
 
 export function writesTable(actor: Actor, personId: string, table: RecordTable): boolean {
+  if (table.id === DEPENDENTS) return actor.personId !== personId && can(actor, 'people.manage') && can(actor, 'people.private')
   if (table.classification === 'contact') return actor.personId === personId || (can(actor, 'people.manage') && can(actor, 'people.private'))
   return writesCustomField(actor, { classification: table.classification })
 }

@@ -215,3 +215,11 @@ await import("./custom-fields.mjs")
 await import("./record-tables.mjs")
 
 await import("./change-requests.mjs")
+
+await import("./date-alerts.mjs")
+
+await import("./self-service.mjs")
+
+await import("./custom-reports.mjs")
+
+await import("./leave-policies.mjs")

@@ -104,11 +104,16 @@ export async function updatePerson(env: Bindings, actor: Actor, input: Input) {
   insist(can(actor, 'people.manage') || self, 'forbidden', 403)
   const statements: D1PreparedStatement[] = [guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_people WHERE id = ? AND revision = ?)', id, revision)]
   const next = newId(), changed: string[] = []
+  if (self && input.has('legalName')) insist(input.text('legalName') === existing.legal_name, 'hr_approval_required', 403)
   if (can(actor, 'people.manage') && input.has('legalName')) {
     const person = readPerson(input)
     await uniqueIdentity(env, person, id)
     statements.push(stmt(env, 'UPDATE wl_people SET legal_name = ?, preferred_name = ?, work_email = ?, employee_number = ? WHERE id = ?', person.legalName, person.preferredName, person.workEmail, person.employeeNumber, id))
     changed.push('directory')
+  }
+  if (self && input.provided('preferredName') && !input.has('legalName')) {
+    statements.push(stmt(env, 'UPDATE wl_people SET preferred_name = ? WHERE id = ?', input.text('preferredName', { optional: true, max: 120 }) || null, id))
+    changed.push('preferredName')
   }
   // Private contact details: the person themselves, or HR holding both people.manage and people.private.
   if (PRIVATE_FIELDS.some(field => input.has(field)) || input.flag('private')) {

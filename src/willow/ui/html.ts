@@ -32,6 +32,9 @@ const NAV: NavItem[][] = [[
   { href: '/app/payroll', label: 'Payroll', icon: 'wallet', show: actor => can(actor, 'payroll.handoff') && can(actor, 'pay.read') },
   { href: '/app/reports', label: 'Reports', icon: 'chart', show: actor => can(actor, 'reports.read') || actor.reports.size > 0 },
   { href: '/app/proposals', label: 'Proposals', icon: 'sparkle', show: actor => can(actor, 'people.manage') },
+  { href: '/app/eeo/self', label: 'Voluntary self-ID', icon: 'people', show: actor => !!actor.personId },
+  { href: '/app/self-changes', label: 'Personal changes', icon: 'checklist', show: actor => !!actor.personId || can(actor,'people.private') },
+  { href: '/app/dates', label: 'Upcoming dates', icon: 'calendar', show: () => true },
   { href: '/app/changes', label: 'Change requests', icon: 'checklist', show: actor => can(actor, 'people.manage') || can(actor, 'payroll.handoff') || actor.reports.size > 0 },
 ], [
   { href: '/app/import', label: 'Move in', icon: 'upload', show: actor => can(actor, 'people.manage') },

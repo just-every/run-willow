@@ -111,6 +111,7 @@ export async function batchDetail(env: Bindings, actor: Actor, id: string) {
   const data = json<{ lines: Line[]; customColumns?: string[] }>(row.lines, { lines: [] })
   if (row.file_preview) await requirePayrollCustomAccess(env, actor, data.customColumns ?? [], [...new Set(data.lines.map(line => line.person))])
   const claimed = new Set((await all(env, 'SELECT source_kind, source_id FROM wl_payroll_items')).map(item => `${item.source_kind}:${item.source_id}`))
+  for (const r of await all(env,'SELECT change_id FROM wl_self_reconciliation')) claimed.add(`self-change:${r.change_id}`)
   const exceptions = json<{ key: string; person: string; name: string; reason: string }[]>(row.exceptions, [])
   return {
     id: row.id, periodStart: row.period_start, periodEnd: row.period_end, status: row.status, sha256: row.csv_sha256, providerReference: row.provider_reference, acknowledgementNote: row.acknowledgement_note,
