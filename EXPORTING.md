@@ -101,3 +101,33 @@ transfer remains OPS-002 work. Only selected sections that exist in this edition
 are exported; custom tables, signatures, performance, benefits and other future
 modules, complete target-product archives and restore send fences remain the
 outstanding DATA-001 target.
+
+## Owner archives and restored connection consent
+
+`rer export` now writes notice delivery disabled, OIDC consent disabled and no
+selected model in its portable connection settings. This changes only the
+archive: the source installation keeps its enabled settings. Notice-delivery
+history, including any uncertain/pending outcome, and business records stay
+unchanged. Existing pending cases and payroll drafts restore as work to finish;
+restoring or reenabling connections never replays historical actions. Sessions,
+provider links and credentials remain excluded under WIL-17/WIL-19.
+
+After `rer import` and ordinary setup/sign-in, the owner explicitly enables
+notices or selects a model in Connections; identity connections need a fresh
+owner link. This is required even if the new runtime already has provider
+bindings. The current edition has no background dispatcher that resends stored
+pending notice rows or restarts stored model requests.
+
+Older archives with enabled notices, OIDC or a selected model remain restorable.
+Import verifies the original backup, streams a private normalized copy with
+those settings forced off, and leaves the original file untouched. The import
+report includes `connectionNormalization`: whether settings changed, which
+settings were disabled, the connection count, source/imported archive digests,
+and `ownerReauthorizationRequired` for notices, OIDC and model connections.
+The ordinary command also reports the normalization and required authorization.
+All other business records, history and files keep their original values.
+The temporary normalized copy is removed after import, including failed imports.
+
+The seed wrapper retains the existing native and container transfer paths in
+the pinned CLI. New exports publish verified normalized bytes atomically and
+never overwrite an existing backup. Base copies and the CLI pin are unchanged.

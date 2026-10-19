@@ -4,7 +4,7 @@ import { operatorInstaller, developmentTarget, previewTarget } from '@runeditrun
 import { selectLocalState } from '@runeditrun/rer/local/state';
 import { commandAdapter as createCommandAdapter } from '@runeditrun/rer/adapter';
 import { ownerDeploy } from '@runeditrun/rer/deploy';
-import { localPortability } from '@runeditrun/rer/portability';
+import { willowPortability } from './portability.mjs';
 import * as model from './ui/seed.mjs';
 
 export { selectLocalState };
@@ -21,7 +21,7 @@ export const adapter = lifecycle;
 export const { install } = lifecycle;
 export const commandAdapter = createCommandAdapter(lifecycle, {
  dev: developmentTarget, preview: previewTarget, verify: ['pnpm', ['run', 'verify:app']], deploy: ownerDeploy('deploy.json', lifecycle),
- portability: localPortability({ database: 'willow', buckets: { files: 'FILES' }, policy: { product: 'people/willow', excludeTables: ['wl_identity_token_health'], buckets: { files: { prefix: 'sha256/' } }, requiredConfiguration: ['OWNER_EMAIL', 'SESSION_SECRET', 'SETUP_TOKEN', 'AUTH_ORIGIN', 'MAIL_PROVIDER', 'MAIL_FROM'] }, transient: ['local runtime caches and logs'] }),
+ portability: willowPortability(),
  setup: { manifestFile: 'rer-setup.json' }, browserModule: 'scripts/installer/ui/seed.mjs',
  // Local dev identity: the local-only Worker entry, the build output rer build
  // scans for the dev layer, and the kept end-to-end email-link test.

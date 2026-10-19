@@ -197,7 +197,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "4010c763b56eb68862b7398c0b9505df033091f39e2563f52c6af6c12785322e",
+      "sha256": "ac7b9f3ddc465191ef8f8ea39eeff333c31f016a47e7a09bee1c0451f77549a7",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -221,7 +221,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "395c06987287be318b20b829ecc3df3b83520a611e6bc4a83bbf250be459c072",
+      "sha256": "8cb34be84b4122531ca028ace007436a6d0fb54366139b7cc06608d3cb7f984c",
       "executable": false
     },
     "DEMO.md": {
@@ -281,7 +281,7 @@
       "executable": false
     },
     "EXPORTING.md": {
-      "sha256": "dcd781a731357c1b466d4fcf17f2a5c7f18b26851007995084831feef3765457",
+      "sha256": "140db974eabc30d5d3b68830bbbb33bb0f62501074be79a0d95b6f991c350016",
       "executable": false
     },
     "FIELD-AUTHORITY.md": {
@@ -733,7 +733,15 @@
       "executable": false
     },
     "scripts/installer/local.mjs": {
-      "sha256": "0f9401e13ac748b0c32b93f9340fe96603df01470dece699391c611817b4f34e",
+      "sha256": "b5e058e062820c24548c37dc81355fa223a754807a9b4f8f5fb4b9ba7e1a81c1",
+      "executable": false
+    },
+    "scripts/installer/normalize-archive.mjs": {
+      "sha256": "2a389339d54750733dd9e5006262e3cbf898f4535f81360bd28b6f3cd7e4e357",
+      "executable": false
+    },
+    "scripts/installer/portability.mjs": {
+      "sha256": "21a7db3d02187f7ca1dd8347f67bb0c783156eab6b123669031d7552cf57c0cf",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -2853,7 +2861,11 @@
       "executable": false
     },
     "tests/willow/restore-access.mjs": {
-      "sha256": "847e3b6d13f270703e2487153521b58d20286c90e55402320e384da06dc304d6",
+      "sha256": "d64d1e8b30a5e042dada00fe91ba3e8436dbd8f1b5d0be1d3b39a06136e4d28b",
+      "executable": false
+    },
+    "tests/willow/restore-archive-fixture.mjs": {
+      "sha256": "1898f7ffdc5062cff2030db349d3d5ca4d5adda3d7109cd10b2ed4845c4cd308",
       "executable": false
     },
     "tests/willow/restore.mjs": {
