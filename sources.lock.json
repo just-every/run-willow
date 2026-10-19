@@ -2547,7 +2547,7 @@
       "executable": false
     },
     "src/site/landing/parts.tsx": {
-      "sha256": "001f5c09ca1649b41aeeecad64b5b4a57a597346f072df299811426e04aa4428",
+      "sha256": "e7f7fe2a2a4a9a998efb9594163a2c4ef73ec408f819a00318cab6b15848201c",
       "executable": false
     },
     "src/site/landing/sections/Checked.tsx": {
@@ -2623,7 +2623,7 @@
       "executable": false
     },
     "src/site/styles/cards.css": {
-      "sha256": "1faabf9907fc4499257d38008756f33ac3fd8ffe1a71e246ecccf3138e046bce",
+      "sha256": "a3a9d15ec3d6ca851e7d1818c98960d02d3d9fd0914e9a75d90eea393bade001",
       "executable": false
     },
     "src/site/styles/changes.css": {

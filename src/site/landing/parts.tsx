@@ -48,7 +48,7 @@ export const Tick = () => <svg className="tick" viewBox="0 0 16 16"><path d="m3 
 export const Arrow = () => <svg className="arrow" viewBox="0 0 20 20"><path d="M3 10h13M11 5l5 5-5 5" /></svg>
 
 /** Initials on a tinted disc; the year's people are never photographs in the sections. */
-export const Initials = ({ children, tone = 'lavender', size = 'md' }: { children: string; tone?: 'pink' | 'lavender' | 'blue'; size?: 'sm' | 'md' | 'lg' }) =>
+export const Initials = ({ children, tone = 'lavender', size = 'sm' }: { children: string; tone?: 'pink' | 'lavender' | 'blue'; size?: 'sm' | 'lg' }) =>
   <span className={`initials ${tone} ${size}`}>{children}</span>
 
 const PATHS: Record<string, ReactNode> = {

@@ -26,7 +26,6 @@
 .initials.lavender { background: var(--lavender); color: var(--lavender-ink); }
 .initials.blue { background: #e4ebfb; color: #2f4a86; }
 .initials.lg { width: 60px; height: 60px; font-size: 21px; }
-.initials.md { width: 42px; height: 42px; font-size: 15px; }
 .initials.sm { width: 30px; height: 30px; font-size: 12px; }
 
 /* Status strips inside a card */
