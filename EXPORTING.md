@@ -101,3 +101,28 @@ transfer remains OPS-002 work. Only selected sections that exist in this edition
 are exported; custom tables, signatures, performance, benefits and other future
 modules, complete target-product archives and restore send fences remain the
 outstanding DATA-001 target.
+
+## Owner archives and restored connection consent
+
+`rer export` now writes notice delivery disabled, OIDC consent disabled and no
+selected model in its portable connection settings. This changes only the
+archive: the source installation keeps its enabled settings. Notice-delivery
+history, including any uncertain/pending outcome, and business records stay
+unchanged. Existing pending cases and payroll drafts restore as work to finish;
+restoring or reenabling connections never replays historical actions. Sessions,
+provider links and credentials remain excluded under WIL-17/WIL-19.
+
+After `rer import` and ordinary setup/sign-in, the owner explicitly enables
+notices or selects a model in Connections; identity connections need a fresh
+owner link. This is required even if the new runtime already has provider
+bindings. The current edition has no background dispatcher that resends stored
+pending notice rows or restarts stored model requests.
+
+An older archive that still carries enabled connection authority is refused
+before restored rows publish, with
+`restore_connections_require_paused_archive`. Preserve that archive, restore
+it with the release that made it, then upgrade the populated installation and
+create a new archive with the current release. The import does not silently
+rewrite an older archive. Executable archive policy uses the existing native
+local portability transport in the pinned CLI; container portability does not
+support executable policy modules. Base copies and the CLI pin are unchanged.

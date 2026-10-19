@@ -197,7 +197,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "4010c763b56eb68862b7398c0b9505df033091f39e2563f52c6af6c12785322e",
+      "sha256": "a9bffba14761342bcaca1c1abe544f32f7af78841b84f3a658b2113817113a4d",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -221,7 +221,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "395c06987287be318b20b829ecc3df3b83520a611e6bc4a83bbf250be459c072",
+      "sha256": "6f36ba5cf642f296685c2a7beb1ba33d1fdea324fb46d8af6d4c093c05552f79",
       "executable": false
     },
     "DEMO.md": {
@@ -281,7 +281,7 @@
       "executable": false
     },
     "EXPORTING.md": {
-      "sha256": "dcd781a731357c1b466d4fcf17f2a5c7f18b26851007995084831feef3765457",
+      "sha256": "716dbb498e471b23a8f0fa822109d25d15c56da3525b715b87945ef91bb15b72",
       "executable": false
     },
     "FIELD-AUTHORITY.md": {
@@ -733,7 +733,11 @@
       "executable": false
     },
     "scripts/installer/local.mjs": {
-      "sha256": "0f9401e13ac748b0c32b93f9340fe96603df01470dece699391c611817b4f34e",
+      "sha256": "2515b6bbeb4ab740c59d3ba45c11cfc976d5800a771f40835a4933bc7c594160",
+      "executable": false
+    },
+    "scripts/installer/portability-policy.mjs": {
+      "sha256": "855b5144d59788b3a9a2b7cf6c7027247bc9eef9e2273bcb1260f2105894650a",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -2853,7 +2857,11 @@
       "executable": false
     },
     "tests/willow/restore-access.mjs": {
-      "sha256": "847e3b6d13f270703e2487153521b58d20286c90e55402320e384da06dc304d6",
+      "sha256": "7709be91a8958c65df7d732716267fecc9f7c73b5a10c0cf8ad6bc361562d076",
+      "executable": false
+    },
+    "tests/willow/restore-archive-fixture.mjs": {
+      "sha256": "b129725be58ab89d85a098d9ab97b7a28089c3dc739a3d9ef94e8da7604c5b0b",
       "executable": false
     },
     "tests/willow/restore.mjs": {
