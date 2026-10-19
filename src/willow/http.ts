@@ -1,3 +1,4 @@
+import { selfChangesPage, selfChangePage } from './ui/self-service'
 import { importForm } from './movein/forms'
 // Willow's public doors: /app pages, /app/do/ACTION form posts, /api/willow
 // JSON, and access-checked downloads. Every request resolves the signed-in
@@ -115,6 +116,8 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  selfChanges: (env,actor,_request,url) => selfChangesPage(env,actor,url),
+  selfChange: (env,actor,_request,url,id) => selfChangePage(env,actor,id,url),
   customFields: (env, actor, _request, url) => customFieldsPage(env, actor, url),
   employeeBundle: (env, actor, request, url) => employeeBundle(env, actor, url, request),
   employeeCsv: (env, actor, _request, url) => employeeExport(env, actor, url, 'csv'),

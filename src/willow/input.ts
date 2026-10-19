@@ -33,6 +33,8 @@ export class Input {
     insist(keys.every(key => names.includes(key)), 'unexpected_input')
   }
 
+  provided(name: string) { return this.raw(name) !== undefined }
+
   has(name: string) {
     const value = this.raw(name)
     return value !== undefined && value !== null && value !== ''

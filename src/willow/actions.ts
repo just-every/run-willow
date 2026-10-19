@@ -1,3 +1,4 @@
+import { proposeSelfChange, decideSelfChange, reconcileSelfChange } from './self-service/requests'
 import { defineField, writeFieldValues } from './custom-fields/actions'
 import { configureDoor } from './movein/authority'
 import { defineTable } from './record-tables/schema'
@@ -32,6 +33,9 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'self.request': proposeSelfChange,
+  'self.decide': decideSelfChange,
+  'self.reconcile': reconcileSelfChange,
   'dateAlert.define': defineAlert,
   'dateAlert.retire': retireAlert,
   'dateAlert.task': completeAlertTask,

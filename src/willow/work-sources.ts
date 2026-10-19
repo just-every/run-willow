@@ -1,3 +1,4 @@
+import { reviewsSelfChanges, handlesSelfExceptions } from './self-service/view'
 // Adapters for every shipped work source. No private values enter this projection.
 import type { Bindings } from '../auth.server'
 import { actorFor, can, employerZone, type Actor } from './actor'
@@ -32,6 +33,8 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  const deadline = (instant: number) => addDays(today(zone, instant), defaultDays)
  const hr = (a: Actor) => can(a,'people.manage'), payroll = (a: Actor) => can(a,'payroll.handoff') && can(a,'pay.read')
  const add = (kind: string, row: Row, title: string, path: string, due: string, visible: WorkSource['visible'], responsible = visible, preferred?: string | null, progress = 'Awaiting action') => result.push({ key: `${kind}:${row.id}`, kind, title, path, due, visible, responsible, preferred, progress, personId: row.person_id??null, next: title })
+ for (const r of await all(env,"SELECT c.*,d.outcome FROM wl_self_changes c LEFT JOIN wl_self_decisions d ON d.change_id=c.id WHERE d.change_id IS NULL")) add('self-change',r,'Review private profile change',`/app/self-changes/${r.id}`,r.due_date,a=>a.personId===r.person_id||can(a,'people.private'),a=>reviewsSelfChanges(a)&&a.id!==r.requested_by&&a.personId!==r.person_id)
+ for (const r of await all(env,"SELECT c.* FROM wl_self_changes c JOIN wl_self_decisions d ON d.change_id=c.id WHERE d.outcome='approved' AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation r WHERE r.change_id=c.id)")) add('self-exception',r,'Reconcile approved profile revision','/app/self-changes',r.due_date,a=>a.personId===r.person_id||handlesSelfExceptions(a),handlesSelfExceptions,null,'Approved revision awaits a recorded downstream handoff; no provider confirmation')
  const tasks = await all(env, `SELECT t.*,c.person_id FROM wl_case_tasks t JOIN wl_cases c ON c.id=t.case_id WHERE t.status='open' AND t.superseded_at IS NULL AND c.status='open'`)
  for (const t of tasks) {
  const blocked = await blockedBy(env,t)

@@ -246,6 +246,12 @@ A member opens a person's record and picks any past or future date to see that p
 
 One portal gives employees their profile, documents, balances, PTO requests, assigned tasks and pending changes; managers see permitted team requests, outstanding work and coverage. Employees submit contact, name, dependent and other permitted changes with validation. The member's access level (ROLE-001) determines immediate edits versus HR approval; immutable proposals show before/after, owner, due date, outcome and downstream reconciliation. An employee never edits pay or employment authority by changing their profile.
 
+Current semantics (ct, 19 October 2026 16:04Z): preferred name and the existing private contact fields save immediately through the person's record. Legal-name changes and additions, corrections or removals of dependents require a separate HR decision until ROLE-001 supplies field-level immediate/edit-with-approval rules. Dependents are a built-in PEOPLE-003 private-contact table with fixed name, relationship and optional Gregorian date-of-birth columns; current private-contact authority (the person, owner or `people.private`, never managerial rank) governs native rows, histories, reports, exports and proposal reads. Only another member holding both `people.manage` and `people.private` decides an employee proposal; the requester and subject cannot approve their own revision. Direct self writes cannot bypass that decision.
+
+`self.request` creates an immutable before/after proposal owned by HR, due seven calendar days after submission in the employer's time zone. Required values and typed dates are validated before recording. An approval checks the original person revision or dependent-table row history and definition version, then appends the native revision and an immutable commented decision atomically; a stale proposal must be rejected and submitted again. Rejection changes no native value. The subject sees pending requests, outcomes and downstream reconciliation from Home or Personal changes. Managers use their permitted task, leave-request and team-coverage doors and see the employee projection under current authority, without dependent details or private proposals.
+
+Every approved revision enters the WIL-11 payroll exception queue and its next batch as a person-change exception, with an owner and due date. Payroll's metadata-only queue never includes dependent values or proposal snapshots. HR or an authorized payroll handoff member records a reference to resolve the owned follow-up, visible to the subject; this records a human handoff, not provider acknowledgment or benefits coverage. Pending approvals and unresolved handoffs are FLOW-002 work. BENEFITS-001 inherits feeding approved dependent/name revisions into its benefits exception/reconciliation queue before shipping; ROLE-001 inherits this proposal/decision/history/queue path for every field it marks edit-with-approval. Their unavailable capabilities are not claimed by SELF-001.
+
 **Acceptance evidence:** As an employee, change an allowed contact field and submit an approval-required name/dependent change; HR accepts one and rejects another. As manager, clear permitted team work and inspect the employee view. The approved revision feeds the payroll/benefits exception queue; no self-granted privilege is possible.
 
 #### SELF-002 — Company home: announcements, celebrations and shared files.
@@ -275,6 +281,8 @@ Access is granted through named access levels: built-in Employee (self-service),
 Levels decide whether a person may follow FLOW-004 requests about themselves (status only, with pay under the level’s compensation right); until ROLE-001 ships nobody follows their own request.
 
 **Acceptance evidence:** Create a custom level with view-only job fields, edit-with-approval personal fields and no compensation access, assign it, and crawl every API/page/download/CSV/preview/agent-context door as that member; withheld fields never appear and an approval-required edit lands in HR's queue. Change the level and repeat the crawl in the same session; every door reflects the change and the audit names who changed it.
+
+Before shipping, field-level immediate/edit-with-approval rules reuse SELF-001's immutable proposal, HR decision, stale-source fence, history and downstream exception path.
 
 #### ROLE-002 — Group-scoped levels and bulk assignment.
 
@@ -505,6 +513,8 @@ Before this capability ships, its required steps inherit FLOW-001: the reviewed 
 Before this clause ships, benefits eligibility dates become PEOPLE-004 alertable dates.
 
 **Acceptance evidence:** Enroll a new hire, waive a plan, add a dependent after a life event and terminate coverage. Send through Employee Navigator/broker to the selected carrier, ingest acknowledgment and compare active coverage/dates; reject a dependent mismatch and resolve it. Employees read their own elections, HR sees permitted status and managers cannot see health evidence. Without any connection, record a plan and an election, export the census and confirm the status stays recorded, not active, until a carrier confirmation is attached. Leave one new hire's elections incomplete as the new-hire enrollment deadline approaches: HR's enrollment view lists the hire as missing enrollment, the hire and HR receive one FLOW-002 reminder per cadence step, and reminders stop once an election or waiver is recorded. Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade. Refuse payroll-only and IT-only approval of the benefits step.
+
+Before shipping, approved SELF-001 legal-name/dependent revisions feed the benefits exception and reconciliation queue under the same current private-contact authority.
 
 #### BENEFITS-002 — Benefit deductions and payroll mismatch resolution.
 
@@ -737,7 +747,7 @@ acceptance are part of US-001/002, not implied shipped capabilities.
 
 ## Homepage claims
 
-Every capability claim on the approved homepage (`src/site/landing/`, checked against br’s claims truth table of 17 October 2026, rows 1–58 in page order) maps to the clauses that promise it. A claim’s status is `done` when every mapped clause is done, `missing` when every one is missing, and `partial` otherwise. Hero and section cards are illustrations of the same capabilities and are held to them. 58 claims: 12 done, 36 partial, 10 missing.
+Every capability claim on the approved homepage (`src/site/landing/`, checked against br’s claims truth table of 17 October 2026, rows 1–58 in page order) maps to the clauses that promise it. A claim’s status is `done` when every mapped clause is done, `missing` when every one is missing, and `partial` otherwise. Hero and section cards are illustrations of the same capabilities and are held to them. 58 claims: 14 done, 34 partial, 10 missing.
 
 | # | Claim | Clause(s) | Status |
 | --- | --- | --- | --- |
@@ -763,13 +773,13 @@ Every capability claim on the approved homepage (`src/site/landing/`, checked ag
 | 20 | "from laptop and accounts to I-9, W-4 and state forms" | WIL-05, PEOPLE-003, IDENTITY-001, US-001, US-002 | partial |
 | 21 | "Willow chases each step until it is done" | FLOW-002, AGENT-003 | partial |
 | 22 | "People request leave" | WIL-09 | done |
-| 23 | "update their details" | SELF-001 | partial |
+| 23 | "update their details" | SELF-001 | done |
 | 24 | "find a teammate" | PEOPLE-002 | done |
 | 25 | "Managers approve in one tap" | WIL-09, MOBILE-001 | partial |
 | 26 | "balances stay right" | WIL-08, WIL-10 | done |
 | 27 | Card: 64 hours PTO balance; Dec 22 to Jan 2 approved | WIL-09, WIL-10 | done |
 | 28 | Card: "Dec 25 and Jan 1 are company holidays · not deducted" | LEAVE-002 | partial |
-| 29 | Card: address updated | SELF-001 | partial |
+| 29 | Card: address updated | SELF-001 | done |
 | 30 | Card: to do, sign the 2027 handbook | SIGN-002, SELF-002 | missing |
 | 31 | "Offer letters and policies come from your templates" | SIGN-001 | missing |
 | 32 | "go out for e-signature" | SIGN-001, SIGN-002 | missing |
@@ -804,7 +814,7 @@ Every capability claim on the approved homepage (`src/site/landing/`, checked ag
 
 Judged from the code and tests at commit `84231c06dc4f709b4a04126fdfc3d43b13c771f2` (17 October 2026).
 
-89 clauses: 30 done, 31 partial, 28 missing. FLOW-001, FLOW-002, FLOW-004, PEOPLE-001, PEOPLE-002, PEOPLE-003, PEOPLE-004, PEOPLE-005 and OPEN-001 were completed on 19 October 2026 with their named public-door proofs; the remaining statuses retain their prior judgment. Evidence cites the
+89 clauses: 31 done, 30 partial, 28 missing. SELF-001 completed in this round with its named public-door proof. FLOW-001, FLOW-002, FLOW-004, PEOPLE-001, PEOPLE-002, PEOPLE-003, PEOPLE-004, PEOPLE-005 and OPEN-001 were completed on 19 October 2026 with their named public-door proofs; the remaining statuses retain their prior judgment. Evidence cites the
 repository paths that back a done or partial row; a partial citation proves
 only the foundation it names. Published clauses are WIL-01–WIL-21 from the
 released contract; push-further clauses are the agent section. The earlier statuses were judged at `59e3d42eb07e99d0f54dd48559056fe0a73d02ac`; between it and the commit above, `src/willow` and its tests changed only in display (US English labels, US dates and the employer-setup defaults) and the run site was rebuilt, so every earlier status stands. Revised 17 October 2026 so every capability claim on the approved homepage has a clause (see [Homepage claims](#homepage-claims)): PEOPLE-005, PAYROLL-006 and OPEN-001 were added and judged from the commit above, and PEOPLE-002, PEOPLE-004, MOBILE-001, LEAVE-002, BENEFITS-001, RETIRE-001, IDENTITY-001 and MIGRATE-001 were sharpened without changing their statuses.
@@ -812,8 +822,8 @@ released contract; push-further clauses are the agent section. The earlier statu
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 21 | 0 | 0 | 21 |
-| Target and push further | 9 | 31 | 28 | 68 |
-| All | 30 | 31 | 28 | 89 |
+| Target and push further | 10 | 30 | 28 | 68 |
+| All | 31 | 30 | 28 | 89 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -843,7 +853,7 @@ released contract; push-further clauses are the agent section. The earlier statu
 | `PEOPLE-003` | Multi-row record tables and company assets | target | done | `src/willow/record-tables/schema.ts`, `src/willow/record-tables/rows.ts`, `src/willow/record-tables/report.ts`, `src/willow/lifecycle.ts`, `src/willow/work-sources.ts`, `src/willow/movein/target.ts`; `tests/willow/record-tables.mjs` (PEOPLE-003): contacts/education/certifications/assets and a typed custom table read by employee, manager, HR and payroll levels across page, JSON, agent, preview, report, CSV and ZIP doors; dated corrections and removal; leaver laptop-return task closing only with evidence; near-expiry and expired renewal work; fresh-employer import, repeat and undo; `tests/willow/record-tables-browser.mjs`: native forms at 1440/390 | |
 | `PEOPLE-004` | Date alerts on employee dates | target | done | `src/willow/date-alerts/sources.ts`, `src/willow/date-alerts/alerts.ts`, `src/willow/date-alerts/view.ts`, `src/willow/ui/date-alerts.ts`, `src/willow/work-scheduler.ts`; `tests/willow/date-alerts.mjs` (PEOPLE-004): restricted visa and I-9 custom dates at 30/7 days to HR, a probation alert with a manager review task, a certification-table alert, scheduled ticks across every lead time with a real Worker restart, once-only delivery, no alert or upcoming date for a manager without access, fixed-text email without values, moved date, retired alert and a leaver stopping later leads, upcoming list owner and due date, FLOW-002 work; `tests/willow/date-alerts-browser.mjs`: the dates page at 1440/390 | |
 | `PEOPLE-005` | Any person's record as of a chosen date | target | done | `src/willow/profile.ts`, `src/willow/documents.ts`, `src/willow/leave.ts`, `src/willow/lifecycle.ts`, `src/willow/ui/people.ts`, `src/willow/views.ts`, `src/willow/proposals.ts`; `tests/willow/people.mjs` (PEOPLE-005): shared as-of page/JSON/context, version boundaries, canceled/future terms, dated documents/ledger/cases and current permissions/audit | |
-| `SELF-001` | Employee and manager self-service portal | target | partial | `src/willow/people.ts`, `src/willow/leave.ts`, `src/willow/ui/home.ts`; `tests/willow/flows.mjs` (WIL-05, WIL-09): own profile, tasks and PTO requests | Approval-based profile/dependent changes and unified pending-change tracking. |
+| `SELF-001` | Employee and manager self-service portal | target | done | `src/willow/self-service/requests.ts`, `src/willow/self-service/view.ts`, `src/willow/ui/self-service.ts`; `tests/willow/self-service.mjs` (SELF-001): immediate contact/preferred-name edits, validated immutable legal-name/dependent proposals, HR approval/rejection, stale/replay/self-approval/privilege refusals, dated dependent correction/removal history and current read authority, WIL-11 metadata-only batch exceptions and recorded handoffs, FLOW-002 work, manager task/leave/coverage and scoped employee view; `tests/willow/self-service-browser.mjs`: forms and pending/approved/rejected end states at 1440/390 | |
 | `SELF-002` | Company home: announcements, celebrations and shared files | target | missing | `src/willow/ui/home.ts` shows only the member's own tasks, approvals and leave | Announcements, celebrations and shared company folders. |
 | `MOBILE-001` | Mobile work and accessible companion apps | target | partial | `src/willow/ui/leave.ts`; `tests/willow/journey.mjs`: responsive request and approval | Native iOS/Android apps, secure push, mobile clock-in and full accessibility acceptance. |
 | `LOCALE-001` | Employee-facing languages, starting with Spanish | target | missing | `src/willow/ui/html.ts` renders every page in English only | Member language choice, Spanish screens, notices and consent, administrator translations and signing-language records. |

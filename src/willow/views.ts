@@ -1,3 +1,4 @@
+import { selfChanges, selfChange, selfExceptions } from './self-service/view'
 import { listFieldDefinitions } from './custom-fields/store'
 import { listRecordTables } from './record-tables/schema'
 import { tableReport } from './record-tables/rows'
@@ -39,6 +40,9 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  selfChanges,
+  selfChange: (env,actor,_request,id) => selfChange(env,actor,id),
+  selfExceptions,
   customFields: (env, actor, _request, _id, url) => listFieldDefinitions(env, actor, url.searchParams.get('asOf') ?? actor.today),
   recordTables: (env, actor) => listRecordTables(env, actor),
   recordReport: async (env, actor, _request, id, url) => { const asOf = url.searchParams.get('asOf') ?? actor.today; return tableReport(env, actor, id, asOf, await directory(env, actor, asOf)) },

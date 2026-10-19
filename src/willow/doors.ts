@@ -3,6 +3,7 @@
 // entry, so a new door cannot be added without being crawled.
 // Patterns are relative to /api/willow/ (API) or absolute (pages).
 export const API_DOORS: [string, string][] = [
+  ['^self-changes$', 'selfChanges'], ['^self-changes/([\\w-]+)$', 'selfChange'], ['^self-exceptions$', 'selfExceptions'],
   ['^custom-fields$', 'customFields'], ['^record-tables$', 'recordTables'], ['^record-tables/([a-z][a-z0-9_]*)$', 'recordReport'],
   ['^upcoming-dates$', 'upcomingDates'], ['^change-requests$', 'changeRequests'], ['^change-requests/([\\w-]+)$', 'changeRequest'],
   ['^work$', 'work'], ['^connections$', 'connections'], ['^payroll-layout$', 'payrollLayout'], ['^model-drafts$', 'modelDrafts'], ['^model-drafts/([\\w-]+)$', 'modelDraft'],
@@ -14,6 +15,7 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/self-changes$', 'selfChanges'], ['^/app/self-changes/([\\w-]+)$', 'selfChange'],
   ['^/app/custom-fields$', 'customFields'], ['^/app/reports/tables/([a-z][a-z0-9_]*)\\.csv$', 'recordReportFile'],
   ['^/app/exports/employees\\.zip$', 'employeeBundle'],
   ['^/app/exports/employees\\.csv$', 'employeeCsv'], ['^/app/exports/employees\\.xlsx$', 'employeeXlsx'],
