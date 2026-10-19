@@ -93,6 +93,8 @@ async function journey(width, ownerOpen, employeeOpen, persona) {
     if (system) await first.getByLabel('External system or device (always needs evidence)').fill(system)
     if (action) await first.getByLabel('Willow action').selectOption(action)
     await form.getByRole('button', { name: 'Save template' }).click(); await saved(owner)
+    await owner.getByRole('button', { name: 'Review publication', exact: true }).click()
+    await owner.getByRole('button', { name: 'Publish reviewed workflow', exact: true }).click(); await saved(owner)
   }
   await template('joiner', `New starter${suffix}`, 'Create email account', 'it', 'Email')
   await template('leaver', `Departure${suffix}`, 'End Willow access', 'hr', '', 'end_access')

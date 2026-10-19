@@ -30,7 +30,7 @@ export async function summary(env: Bindings, actor: Actor, url: URL) {
     WHERE l.kind IN ('use', 'reversal') AND r.start_date >= ? AND r.start_date <= ?`, from, to)).filter(row => inScope(row.person_id))
   const byPolicy = new Map<string, number>()
   for (const row of leave) byPolicy.set(row.policy, (byPolicy.get(row.policy) ?? 0) - row.minutes)
-  const tasks = (await all(env, "SELECT t.due_date, c.person_id FROM wl_case_tasks t JOIN wl_cases c ON c.id = t.case_id WHERE t.status = 'open'")).filter(row => inScope(row.person_id))
+  const tasks = (await all(env, "SELECT t.due_date, c.person_id FROM wl_case_tasks t JOIN wl_cases c ON c.id = t.case_id WHERE t.status = 'open' AND t.superseded_at IS NULL")).filter(row => inScope(row.person_id))
   const result: Record<string, unknown> = {
     scope: organisation ? 'organisation' : 'your team', filters: { asOf, from, to },
     calculation: 'Headcount counts employment periods in force on the as-of date by the terms in force that day. Leave taken is approved use minus reversals for requests starting in the range, in hours.',

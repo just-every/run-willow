@@ -125,3 +125,5 @@ file lists, UI copy, thresholds). Prove a one-off fix with before/after
 evidence instead of a new permanent test.
 
 People records and agent contexts accept `?asOf=YYYY-MM-DD` with current reader permissions. The directory accepts the same date plus `q`, `name`, `location`, `department`, `role` and `status`; `GET /api/willow/organization?asOf=YYYY-MM-DD` returns directory-only manager/report links and its active count. Manager changes and cancellations refuse effective-date cycles, including through BambooHR move-in.
+
+Lifecycle templates save as drafts through `template.create`. Review with `template.preview` and publish the returned review through `template.publish`; any intervening audited event requires a fresh review. Conditional task rules use the same planner for joiners, approved employee-change movers, leavers and reviewed case upgrades (`case.upgrade.preview`, then `case.upgrade`). External steps remain assigned work requiring evidence; `task.fail` leaves them open.
