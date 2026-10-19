@@ -51,5 +51,5 @@
   .pin::after { display: none; }
   .pin-text { flex: 1; }
   .pin .initials { margin: 0; }
-  .year-total { display: block; margin-top: 28px; padding: 14px 18px; text-align: center; font-size: 17px; white-space: normal; }
+  .year-total { display: block; justify-self: stretch; margin-top: 28px; padding: 14px 18px; text-align: center; font-size: 17px; white-space: normal; }
 }

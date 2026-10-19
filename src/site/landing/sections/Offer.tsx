@@ -1,7 +1,7 @@
 import { Art, ChapterHead, Icon, Tick } from '../parts'
 
 const terms: [string, string][] = [['Base salary', '$72,000 a year'], ['Benefits', 'UnitedHealthcare PPO and 401(k) with a 4% match'], ['Time off', '15 days a year']]
-const signers: [string, string, string][] = [['Devon Brooks', 'Email link and code', 'Oct 14, 9:41 am'], ['Maya Chen', 'Willow session', 'Oct 14, 2:05 pm']]
+const signers: [string, string, string][] = [['Devon Brooks', 'Email link and code', 'Oct\u00a014, 9:41\u00a0am'], ['Maya Chen', 'Willow session', 'Oct\u00a014, 2:05\u00a0pm']]
 
 /** October: Devon's offer letter on Tamberline letterhead, signed by both sides the same day, and its certificate. */
 export function Offer() {
@@ -12,7 +12,7 @@ export function Offer() {
           <p className="letterhead">Tamberline</p>
           <p className="letter-date">October 14, 2026</p>
           <p>Dear Devon,</p>
-          <p>We are delighted to offer you the role of Account Executive, starting Monday, November 2, 2026.</p>
+          <p>We are delighted to offer you the role of Account Executive, starting Monday, November&nbsp;2, 2026.</p>
           <dl className="terms">{terms.map(([term, value]) => <div key={term}><dt>{term}</dt><dd>{value}</dd></div>)}</dl>
           <div className="signatures">
             <figure><img src="/site/sig-devon.svg" alt="" width="280" height="90" loading="lazy" /><figcaption>Devon Brooks</figcaption></figure>

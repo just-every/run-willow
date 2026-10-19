@@ -47,6 +47,7 @@
 .hc-line { margin: calc(12 * var(--u)) 0 0 calc(62 * var(--u)); color: var(--soft); font-size: max(11px, calc(16 * var(--u))); }
 .hc-timeoff ul, .hc-raise ul, .hc-offboard ul { margin-left: calc(10 * var(--u)); }
 .hc-raise li, .hc-offboard li { align-items: flex-start; }
+.hc-lines > span { display: block; white-space: nowrap; }
 .hc-welcome { left: calc(898 * var(--u)); top: calc(128 * var(--u)); width: calc(272 * var(--u)); }
 .hc-timeoff { left: calc(1249 * var(--u)); top: calc(185 * var(--u)); width: calc(218 * var(--u)); }
 .hc-timeoff .hc-head { align-items: flex-start; }

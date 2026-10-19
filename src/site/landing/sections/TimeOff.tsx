@@ -27,7 +27,7 @@ export function TimeOff() {
               <p className="balance-label">Time off balance</p>
               <p className="balance-hours">88 hours</p>
               <p className="balance-policy">{nb('15 days a year · granted at hire')}</p>
-              <p className="balance-booked"><Check soft /><span>{nb('Dec 28 to Dec 31 · 32 hours · approved by Jordan Lee')}</span></p>
+              <p className="balance-booked"><Check soft /><span>{nb('Dec 28 to Dec 31 · 32\u00a0hours ·')} <span className="keep">approved by Jordan Lee</span></span></p>
             </div>
             <p className="phone-note">Dec 25 and Jan 1 are company holidays</p>
             <ul className="phone-links">
@@ -47,7 +47,7 @@ export function TimeOff() {
               out ? <span key={`${who}-out`} className="cal-bar" style={{ gridRow: row + 2, gridColumn: `${out[0] + 1} / ${out[1] + 2}` }} /> : null,
             ])}
           </div>
-          <p className="note warn"><Alert /><span>Dec 28<Sep />3 of 5 out<Sep />Taylor Kim&nbsp;covering</span></p>
+          <p className="note warn"><Alert /><span>Dec 28<Sep />3 of 5 out<Sep />Taylor&nbsp;Kim&nbsp;covering</span></p>
         </div>
       </Art>
     </div>

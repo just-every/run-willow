@@ -21,7 +21,13 @@
 .import .rows li { display: flex; align-items: center; gap: 16px; padding: 10px 2px; border-top: 1px solid var(--line); }
 .import .rows li:first-child { border-top: 0; }
 .import .rows .count { margin-left: auto; color: var(--soft); text-align: right; }
+.import { container-type: inline-size; }
 .import .note { flex-wrap: wrap; justify-content: space-between; margin-top: 10px; row-gap: 8px; }
+/* When the card is too narrow for one row, the two halves stack and the arrow turns down between them. */
+@container (max-width: 500px) {
+  .import .note { flex-direction: column; align-items: flex-start; row-gap: 4px; }
+  .import .note .arrow { margin-left: 2px; transform: rotate(90deg); }
+}
 .import .fix { display: inline-flex; align-items: center; gap: 10px; }
 .import .note .arrow { stroke: var(--faint); }
 
@@ -74,16 +80,19 @@
 .task { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 7px; min-height: 52px; padding: 9px 8px; border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 1px 2px rgba(42, 11, 40, .04), 0 8px 18px -14px rgba(74, 16, 56, .35); font-size: 14.5px; line-height: 1.3; }
 .task .check, .task .clock { width: 20px; height: 20px; }
 .task .initials { width: 26px; height: 26px; font-size: 11px; }
-.task p { display: grid; gap: 2px; text-wrap: balance; }
-.task small { font-size: 12.5px; color: var(--soft); text-wrap: pretty; }
+.task p { display: contents; text-wrap: balance; }
+.task > .check, .task > .clock { grid-row: 1 / span 2; }
+.task p > span { grid-column: 2; }
+.task small { grid-column: 2 / -1; margin-top: 2px; font-size: 12.5px; color: var(--soft); text-wrap: pretty; }
+.task .initials { grid-column: 3; grid-row: 1; }
 .task.late { border-color: #f6dcc3; background: var(--orange-tint); }
 .task.late small { color: var(--orange-ink); }
 .board-total { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 16px; font-size: 17px; font-weight: 700; }
 
 /* December: Devon's phone over the Sales team's calendar */
 .time-off .chapter-grid.flip { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 56px; }
-.time-off-art > div { display: grid; grid-template-columns: 288px minmax(0, 1fr); align-items: start; }
-.phone { position: relative; padding: 50px 22px 24px; border: 12px solid #2c0a29; border-radius: 46px; background: #fff; box-shadow: 0 30px 60px -30px rgba(60, 8, 44, .5); }
+.time-off-art > div { display: grid; grid-template-columns: 320px minmax(0, 1fr); align-items: start; }
+.phone { position: relative; padding: 50px 20px 24px; border: 12px solid #2c0a29; border-radius: 46px; background: #fff; box-shadow: 0 30px 60px -30px rgba(60, 8, 44, .5); }
 .phone-notch { position: absolute; left: 50%; top: -1px; width: 118px; height: 24px; transform: translateX(-50%); border-radius: 0 0 16px 16px; background: #2c0a29; }
 .phone-hello { margin-top: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--line); font-size: 23px; font-weight: 600; }
 .balance { margin-top: 16px; padding: 14px 14px 0; border: 1px solid var(--line); border-radius: 14px; }
@@ -92,6 +101,7 @@
 .balance-policy { margin-top: 4px; font-size: 13px; color: var(--soft); }
 .balance-booked { display: flex; align-items: center; gap: 10px; margin: 12px -14px 0; padding: 11px 14px; border-radius: 0 0 13px 13px; background: #f8f4f7; font-size: 13px; line-height: 1.35; }
 .balance-booked .check { width: 24px; height: 24px; }
+.balance-booked .keep { display: inline-block; }
 .phone-note { padding-block: 14px 16px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--soft); }
 .phone-links li { display: flex; align-items: center; gap: 14px; padding: 12px 0; font-size: 15px; }
 .phone-links li + li { border-top: 1px solid var(--line); }
@@ -109,11 +119,23 @@
 .cal-bar { align-self: center; height: 15px; margin-inline: 3px; border-radius: 5px; background: var(--accent); }
 .calendar .note { margin-top: 14px; }
 
-/* Below 1240 the phone and calendar need the full column: copy above, the drawing under it. */
+/* Down to 1100 the copy stays beside a wider drawing; below that the drawing fills the column under the copy. */
 @media (max-width: 1240px) {
+  .time-off .chapter-grid.flip { grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr); gap: 40px; }
+}
+@media (max-width: 1099px) {
   .time-off .chapter-grid.flip { grid-template-columns: minmax(0, 1fr); gap: 36px; }
   .time-off .chapter-grid.flip > .chapter-head { order: 0; }
-  .time-off-art { max-width: 780px; }
+}
+
+/* Six days on one line: less padding and a smaller badge, so each label keeps its one line. */
+@media (min-width: 1400px) {
+  .board { padding-inline: 16px; }
+  .day { padding: 0 6px; }
+  .task { column-gap: 6px; font-size: 14px; }
+  .task p > span { text-wrap: wrap; }
+  .task .initials { width: 24px; height: 24px; font-size: 11px; }
+  .task small { font-size: 12px; }
 }
 
 /* Below 1400 the six days no longer fit their longest words: two rows of three. */

@@ -4,7 +4,7 @@ import { Art, ChapterHead, Check, Initials, Sep, nb } from '../parts'
 // the broker, and a paycheck preview missing Colorado tax is resent and corrected.
 const log: [string, 'green' | 'orange' | 'red', string][] = [
   ['Jun 7', 'green', 'Gusto · new pay and work state sent · acknowledged'],
-  ['Jun 7', 'green', 'Okta · Sales Denver set for Jun 14'],
+  ['Jun 7', 'green', 'Okta · Sales Denver set for Jun\u00a014'],
   ['Jun 8', 'green', 'UnitedHealthcare · Denver address sent'],
   ['Jun 10', 'orange', 'No reply from UnitedHealthcare · followed up with broker'],
   ['Jun 11', 'green', 'UnitedHealthcare · Denver address confirmed'],

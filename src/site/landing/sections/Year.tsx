@@ -6,7 +6,7 @@ type Pin = { side: 'up' | 'down'; href: string; text: string; who?: string }
 const months: [string, string, number, Pin?][] = [
   ['Sep', '2026', 47, { side: 'up', href: '#move-in', text: 'Moved in from BambooHR · 47\u00a0people' }],
   ['Oct', '', 6, { side: 'down', href: '#offer', text: 'Offer signed · Devon Brooks' }],
-  ['Nov', '', 9, { side: 'up', href: '#day-one', text: 'Day one · 14\u00a0of\u00a014 tasks done' }],
+  ['Nov', '', 9, { side: 'up', href: '#day-one', text: 'Day one · 14\u00a0of\u00a014\u00a0tasks done' }],
   ['Dec', '', 31, { side: 'down', href: '#time-off', text: 'Time off · 31\u00a0requests approved' }],
   ['Jan', '2027', 12],
   ['Feb', '', 8],

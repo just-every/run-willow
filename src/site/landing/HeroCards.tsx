@@ -14,7 +14,7 @@ export function HeroCards() {
       </div>
       <div className="hc hc-timeoff">
         <div className="hc-head"><Face name="marcus" /><p><strong>Time off</strong><span>Marcus</span></p></div>
-        <p className="hc-line">Dec 22 – Jan 2</p>
+        <p className="hc-line">Dec&nbsp;22 – Jan&nbsp;2</p>
         <ul><li><Check />approved</li></ul>
       </div>
       <div className="hc hc-raise">
@@ -23,13 +23,13 @@ export function HeroCards() {
       </div>
       <div className="hc hc-offboard">
         <div className="hc-head"><Face name="sam" /><p><strong>Offboarding</strong><span>Sam</span></p></div>
-        <ul><li><Check />access removed in 9 systems</li></ul>
+        <ul><li><Check /><span className="hc-lines"><span>access removed</span> <span>in 9 systems</span></span></li></ul>
       </div>
       <div className="hc hc-benefits">
         <div className="hc-head"><Face name="devon" /><p><strong>Benefits enrollment missing</strong><span>reminder sent</span></p><Alert /></div>
       </div>
       <div className="hc hc-org">
-        <div className="hc-head"><span className="hc-group"><Icon name="group" /></span><p><strong>Org chart</strong><span>48 people</span></p></div>
+        <div className="hc-head"><span className="hc-group"><Icon name="group" /></span><p><strong>Org chart</strong><span>48&nbsp;people</span></p></div>
       </div>
     </div>
   </div>
