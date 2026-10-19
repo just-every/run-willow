@@ -8,6 +8,7 @@ import { actions } from './actions'
 import { currentActor, type Actor } from './actor'
 import { WillowError } from './core'
 import { documentFile } from './documents'
+import { employeeExport } from './employee-export'
 import { employer } from './employer'
 import { Input } from './input'
 import { batchFile } from './payroll'
@@ -102,6 +103,8 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  employeeCsv: (env, actor, _request, url) => employeeExport(env, actor, url, 'csv'),
+  employeeXlsx: (env, actor, _request, url) => employeeExport(env, actor, url, 'xlsx'),
   connections: (env, actor, _request, url) => connectionsPage(env, actor, url),
   home: (env, actor, _request, url) => homePage(env, actor, url),
   employer: (env, actor, _request, url) => employerPage(env, actor, url),

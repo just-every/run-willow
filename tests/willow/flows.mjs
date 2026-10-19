@@ -430,6 +430,7 @@ try {
     const values = { modelDraft: ['unknown-proposal'], person: [...people, 'me'], context: [...people, 'me'], case: cases, leave: requests, batch: ids.batches, proposal: ids.proposals, request: requests, batchFile: ids.batches, document: versions }
     const fill = (pattern, name) => {
       const base = pattern.replace(/^\^|\$$/g, '').replace(/\\\./g, '.')
+      if (name === 'employeeCsv' || name === 'employeeXlsx') return ['self', 'team', 'organization'].map(scope => `${base}?scope=${scope}&fields=name,phone,payAmount,payrollId` )
       if (name === 'preview') return memberIds.flatMap(member => [ids.sam, ids.lee].map(person => `preview?member=${member}&person=${person}`))
       if (name === 'quote') return [`quote?account=${ids.samAnnual}&startDate=${today}&endDate=${today}`, `quote?account=${ids.samPersonal}&startDate=${today}&endDate=${today}`]
       if (name === 'access') return memberIds.flatMap(member => [ids.sam, ids.lee].map(person => `/app/access?member=${member}&person=${person}`))
