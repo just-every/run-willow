@@ -1,3 +1,5 @@
+import { exportZip } from './export-zip';
+
 /** Quote every field and guard formula markers even behind whitespace/control characters. */
 export function employeeCsv(rows: string[][]): string {
   return rows.map(row => row.map(value => {
@@ -37,7 +39,7 @@ export function employeeXlsx(rows: string[][]): Uint8Array {
   const sheet = rows.map((row, r) => `<row r="${r + 1}">${row.map((value, c) =>
     `<c r="${columnName(c)}${r + 1}" t="inlineStr"><is><t xml:space="preserve">${cellText(value)}</t></is></c>`
   ).join('')}</row>`).join('');
-  return zip([
+  const files: [string, string][] = [
     ['[Content_Types].xml', `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">`
       + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
       + '<Default Extension="xml" ContentType="application/xml"/>'
@@ -50,49 +52,6 @@ export function employeeXlsx(rows: string[][]): Uint8Array {
     ['xl/_rels/workbook.xml.rels', '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
       + `<Relationship Id="rId1" Type="${relationshipNs}/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`],
     ['xl/worksheets/sheet1.xml', `<worksheet xmlns="${spreadsheetNs}"><sheetData>${sheet}</sheetData></worksheet>`],
-  ]);
-}
-
-const crcTable = Uint32Array.from({ length: 256 }, (_, index) => {
-  let crc = index;
-  for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
-  return crc >>> 0;
-});
-
-function crc32(bytes: Uint8Array): number {
-  let crc = 0xffffffff;
-  for (const byte of bytes) crc = (crc >>> 8) ^ crcTable[(crc ^ byte) & 255];
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-/** Store-only ZIP with standard local headers, central directory and CRC32 checksums. */
-function zip(files: [string, string][]): Uint8Array {
-  const entries = files.map(([name, xml]) => {
-    const data = encoder.encode(declaration + xml);
-    return { name: encoder.encode(name), data, crc: crc32(data), offset: 0 };
-  });
-  const localSize = entries.reduce((sum, entry) => sum + 30 + entry.name.length + entry.data.length, 0);
-  const directorySize = entries.reduce((sum, entry) => sum + 46 + entry.name.length, 0);
-  if (localSize + directorySize + 22 > 0xffffffff) throw new RangeError('Employee workbook exceeds ZIP size limit');
-  const bytes = new Uint8Array(localSize + directorySize + 22);
-  const view = new DataView(bytes.buffer);
-  let position = 0;
-  const u16 = (value: number) => { view.setUint16(position, value, true); position += 2; };
-  const u32 = (value: number) => { view.setUint32(position, value, true); position += 4; };
-  const write = (value: Uint8Array) => { bytes.set(value, position); position += value.length; };
-  for (const entry of entries) {
-    entry.offset = position;
-    u32(0x04034b50); u16(20); u16(0x0800); u16(0); u16(0); u16(33);
-    u32(entry.crc); u32(entry.data.length); u32(entry.data.length);
-    u16(entry.name.length); u16(0); write(entry.name); write(entry.data);
-  }
-  for (const entry of entries) {
-    u32(0x02014b50); u16(20); u16(20); u16(0x0800); u16(0); u16(0); u16(33);
-    u32(entry.crc); u32(entry.data.length); u32(entry.data.length);
-    u16(entry.name.length); u16(0); u16(0); u16(0); u16(0); u32(0); u32(entry.offset);
-    write(entry.name);
-  }
-  u32(0x06054b50); u16(0); u16(0); u16(entries.length); u16(entries.length);
-  u32(directorySize); u32(localSize); u16(0);
-  return bytes;
+  ];
+  return exportZip(files.map(([name, xml]) => [name, encoder.encode(declaration + xml)]));
 }

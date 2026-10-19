@@ -9,6 +9,7 @@ import { currentActor, type Actor } from './actor'
 import { WillowError } from './core'
 import { documentFile } from './documents'
 import { employeeExport } from './employee-export'
+import { employeeBundle } from './employee-bundle'
 import { employer } from './employer'
 import { Input } from './input'
 import { batchFile } from './payroll'
@@ -103,6 +104,7 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  employeeBundle: (env, actor, request, url) => employeeBundle(env, actor, url, request),
   employeeCsv: (env, actor, _request, url) => employeeExport(env, actor, url, 'csv'),
   employeeXlsx: (env, actor, _request, url) => employeeExport(env, actor, url, 'xlsx'),
   connections: (env, actor, _request, url) => connectionsPage(env, actor, url),

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 import { harness } from './harness.mjs'
+import { readZip } from './export-reader.mjs'
 import { fixture, today, day } from './regression-fixture.mjs'
 
 // Independent CSV consumer handles quoting, embedded newlines and empty cells.
@@ -81,7 +82,8 @@ try {
   const unusualCsv = objects(csv(await (await download(owner, 'organization', 'csv', ['name'], { person: unusual.person })).text()))
   assert.equal(unusualCsv[0].name, "'" + (await api(`people/${unusual.person}`)).name)
   const xlsx = Buffer.from(await (await download(s.managera.cookie, 'team', 'xlsx')).arrayBuffer())
-  assert.equal(xlsx.readUInt32LE(0), 0x04034b50)
+  const workbook = readZip(xlsx)
+  assert.ok(workbook.has('xl/worksheets/sheet1.xml'))
   const xml = xlsx.toString('utf8')
   assert.ok(xml.includes('inlineStr') && !xml.includes('<f>'))
   assert.ok(xml.includes('Álvaro') && xml.includes('phone;payAmount;payrollId'))
@@ -115,7 +117,7 @@ try {
         await page.evaluate(() => document.fonts.ready)
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `DATA-001 fits ${width}`)
         await page.screenshot({ path: `${destination}/DATA-001-${who}-${width}.png`, fullPage: true })
-        for (const [label, format] of [['Download employee CSV', 'csv'], ['Download employee XLSX', 'xlsx']]) {
+        for (const [label, format] of [['Download employee CSV', 'csv'], ['Download employee XLSX', 'xlsx'], ['Download records and files ZIP', 'zip']]) {
           const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: label, exact: true }).click()])
           assert.equal(await download.failure(), null)
           assert.match(download.suggestedFilename(), new RegExp(`\\.${format}$`))

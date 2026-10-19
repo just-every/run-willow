@@ -59,3 +59,45 @@ control characters) is prefixed with an apostrophe; this prefix is intentional.
 XLSX is an Office Open XML workbook with an Employees sheet. Every cell is a
 literal string, preserving identifiers, dates, decimals and leading zeros
 without executing formulas. No macro, external reference or formula is emitted.
+
+## Records and document bundles
+
+The same People form offers **Download records and files ZIP**. Choose which
+history sections to include using its checkboxes. The signed-in door is
+`/app/exports/employees.zip`, using the same `scope`, `fields`, date, filters and
+optional `person` selections as CSV/XLSX. It also requires `history`, repeated
+or comma-separated: `employment`, `leave`, `lifecycle`, `documents`.
+
+The ZIP is a readable export, not an installation backup. It contains:
+
+- `manifest.json`: schema `willow.employee-bundle/v1`, project, export time,
+  as-of date, scope, chosen fields/sections, person count and every other file's
+  path, media type, byte size and SHA-256 digest.
+- `employees.csv`: exactly the chosen standard fields, with the same
+  withholding and spreadsheet protections as the standalone download.
+- `records.json`: schema `willow.employee-records/v1`, person IDs/revisions,
+  selected permitted sections and an explicit `withheldSections` list.
+- `documents/PERSON_ID/VERSION_ID.bin`: original bytes for every document
+  version visible to the reader and filed by the chosen date. Original
+  filenames/media types, category, title, version number and receipt timestamps
+  stay in `records.json`; the stored digest also appears in the manifest.
+
+Employment history includes immutable terms versions, canceled/scheduled state,
+selected-period references and compensation only where the reader has that
+facet. Leave includes accounts, dated ledger entries, balances and requests;
+confidential reasons follow the same field authority as the profile. Lifecycle
+includes the pinned template and tasks, with completion/evidence cut off at the
+chosen day. Document categories are checked before listing, and access is
+rechecked before opening each file during a long download. Missing, corrupt or
+newly forbidden bytes fail the download; there is no substitute or empty file.
+A consumer should reject an incomplete ZIP and verify all manifest digests.
+
+Document bytes stream sequentially with backpressure; the whole archive is not
+buffered. Each individual file still uses the ordinary checksummed document
+reader and its existing size bound. The current bundle format is standard
+ZIP32, so more than its 4 GiB size/address range or 65,534 entries is refused
+as `export_bundle.zip32_limit` before download. Reference-size multipart/ZIP64
+transfer remains OPS-002 work. Only selected sections that exist in this edition
+are exported; custom tables, signatures, performance, benefits and other future
+modules, complete target-product archives and restore send fences remain the
+outstanding DATA-001 target.

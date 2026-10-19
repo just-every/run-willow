@@ -40,7 +40,7 @@ export const EMPLOYEE_EXPORT_FIELDS: Record<string, Column> = {
 export const organizationExport = (actor: Actor) => seesEveryone(actor)
 export const DEFAULT_EXPORT_FIELDS = ['name', 'workEmail', 'jobTitle', 'department', 'location', 'manager', 'status']
 
-export async function employeeExport(env: Bindings, actor: Actor, url: URL, format: 'csv' | 'xlsx') {
+export async function employeeExportData(env: Bindings, actor: Actor, url: URL) {
   const scope = url.searchParams.get('scope')
   insist(['self', 'team', 'organization'].includes(scope ?? ''), 'export_scope_required')
   insist(scope !== 'organization' || organizationExport(actor), 'forbidden', 403)
@@ -56,16 +56,23 @@ export async function employeeExport(env: Bindings, actor: Actor, url: URL, form
   insist(selected.every(id => scoped.some(person => person.id === id)), 'export_person_out_of_scope', 403)
   const people = filterDirectory(scoped, filters).filter(person => !selected.length || selected.includes(person.id))
   const rows: string[][] = [['person_id', 'as_of', 'scope', 'withheld_fields', ...fields]]
+  const records: Person[] = []
   for (const person of people) {
     const view = await personView(env, actor, person.id, { asOf: filters.date }) as Person
+    records.push(view)
     const withheld = fields.filter(key => EMPLOYEE_EXPORT_FIELDS[key].facet && !view.facets.includes(EMPLOYEE_EXPORT_FIELDS[key].facet!))
     rows.push([person.id, filters.date, scope!, withheld.join(';'), ...fields.map(key => withheld.includes(key) ? '' : String(EMPLOYEE_EXPORT_FIELDS[key].value(view) ?? ''))])
   }
-  await auditRead(env, actor.id, 'employee.export', scope!, { asOf: filters.date, fields, people: people.length, format })
+  return { scope: scope!, asOf: filters.date, fields, rows, records }
+}
+
+export async function employeeExport(env: Bindings, actor: Actor, url: URL, format: 'csv' | 'xlsx') {
+  const { scope, asOf, fields, rows, records } = await employeeExportData(env, actor, url)
+  await auditRead(env, actor.id, 'employee.export', scope, { asOf, fields, people: records.length, format })
   const body = format === 'csv' ? employeeCsv(rows) : employeeXlsx(rows)
   return new Response(body as BodyInit, { headers: {
     'content-type': format === 'csv' ? 'text/csv; charset=utf-8' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'content-disposition': `attachment; filename="willow-employees-${filters.date}.${format}"`,
+    'content-disposition': `attachment; filename="willow-employees-${asOf}.${format}"`,
     'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff',
   } })
 }
