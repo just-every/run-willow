@@ -9,11 +9,13 @@ import { avatar, form, h, page, raw, tag } from './html'
 type Board = Awaited<ReturnType<typeof progress>>
 type Selected = NonNullable<Board['selected']>
 
-// Status marks: a filled check when agreed, a clock while waiting, one orange dot for
-// the exception, a quiet dash where a system does not apply.
+// Status marks: a filled check when agreed, an amber clock while waiting on someone, a
+// grey clock when nothing has started, one orange dot for the exception, a quiet dash
+// where a system does not apply.
 const MARKS: Record<CellState, string> = {
   done: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle class="disc" cx="10" cy="10" r="9"/><path class="glyph" d="M6 10.3l2.6 2.5L14 7.6"/></svg>',
   wait: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle class="ring" cx="10" cy="10" r="8.2"/><path class="hands" d="M10 5.6V10l2.8 1.8"/></svg>',
+  open: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle class="ring" cx="10" cy="10" r="8.2"/><path class="hands" d="M10 5.6V10l2.8 1.8"/></svg>',
   alert: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle class="disc" cx="10" cy="10" r="9"/><path class="glyph" d="M10 5.5v5.2M10 14v.3"/></svg>',
   none: '',
 }

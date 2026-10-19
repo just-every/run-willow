@@ -34,10 +34,11 @@ export async function tasksPage(env: Bindings, actor: Actor, url: URL) {
 
 export async function casePage(env: Bindings, actor: Actor, id: string, url: URL) {
   const item = await caseDetail(env, actor, id)
+  const who = (assignee: string) => ({ hr: 'HR', it: 'IT', payroll: 'Payroll', manager: 'Manager', employee: 'Employee' } as Record<string, string>)[assignee] ?? assignee
   const body = h`<p class="back"><a href="/app/people/${item.person.id}">← ${item.person.name}</a></p><h1>${item.kind[0].toUpperCase()}${item.kind.slice(1)}: ${item.person.name}</h1>
 <p>${item.template.name} (template v${item.template.version}) · from ${formatDate(item.anchorDate)} · ${tag(item.status)}</p>
 ${item.missing.length ? h`<section class="card"><h2>Information still needed</h2><ul>${item.missing.map(field => h`<li>${field.replace(/_/g, ' ')}</li>`)}</ul><p class="muted">Add it on <a href="/app/people/${item.person.id}">the person’s record</a>.</p></section>` : ''}
-<section class="card"><h2>Tasks</h2>${table(['Due', 'Task', 'Who', 'Status', ''], item.tasks.map(task => [formatDate(task.dueDate), h`${task.title}${task.system ? h`<br><span class="muted">System: ${task.system} — completed only with evidence; Willow does not act on it</span>` : ''}`, task.assignee, task.status === 'done' ? h`${tag('done')}${task.evidence ? h`<br><span class="muted">${task.evidence}</span>` : ''}` : tag('open'),
+<section class="card"><h2>Tasks</h2>${table(['Due', 'Task', 'Who', 'Status', ''], item.tasks.map(task => [formatDate(task.dueDate), h`${task.title}${task.system ? h`<br><span class="muted">System: ${task.system} — completed only with evidence; Willow does not act on it</span>` : ''}`, who(task.assignee), task.status === 'done' ? h`${tag('done')}${task.evidence ? h`<br><span class="muted">${task.evidence}</span>` : ''}` : tag('open'),
     task.status === 'open' && task.mine ? form('task.complete', `/app/cases/${id}`, [hidden('task', task.id), area(task.evidenceRequired ? 'Evidence (required)' : 'Note', 'evidence', '', task.evidenceRequired)], task.action === 'end_access' ? 'End access and mark done' : 'Mark done', { secondary: true }) : '']))}</section>
 ${item.status === 'open' && can(actor, 'people.manage') ? h`<section class="card">${form('case.complete', `/app/cases/${id}`, [hidden('case', id)], 'Complete case')}<p class="muted">A case completes only when every task is done.</p></section>` : ''}`
   return page('Case', actor, body, { current: '/app/people', url })

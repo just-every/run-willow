@@ -181,6 +181,20 @@ try {
     const unrelated = await h.api('leave.request', s.employee.cookie, { account: s.employee.account, startDate: day(8), endDate: day(8) })
     await h.api(`leave/${unrelated.id}`, s.managerb.cookie, undefined, 404)
   })
+
+  await check('in-progress-board', async () => {
+    const key = `case:${s.employee.case}`
+    const board = await api('progress')
+    const row = board.rows.find(r => r.key === key)
+    assert.ok(row?.exception && row.needsYou, 'an open joiner with an overdue task is the exception and needs the owner')
+    assert.ok(board.needYou >= 1)
+    assert.ok((await h.api('progress', s.employee.cookie)).rows.every(r => r.person.id === s.employee.person), 'an employee sees no one else’s changes')
+    const page = await (await h.raw(`/app/progress?select=${key}`, { cookie: owner })).text()
+    assert.ok(page.includes('Expected vs observed') && page.includes('aria-current="true"'))
+    for (const task of (await api(`cases/${s.employee.case}`)).tasks.filter(t => t.status === 'open')) await api('task.complete', { task: task.id, evidence: 'Recorded' })
+    await api('case.complete', { case: s.employee.case })
+    assert.ok(!(await api('progress')).rows.some(r => r.key === key), 'a completed case leaves the board')
+  })
 } finally { await h.close() }
 if (failures) process.exitCode = 1
 

@@ -12,7 +12,7 @@ import { directory } from './profile'
 import { workList } from './work'
 import { followup, type Followup } from './progress-followup'
 
-export type CellState = 'done' | 'wait' | 'alert' | 'none'
+export type CellState = 'done' | 'wait' | 'open' | 'alert' | 'none'
 export interface Cell { state: CellState; text: string; detail?: string }
 export interface Step { state: CellState; title: string; detail: string; note?: string }
 type Case = Awaited<ReturnType<typeof caseDetail>>
@@ -39,7 +39,7 @@ function tasksCell(tasks: Task[], today: string, doneText = 'Done'): Cell {
   const late = tasks.find(task => overdueDays(task, today))
   if (late) return { state: 'alert', text: 'Overdue', detail: pastDue(overdueDays(late, today)) }
   const open = tasks.filter(task => task.status === 'open')
-  if (open.length) return { state: 'wait', text: open.length === tasks.length ? 'Open' : `${tasks.length - open.length} of ${tasks.length} done`, detail: `due ${formatDay(open[0].dueDate, today).replace(/^\w+, /, '')}` }
+  if (open.length) return { state: open.length === tasks.length ? 'open' : 'wait', text: open.length === tasks.length ? 'Open' : `${tasks.length - open.length} of ${tasks.length} done`, detail: `due ${formatDay(open[0].dueDate, today).replace(/^\w+, /, '')}` }
   return { state: 'done', text: doneText }
 }
 
@@ -54,7 +54,7 @@ async function handoffs(env: Bindings) {
     if (status === 'acknowledged') return { state: 'done', text: 'Handed off', detail: 'acknowledged' }
     if (status) return { state: 'wait', text: 'Handed off', detail: 'not acknowledged' }
     if (drafted.has(key)) return { state: 'wait', text: 'In draft batch' }
-    return { state: 'wait', text: 'Not handed off' }
+    return { state: 'open', text: 'Not handed off' }
   }
 }
 
@@ -135,7 +135,7 @@ async function detail(env: Bindings, actor: Actor, row: Row, work: Work, items: 
       const late = overdueDays(task, today)
       steps.push(task.status === 'done'
         ? { state: 'done', title: task.title, detail: `${ASSIGNEE_LABELS[task.assignee]} · ${task.completedAt ? formatInstant(task.completedAt, work.timezone) : 'done'}`, note: task.evidence ?? undefined }
-        : { state: late ? 'alert' : 'wait', title: task.title, detail: `${ASSIGNEE_LABELS[task.assignee]}${task.system ? ` · ${task.system}` : ''} · due ${formatDay(task.dueDate, today)}${late ? ` · ${pastDue(late)}` : ''}`, note: task.evidenceRequired ? 'Done only with evidence of what was done.' : undefined })
+        : { state: late ? 'alert' : 'open', title: task.title, detail: `${ASSIGNEE_LABELS[task.assignee]}${task.system ? ` · ${task.system}` : ''} · due ${formatDay(task.dueDate, today)}${late ? ` · ${pastDue(late)}` : ''}`, note: task.evidenceRequired ? 'Done only with evidence of what was done.' : undefined })
     }
     const late = row.case.tasks.find(task => overdueDays(task, today))
     const done = row.case.tasks.filter(task => task.status === 'done').length

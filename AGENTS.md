@@ -98,7 +98,7 @@ Rules that hold everywhere:
 
 Every page action has a JSON twin, so an agent can run Willow with a
 signed-in session cookie and sees exactly what that member may see. Reads are
-`GET /api/willow/` plus a path from `src/willow/doors.ts` (`me`, `people`,
+`GET /api/willow/` plus a path from `src/willow/doors.ts` (`me`, `progress`, `people`,
 `people/:id`, `context/:id`, `organization`, `cases/:id`, `tasks`, `leave/:id`, `approvals`,
 `quote?account&startDate&endDate`, `payroll`, `payroll/:id`, `reports`,
 `proposals`, `proposals/:id`, `imports`, `audit`, `settings`, `policies`,
