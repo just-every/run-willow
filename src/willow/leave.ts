@@ -1,3 +1,5 @@
+import { validateRules, writeRuleStatement, readRules, accruePolicy, policyEligibility, calculationsFor } from './leave-policy'
+import { policyRulesInput } from './leave-policy-input'
 // Flows 7, 8 and 9: owner-approved leave policies, accounts with signed-off
 // opening balances, schedule-based request calculation, routed approval and
 // reversal. The ledger is append-only: a balance is the sum of its entries,
@@ -27,10 +29,12 @@ export async function createPolicy(env: Bindings, actor: Actor, input: Input) {
   const negative = parseHours(input.text('negativeLimitHours', { optional: true, max: 8 }) || '0', 'invalid_negativeLimitHours')
   insist(negative >= 0, 'invalid_negativeLimitHours')
   const version = ((await one<{ v: number }>(env, 'SELECT MAX(version) AS v FROM wl_policy_versions WHERE policy_id = ?', policyId))?.v ?? 0) + 1
-  const id = newId()
+  const id = newId(), rules = validateRules(policyRulesInput(input))
+  if(rules) for(const variant of rules.locations) insist(await one(env,'SELECT 1 FROM wl_locations WHERE id=?',variant.locationId),'location_not_found',404)
   await commit(env, [
     ...(existing ? [] : [stmt(env, 'INSERT INTO wl_leave_policies (id, name, created_at) VALUES (?, ?, ?)', policyId, input.text('name', { max: 80 }), now())]),
     stmt(env, "INSERT INTO wl_policy_versions (id, policy_id, version, summary, accrual_weeks_hundredths, negative_limit_minutes, status, written_by, written_at) VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?)", id, policyId, version, input.text('summary', { max: 4000 }), Math.round(Number(weeks) * 100), negative, actor.id, now()),
+    ...(rules ? [writeRuleStatement(env,id,rules)] : []),
   ], { actor: actor.id, action: 'policy.write', subject: id, detail: { policy: policyId, version } })
   return { id, policy: policyId, version, status: 'draft' }
 }
@@ -47,10 +51,10 @@ export async function approvePolicy(env: Bindings, actor: Actor, input: Input) {
 
 export async function policies(env: Bindings) {
   const versions = await all(env, 'SELECT * FROM wl_policy_versions ORDER BY version DESC')
-  return (await all(env, 'SELECT * FROM wl_leave_policies ORDER BY name')).map(policy => ({
+  return await Promise.all((await all(env, 'SELECT * FROM wl_leave_policies ORDER BY name')).map(async policy => ({
     id: policy.id, name: policy.name,
-    versions: versions.filter(version => version.policy_id === policy.id).map(version => ({ id: version.id, version: version.version, status: version.status, summary: version.summary, accrualWeeks: version.accrual_weeks_hundredths / 100, negativeLimitMinutes: version.negative_limit_minutes, approvedAt: version.approved_at })),
-  }))
+    versions: await Promise.all(versions.filter(version => version.policy_id === policy.id).map(async version => ({ id: version.id, version: version.version, status: version.status, summary: version.summary, accrualWeeks: version.accrual_weeks_hundredths / 100, negativeLimitMinutes: version.negative_limit_minutes, approvedAt: version.approved_at, rules: await readRules(env,version.id) }))),
+  })))
 }
 
 async function latestApproved(env: Bindings, policyId: string) {
@@ -69,6 +73,8 @@ export async function openAccount(env: Bindings, actor: Actor, input: Input) {
   insist(!await one(env, 'SELECT 1 FROM wl_leave_accounts WHERE period_id = ? AND policy_id = ?', periodId, policyId), 'account_exists', 409)
   const cutover = requireDate(input.text('cutoverDate', { max: 10 }), 'invalid_cutoverDate')
   insist(cutover >= period.start_date, 'cutover_before_start')
+  const eligibility = await policyEligibility(env,{...period,period_id:periodId,policy_version_id:version.id},cutover)
+  insist(!eligibility || eligibility.eligible,'policy_not_eligible',409)
   const opening = parseHours(input.text('openingHours', { max: 10 }), 'invalid_openingHours')
   const id = newId()
   await commit(env, [stmt(env, "INSERT INTO wl_leave_accounts (id, period_id, policy_id, policy_version_id, cutover_date, opening_minutes, opening_note, opening_status, accrued_through, revision, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'proposed', ?, ?, ?)", id, periodId, policyId, version.id, cutover, opening, input.text('note', { max: 500 }), cutover, newId(), now())], { actor: actor.id, action: 'account.open', subject: id, detail: { period: periodId, policy: policyId, cutover, openingMinutes: opening } })
@@ -109,6 +115,8 @@ export async function accrue(env: Bindings, actor: Actor, input: Input) {
   requirePermission(actor, 'leave.manage')
   const account = await signedOff(env, input.text('account', { max: 100 }))
   const through = requireDate(input.text('through', { max: 10 }), 'invalid_through')
+  const scheduled = await accruePolicy(env,actor,account,through)
+  if(scheduled) return scheduled
   const from = addDays(account.accrued_through, 1)
   insist(through >= from, 'nothing_to_accrue', 409)
   const last = account.end_date && account.end_date < through ? account.end_date : through
@@ -127,16 +135,7 @@ export async function accrue(env: Bindings, actor: Actor, input: Input) {
   return { id: account.id, from, through, minutes }
 }
 
-export async function adjust(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'leave.manage')
-  const account = await signedOff(env, input.text('account', { max: 100 }))
-  const minutes = parseHours(input.text('hours', { max: 10 }), 'invalid_hours')
-  insist(minutes !== 0, 'invalid_hours')
-  const date = requireDate(input.text('effectiveDate', { max: 10 }), 'invalid_effectiveDate')
-  const id = newId()
-  await commit(env, [stmt(env, "INSERT INTO wl_ledger (id, account_id, kind, minutes, effective_date, note, recorded_by, recorded_at) VALUES (?, ?, 'adjustment', ?, ?, ?, ?, ?)", id, account.id, minutes, date, input.text('note', { max: 500 }), actor.id, now())], { actor: actor.id, action: 'leave.adjust', subject: account.id, detail: { minutes } })
-  return { id, minutes }
-}
+export { proposeOverride as adjust } from './protected-leave/overrides'
 
 /** The deterministic calculation for a request: scheduled minutes on each day of the range. */
 export async function calculate(env: Bindings, account: Row, start: string, end: string) {
@@ -145,6 +144,8 @@ export async function calculate(env: Bindings, account: Row, start: string, end:
   insist(start >= account.start_date && (!account.end_date || end <= account.end_date), 'outside_employment')
   const days: { date: string; minutes: number; schedule: string | null }[] = []
   for (let date = start; date <= end; date = addDays(date, 1)) {
+    const eligible=await policyEligibility(env,account,date)
+    insist(!eligible || eligible.eligible,'policy_not_eligible',409)
     const day = await scheduleDay(env, account.period_id, date)
     days.push({ date, minutes: day?.minutes ?? 0, schedule: day?.id ?? null })
   }
@@ -347,11 +348,13 @@ export async function leaveFor(env: Bindings, actor: Actor, personId: string, wi
   const ledger = (accounts.length ? await all(env, `SELECT * FROM wl_ledger WHERE account_id IN (${accounts.map(() => '?').join(', ')}) ORDER BY ${LEDGER_ORDER}`, ...accounts.map(account => account.id)) : []).filter(entry => !asOf || entry.effective_date <= asOf)
   const requests = await all(env, `${REQUESTS} WHERE r.person_id = ? ORDER BY r.start_date DESC`, personId)
   const reasons = withReason ? await reasonsFor(env, actor, requests) : new Map<string, string>()
+  const calculations = new Map(await Promise.all(accounts.map(async account => [account.id, await calculationsFor(env,account.id,asOf)] as const)))
   return {
     accounts: accounts.filter(account => !asOf || account.cutover_date <= asOf).map(account => ({
       id: account.id, period: account.period_id, policy: { id: account.policy_id, name: account.policy_name, version: account.policy_version, versionId: account.policy_version_id },
       cutoverDate: account.cutover_date, openingMinutes: account.opening_minutes, openingStatus: account.opening_status, accruedThrough: account.accrued_through,
       balanceMinutes: ledger.filter(entry => entry.account_id === account.id).reduce((sum, entry) => sum + entry.minutes, 0),
+      calculations: calculations.get(account.id) ?? [],
       ledger: ledger.filter(entry => entry.account_id === account.id).map(entry => ({ id: entry.id, kind: entry.kind, minutes: entry.minutes, effectiveDate: entry.effective_date, request: entry.request_id, reverses: entry.reverses, note: entry.note })),
     })),
     requests: requests.filter(row => !asOf || row.start_date <= asOf).map(row => requestView(row, reasons.get(row.id), withReason)),

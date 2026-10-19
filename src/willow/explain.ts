@@ -45,7 +45,7 @@ export async function explain(env: Bindings, actor: Actor, item: Selected): Prom
   const facts = [current?.jobTitle, current?.department && `in ${current.department.name}`, current?.location && `at ${current.location.name}`, current?.manager && `managed by ${current.manager.name}`].filter(Boolean)
   reads.push(`Willow answers only from ${name}’s record as you may see it today${facts.length ? `: ${facts.join(', ')}` : ''}.`)
   reads.push(record.withheld.length ? `Withheld from you, so Willow does not use or guess them: ${list(record.withheld.map(label => label.toLowerCase()))}.` : 'Nothing in this record is withheld from you.')
-  for (const policy of record.policies) reads.push(`Leave figures come from ${policy.policy} version ${policy.version}: ${policy.accrualWeeksPerYear} weeks a year of scheduled hours${policy.negativeLimitMinutes ? `, and the balance may go ${hoursLabel(policy.negativeLimitMinutes / 60)} below zero` : ''}.`)
+  for (const policy of record.policies) reads.push(`Leave figures come from ${policy.policy} version ${policy.version}: ${policy.scheduledRules ? `${policy.scheduledRules.kind} earned on calendar days, credited ${policy.scheduledRules.cadence}; its reviewed service tiers, location rules, caps and carryover are in the cited policy and durable daily calculations` : `${policy.accrualWeeksPerYear} weeks a year of scheduled hours`}${policy.negativeLimitMinutes ? `, and the balance may go ${hoursLabel(policy.negativeLimitMinutes / 60)} below zero` : ''}.`)
   reads.push('Willow never infers access from someone’s rank: managing a person does not reveal their pay or private details.')
   reads.push(`Prepared ${formatInstant(Date.now(), work.timezone)}.`)
 

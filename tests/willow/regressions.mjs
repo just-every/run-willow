@@ -221,3 +221,5 @@ await import("./date-alerts.mjs")
 await import("./self-service.mjs")
 
 await import("./custom-reports.mjs")
+
+await import("./leave-policies.mjs")

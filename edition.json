@@ -41,7 +41,9 @@
           "migrations/core/0025_date_alerts.sql",
           "migrations/core/0026_self_service.sql",
           "migrations/core/0027_eeo.sql",
-          "migrations/core/0028_saved_reports.sql"
+          "migrations/core/0028_saved_reports.sql",
+          "migrations/core/0029_leave_policy.sql",
+          "migrations/core/0030_protected_leave.sql"
         ]
       }
     },

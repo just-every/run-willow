@@ -3,6 +3,7 @@
 // entry, so a new door cannot be added without being crawled.
 // Patterns are relative to /api/willow/ (API) or absolute (pages).
 export const API_DOORS: [string, string][] = [
+  ['^protected-leave$', 'protectedCases'], ['^protected-leave/([\\w-]+)$', 'protectedCase'], ['^leave-overrides$', 'leaveOverrides'],
   ['^custom-reports$', 'customReports'], ['^custom-reports/([\\w-]+)$', 'customReport'], ['^eeo/self$', 'eeoSelf'], ['^eeo/report$', 'eeoReport'],
   ['^self-changes$', 'selfChanges'], ['^self-changes/([\\w-]+)$', 'selfChange'], ['^self-exceptions$', 'selfExceptions'],
   ['^custom-fields$', 'customFields'], ['^record-tables$', 'recordTables'], ['^record-tables/([a-z][a-z0-9_]*)$', 'recordReport'],
@@ -16,6 +17,7 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/protected-leave$', 'protectedList'], ['^/app/protected-leave/([\\w-]+)$', 'protectedDetail'],
   ['^/app/reports/custom$', 'customReports'], ['^/app/reports/custom/([\\w-]+)\\.csv$', 'customReportCsv'], ['^/app/reports/custom/([\\w-]+)\\.xlsx$', 'customReportXlsx'], ['^/app/reports/custom/([\\w-]+)$', 'customReport'], ['^/app/eeo/self$', 'eeoSelf'], ['^/app/eeo/report$', 'eeoReport'],
   ['^/app/self-changes$', 'selfChanges'], ['^/app/self-changes/([\\w-]+)$', 'selfChange'],
   ['^/app/custom-fields$', 'customFields'], ['^/app/reports/tables/([a-z][a-z0-9_]*)\\.csv$', 'recordReportFile'],

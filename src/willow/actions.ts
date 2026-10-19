@@ -1,3 +1,5 @@
+import { openProtected, recordProtectedAbsence, reverseProtectedAbsence, certifyProtected } from './protected-leave/records'
+import { decideOverride } from './protected-leave/overrides'
 import { saveReport } from './reporting/definitions'
 import { scheduleReport } from './reporting/schedule'
 import { writeEeoSelf } from './eeo'
@@ -36,6 +38,11 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'protected.open': openProtected,
+  'protected.absence': recordProtectedAbsence,
+  'protected.reverse': reverseProtectedAbsence,
+  'protected.certify': certifyProtected,
+  'leave.override.decide': decideOverride,
   'report.save': saveReport,
   'report.schedule': scheduleReport,
   'eeo.self.write': writeEeoSelf,

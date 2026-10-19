@@ -1,3 +1,5 @@
+import { protectedCases, protectedCase } from './protected-leave/records'
+import { leaveOverrides } from './protected-leave/overrides'
 import { savedReports, savedReport } from './reporting/definitions'
 import { runReport } from './reporting/execute'
 import { scheduleStatus } from './reporting/schedule'
@@ -44,6 +46,9 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  protectedCases,
+  protectedCase: (env,actor,_request,id) => protectedCase(env,actor,id),
+  leaveOverrides,
   customReports: savedReports,
   customReport: async (env,actor,_request,id) => {const report=await savedReport(env,actor,id);return {report,result:await runReport(env,actor,report.definition),schedule:await scheduleStatus(env,actor,id)}},
   eeoSelf: (env,actor,_request,_id,url) => { if([...url.searchParams.keys()].length) throw new WillowError('eeo_filters_not_allowed');return eeoSelf(env,actor) },
