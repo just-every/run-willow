@@ -185,7 +185,7 @@ async function journey(width, ownerOpen, employeeOpen, persona) {
   await inForm(owner, 'leaver.start').getByLabel('Last day of employment').fill(addDays(monday, 30))
   await inForm(owner, 'leaver.start').getByLabel('Reason (private)').fill('Moving interstate')
   await inForm(owner, 'leaver.start').getByRole('button').click(); await saved(owner)
-  await owner.getByRole('link', { name: /leaver from/ }).click()
+  await owner.getByRole('link', { name: /Leaver from/ }).click()
   await owner.getByRole('button', { name: 'End access and mark done' }).click(); await saved(owner)
   await owner.getByRole('button', { name: 'Complete case' }).click(); await saved(owner)
   await shot(owner, 'leaver')
