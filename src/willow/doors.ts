@@ -12,6 +12,7 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/exports/employees\\.csv$', 'employeeCsv'], ['^/app/exports/employees\\.xlsx$', 'employeeXlsx'],
   ['^/app/connections$', 'connections'],
   ['^/app$', 'home'], ['^/app/employer$', 'employer'], ['^/app/tasks$', 'tasks'], ['^/app/people$', 'people'], ['^/app/people/([\\w-]+)$', 'person'],
   ['^/app/cases/([\\w-]+)$', 'case'], ['^/app/leave$', 'leave'], ['^/app/leave/([\\w-]+)$', 'request'], ['^/app/settings$', 'settings'], ['^/app/access$', 'access'],
