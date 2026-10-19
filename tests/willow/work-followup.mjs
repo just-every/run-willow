@@ -1,5 +1,6 @@
 // FLOW-002: real Worker, storage, scheduler, pages and forms; mail alone is a network-edge fake.
 import assert from 'node:assert/strict'
+import { publishTemplate } from './publish-template.mjs'
 import { mkdtemp, mkdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join as pathJoin } from 'node:path'
@@ -62,7 +63,7 @@ try {
   const w=await item(key)
   return api('work.schedule',{source:key,revision:w.revision,owner:s.hr.member,substitute:(await api('me')).id,dueDate:today,nextAction:'Review the checklist and record evidence',...extra})
  }
- const template=await api('template.create',{kind:'joiner',name:'New hire follow-up',requiredFields:['address'],taskTitle:['Prepare equipment return evidence'],taskAssignee:['hr'],taskDueDays:['0'],taskEvidence:['yes']})
+ const template=await publishTemplate(h, owner,{kind:'joiner',name:'New hire follow-up',requiredFields:['address'],taskTitle:['Prepare equipment return evidence'],taskAssignee:['hr'],taskDueDays:['0'],taskEvidence:['yes']})
  const person=await f.join('Avery Brooks',{template:template.id,workEmail:'avery@example.com',startDate:today})
  const task=(await api(`cases/${person.case}`)).tasks[0],key=`task:${task.id}`
  assert.ok((await list()).items.some(w=>w.source===`information:${person.case}`),'Required information has owned work')

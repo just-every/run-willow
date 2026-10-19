@@ -1,6 +1,7 @@
 // OPEN-001: the exact public command, against public main, with no author account.
 // This is remote-source evidence; local connection billing is proved separately.
 import assert from 'node:assert/strict'
+import { publishTemplate } from './publish-template.mjs'
 import { execFile } from 'node:child_process'
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -68,7 +69,7 @@ async function run() {
       await page.getByRole('button', { name: 'Finish setup' }).click()
       await page.waitForURL(u => u.pathname.startsWith('/app'))
     }
-    const api = async (path, data) => {
+    const h = { api: async (path, _cookie, data) => {
       const response = await context.request.fetch(`${origin}/api/willow/${path}`, {
         method: data === undefined ? 'GET' : 'POST', headers: { Origin: origin }, data, timeout: 30_000, maxRedirects: 0,
       })
@@ -76,7 +77,8 @@ async function run() {
       const result = await response.json()
       assert.ok(!result?.error, `Public API ${path.split('?')[0]} refused its business operation`)
       return result
-    }
+    } }
+    const api = (path, data) => h.api(path, undefined, data)
     const owner = await api('me')
     assert.ok(owner.owner, 'RER_OPEN signs in as the local owner without an author account')
     await api('employer.configure', { name: 'Juniper Field Services', timezone: 'America/Chicago', country: 'US', currency: 'USD' })
@@ -84,7 +86,7 @@ async function run() {
     const today = (await api('me')).today, day = offset => new Date(Date.parse(today) + offset * 86400000).toISOString().slice(0, 10)
     const schedule = (await api('schedule.create', { name: 'Standard full-time week', mon: '8', tue: '8', wed: '8', thu: '8', fri: '8' })).id
     const location = (await api('location.create', { name: 'Austin office', timezone: 'America/Chicago' })).id
-    const template = (await api('template.create', { name: 'Employee onboarding', kind: 'joiner', taskTitle: ['Review employment record'], taskAssignee: ['hr'], taskDueDays: ['0'] })).id
+    const template = (await publishTemplate(h, undefined, { name: 'Employee onboarding', kind: 'joiner', taskTitle: ['Review employment record'], taskAssignee: ['hr'], taskDueDays: ['0'] })).id
     const departmentNames = ['Operations', 'Customer Success', 'Engineering', 'Finance', 'People', 'Sales']
     const departments = await Promise.all(departmentNames.map(async name => (await api('department.create', { name })).id))
     const first = ['Amara', 'Noah', 'Sofia', 'Liam', 'Priya', 'Ethan', 'Zoe', 'Mateo'], last = ['Okafor', 'Williams', 'Garcia', 'Chen', 'Patel', 'Nguyen'], employees = []

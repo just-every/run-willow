@@ -42,7 +42,9 @@ export async function createLocation(env: Bindings, actor: Actor, input: Input) 
   requirePermission(actor, 'people.manage')
   const timezone = input.text('timezone', { max: 64 })
   insist(validTimezone(timezone), 'invalid_timezone')
-  return await createNamed(env, actor, 'wl_locations', input.text('name', { max: 80 }), { timezone })
+  const state = input.text('workState', { optional: true, max: 2 }).toUpperCase()
+  insist(!state || /^[A-Z]{2}$/.test(state), 'invalid_workState')
+  return await createNamed(env, actor, 'wl_locations', input.text('name', { max: 80 }), { timezone, work_state: state || null })
 }
 
 export async function createDepartment(env: Bindings, actor: Actor, input: Input) {
@@ -81,7 +83,7 @@ export async function createCategory(env: Bindings, actor: Actor, input: Input) 
 export async function settings(env: Bindings) {
   return {
     employer: await employer(env),
-    locations: await all(env, 'SELECT id, name, timezone FROM wl_locations ORDER BY name'),
+    locations: await all(env, 'SELECT id, name, timezone, work_state AS workState FROM wl_locations ORDER BY name'),
     departments: await all(env, 'SELECT id, name FROM wl_departments ORDER BY name'),
     schedules: (await all(env, 'SELECT * FROM wl_schedules ORDER BY name')).map(row => ({ id: row.id, name: row.name, minutes: Object.fromEntries(WEEKDAYS.map(day => [day, row[day]])), weeklyMinutes: WEEKDAYS.reduce((sum, day) => sum + row[day], 0) })),
     categories: (await all(env, 'SELECT * FROM wl_doc_categories ORDER BY name')).map(row => ({ id: row.id, name: row.name, subjectReads: !!row.subject_reads, managerReads: !!row.manager_reads, acknowledgement: !!row.acknowledgement })),

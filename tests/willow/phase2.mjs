@@ -1,6 +1,7 @@
 // Four public-door integration flows against the built Worker, D1 and R2.
 // Network fakes are confined to the mail, Models and identity provider edges.
 import assert from 'node:assert/strict'
+import { publishTemplate } from './publish-template.mjs'
 import { evidenceDirectory } from './evidence.mjs'
 import { harness } from './harness.mjs'
 import { fixture, today, day } from './regression-fixture.mjs'
@@ -39,7 +40,7 @@ try {
     const defaultNotice=await join('default-notice')
     assert.ok(defaultNotice.notices.deliveries.every(d=>d.status==='accepted'))
     edge.messages.length=0
-    const template=await api('template.create',{kind:'joiner',name:'Private task test',taskTitle:['PRIVATE-TITLE-9911'],taskAssignee:['it'],taskDueDays:['0'],taskSystem:['PRIVATE-SYSTEM'],taskEvidence:['yes']})
+    const template=await publishTemplate(h, owner,{kind:'joiner',name:'Private task test',taskTitle:['PRIVATE-TITLE-9911'],taskAssignee:['it'],taskDueDays:['0'],taskSystem:['PRIVATE-SYSTEM'],taskEvidence:['yes']})
     await api('member.permissions',{member:s.managerb.member,permissions:['it.tasks']})
     await api('member.permissions',{member:s.ended.member,permissions:['it.tasks']})
     await api('access.end',{person:s.ended.person})
@@ -56,7 +57,7 @@ try {
     assert.equal(completed.status,'done');assert.ok(completed.notices.deliveries.every(d=>d.status==='refused'))
     assert.ok(!JSON.stringify(edge.messages).includes('PRIVATE-EVIDENCE'))
     assert.equal((await api(`cases/${joined.case}`)).tasks[0].status,'done')
-    const mover=await api('template.create',{kind:'mover',name:'Mover notice',taskTitle:['Review'],taskAssignee:['it'],taskDueDays:['0']})
+    const mover=await publishTemplate(h, owner,{kind:'mover',name:'Mover notice',taskTitle:['Review'],taskAssignee:['it'],taskDueDays:['0']})
     const moved=await api('mover.schedule',{period:joined.period,template:mover.id,effectiveFrom:day(1),jobTitle:'Moved',reason:'Review'})
     assert.ok(moved.notices.deliveries.length>0)
     const left=await api('leaver.start',{period:joined.period,template:templates.leaver,endDate:day(2),reason:'PRIVATE-END'})
@@ -210,7 +211,7 @@ try {
     await api('model.draft',{template:templates.joiner},409)
     assert.ok(!(await(await h.raw('/app/proposals',{cookie:owner})).text()).includes('Request draft'))
     await h.setBindings({MODELS_KEY:'test-model-secret'})
-    const secret=await api('template.create',{kind:'mover',name:'PRIVATE-TEMPLATE-NAME',taskTitle:['PRIVATE-TITLE-9911'],taskAssignee:['it'],taskDueDays:['3'],taskSystem:['PRIVATE-SYSTEM'],taskEvidence:['yes']})
+    const secret=await publishTemplate(h, owner,{kind:'mover',name:'PRIVATE-TEMPLATE-NAME',taskTitle:['PRIVATE-TITLE-9911'],taskAssignee:['it'],taskDueDays:['3'],taskSystem:['PRIVATE-SYSTEM'],taskEvidence:['yes']})
     await api('model.draft',{template:secret.id,prompt:'PRIVATE-PAY-81234.56'},400);assert.equal(edge.calls.length,0)
     const drafted=await api('model.draft',{template:secret.id})
     assert.equal(drafted.status,'pending')
@@ -223,7 +224,7 @@ try {
     await api('model.decide',{proposal:drafted.id,decision:'accept'})
     assert.deepEqual(await api(`people/${s.employee.person}`),before)
     const stale=await api('model.draft',{template:secret.id})
-    await api('template.create',{family:secret.family,name:'New revision',taskTitle:['New task'],taskAssignee:['hr'],taskDueDays:['0']})
+    await publishTemplate(h, owner,{family:secret.family,name:'New revision',taskTitle:['New task'],taskAssignee:['hr'],taskDueDays:['0']})
     await api('model.decide',{proposal:stale.id,decision:'accept'},409)
     await api('model.decide',{proposal:stale.id,decision:'decline'})
     for(const mode of ['failed','invalid','uncited','redirect']) {edge.mode=mode;const n=edge.calls.length;const failed=await api('model.draft',{template:templates.joiner});assert.equal(failed.status,'failed');assert.equal(edge.calls.length,n+1);assert.ok(!(JSON.stringify(await api(`model-drafts/${failed.id}`))).includes('PRIVATE-PROVIDER-ERROR'));await api('model.decide',{proposal:failed.id,decision:'accept'},409)}

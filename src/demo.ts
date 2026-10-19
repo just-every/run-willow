@@ -7,6 +7,7 @@ import { Input } from './willow/input'
 import { approveOpening, approvePolicy, createPolicy, decideLeave, openAccount, requestLeave } from './willow/leave'
 import { completeCase, completeTask, createTemplate, scheduleMover, startJoiner, startLeaver } from './willow/lifecycle'
 import { addDocument } from './willow/documents'
+import { previewTemplate, publishTemplate } from './willow/workflow-review'
 import { acknowledgeBatch, createBatch, CSV_COLUMNS, exportBatch } from './willow/payroll'
 import { configureLayout, previewPayroll } from './willow/payroll-layout'
 import { propose } from './willow/proposals'
@@ -33,7 +34,15 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
  const week = await named('wl_schedules', 'Full week · 40 hours', () => createSchedule(env, actor, input({ name: 'Full week · 40 hours', mon: '8', tue: '8', wed: '8', thu: '8', fri: '8' })))
  const part = await named('wl_schedules', 'Four days · 32 hours', () => createSchedule(env, actor, input({ name: 'Four days · 32 hours', mon: '8', tue: '8', wed: '8', thu: '8' })))
  const category = await named('wl_doc_categories', 'Welcome & working together', () => createCategory(env, actor, input({ name: 'Welcome & working together', subjectReads: true, managerReads: true, acknowledgement: true })))
- const template = async (kind: string, name: string, titles: string[], assignees: string[]) => named('wl_templates', name, () => createTemplate(env, actor, input({ kind, name, requiredFields: [], taskTitle: titles, taskAssignee: assignees, taskDueDays: titles.map((_, i) => String(i - 3)), taskEvidence: titles.map(() => 'yes') })))
+ const template = async (kind: string, name: string, titles: string[], assignees: string[]) => {
+  const record = await named('wl_templates', name, () => createTemplate(env, actor, input({ kind, name, requiredFields: [], taskTitle: titles, taskAssignee: assignees, taskDueDays: titles.map((_, i) => String(i - 3)), taskEvidence: titles.map(() => 'yes') })))
+  const state = await one<{publication: string}>(env, 'SELECT publication FROM wl_templates WHERE id = ?', record.id)
+  if (state?.publication === 'draft') {
+   const review = await previewTemplate(env, actor, input({ template: record.id }))
+   await publishTemplate(env, actor, input({ review: review.id }))
+  }
+  return record
+ }
  const joiner = await template('joiner', 'A thoughtful first week', ['Prepare welcome pack', 'Prepare laptop and workspace', 'Check payroll details'], ['hr', 'it', 'payroll'])
  const mover = await template('mover', 'A smooth team move', ['Confirm new responsibilities', 'Update team and payroll records'], ['hr', 'payroll'])
  const leaver = await template('leaver', 'A considered goodbye', ['Agree the handover plan', 'Arrange equipment return', 'Prepare final payroll handoff'], ['hr', 'it', 'payroll'])

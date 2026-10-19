@@ -193,3 +193,5 @@ await import("./employee-export.mjs")
 await import("./employee-bundle.mjs")
 
 await import("./work-followup.mjs")
+
+await import("./workflows.mjs")

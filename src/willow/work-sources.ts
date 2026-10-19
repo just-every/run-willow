@@ -4,6 +4,7 @@ import { actorFor, can, employerZone, type Actor } from './actor'
 import { readsCategory, sees } from './access'
 import { all, json, type Row } from './core'
 import { addDays, today } from './dates'
+import { blockedBy } from './workflow-plan'
 import { answersFor, missingFields } from './lifecycle'
 
 export interface WorkSource {
@@ -27,8 +28,11 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  const deadline = (instant: number) => addDays(today(zone, instant), defaultDays)
  const hr = (a: Actor) => can(a,'people.manage'), payroll = (a: Actor) => can(a,'payroll.handoff') && can(a,'pay.read')
  const add = (kind: string, row: Row, title: string, path: string, due: string, visible: WorkSource['visible'], responsible = visible, preferred?: string | null, progress = 'Awaiting action') => result.push({ key: `${kind}:${row.id}`, kind, title, path, due, visible, responsible, preferred, progress, personId: row.person_id??null, next: title })
- const tasks = await all(env, `SELECT t.*,c.person_id FROM wl_case_tasks t JOIN wl_cases c ON c.id=t.case_id WHERE t.status='open' AND c.status='open'`)
- for (const t of tasks) add('task',t,t.title,`/app/cases/${t.case_id}`,t.due_date,a=>sees(a,t.person_id,'lifecycle') || answersFor(a,t,t),a=>answersFor(a,t,t),null,t.system?'External evidence required':'Task open')
+ const tasks = await all(env, `SELECT t.*,c.person_id FROM wl_case_tasks t JOIN wl_cases c ON c.id=t.case_id WHERE t.status='open' AND t.superseded_at IS NULL AND c.status='open'`)
+ for (const t of tasks) {
+ const blocked = await blockedBy(env,t)
+ add('task',t,t.title,`/app/cases/${t.case_id}`,t.due_date,a=>sees(a,t.person_id,'lifecycle') || answersFor(a,t,t),a=>answersFor(a,t,t),null,t.failure?'External or assigned work failed; evidence still required':blocked.length?`Blocked by ${blocked.length} prerequisite(s)`:t.system?'External evidence required':'Task open')
+ }
  const cases = await all(env, `SELECT c.*,t.required_fields FROM wl_cases c JOIN wl_templates t ON t.id=c.template_id WHERE c.status='open'`)
  for (const c of cases) {
   const missing = await missingFields(env,c,c)
