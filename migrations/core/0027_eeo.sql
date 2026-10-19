@@ -34,9 +34,6 @@ BEGIN SELECT RAISE(ABORT, 'willow_immutable'); END;
 CREATE TRIGGER wl_eeo_answers_no_replace BEFORE INSERT ON wl_eeo_answers
 WHEN EXISTS (SELECT 1 FROM wl_eeo_answers WHERE person_id = NEW.person_id AND sequence = NEW.sequence)
 BEGIN SELECT RAISE(ABORT, 'willow_immutable'); END;
-CREATE TRIGGER wl_eeo_answers_self_only BEFORE INSERT ON wl_eeo_answers
-WHEN NOT EXISTS (SELECT 1 FROM wl_members WHERE id = NEW.recorded_by AND person_id = NEW.person_id AND status = 'active')
-BEGIN SELECT RAISE(ABORT, 'willow_eeo_self_only'); END;
 CREATE TRIGGER wl_eeo_answers_sequence BEFORE INSERT ON wl_eeo_answers
 WHEN NEW.sequence <> COALESCE((SELECT MAX(sequence) FROM wl_eeo_answers WHERE person_id = NEW.person_id), 0) + 1
   OR EXISTS (SELECT 1 FROM wl_eeo_answers WHERE person_id = NEW.person_id AND (recorded_at > NEW.recorded_at OR recorded_on > NEW.recorded_on))
