@@ -3,6 +3,7 @@ import { configureDoor } from './movein/authority'
 import { defineTable } from './record-tables/schema'
 import { writeRow } from './record-tables/rows'
 import { configureChain } from './change-requests/chain'
+import { completeAlertTask, defineAlert, retireAlert } from './date-alerts/alerts'
 import { decideChange, editChange, requestChange } from './change-requests/requests'
 // Every state change in Willow, by name. The same handler serves the HTML form
 // door (/app/do/NAME) and the JSON door (/api/willow/NAME) used by agents.
@@ -31,6 +32,9 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'dateAlert.define': defineAlert,
+  'dateAlert.retire': retireAlert,
+  'dateAlert.task': completeAlertTask,
   'change.chain': configureChain,
   'change.request': requestChange,
   'change.edit': editChange,

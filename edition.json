@@ -37,7 +37,8 @@
           "migrations/core/0021_import_door.sql",
           "migrations/core/0022_custom_fields.sql",
           "migrations/core/0023_record_tables.sql",
-          "migrations/core/0024_change_requests.sql"
+          "migrations/core/0024_change_requests.sql",
+          "migrations/core/0025_date_alerts.sql"
         ]
       }
     },

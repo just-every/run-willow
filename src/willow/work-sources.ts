@@ -9,6 +9,7 @@ import { answersFor, missingFields } from './lifecycle'
 import { renewalsDue } from './record-tables/rows'
 import { CERTIFICATIONS, readsTable, recordTables } from './record-tables/schema'
 import { mayApprove, mayRead, type ResolvedStep } from './change-requests/chain'
+import { answersTask } from './date-alerts/alerts'
 
 export interface WorkSource {
  key: string; kind: string; title: string; path: string; due: string; preferred?: string | null
@@ -46,6 +47,12 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
   add('leave',r,'Review time-off request',`/app/leave/${r.id}`,r.start_date,a=>decide(a) || a.id===r.requested_by || a.personId===r.person_id,decide,r.approver_member_id)
  }
  for (const r of await all(env,"SELECT id,proposed_at FROM wl_proposals WHERE status='pending'")) add('proposal',r,'Review employee change',`/app/proposals/${r.id}`,deadline(r.proposed_at),hr)
+ // PEOPLE-004: an alert's review task is work for its role holder who may read the date.
+ for (const r of await all(env,"SELECT * FROM wl_date_alert_tasks WHERE status='open'")) {
+  const answer = new Map<string,boolean>()
+  for (const a of await workMembers(env)) answer.set(a.id, await answersTask(env,a,r))
+  add('date-alert-task',r,r.title,'/app/dates',r.date,a=>!!answer.get(a.id),a=>!!answer.get(a.id))
+ }
  // FLOW-004: the current chain step is approver work; a returned request is the requester's.
  for (const r of await all<{id:string;person_id:string;requested_by:string;steps_json:string;step:number;status:string;updated_at:number}>(env,"SELECT id,person_id,requested_by,steps_json,step,status,updated_at FROM wl_change_requests WHERE status IN ('pending','returned')")) {
   const steps = json<ResolvedStep[]>(r.steps_json,[]), step = r.status==='pending' ? steps[r.step] : undefined, decide = new Map<string,boolean>()
