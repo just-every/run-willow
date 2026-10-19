@@ -18,6 +18,7 @@ try {
  for(const [key,staff] of Object.entries(s)){const r=await api(`people/${staff.person}`);await api('person.update',{person:staff.person,revision:r.revision,legalName:names[key],preferredName:'',workEmail:r.workEmail,employeeNumber:''})}
  await api('employer.configure',{name:'Harbour People',timezone:'America/Chicago',country:'US',currency:'USD'})
  const as=(cookie,path,body,status=200)=>h.api(path,cookie,body,status)
+ const tick=async date=>{const r=await h.raw(`/cdn-cgi/local/scheduled?time=${Date.parse(date+'T12:00:00Z')}&cron=${encodeURIComponent('*/15 * * * *')}&format=json`);assert.equal(r.status,200,await r.text())}
  const ca=(await api('location.create',{name:'San Francisco',timezone:'America/Los_Angeles',workState:'CA'})).id
  const tx=(await api('location.create',{name:'Austin',timezone:'America/Chicago',workState:'TX'})).id
  const short=(await api('schedule.create',{name:'Half days',mon:'4',tue:'4',wed:'4',thu:'4',fri:'4',sat:'4',sun:'4'})).id
@@ -98,14 +99,22 @@ try {
  await api('leaver.start',{period:hourly.period,endDate:'2025-01-31',reason:'End of assignment',template:templates.leaver})
  await api('leave.accrue',{account:aa,through:'2025-02-28'});assert.equal((await record(hourly.person,aa)).balanceMinutes,1800,'LEAVE-001 end date flushes 30 earned days and stops')
  await api('leaver.start',{period:salaried.period,endDate:'2025-01-05',reason:'End of period',template:templates.leaver})
+ const lateUse=await api('leave.request',{account:caa,startDate:'2025-01-02',endDate:'2025-01-02'})
+ await as(s.hr.cookie,'leave.decide',{request:lateUse.id,decision:'approve'})
+ await api('leave.accrue',{account:caa,through:'2025-02-01'})
+ assert.equal((await record(salaried.person,caa)).balanceMinutes,600,'LEAVE-001 late approval settles expired carryover after termination')
+ await api('leave.cancel',{request:lateUse.id,note:'Cancel after employment ended'})
+ await tick('2025-02-03')
+ assert.equal((await record(salaried.person,caa)).balanceMinutes,600,'LEAVE-001 ended account cannot resurrect expired carryover')
+ await api('leave.accrue',{account:a,through:'2025-02-02'})
+ const formerAccount=await record(salaried.person,a)
  const rehired=await api('joiner.start',{person:salaried.person,template:templates.joiner,startDate:'2025-02-01',employmentType:'full_time',jobTitle:'Returning analyst',locationId:ca,scheduleId:schedule,payBasis:'salary',payAmount:'80000',payrollId:'REHIRE-PTO'})
  const rehireAccount=await account(rehired,p,'2025-02-01','0');await api('leave.accrue',{account:rehireAccount,through:'2025-02-02'})
  assert.equal((await record(rehired.person,rehireAccount)).balanceMinutes,60,'LEAVE-001 service tier restarts with the new employment period')
- assert.equal((await record(salaried.person,a)).balanceMinutes,480,'LEAVE-001 rehire does not reuse former account')
+ assert.deepEqual(await record(salaried.person,a),formerAccount,'LEAVE-001 rehire does not reuse former account')
  // Real restart: the scheduler catches only completed employer-local days, once per cursor.
  const rp=await policy('Restart-safe daily',{...rules,tiers:[{afterMonths:0,allowance:{unit:'hours',amount:365}}],capMinutes:null,carryover:{capMinutes:null,expiresOn:null}});await api('policy.approve',{version:rp.id})
  const ra=await account(s.employee,rp,day(-3),'0')
- const tick=async date=>{const r=await h.raw(`/cdn-cgi/local/scheduled?time=${Date.parse(date+'T12:00:00Z')}&cron=${encodeURIComponent('*/15 * * * *')}&format=json`);assert.equal(r.status,200,await r.text())}
  await tick(today);const after=await record(s.employee.person,ra)
  assert.equal(after.balanceMinutes,120,'LEAVE-001 scheduler completes yesterday, not today')
  const {origin,vars}=h;await h.close();h=await harness({persistTo:directory,scheduled:true,port:Number(new URL(origin).port),bindings:vars})

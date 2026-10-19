@@ -1,3 +1,4 @@
+import { settleExpiredCarryover } from './settlement'
 // A chunk claims its account cursor and source snapshot inside the same D1 batch
 // as its ledger entries and explanations. Restarts cannot duplicate earned days.
 import type { Bindings } from '../../auth.server'
@@ -107,5 +108,6 @@ export async function accruePolicy(env: Bindings, actor: Actor, account: Row, th
     result.through = chunkEnd
     current = (await one(env, 'SELECT * FROM wl_leave_accounts WHERE id = ?', account.id))!
   }
+  result.minutes += await settleExpiredCarryover(env,actor,account.id,through)
   return result
 }

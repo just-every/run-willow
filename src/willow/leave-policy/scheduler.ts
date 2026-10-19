@@ -1,3 +1,4 @@
+import { settleExpiredCarryover, unsettledAccounts } from './settlement'
 import type { Bindings } from '../../auth.server'
 import { actorFor, employerZone } from '../actor'
 import { all, now, one, WillowError } from '../core'
@@ -23,6 +24,10 @@ export async function runLeaveScheduler(env: Bindings, instant = now()) {
       if (error instanceof WillowError && error.code === 'stale') contended++
       else throw error
     }
+  }
+  for(const account of await unsettledAccounts(env,through)){
+    try {minutes+=await settleExpiredCarryover(env,actor,account.id,through)}
+    catch(error){if(error instanceof WillowError&&error.code==='stale')contended++;else throw error}
   }
   return { accounts: count, minutes, days, through, contended }
 }

@@ -233,7 +233,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "0eec1223de6ca46e38f41738a73acf769ffd57e8518eefa85223ca1d0120c003",
+      "sha256": "d81192ee7bf74873fdc358f9071ced421a899cc995e6a61c6d0f4bba89e337cd",
       "executable": false
     },
     "DEMO.md": {
@@ -2773,7 +2773,7 @@
       "executable": false
     },
     "src/willow/leave-policy/engine.ts": {
-      "sha256": "ca35cc87fd1827f1d580ab7ae71287d0a70e7ed3bcd6c41a39c0be84a3b9b4ad",
+      "sha256": "05af8e6afa126fc5557e8ce9a1fc0b9748c63bc48cbc3feda4cc9310692c3e97",
       "executable": false
     },
     "src/willow/leave-policy/index.ts": {
@@ -2785,7 +2785,11 @@
       "executable": false
     },
     "src/willow/leave-policy/scheduler.ts": {
-      "sha256": "a34d3d434585784033ce36e349f4b9b902cc50c369508493ff01b2adc044f4cd",
+      "sha256": "5c3da17ade053490ceedb720155389ed131f25ea24c4290c7749b52829da4812",
+      "executable": false
+    },
+    "src/willow/leave-policy/settlement.ts": {
+      "sha256": "aad7e09ddfd0aae2f64746185371fe0543d1d098d6cbb64af6c7668238ef3bad",
       "executable": false
     },
     "src/willow/leave.ts": {
@@ -3169,7 +3173,7 @@
       "executable": false
     },
     "tests/willow/leave-policies.mjs": {
-      "sha256": "14c7cec5b929efb1cf884197062c8a27b5538bc0d8e4cbdd3e4293f977eb162c",
+      "sha256": "0124107fd6b8bb83c480935e3aadd0a7c9cb9c8d33d86d0f9356ae38f9875de7",
       "executable": false
     },
     "tests/willow/open-billing.mjs": {
