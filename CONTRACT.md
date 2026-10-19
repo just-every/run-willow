@@ -723,14 +723,14 @@ Every capability claim on the approved homepage (`src/site/landing/`, checked ag
 | 54 | History by date: "See anyone's record as of any day" | PEOPLE-005, WIL-07 | done |
 | 55 | New-hire reporting: "State forms ready for each hire" | US-002 | missing |
 | 56 | Activity log: "Every change and approval, recorded" | AUDIT-001, WIL-03 | partial |
-| 57 | "Open source HR software for small and mid-size businesses" · "Free and open source, MIT licensed" | OPEN-001 | partial |
+| 57 | "Open source HR software for small and mid-size businesses" · "Free and open source, MIT licensed" | OPEN-001 | done |
 | 58 | Closing art: Devon starts Monday, payroll sent | WIL-05, WIL-11 | done |
 
 ## Status
 
 Judged from the code and tests at commit `84231c06dc4f709b4a04126fdfc3d43b13c771f2` (17 October 2026).
 
-89 clauses: 23 done, 35 partial, 31 missing. PEOPLE-002 and PEOPLE-005 were completed on 19 October 2026 with their named public-door proofs; the remaining statuses retain their prior judgment. Evidence cites the
+89 clauses: 24 done, 34 partial, 31 missing. PEOPLE-002, PEOPLE-005 and OPEN-001 were completed on 19 October 2026 with their named public-door proofs; the remaining statuses retain their prior judgment. Evidence cites the
 repository paths that back a done or partial row; a partial citation proves
 only the foundation it names. Published clauses are WIL-01–WIL-21 from the
 released contract; push-further clauses are the agent section. The earlier statuses were judged at `59e3d42eb07e99d0f54dd48559056fe0a73d02ac`; between it and the commit above, `src/willow` and its tests changed only in display (US English labels, US dates and the employer-setup defaults) and the run site was rebuilt, so every earlier status stands. Revised 17 October 2026 so every capability claim on the approved homepage has a clause (see [Homepage claims](#homepage-claims)): PEOPLE-005, PAYROLL-006 and OPEN-001 were added and judged from the commit above, and PEOPLE-002, PEOPLE-004, MOBILE-001, LEAVE-002, BENEFITS-001, RETIRE-001, IDENTITY-001 and MIGRATE-001 were sharpened without changing their statuses.
@@ -738,8 +738,8 @@ released contract; push-further clauses are the agent section. The earlier statu
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 21 | 0 | 0 | 21 |
-| Target and push further | 2 | 35 | 31 | 68 |
-| All | 23 | 35 | 31 | 89 |
+| Target and push further | 3 | 34 | 31 | 68 |
+| All | 24 | 34 | 31 | 89 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -825,7 +825,7 @@ released contract; push-further clauses are the agent section. The earlier statu
 | `SECURITY-002` | Native second-factor sign-in and an owner MFA policy | target | missing | `src/auth.server.ts` offers email-link and optional OIDC sign-in with one factor | TOTP/passkey enrollment, recovery codes, the owner MFA policy, trusted devices, the enrollment report and delegated resets. |
 | `OPS-001` | Runnable, recoverable employer-owned product | target | partial | `scripts/installer/local.mjs`, `AGENTS.md`, `SEED-COMMAND-CONTRACT.md`; `tests/willow/journey.mjs`, `tests/willow/restore-access.mjs`: current local lifecycle | Upgrade, capacity, accessibility and future-work recovery acceptance. |
 | `OPS-002` | Reference employer capacity with stated bounds | target | partial | `src/willow/documents.ts` (10 MB) and `src/willow/movein/bamboohr.ts` (8 MB) refuse oversize files with file_size before writing | Reference-employer bounds, multipart transfer and hosted measurement. |
-| `OPEN-001` | Free and open source under the MIT license | target | partial | `LICENSE`, `package.json`; `tests/willow/journey.mjs`: a disposable fresh clone installs, sets up and runs with no account or key, the steps the one-line start performs | No test checks the license or the absence of paid gates across product areas, and no connection screen names a provider's billing before activation. |
+| `OPEN-001` | Free and open source under the MIT license | target | done | `LICENSE`, `package.json`, `src/willow/provider-billing.ts`, `src/willow/ui/connections.ts`; `tests/willow/open-public-start.mjs` (OPEN-001): exact public npx start, MIT rights, 48 employees and all shipped areas; `tests/willow/open-billing.mjs` (OPEN-001): configured billing parties visible before activation without credential disclosure | |
 | `AI-001` | Cited HR policy answers under the reader’s authority | push-further | partial | `src/willow/proposals.ts`; `tests/willow/flows.mjs` (WIL-15): scoped, policy-citing context | Interactive policy answers and their provider controls. |
 | `AI-002` | Natural-language workflow building with impact preview | push-further | partial | `src/willow/model-drafts.ts`, `src/willow/proposals.ts`; `tests/willow/phase2.mjs` (WIL-20): controlled checklist drafts | Natural-language conditions, cross-system simulation and publication. |
 | `AGENT-001` | Reconcile an approved employee change until systems agree | push-further | partial | `src/willow/proposals.ts`, `src/willow/payroll.ts`; `tests/willow/flows.mjs` (WIL-15, WIL-11): bound human approvals and file handoff | Multi-provider agent execution and read-back. |

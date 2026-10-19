@@ -38,7 +38,8 @@
     "test:restore-access": "node tests/willow/restore-access.mjs",
     "test:phase2": "node tests/willow/phase2.mjs",
     "test:phase2-browser": "WILLOW_PHASE2_BROWSER=1 node tests/willow/phase2.mjs",
-    "test:site": "rer build --site && node tests/willow/site.mjs"
+    "test:site": "rer build --site && node tests/willow/site.mjs",
+    "test:open-source": "node tests/willow/open-public-start.mjs"
   },
   "dependencies": {
     "@tanstack/react-router": "1.170.33",

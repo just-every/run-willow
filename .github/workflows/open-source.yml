@@ -1,0 +1,25 @@
+name: Public source journey
+on:
+  push:
+    tags: ['v*']
+  schedule:
+    - cron: '35 6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.20.0'
+      - run: npm install --global pnpm@10.12.4
+      - run: pnpm install --frozen-lockfile
+      - run: npm install --prefix "$RUNNER_TEMP/willow-browser" --no-package-lock playwright
+      - run: '"$RUNNER_TEMP/willow-browser/node_modules/.bin/playwright" install --with-deps chromium'
+      - run: pnpm run test:open-source
+        env:
+          WILLOW_PLAYWRIGHT_PATH: ${{ runner.temp }}/willow-browser/node_modules/playwright/index.mjs

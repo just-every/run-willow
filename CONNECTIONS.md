@@ -136,3 +136,7 @@ The observation stores no token or response body, is fenced to the linked
 provider version and is excluded from installation archives. A subsequent
 accepted token response clears the unavailable state; Base still validates the
 identity token and decides whether to issue any session.
+
+## Provider billing
+
+Willow has no license-key, seat or paid-plan requirement. Connections names the configured email and identity providers and the model endpoint host before their activation controls. Any service fees are billed by those providers directly; Cloudflare bills Cloudflare hosting. Local development mail has no delivery charge. Endpoint paths, query strings and runtime keys are never included in the disclosure.
