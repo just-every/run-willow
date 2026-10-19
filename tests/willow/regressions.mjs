@@ -223,3 +223,5 @@ await import("./self-service.mjs")
 await import("./custom-reports.mjs")
 
 await import("./leave-policies.mjs")
+
+await import("./company-home.mjs")

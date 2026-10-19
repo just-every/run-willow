@@ -1,3 +1,5 @@
+import { companyHome,companyAdmin } from './company/views'
+import { companyTeam } from './company-team'
 import { protectedCases, protectedCase } from './protected-leave/records'
 import { leaveOverrides } from './protected-leave/overrides'
 import { savedReports, savedReport } from './reporting/definitions'
@@ -46,6 +48,8 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  company: async(env,actor)=>({...await companyHome(env,actor),...await companyTeam(env,actor)}),
+  companyAdmin,
   protectedCases,
   protectedCase: (env,actor,_request,id) => protectedCase(env,actor,id),
   leaveOverrides,

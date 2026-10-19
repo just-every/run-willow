@@ -1,3 +1,4 @@
+import { announce, acknowledge as acknowledgeCompany, folder as companyFolder, file as companyUpload, celebrations } from './company/actions'
 import { openProtected, recordProtectedAbsence, reverseProtectedAbsence, certifyProtected } from './protected-leave/records'
 import { decideOverride } from './protected-leave/overrides'
 import { saveReport } from './reporting/definitions'
@@ -38,6 +39,11 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'company.announce': announce,
+  'company.acknowledge': acknowledgeCompany,
+  'company.folder': companyFolder,
+  'company.file': companyUpload,
+  'company.celebrations': celebrations,
   'protected.open': openProtected,
   'protected.absence': recordProtectedAbsence,
   'protected.reverse': reverseProtectedAbsence,
