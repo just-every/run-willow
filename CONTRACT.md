@@ -336,6 +336,10 @@ HR builds versioned joiner/mover/leaver and employee-change workflows with condi
 
 Every required task, approval, missing form, signature and provider exception has an accountable owner, deadline, progress and next action. Scheduled reminders follow an HR-approved cadence and quiet hours; overdue work escalates to a substitute owner when the assignee is absent or leaves. Completion cancels future reminders, rescheduling preserves history, and restart catches missed deadlines without duplicate sends. Failed/uncertain delivery is visible separately from work completion.
 
+This obligation applies to every required-work source shipped today: lifecycle tasks and missing required information; time-off decisions; employee-change, policy, opening-balance and model-draft approvals; requested document receipts (not signatures); payroll exceptions and acknowledgments; and failed notices, model drafts and identity connections. PEOPLE-004, FLOW-001/003/004, SIGN-001/002, US-001/002, HIRING-003/004/005, BENEFITS-001/002/003, EEO-001/002, TIME-001, PAYROLL-001–006, IDENTITY-001/002, COMMS-001, PERFORM-001, ENGAGE-001, LEARN-001, CONNECT-001 and AGENT-001–003 must add their new required-work sources to this same mechanism before shipping.
+
+HR approves the cadence as distinct nonnegative whole-day offsets from each deadline, a default deadline offset for otherwise undated approvals/receipts/failures, and quiet hours in the employer's time zone. Date deadlines are inclusive; work is overdue on the following date. A cadence step becomes due on its date and is deferred during quiet hours; missed steps are caught on the next tick. Quiet-hour start is inclusive and end exclusive, wrapping midnight; equal hours disable quiet hours. HR may change an item's deadline, accountable owner, substitute and next action with a retained before/after history. A substitute follows up only with existing source visibility; assignment never grants a decision or completion right. Approved absence dates and ended access/employment make the owner unavailable. Overdue work then uses its authorized substitute; where no authorized available cover exists it stays blocked with its owner and next action visible to authorized readers. Email is optional under WIL-18; a durable claim precedes each attempt, an interrupted attempt remains visibly uncertain, and a restart never blindly resends it. Delivery failure never completes business work or changes its state.
+
 **Acceptance evidence:** Create a due case, advance the scheduler across quiet hours and restart it, then make the assignee unavailable. Observe one permitted reminder/escalation, assign cover, complete the task and prove later ticks send nothing. Refuse an unauthorized recipient and expose failed delivery.
 
 #### FLOW-003 — Role-specific preboarding packets.
@@ -730,7 +734,7 @@ Every capability claim on the approved homepage (`src/site/landing/`, checked ag
 
 Judged from the code and tests at commit `84231c06dc4f709b4a04126fdfc3d43b13c771f2` (17 October 2026).
 
-89 clauses: 24 done, 34 partial, 31 missing. PEOPLE-002, PEOPLE-005 and OPEN-001 were completed on 19 October 2026 with their named public-door proofs; the remaining statuses retain their prior judgment. Evidence cites the
+89 clauses: 25 done, 33 partial, 31 missing. FLOW-002, PEOPLE-002, PEOPLE-005 and OPEN-001 were completed on 19 October 2026 with their named public-door proofs; the remaining statuses retain their prior judgment. Evidence cites the
 repository paths that back a done or partial row; a partial citation proves
 only the foundation it names. Published clauses are WIL-01–WIL-21 from the
 released contract; push-further clauses are the agent section. The earlier statuses were judged at `59e3d42eb07e99d0f54dd48559056fe0a73d02ac`; between it and the commit above, `src/willow` and its tests changed only in display (US English labels, US dates and the employer-setup defaults) and the run site was rebuilt, so every earlier status stands. Revised 17 October 2026 so every capability claim on the approved homepage has a clause (see [Homepage claims](#homepage-claims)): PEOPLE-005, PAYROLL-006 and OPEN-001 were added and judged from the commit above, and PEOPLE-002, PEOPLE-004, MOBILE-001, LEAVE-002, BENEFITS-001, RETIRE-001, IDENTITY-001 and MIGRATE-001 were sharpened without changing their statuses.
@@ -738,8 +742,8 @@ released contract; push-further clauses are the agent section. The earlier statu
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 21 | 0 | 0 | 21 |
-| Target and push further | 3 | 34 | 31 | 68 |
-| All | 24 | 34 | 31 | 89 |
+| Target and push further | 4 | 33 | 31 | 68 |
+| All | 25 | 33 | 31 | 89 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -785,7 +789,7 @@ released contract; push-further clauses are the agent section. The earlier statu
 | `HIRING-004` | Offer approval and hire into preboarding without re-keying | target | partial | `src/willow/proposals.ts`, `src/willow/lifecycle.ts`; `tests/willow/flows.mjs` (WIL-15, WIL-13): reviewed joiner proposals with missing-field lists and rehire reuse | Candidate and offer sources, signed offers and the preboarding hand-off. |
 | `HIRING-005` | Background checks on the offer stage through Checkr | target | missing | | No background-check ordering, Checkr connection, restricted screening category or start gate exists. |
 | `FLOW-001` | Conditional workflows with reviewed publication | target | partial | `src/willow/lifecycle.ts`, `src/willow/proposals.ts`; `tests/willow/flows.mjs` (WIL-05, WIL-15): versioned templates and reviewed plans | Conditional editor, external dependencies and reviewed publication. |
-| `FLOW-002` | Persistent reminders, escalation and coverage | target | partial | `src/willow/lifecycle.ts`, `src/willow/notices.ts`; `tests/willow/phase2.mjs` (WIL-18): task progress and notices | Timed reminders, quiet hours, coverage and escalation. |
+| `FLOW-002` | Persistent reminders, escalation and coverage | target | done | `src/willow/work-sources.ts`, `src/willow/work.ts`, `src/willow/work-scheduler.ts`, `src/willow/ui/work-followup.ts`; `tests/willow/work-followup.mjs` (FLOW-002): all current work adapters, HR cadence/quiet hours, real Worker restart and claimed-once catch-up, approved-absence cover, ended/revoked recipients, rescheduling history, uncertain delivery and completion cancellation; page/form journeys at 1440/390 | |
 | `FLOW-003` | Role-specific preboarding packets | target | partial | `src/willow/lifecycle.ts` creates dated employee tasks; `tests/willow/flows.mjs` (WIL-05) | Dedicated preboarding access, packets and the personal-email invitation lifecycle. |
 | `FLOW-004` | Manager-initiated change requests through approval chains | target | partial | `src/willow/proposals.ts`, `src/willow/people.ts`; `tests/willow/flows.mjs` (WIL-15, WIL-07): an HR-approved mover plan bound to its exact diff writes one effective-dated terms version | Manager initiation, configurable multi-step chains, send-back and per-approver field scoping. |
 | `SIGN-001` | Offer and policy templates with native e-signature | target | missing | `src/willow/documents.ts` provides immutable checksummed versions and receipt acknowledgments only (WIL-06) | Signature templates, native signing, the audit certificate and the DocuSign option. |

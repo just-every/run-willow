@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "people/willow",
-  "manifest": "10440449ee0d6b3d1314fd676f9f334c7fdd21bcdc4b5ac36f68476614dd2ed7",
+  "manifest": "7b92ada2c7a939e5e991474622ad8295f65888592d29e2dc84ce717a49a85160",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -31,7 +31,8 @@
           "migrations/core/0009_identity_token_health.sql",
           "migrations/core/0017_identity_settings.sql",
           "migrations/core/0018_import_kit_upgrade.sql",
-          "src/demo.ts"
+          "src/demo.ts",
+          "migrations/core/0019_work_followup.sql"
         ]
       },
       "baseline": null
@@ -197,7 +198,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "ac7b9f3ddc465191ef8f8ea39eeff333c31f016a47e7a09bee1c0451f77549a7",
+      "sha256": "35796c578acabde1788b4af97aba362a9fa575c57b66740355b4d7f9d4f87807",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -221,7 +222,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "8cb34be84b4122531ca028ace007436a6d0fb54366139b7cc06608d3cb7f984c",
+      "sha256": "57342ad581d3f823f2b3de3485a9b8e610792cb55aa7d926b2c0ac62beffef68",
       "executable": false
     },
     "DEMO.md": {
@@ -277,7 +278,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "10440449ee0d6b3d1314fd676f9f334c7fdd21bcdc4b5ac36f68476614dd2ed7",
+      "sha256": "7b92ada2c7a939e5e991474622ad8295f65888592d29e2dc84ce717a49a85160",
       "executable": false
     },
     "EXPORTING.md": {
@@ -378,6 +379,10 @@
     },
     "migrations/core/0019_owner_signin.sql": {
       "sha256": "98da904e768e35b43fb1be83d9dcc9c9b5d86ab3a795234ed5223c4fddc567d9",
+      "executable": false
+    },
+    "migrations/core/0019_work_followup.sql": {
+      "sha256": "91185f753e91fe3595b5c33e2a51dc2b63c19e36beab8499b4f9b81555b40cc5",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -2433,7 +2438,7 @@
       "executable": false
     },
     "src/server.ts": {
-      "sha256": "893bb2041057789f19430c705716cc0f3db130eb1f652a291362234cb745a315",
+      "sha256": "848e9f21caa75fccadb6341a589cd1a4bcab4994748ab251ca890fa8917e87ec",
       "executable": false
     },
     "src/site/docs/build/manifest.ts": {
@@ -2581,7 +2586,7 @@
       "executable": false
     },
     "src/willow/actions.ts": {
-      "sha256": "e73067e8462b741f59dbc9b603d6329b06d81791fa848311c063be1834e0b529",
+      "sha256": "582608f156344e4c6ff6a4fc154ea348cac36d24400ead13ed23c56bb85e8171",
       "executable": false
     },
     "src/willow/actor.ts": {
@@ -2605,7 +2610,7 @@
       "executable": false
     },
     "src/willow/doors.ts": {
-      "sha256": "eed05fec26d645269a2fcdbdf36ba2f3c67de251ac765e3626c3bba93a7ac707",
+      "sha256": "4cbb253d8c799ca63881ca558f09fe4d5427bcdd85754826b6fd291af4f1e768",
       "executable": false
     },
     "src/willow/employee-bundle.ts": {
@@ -2657,7 +2662,7 @@
       "executable": false
     },
     "src/willow/lifecycle.ts": {
-      "sha256": "3e2ec145f6ce21e8a01fee1b5f4cf8dab5263ab3bdbea81606196f1e4ae0c900",
+      "sha256": "491790e3f46bdf928f46980927b7fd1365155c1165d98a24f8df9ae8e7b4650b",
       "executable": false
     },
     "src/willow/members.ts": {
@@ -2745,7 +2750,7 @@
       "executable": false
     },
     "src/willow/ui/home.ts": {
-      "sha256": "73e2c1aabe180274c61d5532d0f9bedb95fde4006e61e742f8d437ce7cd4dbe0",
+      "sha256": "2a9eb1447068d4313c48820d39c1574c0a8cd8145d6e78195f6033b48900f53b",
       "executable": false
     },
     "src/willow/ui/html.ts": {
@@ -2780,12 +2785,28 @@
       "sha256": "4b15e77cdf97413ea18f12f5759d221ab51b0c47b88616e9f2b0aac6065e41f2",
       "executable": false
     },
+    "src/willow/ui/work-followup.ts": {
+      "sha256": "5e642c08121f71a28201270e19e6ab1b5f0a668dc16e3a3f5f1bcec6c5a21938",
+      "executable": false
+    },
     "src/willow/ui/work.ts": {
       "sha256": "f815a3c34eb82c9d027e5aac2b602a8a6b39c68c55563c42d0066bc5919ebe93",
       "executable": false
     },
     "src/willow/views.ts": {
-      "sha256": "a6eeb0688fa870ed6c2d64838501eb0aa2b61753d66220806a7b66f43cc034f2",
+      "sha256": "9ef1617b5fdc3a79c09e727ad901e0c6fd752790fd8d7d597b7e87f3d43c3a34",
+      "executable": false
+    },
+    "src/willow/work-scheduler.ts": {
+      "sha256": "350ed2458b88f0d82be0edda61811898a41a77e917a620b4c446d6c660bdd881",
+      "executable": false
+    },
+    "src/willow/work-sources.ts": {
+      "sha256": "f57bec6fbd78072ecf8579f38b15a5f7a544b3f620e4481fb7379df35338caa2",
+      "executable": false
+    },
+    "src/willow/work.ts": {
+      "sha256": "0d7ec00a8cd6c75e4e81bd1a5bae619f7e29381cab159f6d55f48c3fb20cb7cc",
       "executable": false
     },
     "tests/email-link.mjs": {
@@ -2821,7 +2842,7 @@
       "executable": false
     },
     "tests/willow/harness.mjs": {
-      "sha256": "1dd5411b4d8dc8f15bc1bbf4f273aeb2be65f5656ec71ff7a8ed1c6b4dcf9aea",
+      "sha256": "6573d414bc72ed1496aad6aef06d401fb37a87c8cdcbdebb9f8f3d2ad2c4c5ce",
       "executable": false
     },
     "tests/willow/journey.mjs": {
@@ -2857,7 +2878,7 @@
       "executable": false
     },
     "tests/willow/regressions.mjs": {
-      "sha256": "3a00dbe437df5d6ed7453af8432d52d66d47c94f41ed745e2c610bf3f0d51cf7",
+      "sha256": "3cc33600839afa0af7cf8f3648ba6b1c0d0147fe9513547698478b69721d3bc3",
       "executable": false
     },
     "tests/willow/restore-access.mjs": {
@@ -2874,6 +2895,10 @@
     },
     "tests/willow/site.mjs": {
       "sha256": "8105381ac0fd41441c87d421af1a8242c0196177f97ce2b1a8522df1771b2522",
+      "executable": false
+    },
+    "tests/willow/work-followup.mjs": {
+      "sha256": "ea239a20572ec9234803f399ad22174395920c420441456d59f3f62931516422",
       "executable": false
     },
     "tests/worker-environment.mjs": {
@@ -2893,7 +2918,7 @@
       "executable": false
     },
     "wrangler.jsonc": {
-      "sha256": "c930a64d70ab6a3f0a08cf9f8720cd70e7ca52f1a90558d7f38e40ffe25ccab8",
+      "sha256": "f4b0a29e7f872294cc579b9d4129a1c7792f796fa62efca1867071d8bca6e99b",
       "executable": false
     }
   }

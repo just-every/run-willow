@@ -5,6 +5,7 @@ import { Hono } from 'hono'
 import { dispatch } from './base/dispatch'
 import { authResponse, runtimeBindings, type Bindings } from './auth.server'
 import { willowResponse } from './willow/http'
+import { runWorkScheduler } from './willow/work-scheduler'
 import { willowFrame } from './willow/frame'
 
 import { lobbyResponse } from './base/lobby'
@@ -25,6 +26,9 @@ const api = new Hono<{ Bindings: Bindings }>()
 api.get('/health', (context) => context.json({ status: 'ok', ...deploymentHealth(context.env) }))
 
 export default withDemo({
+  async scheduled(event, env) {
+    await runWorkScheduler(runtimeBindings(env), event.scheduledTime)
+  },
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)
     if (asset) return documentResponse(asset)

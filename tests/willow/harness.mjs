@@ -18,7 +18,7 @@ async function freePort() {
   return port
 }
 
-export async function harness({ bindings = {}, provider, persistTo, port: chosenPort } = {}) {
+export async function harness({ bindings = {}, provider, persistTo, port: chosenPort, scheduled = false } = {}) {
   // The fake provider edge runs beside the real production Worker on local TLS.
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
   const port = chosenPort ?? await freePort()
@@ -39,7 +39,7 @@ export async function harness({ bindings = {}, provider, persistTo, port: chosen
     const { Miniflare, convertV4MiniflareOptions } = fromWrangler('miniflare')
     convertOptions = convertV4MiniflareOptions
     const files = ['index.js', ...(await readdir('dist/server/assets')).filter(f=>f.endsWith('.js')).map(f=>'assets/'+f)]
-    mfOptions = { name: 'willow-test', modulesRoot: resolve('dist/server'), modules: files.map(f=>({type:'ESModule',path:resolve('dist/server',f)})),
+    mfOptions = { unsafeTriggerHandlers: scheduled, name: 'willow-test', modulesRoot: resolve('dist/server'), modules: files.map(f=>({type:'ESModule',path:resolve('dist/server',f)})),
       compatibilityDate: '2026-09-08', compatibilityFlags: ['nodejs_compat'],
       bindings: vars, d1Databases: { DB: 'local-willow-only' }, r2Buckets: { FILES: 'people-willow-files' },
       resourcePersistencePath: join(directory, 'v3'),

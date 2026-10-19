@@ -31,7 +31,8 @@
           "migrations/core/0009_identity_token_health.sql",
           "migrations/core/0017_identity_settings.sql",
           "migrations/core/0018_import_kit_upgrade.sql",
-          "src/demo.ts"
+          "src/demo.ts",
+          "migrations/core/0019_work_followup.sql"
         ]
       }
     },

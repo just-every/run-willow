@@ -1,0 +1,60 @@
+// Adapters for every shipped work source. No private values enter this projection.
+import type { Bindings } from '../auth.server'
+import { actorFor, can, employerZone, type Actor } from './actor'
+import { readsCategory, sees } from './access'
+import { all, json, type Row } from './core'
+import { addDays, today } from './dates'
+import { answersFor, missingFields } from './lifecycle'
+
+export interface WorkSource {
+ key: string; kind: string; title: string; path: string; due: string; preferred?: string | null
+ next: string; progress: string; personId: string | null
+ visible: (actor: Actor) => boolean
+ responsible: (actor: Actor) => boolean
+}
+
+export async function workMembers(env: Bindings) {
+ const rows = await all(env, `SELECT m.id,m.email,m.name,m.person_id,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.status='active' AND o.status='active' ORDER BY CASE WHEN o.role='owner' THEN 0 ELSE 1 END,m.id`)
+ const actors: Actor[] = []
+ for (const row of rows) {
+  try { actors.push(await actorFor(env, { id: row.id, email: row.email, name: row.name, personId: row.person_id, owner: row.role==='owner', sessionId: '' })) } catch { /* admission changed while reading */ }
+ }
+ return actors
+}
+
+export async function workSources(env: Bindings, defaultDays: number): Promise<WorkSource[]> {
+ const zone = await employerZone(env), result: WorkSource[] = []
+ const deadline = (instant: number) => addDays(today(zone, instant), defaultDays)
+ const hr = (a: Actor) => can(a,'people.manage'), payroll = (a: Actor) => can(a,'payroll.handoff') && can(a,'pay.read')
+ const add = (kind: string, row: Row, title: string, path: string, due: string, visible: WorkSource['visible'], responsible = visible, preferred?: string | null, progress = 'Awaiting action') => result.push({ key: `${kind}:${row.id}`, kind, title, path, due, visible, responsible, preferred, progress, personId: row.person_id??null, next: title })
+ const tasks = await all(env, `SELECT t.*,c.person_id FROM wl_case_tasks t JOIN wl_cases c ON c.id=t.case_id WHERE t.status='open' AND c.status='open'`)
+ for (const t of tasks) add('task',t,t.title,`/app/cases/${t.case_id}`,t.due_date,a=>sees(a,t.person_id,'lifecycle') || answersFor(a,t,t),a=>answersFor(a,t,t),null,t.system?'External evidence required':'Task open')
+ const cases = await all(env, `SELECT c.*,t.required_fields FROM wl_cases c JOIN wl_templates t ON t.id=c.template_id WHERE c.status='open'`)
+ for (const c of cases) {
+  const missing = await missingFields(env,c,c)
+  if (missing.length) add('information',c,'Complete required information',`/app/cases/${c.id}`,c.anchor_date,hr,hr,null,`${missing.length} required field(s) missing`)
+ }
+ for (const r of await all(env,"SELECT * FROM wl_leave_requests WHERE status='pending'")) {
+  const decide = (a: Actor) => a.id!==r.requested_by && a.personId!==r.person_id && (a.id===r.approver_member_id || can(a,'leave.manage'))
+  add('leave',r,'Review time-off request',`/app/leave/${r.id}`,r.start_date,a=>decide(a) || a.id===r.requested_by || a.personId===r.person_id,decide,r.approver_member_id)
+ }
+ for (const r of await all(env,"SELECT id,proposed_at FROM wl_proposals WHERE status='pending'")) add('proposal',r,'Review employee change',`/app/proposals/${r.id}`,deadline(r.proposed_at),hr)
+ for (const r of await all(env,"SELECT id,written_at FROM wl_policy_versions WHERE status='draft'")) add('policy',r,'Review leave policy','/app/settings',deadline(r.written_at),a=>a.owner)
+ for (const r of await all(env,"SELECT a.id,a.created_at,p.person_id FROM wl_leave_accounts a JOIN wl_periods p ON p.id=a.period_id WHERE a.opening_status='proposed'")) add('opening',r,'Review opening balance',`/app/people/${r.person_id}`,deadline(r.created_at),a=>can(a,'leave.manage'))
+ for (const r of await all(env,"SELECT id,proposed_at,status FROM wl_model_drafts WHERE status='pending'")) add('model',r,r.status==='failed'?'Resolve failed model draft':'Review model draft',`/app/proposals?draft=${r.id}`,deadline(r.proposed_at),hr,hr,null,r.status==='failed'?'Provider draft failed; no work executed':'Awaiting review')
+ const receipts = await all(env, `SELECT v.id,v.uploaded_at,d.person_id,d.category_id,c.subject_reads,c.manager_reads FROM wl_document_versions v JOIN wl_documents d ON d.id=v.document_id JOIN wl_doc_categories c ON c.id=d.category_id WHERE c.acknowledgement=1 AND v.number=(SELECT MAX(v2.number) FROM wl_document_versions v2 WHERE v2.document_id=d.id) AND NOT EXISTS(SELECT 1 FROM wl_acknowledgements a WHERE a.version_id=v.id AND a.person_id=d.person_id)`)
+ for (const r of receipts) add('receipt',r,'Acknowledge document receipt',`/app/people/${r.person_id}`,deadline(r.uploaded_at),a=>sees(a,r.person_id,'documents') && readsCategory(a,r.person_id,r),a=>a.personId===r.person_id && !!r.subject_reads,null,'Receipt pending; not a signature')
+ const claims = new Set((await all(env,'SELECT source_kind,source_id FROM wl_payroll_items')).map(r=>`${r.source_kind}:${r.source_id}`))
+ for (const r of await all(env,"SELECT id,period_end,status,exceptions FROM wl_payroll_batches WHERE status IN ('draft','exported')")) {
+  const open = json<{key:string}[]>(r.exceptions,[]).filter(e=>!claims.has(e.key))
+  if (open.length) add('payroll-exception',r,'Resolve payroll exceptions',`/app/payroll/${r.id}`,r.period_end,payroll,payroll,null,`${open.length} unresolved exception(s)`)
+  if (r.status==='exported') add('payroll-receipt',r,'Record provider acknowledgment',`/app/payroll/${r.id}`,r.period_end,payroll)
+ }
+ const failures = await all(env, "SELECT id,template_id,proposed_at FROM wl_model_drafts f WHERE status='failed' AND NOT EXISTS(SELECT 1 FROM wl_model_drafts n WHERE n.template_id=f.template_id AND n.proposed_at>f.proposed_at AND n.status<>'failed')")
+ for (const r of failures) add('model-failure',r,'Resolve failed model draft',`/app/proposals?draft=${r.id}`,deadline(r.proposed_at),hr,hr,null,'Draft failed; request a fresh draft or leave this exception open')
+ const notices = await all(env, "SELECT id,created_at FROM wl_notices f WHERE status IN ('failed','refused') AND NOT EXISTS(SELECT 1 FROM wl_notices n WHERE n.kind=f.kind AND n.subject=f.subject AND n.recipient=f.recipient AND n.created_at>f.created_at AND n.status IN ('accepted','development'))")
+ for (const r of notices) add('notice-failure',r,'Investigate email delivery failure','/app/connections',deadline(r.created_at),a=>a.owner,a=>a.owner,null,'Delivery failed; business work remains independent')
+ for (const r of await all(env,'SELECT provider_id AS id,failing_since FROM oa_identity_provider_health WHERE failing_since IS NOT NULL')) add('identity-failure',r,'Restore identity connection','/app/connections',deadline(r.failing_since),a=>a.owner,a=>a.owner,null,'Provider unavailable; ordinary email sign-in remains available')
+ for (const r of await all(env,'SELECT provider_id AS id,observed_at FROM wl_identity_token_health WHERE failed=1')) add('identity-token-failure',r,'Investigate refused token exchange','/app/connections',deadline(r.observed_at),a=>a.owner,a=>a.owner,null,'Token exchange unavailable')
+ return result
+}

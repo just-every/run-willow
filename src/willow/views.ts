@@ -29,7 +29,10 @@ export async function audit(env: Bindings, actor: Actor) {
 
 const query = (url: URL) => Input.of(Object.fromEntries(url.searchParams))
 
+import { workList } from './work'
+
 export const views: Record<string, View> = {
+  work: workList,
   connections,
   payrollLayout: layoutView,
   modelDrafts,

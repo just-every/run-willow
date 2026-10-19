@@ -19,7 +19,13 @@ import { createModelDraft, decideModelDraft } from './model-drafts'
 
 type Handler = (env: Bindings, actor: Actor, input: Input, request: Request) => Promise<unknown>
 
+import { approveWorkPolicy, scheduleWork } from './work'
+import { runWorkNow } from './work-scheduler'
+
 export const actions: Record<string, Handler> = {
+  'work.policy': approveWorkPolicy,
+  'work.schedule': scheduleWork,
+  'work.run': runWorkNow,
   'connections.notices': configureNotices,
   'connections.model': configureModel,
   'connections.identity': configureIdentity,

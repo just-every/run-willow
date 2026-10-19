@@ -175,7 +175,7 @@ export async function completeTask(env: Bindings, actor: Actor, input: Input, re
   return { id: task.id, case: caseRow.id, status: 'done' }
 }
 
-async function missingFields(env: Bindings, caseRow: Row, template: Row): Promise<string[]> {
+export async function missingFields(env: Bindings, caseRow: Row, template: Row): Promise<string[]> {
   const required = json<string[]>(template.required_fields, [])
   const person = await one(env, 'SELECT p.work_email, v.* FROM wl_people p JOIN wl_person_private v ON v.person_id = p.id WHERE p.id = ?', caseRow.person_id)
   const period = await one(env, 'SELECT payroll_id FROM wl_periods WHERE id = ?', caseRow.period_id)
