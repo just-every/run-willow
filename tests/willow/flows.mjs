@@ -430,7 +430,7 @@ try {
     const requests = (await Promise.all(people.map(id => personOf('owner', id)))).flatMap(person => person.leave?.requests.map(item => item.id) ?? [])
     const versions = [ids.contractV1, ids.contractV2, ids.medicalVersion, ids.notesVersion]
     const memberIds = (await h.api('members', cookie.owner)).map(member => member.id)
-    const values = { modelDraft: ['unknown-proposal'], person: [...people, 'me'], context: [...people, 'me'], case: cases, leave: requests, batch: ids.batches, proposal: ids.proposals, request: requests, batchFile: ids.batches, document: versions }
+    const values = { modelDraft: ['unknown-proposal'], changeRequest: ['unknown-request'], change: ['unknown-request', 'unknown-request?attachment=unknown'], person: [...people, 'me'], context: [...people, 'me'], case: cases, leave: requests, batch: ids.batches, proposal: ids.proposals, request: requests, batchFile: ids.batches, document: versions }
     const fill = (pattern, name) => {
       const base = pattern.replace(/^\^|\$$/g, '').replace(/\\\./g, '.')
       if (name === 'employeeBundle') return ['self', 'team', 'organization'].map(scope => `${base}?scope=${scope}&fields=name,phone,payAmount,payrollId&history=employment,leave,lifecycle,documents`)

@@ -8,6 +8,7 @@ import { blockedBy } from './workflow-plan'
 import { answersFor, missingFields } from './lifecycle'
 import { renewalsDue } from './record-tables/rows'
 import { CERTIFICATIONS, readsTable, recordTables } from './record-tables/schema'
+import { mayApprove, mayRead, type ResolvedStep } from './change-requests/chain'
 
 export interface WorkSource {
  key: string; kind: string; title: string; path: string; due: string; preferred?: string | null
@@ -45,6 +46,13 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
   add('leave',r,'Review time-off request',`/app/leave/${r.id}`,r.start_date,a=>decide(a) || a.id===r.requested_by || a.personId===r.person_id,decide,r.approver_member_id)
  }
  for (const r of await all(env,"SELECT id,proposed_at FROM wl_proposals WHERE status='pending'")) add('proposal',r,'Review employee change',`/app/proposals/${r.id}`,deadline(r.proposed_at),hr)
+ // FLOW-004: the current chain step is approver work; a returned request is the requester's.
+ for (const r of await all<{id:string;person_id:string;requested_by:string;steps_json:string;step:number;status:string;updated_at:number}>(env,"SELECT id,person_id,requested_by,steps_json,step,status,updated_at FROM wl_change_requests WHERE status IN ('pending','returned')")) {
+  const steps = json<ResolvedStep[]>(r.steps_json,[]), step = r.status==='pending' ? steps[r.step] : undefined, decide = new Map<string,boolean>()
+  for (const a of await workMembers(env)) decide.set(a.id, await mayApprove(env,a,r,step))
+  if (step) add('change-request',r,'Approve employee change request',`/app/changes/${r.id}`,deadline(r.updated_at),a=>mayRead(a,r,steps),a=>!!decide.get(a.id),step.member,`Waiting on step ${r.step+1} of ${steps.length}`)
+  else add('change-request',r,'Revise returned change request',`/app/changes/${r.id}`,deadline(r.updated_at),a=>a.id===r.requested_by,a=>a.id===r.requested_by,r.requested_by,'Sent back with comments')
+ }
  for (const r of await all(env,"SELECT id,written_at FROM wl_policy_versions WHERE status='draft'")) add('policy',r,'Review leave policy','/app/settings',deadline(r.written_at),a=>a.owner)
  for (const r of await all(env,"SELECT a.id,a.created_at,p.person_id FROM wl_leave_accounts a JOIN wl_periods p ON p.id=a.period_id WHERE a.opening_status='proposed'")) add('opening',r,'Review opening balance',`/app/people/${r.person_id}`,deadline(r.created_at),a=>can(a,'leave.manage'))
  for (const r of await all(env,"SELECT id,proposed_at,status FROM wl_model_drafts WHERE status='pending'")) add('model',r,r.status==='failed'?'Resolve failed model draft':'Review model draft',`/app/proposals?draft=${r.id}`,deadline(r.proposed_at),hr,hr,null,r.status==='failed'?'Provider draft failed; no work executed':'Awaiting review')

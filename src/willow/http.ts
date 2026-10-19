@@ -27,6 +27,8 @@ import { PAGE_DOORS, match } from './doors'
 import { route } from './views'
 import { connectionsPage } from './ui/connections'
 import { progressPage } from './ui/progress'
+import { changeRequestPage, changeRequestsPage } from './ui/change-requests'
+import { changeAttachment } from './change-requests/view'
 
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } })
 
@@ -116,6 +118,8 @@ const pages: Record<string, Page> = {
   employeeBundle: (env, actor, request, url) => employeeBundle(env, actor, url, request),
   employeeCsv: (env, actor, _request, url) => employeeExport(env, actor, url, 'csv'),
   employeeXlsx: (env, actor, _request, url) => employeeExport(env, actor, url, 'xlsx'),
+  changes: (env, actor, _request, url) => changeRequestsPage(env, actor, url),
+  change: (env, actor, _request, url, id) => url.searchParams.has('attachment') ? changeAttachment(env, actor, id, url.searchParams.get('attachment')!) : changeRequestPage(env, actor, id, url),
   connections: (env, actor, _request, url) => connectionsPage(env, actor, url),
   home: (env, actor, _request, url) => homePage(env, actor, url),
   progress: (env, actor, _request, url) => progressPage(env, actor, url),

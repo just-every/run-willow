@@ -61,7 +61,7 @@ export async function templates(env: Bindings) {
   return rows.map(row => ({ id: row.id, family: row.family_id, version: row.version, kind: row.kind, name: row.name, status: row.publication === 'draft' ? 'draft' : row.status, requiredFields: json<string[]>(row.required_fields, []), tasks: tasks.filter(task => task.template_id === row.id).map(task => ({ title: task.title, assignee: task.assignee, dueOffsetDays: task.due_offset_days, evidenceRequired: !!task.evidence_required, system: task.system, action: task.action, rule: json(task.rule, {}) })) }))
 }
 
-async function activeTemplate(env: Bindings, id: string, kind: string) {
+export async function activeTemplate(env: Bindings, id: string, kind: string) {
   const template = await one(env, "SELECT * FROM wl_templates WHERE id = ? AND status = 'active'", id)
   insist(template && template.kind === kind, 'template_not_found', 404)
   return template
@@ -120,8 +120,9 @@ export async function startJoiner(env: Bindings, actor: Actor, input: Input) {
 }
 
 /** Mover: a new terms version from a date, plus an optional mover case anchored on it, in one batch. */
-export async function prepareMover(env: Bindings, actor: Actor, input: Input) {
-  const prepared = await prepareTerms(env, actor, input)
+/** `approved` is set only by FLOW-004 execution, whose approval chain is the authority. */
+export async function prepareMover(env: Bindings, actor: Actor, input: Input, { approved = false } = {}) {
+  const prepared = await prepareTerms(env, actor, input, { approved })
   const templateId = input.text('template', { optional: true, max: 100 })
   const opened = templateId ? await caseStatements(env, actor, await activeTemplate(env, templateId, 'mover'), prepared.period.person_id, prepared.period.id, prepared.effective, prepared.terms.managerPersonId, await workflowContext(env, prepared.terms, prepared.period.employment_type)) : null
   return {

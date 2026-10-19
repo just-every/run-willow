@@ -213,3 +213,5 @@ await import("./workflows.mjs")
 await import("./custom-fields.mjs")
 
 await import("./record-tables.mjs")
+
+await import("./change-requests.mjs")

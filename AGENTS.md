@@ -101,11 +101,13 @@ signed-in session cookie and sees exactly what that member may see. Reads are
 `GET /api/willow/` plus a path from `src/willow/doors.ts` (`me`, `progress`, `people`,
 `people/:id`, `context/:id`, `organization`, `cases/:id`, `tasks`, `leave/:id`, `approvals`,
 `quote?account&startDate&endDate`, `payroll`, `payroll/:id`, `reports`,
-`proposals`, `proposals/:id`, `imports`, `audit`, `settings`, `policies`,
+`proposals`, `proposals/:id`, `change-requests`, `change-requests/:id`, `imports`, `audit`, `settings`, `policies`,
 `templates`, `members`, `preview?member&person`, `permissions`). Writes are
 `POST /api/willow/ACTION` with a JSON body and an `Origin` header equal to the
 app origin; the action names are the keys of `src/willow/actions.ts`. Files go
 as `{ "filename": "...", "base64": "..." }`.
+
+Managers request dated title, department, location, manager, schedule, employment-type or pay changes for a direct report with `change.request` (FLOW-004); `change.decide` (approve, return with a comment, decline) and `change.edit` follow HR's chain from `change.chain`.
 
 To prepare a joiner or mover for HR, `POST /api/willow/proposal.create` with
 `{ kind: "joiner" | "mover", summary, agent, plan }`, where `plan` holds the

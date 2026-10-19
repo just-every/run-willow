@@ -4,6 +4,7 @@
 // Patterns are relative to /api/willow/ (API) or absolute (pages).
 export const API_DOORS: [string, string][] = [
   ['^custom-fields$', 'customFields'], ['^record-tables$', 'recordTables'], ['^record-tables/([a-z][a-z0-9_]*)$', 'recordReport'],
+  ['^change-requests$', 'changeRequests'], ['^change-requests/([\\w-]+)$', 'changeRequest'],
   ['^work$', 'work'], ['^connections$', 'connections'], ['^payroll-layout$', 'payrollLayout'], ['^model-drafts$', 'modelDrafts'], ['^model-drafts/([\\w-]+)$', 'modelDraft'],
   ['^progress$', 'progress'], ['^me$', 'me'], ['^permissions$', 'permissions'], ['^settings$', 'settings'], ['^members$', 'members'], ['^preview$', 'preview'],
   ['^people$', 'people'], ['^organization$', 'organization'], ['^people/([\\w-]+)$', 'person'], ['^context/([\\w-]+)$', 'context'], ['^templates$', 'templates'], ['^cases/([\\w-]+)$', 'case'],
@@ -16,6 +17,7 @@ export const PAGE_DOORS: [string, string][] = [
   ['^/app/custom-fields$', 'customFields'], ['^/app/reports/tables/([a-z][a-z0-9_]*)\\.csv$', 'recordReportFile'],
   ['^/app/exports/employees\\.zip$', 'employeeBundle'],
   ['^/app/exports/employees\\.csv$', 'employeeCsv'], ['^/app/exports/employees\\.xlsx$', 'employeeXlsx'],
+  ['^/app/changes$', 'changes'], ['^/app/changes/([\\w-]+)$', 'change'],
   ['^/app/connections$', 'connections'],
   ['^/app$', 'home'], ['^/app/progress$', 'progress'], ['^/app/employer$', 'employer'], ['^/app/tasks$', 'tasks'], ['^/app/people$', 'people'], ['^/app/people/([\\w-]+)$', 'person'],
   ['^/app/cases/([\\w-]+)$', 'case'], ['^/app/leave$', 'leave'], ['^/app/leave/([\\w-]+)$', 'request'], ['^/app/settings$', 'settings'], ['^/app/access$', 'access'],

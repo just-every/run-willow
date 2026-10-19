@@ -60,9 +60,9 @@ export async function readTerms(env: Bindings, input: Input, base: Row | null, e
 }
 
 /** Pay is read only when the request supplies it; setting pay needs pay.read. */
-export function readPay(actor: Actor, input: Input): PayInput | null {
+export function readPay(actor: Actor, input: Input, { approved = false } = {}): PayInput | null {
   if (!input.has('payBasis') && !input.has('payAmount')) return null
-  requirePermission(actor, 'pay.read')
+  if (!approved) requirePermission(actor, 'pay.read')
   const basis = input.text('payBasis', { max: 10 }) as PayInput['basis']
   insist(['salary', 'hourly', 'unknown'].includes(basis), 'invalid_payBasis')
   const amount = input.text('payAmount', { optional: true, max: 20 })
@@ -130,13 +130,13 @@ export async function updatePerson(env: Bindings, actor: Actor, input: Input) {
   return { id, revision: next }
 }
 
-export async function startPeriodStatements(env: Bindings, actor: Actor, input: Input, personId: string, currency: string) {
+export async function startPeriodStatements(env: Bindings, actor: Actor, input: Input, personId: string, currency: string, { approved = false } = {}) {
   const start = requireDate(input.text('startDate', { max: 10 }), 'invalid_startDate')
   const type = input.text('employmentType', { max: 20 })
   insist((EMPLOYMENT_TYPES as readonly string[]).includes(type), 'invalid_employmentType')
   const payrollId = input.text('payrollId', { optional: true, max: 60 }) || null
   const terms = await readTerms(env, input, null, start, 'Start of employment')
-  const pay = readPay(actor, input) ?? { basis: 'unknown' as const, amountCents: null }
+  const pay = readPay(actor, input, { approved }) ?? { basis: 'unknown' as const, amountCents: null }
   const periodId = newId(), termId = newId()
   const organizationGuard = await managerChangeGuard(env, { period: { id: periodId, personId, startDate: start, endDate: null }, term: { id: termId, effectiveFrom: start, managerPersonId: terms.managerPersonId } })
   return {
@@ -157,8 +157,8 @@ export async function termsOn(env: Bindings, periodId: string, date: string) {
 }
 
 /** Prepares a new terms version effective from a date; fields not supplied carry over from the version in force then. */
-export async function prepareTerms(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
+export async function prepareTerms(env: Bindings, actor: Actor, input: Input, { approved = false } = {}) {
+  if (!approved) requirePermission(actor, 'people.manage')
   const periodId = input.text('period', { max: 100 })
   const period = await one(env, 'SELECT * FROM wl_periods WHERE id = ?', periodId)
   insist(period, 'period_not_found', 404)
@@ -167,7 +167,7 @@ export async function prepareTerms(env: Bindings, actor: Actor, input: Input) {
   insist(!period.end_date || effective <= period.end_date, 'effective_after_end')
   const base = (await termsOn(env, periodId, effective))!
   const terms = await readTerms(env, input, base, effective)
-  const pay = readPay(actor, input)
+  const pay = readPay(actor, input, { approved })
   const previousPay = (await one<{ pay_basis: PayInput['basis']; amount_cents: number | null; currency: string }>(env, 'SELECT pay_basis, amount_cents, currency FROM wl_term_pay WHERE term_id = ?', base.id))!
   const currency = pay ? (await one<{ currency: string }>(env, 'SELECT currency FROM wl_employer'))!.currency : previousPay.currency
   const termId = newId()
