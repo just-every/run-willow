@@ -127,3 +127,12 @@ export async function directory(env: Bindings, actor: Actor, asOf = actor.today)
     .filter(({ person }) => everyone || ['active', 'upcoming'].includes(statusOf(admitted.get(person.id), actor.today)))
     .map(({ person, status }) => ({ id: person.id, name: displayName(person), workEmail: person.work_email, status, ...termsSummary(current.get(person.id), look) }))
 }
+
+/** SELF-002 consent publishes only month/day, never the canonical private birth date. */
+export async function birthdayMonthDays(env:Bindings,date:string):Promise<{person:string;month:number;day:number}[]> {
+ requireDate(date,'invalid_asOf')
+ return all(env,`SELECT pr.person_id AS person,CAST(substr(pr.date_of_birth,6,2) AS INTEGER) AS month,CAST(substr(pr.date_of_birth,9,2) AS INTEGER) AS day
+ FROM wl_person_private pr JOIN wl_company_preferences c ON c.person_id=pr.person_id
+ WHERE c.birthday=1 AND pr.date_of_birth IS NOT NULL AND pr.date_of_birth<>''
+ AND EXISTS(SELECT 1 FROM wl_periods p WHERE p.person_id=pr.person_id AND p.start_date<=? AND (p.end_date IS NULL OR p.end_date>=?))`,date,date)
+}

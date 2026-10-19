@@ -1,3 +1,4 @@
+import { companyPanels } from './company'
 import { selfChangesPanel } from './self-service'
 // Home (my tasks, approvals, my leave), the task inbox and a lifecycle case.
 import type { Bindings } from '../../auth.server'
@@ -23,6 +24,7 @@ export async function homePage(env: Bindings, actor: Actor, url: URL) {
   const gettingStarted = can(actor, 'people.manage') && !await one(env, 'SELECT 1 FROM wl_people LIMIT 1')
   const body = h`<h1>${company?.name ?? 'Willow'}</h1><p class="muted">Signed in as ${actor.name}. Today is ${formatDate(actor.today)} (${company?.timezone}).</p>
 <div class="grid home-grid">
+${await companyPanels(env,actor)}
 ${await selfChangesPanel(env,actor)}
 <section class="card your-tasks"><h2><a href="/app/tasks">Your tasks</a></h2>${taskList(tasks, actor.today)}</section>
 <section class="card to-decide"><h2>Leave to decide</h2>${waiting.length ? h`<ul class="people-list">${waiting.map(request => h`<li>${avatar(request.name)}<a href="/app/leave/${request.id}">${request.name}: ${formatDate(request.startDate)} – ${formatDate(request.endDate)} (${request.hours} h)</a></li>`)}</ul>` : h`<p class="muted">No requests waiting for you.</p>`}</section>

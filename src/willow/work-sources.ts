@@ -1,3 +1,5 @@
+import { latestAnnouncements } from './company/store'
+import { currentMembership, matchesAudience } from './company/audience'
 import { reviewsSelfChanges, handlesSelfExceptions } from './self-service/view'
 // Adapters for every shipped work source. No private values enter this projection.
 import type { Bindings } from '../auth.server'
@@ -35,6 +37,19 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  const add = (kind: string, row: Row, title: string, path: string, due: string, visible: WorkSource['visible'], responsible = visible, preferred?: string | null, progress = 'Awaiting action') => result.push({ key: `${kind}:${row.id}`, kind, title, path, due, visible, responsible, preferred, progress, personId: row.person_id??null, next: title })
  for (const r of await all(env,"SELECT c.*,d.outcome FROM wl_self_changes c LEFT JOIN wl_self_decisions d ON d.change_id=c.id WHERE d.change_id IS NULL")) add('self-change',r,'Review private profile change',`/app/self-changes/${r.id}`,r.due_date,a=>a.personId===r.person_id||can(a,'people.private'),a=>reviewsSelfChanges(a)&&a.id!==r.requested_by&&a.personId!==r.person_id)
  for (const r of await all(env,"SELECT c.* FROM wl_self_changes c JOIN wl_self_decisions d ON d.change_id=c.id WHERE d.outcome='approved' AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation r WHERE r.change_id=c.id)")) add('self-exception',r,'Reconcile approved profile revision','/app/self-changes',r.due_date,a=>a.personId===r.person_id||handlesSelfExceptions(a),handlesSelfExceptions,null,'Approved revision awaits a recorded downstream handoff; no provider confirmation')
+ // SELF-002 read acknowledgments are owned work; completion remains the target member's.
+ const companyPublications=(await latestAnnouncements(env)).filter(p=>!p.retired&&p.ack_required&&p.starts_on<=today(zone)&&(!p.ends_on||p.ends_on>=today(zone)))
+ if(companyPublications.length){
+  const receipts=new Set((await all(env,'SELECT version_id,member_id FROM wl_company_acknowledgements')).map(r=>`${r.version_id}:${r.member_id}`))
+  for(const member of await workMembers(env)) {
+   const membership=await currentMembership(env,member)
+   for(const publication of companyPublications) {
+    if(!matchesAudience(publication,membership)||receipts.has(`${publication.id}:${member.id}`))continue
+    add('company-ack',{id:`${publication.id}:${member.id}`,person_id:member.personId},'Acknowledge company announcement','/app',publication.ends_on??addDays(publication.starts_on,defaultDays),a=>a.id===member.id||can(a,'people.manage'),a=>a.id===member.id,member.id)
+   }
+  }
+ }
+
  for (const r of await all(env,"SELECT o.*,p.person_id FROM wl_leave_overrides o JOIN wl_leave_accounts a ON a.id=o.account_id JOIN wl_periods p ON p.id=a.period_id WHERE NOT EXISTS(SELECT 1 FROM wl_leave_override_decisions d WHERE d.override_id=o.id)")) add('leave-override',r,'Review leave balance override','/app/leave#overrides',deadline(r.requested_at),a=>can(a,'leave.manage'),a=>a.owner)
  const tasks = await all(env, `SELECT t.*,c.person_id FROM wl_case_tasks t JOIN wl_cases c ON c.id=t.case_id WHERE t.status='open' AND t.superseded_at IS NULL AND c.status='open'`)
  for (const t of tasks) {
