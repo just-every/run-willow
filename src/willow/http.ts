@@ -1,3 +1,4 @@
+import { importForm } from './movein/forms'
 // Willow's public doors: /app pages, /app/do/ACTION form posts, /api/willow
 // JSON, and access-checked downloads. Every request resolves the signed-in
 // member first; private data is never served to a signed-out request.
@@ -74,7 +75,12 @@ async function apiResponse(env: Bindings, actor: Actor, request: Request, url: U
 async function pageResponse(env: Bindings, actor: Actor, request: Request, url: URL): Promise<Response> {
   const path = url.pathname
   if (request.method === 'POST') {
-    if (path === '/app/import/preview') return await previewPage(env, actor, await Input.from(request), url)
+    if (path === '/app/import/preview') return await previewPage(env, actor, await Input.from(request), url, request)
+    if (path === '/app/import/execute') {
+      const input=await Input.from(request), result=await importForm(env,actor,request,input)
+      if(input.text('action')==='reconcile') return page('Import reconciliation',actor,h`<p class="back"><a href="/app/import">← Move in</a></p><h1>Import reconciliation</h1><section class="card"><p>${result.ok?'The imported records agree with the reviewed source.':'Some records differ from the reviewed source.'}</p><dl><dt>Source records</dt><dd>${result.counts.sourceRecords}</dd><dt>Present</dt><dd>${result.counts.present}</dd><dt>Explained omissions</dt><dd>${result.counts.explained}</dd><dt>Native records</dt><dd>${result.counts.nativeTargets}</dd></dl></section>`,{current:'/app/import',url})
+      return redirect(env,'/app/import','notice','Import updated. Review its status below.')
+    }
     const name = path.match(/^\/app\/do\/([\w.]+)$/)?.[1]
     const action = name ? actions[name] : undefined
     if (!action) throw new WillowError('not_found', 404)

@@ -1,3 +1,5 @@
+import { exerciseImportDoor } from './import-door.mjs'
+import { imports } from './import-transport.mjs'
 import { queuedEntrypoint } from '@runeditrun/rer/queued-entry'
 const queued = await queuedEntrypoint(import.meta.url, 'test:flows'); if (queued !== null) process.exit(queued)
 // Willow's contract clauses, each exercised through public doors (JSON door,
@@ -470,9 +472,11 @@ try {
   await check('WIL-16', async () => {
     const inputs = { employees: file('employees.csv', employeesCsv({ conflictingEmail: 'mia@example.com' })), balances: file('balances.csv', balancesCsv), documents: file('documents.zip', documentsZip()), schedule: ids.week }
     const before = (await h.api('people', cookie.hana)).length
-    await h.api('import.preview', cookie.mia, inputs, 403)
+    await imports(h,cookie.mia).request('plan',{uploadId:'unknown'},401)
+    await imports(h,cookie.hana).request('plan',{uploadId:'unknown'},401)
+    const transfer=imports(h,cookie.owner)
     await h.api('category.create', cookie.hana, { name: 'Passport scans' })
-    const preview = await h.api('import.preview', cookie.hana, inputs)
+    const preview = await transfer.plan(inputs)
     assert.equal((await h.api('people', cookie.hana)).length, before, 'the preview writes nothing')
     assert.deepEqual(preview.people, { active: 3, former: 1, upcoming: 0 })
     const reasons = preview.rejected.map(item => item.reason).join('\n')
@@ -481,9 +485,10 @@ try {
     assert.deepEqual(preview.documents.map(item => item.person).sort(), ['Rowan Hale', 'Tamsin Vale'])
     assert.ok(preview.unknowns.find(item => item.person === 'Idris Penn').missing.some(field => field.startsWith('pay')))
     assert.deepEqual(preview.create, { departments: ['Warehouse', 'Finance'], locations: ['Parramatta'] })
-    await h.api('import.apply', cookie.hana, { ...inputs, fingerprint: 'not-the-reviewed-one' }, 409)
-    const applied = await h.api('import.apply', cookie.hana, { ...inputs, fingerprint: preview.fingerprint })
-    assert.equal(applied.state, 'completed')
+    await transfer.request('apply',{planId:preview.planId,reviewedFingerprint:'0'.repeat(64)},403)
+    const applied = await transfer.apply(preview)
+    assert.equal(applied.job.state, 'completed')
+    assert.equal((await transfer.reconcile(preview)).ok,true)
     const people = await h.api('people', cookie.owner)
     assert.equal(people.length, before + 6)
     const rowan = await personOf('owner', people.find(person => person.name === 'Rowan Hale').id)
@@ -502,23 +507,39 @@ try {
     assert.equal((await h.raw(`/app/files/document/${contract.id}`, { cookie: cookie.mia })).status, 404)
     assert.equal(sha(Buffer.from(await (await h.raw(`/app/files/document/${contract.id}?download=1`, { cookie: cookie.hana })).arrayBuffer())), sha(contractPdf))
     // Importing the same export again adds nothing.
-    const again = await h.api('import.preview', cookie.hana, inputs)
-    const second = await h.api('import.apply', cookie.hana, { ...inputs, fingerprint: again.fingerprint })
+    const again = await transfer.plan(inputs)
+    const second = await transfer.apply(again)
     assert.equal((await h.api('people', cookie.owner)).length, before + 6)
+    // Catch-up replaces imported values, preserves original custody and is itself reversible.
+    const changed={...inputs,employees:file('employees.csv',employeesCsv({conflictingEmail:'mia@example.com'}).replace('0400 000 101','0400 000 909'))}
+    const catchup=await transfer.plan(changed,{catchup:true})
+    assert.ok(catchup.summary.updated>0)
+    await transfer.apply(catchup)
+    assert.equal((await personOf('owner',rowan.id)).private.phone,'0400 000 909')
+    assert.equal((await transfer.reconcile(catchup)).ok,true)
+    await transfer.undo(catchup)
+    assert.equal((await personOf('owner',rowan.id)).private.phone,'0400 000 101')
     // Undo removes an untouched import completely.
-    await h.api('import.job', cookie.hana, { job: second.job, action: 'undo' })
-    await h.api('import.job', cookie.hana, { job: applied.job, action: 'undo' })
+    assert.equal(second.job.id,applied.job.id)
+    await transfer.undo(preview)
     assert.equal((await h.api('people', cookie.owner)).length, before)
     assert.ok(!(await h.api('settings', cookie.hana)).departments.some(row => row.name === 'Warehouse'))
+    await exerciseImportDoor({h,owner:cookie.owner,nonOwner:cookie.hana,inputs,before})
     // Once a leave manager signs off an imported balance, undo is refused and names what depends on it.
-    const third = await h.api('import.apply', cookie.hana, { ...inputs, fingerprint: (await h.api('import.preview', cookie.hana, inputs)).fingerprint })
+    const thirdPlan=await transfer.plan(inputs)
+    const third=await transfer.apply(thirdPlan)
     const rowanAgain = await personOf('hana', (await h.api('people', cookie.hana)).find(person => person.name === 'Rowan Hale').id)
     await h.api('account.approve', cookie.hana, { account: rowanAgain.leave.accounts[0].id })
-    const blocked = await h.api('import.job', cookie.hana, { job: third.job, action: 'undo' }, 409)
+    const blocked = await transfer.request('undo',{planId:thirdPlan.planId},409)
     assert.equal(blocked.error, 'undo_blocked')
-    assert.deepEqual(blocked.detail.blockers.map(item => item.kind), ['account'])
+    const history=await h.api('imports',cookie.owner)
+    assert.deepEqual(history.find(job=>job.planId===thirdPlan.planId).blockers.map(item=>item.kind),['account'])
     assert.equal((await h.api('people', cookie.owner)).length, before + 6)
-    assert.equal((await h.api('imports', cookie.hana)).find(job => job.id === third.job).state, 'completed')
+    assert.equal((await h.api('imports', cookie.owner)).find(job => job.id === third.job.id).state, 'completed')
+    assert.equal((await h.raw('/auth/signout',{cookie:cookie.owner,body:{}})).status,204)
+    await transfer.request('apply',{planId:thirdPlan.planId,reviewedFingerprint:thirdPlan.fingerprint},401)
+    const newOwner=await h.signIn(h.vars.OWNER_EMAIL)
+    assert.equal((await h.api('people',newOwner)).length,before+6,'a revoked owner session cannot mutate a reviewed import')
   })
 } finally {
   await h.close()

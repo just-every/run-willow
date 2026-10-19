@@ -1,3 +1,4 @@
+import { initializeProvisionedDoor } from './willow/movein/authority'
 import { createOwnerClaimHandler } from './modules/owner-claim/index.mjs'
 import { identityFetch } from './identity-fetch'
 import { firstRunResponse } from './base/setup'
@@ -31,6 +32,7 @@ export interface Bindings {
  RER_OWNER_CLAIM_ISSUER?: string
  RER_OWNER_CLAIM_INSTALLATION_ID?: string
  RER_OWNER_CLAIM_PUBLIC_KEYS?: string
+ RER_IMPORT_DOOR?: string
  OWNER_EMAIL: string
  SESSION_SECRET: string
  SETUP_TOKEN?: string
@@ -68,7 +70,7 @@ export async function authResponse(request: Request, original: Bindings): Promis
  const env = runtimeBindings(original), url = new URL(request.url)
  if (env.RER_OWNER_CLAIM_PUBLIC_KEYS) {
   const claim = await createOwnerClaimHandler({ db: env.DB, authConfig: authConfig(env), clientIp: req => req.headers.get('CF-Connecting-IP') ?? '', issuer: env.RER_OWNER_CLAIM_ISSUER ?? '', installationId: env.RER_OWNER_CLAIM_INSTALLATION_ID ?? '', appOrigin: env.AUTH_ORIGIN, expectedEmail: env.OWNER_EMAIL, publicKeys: JSON.parse(env.RER_OWNER_CLAIM_PUBLIC_KEYS) })(request)
-  if (claim) return claim
+  if (claim) { if(claim.status===303) await initializeProvisionedDoor(env); return claim }
  }
  // The shared server-rendered sign-in page: plain forms that work before any script.
  const identity = identityConfiguration(env)

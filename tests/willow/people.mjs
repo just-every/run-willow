@@ -1,3 +1,4 @@
+import { imports } from './import-transport.mjs'
 // Date-selected people and organization flows, through real Worker HTTP doors.
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
@@ -180,12 +181,13 @@ try {
   // The move-in public door refuses a cyclic source graph before any person is written.
   const source = 'id,firstName,lastName,workEmail,hireDate,jobTitle,supervisorEId\ncycle-one,Alex,Import,cycle-one@example.com,2020-01-01,Lead,cycle-two\ncycle-two,Sam,Import,cycle-two@example.com,2020-01-01,Lead,cycle-one\n'
   const beforeImport = (await api('people')).length
-  const invalidImport = await api('import.preview', { employees_name: 'cycle.csv', employees_b64: Buffer.from(source).toString('base64'), dateOrder: 'YMD' }, 409)
+  const transfer=imports(h,owner)
+  const invalidImport = await transfer.plan({ employees_name: 'cycle.csv', employees_b64: Buffer.from(source).toString('base64'), dateOrder: 'YMD' },{status:409})
   assert.equal(invalidImport.error, 'manager_cycle')
   assert.equal((await api('people')).length, beforeImport)
   const imported = { employees_name: 'team.csv', employees_b64: Buffer.from(source.replace('Lead,cycle-one\n', 'Lead,\n')).toString('base64'), schedule }
-  const preview = await api('import.preview', imported)
-  await api('import.apply', { ...imported, fingerprint: preview.fingerprint })
+  const preview = await transfer.plan(imported)
+  await transfer.apply(preview)
   const importedPeople = await api('people?name=Import')
   assert.equal(importedPeople.length, 2)
   const importedManager = importedPeople.find(person => person.name === 'Sam Import')

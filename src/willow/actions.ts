@@ -1,3 +1,4 @@
+import { configureDoor } from './movein/authority'
 // Every state change in Willow, by name. The same handler serves the HTML form
 // door (/app/do/NAME) and the JSON door (/api/willow/NAME) used by agents.
 import type { Bindings } from '../auth.server'
@@ -8,7 +9,6 @@ import type { Input } from './input'
 import { accrue, adjust, approveOpening, approvePolicy, cancelLeave, correctLeave, createPolicy, decideLeave, openAccount, requestLeave, withdrawLeave } from './leave'
 import { completeCase, completeTask, createTemplate, scheduleMover, startJoiner, startLeaver } from './lifecycle'
 import { endAccess, giveAccess, setPermissions } from './members'
-import { applyImport, importAction, previewImport } from './movein/bamboohr'
 import { acknowledgeBatch, createBatch, discardBatch, exportBatch } from './payroll'
 import { cancelTerms, setPayrollId, updatePerson } from './people'
 import { decideProposal, propose } from './proposals'
@@ -36,6 +36,7 @@ export const actions: Record<string, Handler> = {
   'model.decide': decideModelDraft,
   'payroll.layout': configureLayout,
   'payroll.preview': previewPayroll,
+  'import.settings': (env, actor, input) => configureDoor(env, actor, input.flag('enabled'), input.list('revokedKids')),
   'employer.configure': (env, actor, input) => configureEmployer(env, actor, input),
   'location.create': (env, actor, input) => createLocation(env, actor, input),
   'department.create': (env, actor, input) => createDepartment(env, actor, input),
@@ -77,7 +78,4 @@ export const actions: Record<string, Handler> = {
   'payroll.acknowledge': (env, actor, input) => acknowledgeBatch(env, actor, input),
   'proposal.create': (env, actor, input) => propose(env, actor, input),
   'proposal.decide': (env, actor, input) => decideProposal(env, actor, input),
-  'import.preview': (env, actor, input) => previewImport(env, actor, input),
-  'import.apply': (env, actor, input) => applyImport(env, actor, input),
-  'import.job': (env, actor, input) => importAction(env, actor, input),
 }

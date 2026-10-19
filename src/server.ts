@@ -4,6 +4,7 @@ import start from '@tanstack/react-start/server-entry'
 import { Hono } from 'hono'
 import { dispatch } from './base/dispatch'
 import { authResponse, runtimeBindings, type Bindings } from './auth.server'
+import { importDoorResponse } from './willow/movein/door'
 import { willowResponse } from './willow/http'
 import { runWorkScheduler } from './willow/work-scheduler'
 import { willowFrame } from './willow/frame'
@@ -37,6 +38,8 @@ export default withDemo({
     if (lobby) return documentResponse(lobby)
     const state = await setupStateResponse(request, env)
     if (state) return state
+    const imported = await importDoorResponse(request, env)
+    if (imported) return imported
     const auth = await authResponse(request, env)
     if (auth) return documentResponse(await willowFrame(auth))
     const willow = await willowResponse(request, env)

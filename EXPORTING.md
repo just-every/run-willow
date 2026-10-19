@@ -106,8 +106,12 @@ outstanding DATA-001 target.
 
 `rer export` now writes notice delivery disabled, OIDC consent disabled and no
 selected model in its portable connection settings. This changes only the
-archive: the source installation keeps its enabled settings. Notice-delivery
-history, including any uncertain/pending outcome, and business records stay
+archive: the source installation keeps its enabled settings. Business import
+access also exports disabled and requires the owner's explicit enablement in
+Import settings after restore; the owner's own reviewed imports remain available.
+Permanent revoked keys, consumed grant nonces, approval history and import
+custody remain portable and unchanged. Notice-delivery history, including any
+uncertain/pending outcome, and business records stay
 unchanged. Existing pending cases and payroll drafts restore as work to finish;
 restoring or reenabling connections never replays historical actions. Sessions,
 provider links and credentials remain excluded under WIL-17/WIL-19.
@@ -118,16 +122,23 @@ owner link. This is required even if the new runtime already has provider
 bindings. The current edition has no background dispatcher that resends stored
 pending notice rows or restarts stored model requests.
 
-Older archives with enabled notices, OIDC or a selected model remain restorable.
-Import verifies the original backup, streams a private normalized copy with
-those settings forced off, and leaves the original file untouched. The import
-report includes `connectionNormalization`: whether settings changed, which
-settings were disabled, the connection count, source/imported archive digests,
-and `ownerReauthorizationRequired` for notices, OIDC and model connections.
-The ordinary command also reports the normalization and required authorization.
-All other business records, history and files keep their original values.
-The temporary normalized copy is removed after import, including failed imports.
+Older archives with enabled notices, OIDC, a selected model or Business import
+access remain restorable. Base verifies the original backup and normalizes its
+staged connection and import settings rows before applying them, leaving the
+original file and its authenticated digests
+unchanged. Willow's seed-owned `localPortability` policy declares only the safe
+replacements `wl_connections.notices=0`, `wl_connections.oidc=0`,
+`wl_connections.model=null` and `ik_door_settings.enabled=0`; Base bounds and
+journals the changes. The JSON import receipt exposes Base's actual `safetyChanges`, each
+with `table`, `column`, safe replacement `value` and changed `rows` count, plus
+`ownerReauthorizationRequired` for notices, OIDC, model connections and
+`businessImport`.
+Already-disabled values do not count as changes. The ordinary command prints
+Base's change counts and Willow's required authorization guidance. All other
+business records, history and files keep their original values.
 
-The seed wrapper retains the existing native and container transfer paths in
-the pinned CLI. New exports publish verified normalized bytes atomically and
-never overwrite an existing backup. Base copies and the CLI pin are unchanged.
+The executable policy uses Base's native local transfer. The CLI explicitly
+refuses executable policy modules on container transport. New exports use
+Base's verified atomic publication and never overwrite an existing backup.
+This restore consent slice leaves DATA-001 partial: complete target-product
+portability and the other outstanding export work above remain open.

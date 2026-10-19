@@ -1,3 +1,4 @@
+import { doorHistory } from './authority'
 // Move-in kit 1: BambooHR. Reads an employee report (CSV or XLSX) using
 // BambooHR's documented field names (or their report column labels), an
 // optional time-off balance CSV and an optional documents ZIP with a
@@ -8,7 +9,7 @@
 // off; documents land in their private category, never the directory.
 import { validateImportedOrganization } from '../organization-import'
 import type { Bindings } from '../../auth.server'
-import { planD1Import, createD1ImportJob, applyD1ImportBatches, resumeD1Import, undoD1Import, canonicalJson, sha256, type D1ImportContext, type SourceBundle, type SourceRecord, type Json, type TargetEffect } from '../../modules/import-kit/src/d1/index'
+import { rollbackD1Import, undoD1Import, canonicalJson, sha256, type D1ImportContext, type SourceBundle, type SourceRecord, type Json, type TargetEffect, type ImportMapping, type MappingResult } from '../../modules/import-kit/src/d1/index'
 import { requirePermission, type Actor } from '../actor'
 import { WillowError, all, commit, insist, one, sha256Hex } from '../core'
 import { isDate } from '../dates'
@@ -92,7 +93,7 @@ export interface Preview {
   carry: Record<string, string>
 }
 
-async function build(env: Bindings, actor: Actor, input: Input) {
+export async function prepareBamboohr(env: Bindings, input: Input) {
   const employer = await one<{ timezone: string; currency: string }>(env, 'SELECT timezone, currency FROM wl_employer')
   insist(employer, 'employer_not_configured', 409)
   const order = (input.text('dateFormat', { optional: true, max: 3 }) || 'YMD') as DateOrder
@@ -102,6 +103,7 @@ async function build(env: Bindings, actor: Actor, input: Input) {
   const employees = (await kitFile(input, 'employees', false))!
   const balances = await kitFile(input, 'balances', true), documents = await kitFile(input, 'documents', true)
   const carry: Record<string, string> = { dateFormat: order, ...(scheduleId ? { schedule: scheduleId } : {}) }
+  const occurrences=new Map<string,number>()
   const artifacts: SourceBundle['artifacts'] = [], records: SourceRecord[] = []
   const addArtifact = async (file: KitFile, key: string) => {
     const base64 = btoa(Array.from(file.bytes, byte => String.fromCharCode(byte)).join(''))
@@ -111,8 +113,11 @@ async function build(env: Bindings, actor: Actor, input: Input) {
     carry[`${key}_name`] = file.filename
     return hash
   }
-  const record = (kind: string, sourceId: string, payload: Json, artifactHash: string, artifact: string, row: number) =>
-    records.push({ namespace, kind, sourceId: `${sourceId}:${sha256(canonicalJson(payload)).slice(0, 16)}`, payload, payloadHash: sha256(canonicalJson(payload)), artifactHash, location: { artifact, row } })
+  const record = (kind: string, sourceId: string, payload: Json, artifactHash: string, artifact: string, row: number) => {
+    const key=canonicalJson([kind,sourceId]), occurrence=occurrences.get(key)??0
+    occurrences.set(key,occurrence+1)
+    records.push({ namespace, kind, sourceId:occurrence?`${sourceId}:duplicate:${occurrence}`:sourceId, payload, payloadHash: sha256(canonicalJson(payload)), artifactHash, location: { artifact, row } })
+  }
 
   // Employees: departments and locations first, then people, then employment (managers exist before references).
   const employeesHash = await addArtifact(employees, 'employees')
@@ -160,7 +165,7 @@ async function build(env: Bindings, actor: Actor, input: Input) {
   const nativeLocations = new Map((await all(env, "SELECT id, name FROM wl_locations WHERE origin = 'native'")).map(row => [row.name.toLowerCase(), row.id]))
   const policies = await all(env, "SELECT p.id, p.name, (SELECT v.id FROM wl_policy_versions v WHERE v.policy_id = p.id AND v.status = 'approved' ORDER BY v.version DESC LIMIT 1) AS version FROM wl_leave_policies p")
   const categories = new Map((await all(env, 'SELECT id, name FROM wl_doc_categories')).map(row => [row.name.toLowerCase(), row.id]))
-  const claimed = new Map((await all(env, "SELECT target_kind, target_id, record_json FROM ik_provenance WHERE destination = ? AND reversed = 0", destination)).map(row => [`${row.target_kind}:${row.target_id}`, JSON.parse(row.record_json).sourceIdentity as string]))
+  const claimed = new Map((await all(env, "SELECT p.target_kind, p.target_id, p.record_json FROM ik_provenance p JOIN ik_jobs j ON j.id = p.job_id WHERE p.destination = ? AND p.reversed = 0 AND j.namespace = 'bamboohr'", destination)).map(row => [`${row.target_kind}:${row.target_id}`, JSON.parse(row.record_json).sourceIdentity as string]))
 
   const seen = new Map<string, number>(), emails = new Map<string, number>(), periodOf = new Map<string, string>(), personOf = new Map<string, string>()
   const rejected: Preview['rejected'] = [], attention: Preview['attention'] = [], unknowns = new Map<string, Set<string>>()
@@ -192,8 +197,7 @@ async function build(env: Bindings, actor: Actor, input: Input) {
     return [...accepted].find(([, candidate]) => nameOf(candidate).toLowerCase() === wanted || (candidate.field('preferredName') + ' ' + candidate.field('lastName')).toLowerCase() === wanted)?.[0] ?? null
   }
 
-  const context = importContext(env, actor)
-  const plan = await planD1Import({ artifacts, records, diagnostics: [] }, {
+  const mapping: ImportMapping = {
     version: mappingVersion,
     map(source) {
       const payload = source.payload as any
@@ -297,10 +301,13 @@ async function build(env: Bindings, actor: Actor, input: Input) {
       documentList.push({ person: label, title: get('title') || fileName, category: get('category') })
       return { effects: [effect('document', id, { person: personOf.get(key)!, category, title: get('title') || fileName, version: { id: hex(`${id}:v1`), filename: fileName.split('/').pop()!, mediaType: sniff(bytes), size: bytes.length, sha256: hashes.get(fileName)! } })] }
     },
-  }, context)
-
+  }
+  const mapped = new Map<string, MappingResult>()
+  for (const source of records) mapped.set(canonicalJson([source.kind, source.sourceId, source.payloadHash]), mapping.map(source))
+  const entries = [...mapped.values()]
+  await validateImportedOrganization(env, entries)
   const preview: Preview = {
-    fingerprint: plan.fingerprint, counts: plan.counts as unknown as Json, people, create, rejected, attention, balances: balanceList, documents: documentList,
+    fingerprint: '', counts: {}, people, create, rejected, attention, balances: balanceList, documents: documentList,
     unknowns: [...unknowns].map(([person, missing]) => ({ person, missing: [...missing] })),
     gaps: [
       'BambooHR reports leave out fields the exporting user cannot see; check that every column you need is present.',
@@ -312,8 +319,11 @@ async function build(env: Bindings, actor: Actor, input: Input) {
     ],
     carry,
   }
-  await validateImportedOrganization(env, plan.entries)
-  return { plan, preview, context, files, hashes }
+  return { records, preview, files, hashes, mapping: { version: mappingVersion, map(source: SourceRecord): MappingResult {
+    // Base may remove credentials while reading; never recover their original values from this parser cache.
+    return mapped.get(canonicalJson([source.kind, source.sourceId, source.payloadHash])) ?? { effects: [], rejection: 'Source changed during credential screening; review a clean export.' }
+  } } }
+
 }
 
 /** Import authority is checked in SQL on every batch: an active session of the owner or of a member holding people.manage. */
@@ -321,33 +331,6 @@ function importContext(env: Bindings, actor: Actor): D1ImportContext {
   const predicate = () => ({ sql: `EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id = s.operator_id WHERE s.id = ? AND s.revoked_at IS NULL AND s.expires_at > CAST(strftime('%s','now') AS INTEGER) * 1000 AND o.version = s.operator_version AND o.status = 'active'
     AND (o.role = 'owner' OR EXISTS(SELECT 1 FROM wl_members m JOIN wl_permissions p ON p.member_id = m.id WHERE m.email = lower(o.email) AND m.status = 'active' AND p.permission = 'people.manage')))`, params: [actor.sessionId] })
   return { destination, namespace, mappingVersion, storage: { database: env.DB as never, targets: willowTargets }, authorization: { principalId: actor.id, predicate }, batchSize: 25 }
-}
-
-export async function previewImport(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
-  return (await build(env, actor, input)).preview
-}
-
-export async function applyImport(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
-  const reviewed = input.text('fingerprint', { max: 100 })
-  const { plan, context, files, hashes } = await build(env, actor, input)
-  insist(plan.fingerprint === reviewed, 'reviewed_fingerprint_changed', 409)
-  // Document bytes go to private content-addressed storage before the records that reference them.
-  for (const entry of plan.entries) for (const item of entry.effects) if (item.targetKind === 'document') {
-    const version = (item.value as any).version
-    const name = [...hashes].find(([, hash]) => hash === version.sha256)?.[0]
-    const bytes = name ? files.get(name) : undefined
-    insist(bytes, 'document_bytes_missing', 409)
-    if (!await env.FILES.head(`sha256/${version.sha256}`)) await env.FILES.put(`sha256/${version.sha256}`, bytes, { httpMetadata: { contentType: 'application/octet-stream' } })
-  }
-  // A repeated apply of the same preview returns its job; after an undo, applying it again is a new job.
-  const undone = (await one<{ n: number }>(env, "SELECT COUNT(*) AS n FROM ik_jobs WHERE destination = ? AND fingerprint = ? AND state IN ('undone', 'rolled_back')", destination, reviewed))!.n
-  const reviewedContext = { ...context, reviewedFingerprint: reviewed, ...(undone ? { operationKey: `${reviewed}:${undone}` } : {}) }
-  const job = await createD1ImportJob(plan, reviewedContext)
-  const result = await applyD1ImportBatches(job.id, reviewedContext)
-  await commit(env, [], { actor: actor.id, action: 'import.apply', subject: job.id, detail: { kit: 'bamboohr', fingerprint: reviewed, counts: plan.counts } })
-  return { job: job.id, state: result.state }
 }
 
 /** Every imported entity that has since been edited or built on: undo is refused until each is reversed in Willow. */
@@ -364,15 +347,15 @@ export async function undoBlockers(env: Bindings, jobId: string) {
   return blockers
 }
 
-export async function importAction(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
-  const job = input.text('job', { max: 100 }), action = input.text('action', { max: 10 })
-  const context = importContext(env, actor)
-  if (action === 'resume') return await resumeD1Import(job, context)
-  insist(action === 'undo', 'invalid_action')
+export async function undoLegacyImport(env: Bindings, actor: Actor, job: string) {
+  insist(actor.owner, 'owner_required', 403)
+  const prior=await one<{principal_id:string;state:string}>(env, "SELECT principal_id,state FROM ik_jobs WHERE id = ? AND namespace = 'bamboohr'", job)
+  insist(prior, 'legacy_import_not_found', 404)
   const blockers = await undoBlockers(env, job)
   insist(!blockers.length, 'undo_blocked', 409, { blockers })
-  const result = await undoD1Import(job, context)
+  const context=importContext(env,actor)
+  const reverse=['queued','applying','failed','rolling_back','rolled_back'].includes(prior.state)?rollbackD1Import:undoD1Import
+  const result = await reverse(job, {...context,authorization:{...context.authorization,principalId:prior.principal_id}})
   await commit(env, [], { actor: actor.id, action: 'import.undo', subject: job, detail: { state: result.state } })
   return { job, state: result.state }
 }
@@ -385,9 +368,15 @@ export async function importJobs(env: Bindings, actor: Actor) {
     `SELECT j.id, a.at, a.detail, j.state, j.total FROM wl_audit a JOIN ik_jobs j ON j.id = a.subject
      WHERE a.action = 'import.apply' AND j.destination = ? AND j.namespace = ? AND j.mapping_version = ?
      ORDER BY a.at DESC`, destination, namespace, mappingVersion)
-  const result = []
+  const result: {id:string;planId?:string;fingerprint?:string;caption?:string;appliedAt:number;state:string;counts:any;effects:number;blockers:Awaited<ReturnType<typeof undoBlockers>>}[] = []
   for (const job of jobs) {
     result.push({ id: job.id, appliedAt: job.at, state: job.state, counts: JSON.parse(job.detail).counts, effects: job.total, blockers: job.state === 'completed' ? await undoBlockers(env, job.id) : [] })
   }
-  return result
+  const totals=new Map((await all<{id:string;total:number}>(env,'SELECT id,total FROM ik_jobs')).map(row=>[row.id,row.total]))
+  if (actor.owner) for (const item of await doorHistory(env, actor)) result.push({
+    id:item.jobId, planId:item.planId, fingerprint:item.fingerprint, caption:item.caption,
+    appliedAt:Date.parse(item.approvedAt), state:item.state, effects:totals.get(item.jobId)??0, counts:{},
+    blockers:item.state==='completed'?await undoBlockers(env,item.jobId):[],
+  })
+  return result.sort((a,b)=>b.appliedAt-a.appliedAt)
 }

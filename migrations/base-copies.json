@@ -47,8 +47,8 @@
     },
     {
       "path": "migrations/core/0019_owner_signin.sql",
-      "originPath": "modules/operator-auth/accounts/schema/owner-signin.sql",
-      "revision": "38aa7efdb3cceec585d2344ed54dd559295b9059",
+      "originPath": "default-seed/migrations/core/0024_owner_signin.sql",
+      "revision": "6d38b54a6401879989e8d1f7ab4a02ffbdb4c46c",
       "files": {
         "migrations/core/0019_owner_signin.sql": "98da904e768e35b43fb1be83d9dcc9c9b5d86ab3a795234ed5223c4fddc567d9"
       },

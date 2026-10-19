@@ -127,3 +127,10 @@ evidence instead of a new permanent test.
 People records and agent contexts accept `?asOf=YYYY-MM-DD` with current reader permissions. The directory accepts the same date plus `q`, `name`, `location`, `department`, `role` and `status`; `GET /api/willow/organization?asOf=YYYY-MM-DD` returns directory-only manager/report links and its active count. Manager changes and cancellations refuse effective-date cycles, including through BambooHR move-in.
 
 Lifecycle templates save as drafts through `template.create`. Review with `template.preview` and publish the returned review through `template.publish`; any intervening audited event requires a fresh review. Conditional task rules use the same planner for joiners, approved employee-change movers, leavers and reviewed case upgrades (`case.upgrade.preview`, then `case.upgrade`). External steps remain assigned work requiring evidence; `task.fail` leaves them open.
+
+Native move-in uses only Base's shared import door (`src/willow/movein/door.ts`).
+The signed-in owner's forms call that same handler; `import.preview`,
+`import.apply` and `import.job` no longer exist. Read IMPORTING.md for the
+upload envelope, owner/Business authority, reviewed plans and reversible catch-up.
+Migration 0021 adds current kit evolutions and the door without rewriting
+applied migrations. DATA-002's future erasure inventory includes all door custody.

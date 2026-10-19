@@ -1,3 +1,4 @@
+import { initializeProvisionedDoor } from './movein/authority'
 // The signed-in person as Willow sees them: an operator-auth session joined to a
 // Willow member, that member's explicit permissions, the person they are, and
 // the people they currently manage. The owner holds every permission.
@@ -52,6 +53,7 @@ export async function currentActor(env: Bindings, request: Request): Promise<Act
   if (!session) return null
   const email = session.operator.email.toLowerCase()
   const owner = session.operator.role === 'owner'
+  if(owner) await initializeProvisionedDoor(env)
   let member = await one<{ id: string; name: string; person_id: string | null; status: string }>(env, 'SELECT id, name, person_id, status FROM wl_members WHERE email = ?', email)
   if (!member && owner) member = await ensureMember(env, email, session.operator.displayName || email)
   if (!member) throw new WillowError('not_a_member', 403)

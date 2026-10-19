@@ -1,3 +1,4 @@
+import { doorSettings } from './movein/authority'
 // Read models served at GET /api/willow/... Every view applies the same access
 // rules as the pages that render it.
 import type { Bindings } from '../auth.server'
@@ -66,6 +67,7 @@ export const views: Record<string, View> = {
   reports: (env, actor, _request, _id, url) => summary(env, actor, url),
   proposals: (env, actor) => proposals(env, actor),
   proposal: (env, actor, _request, id) => proposalDetail(env, actor, id),
+  importSettings: (env, actor) => doorSettings(env, actor),
   imports: (env, actor) => importJobs(env, actor),
   audit: (env, actor) => audit(env, actor),
 }
