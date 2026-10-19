@@ -23,7 +23,7 @@ export async function employerPage(env: Bindings, actor: Actor, url: URL) {
     field('Country (two-letter code)', 'country', { value: current?.country ?? 'US', hint: 'For example US. Willow encodes no country rules: you supply your own policies.' }),
     field('Currency (three-letter code)', 'currency', { value: current?.currency ?? 'USD' }),
   ], 'Save')}</section></div>`
-  return page('Employer', actor, body, { current: '/app/settings', url, art: 'frame', showNav: Boolean(current) })
+  return page('Employer', actor, body, { current: '/app/settings', url, showNav: Boolean(current) })
 }
 
 export async function settingsPage(env: Bindings, actor: Actor, url: URL) {

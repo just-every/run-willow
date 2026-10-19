@@ -14,7 +14,7 @@ import { directory, personView } from '../profile'
 import { directoryFilters, filterDirectory, organizationChart } from '../organization'
 import { organizationSection } from './organization'
 import { employeeExportSection } from './employee-export'
-import { area, field, fileField, form, h, hidden, page, person as personName, select, table, tag, type Html } from './html'
+import { area, avatar, field, fileField, form, h, hidden, page, person as personName, raw, select, table, tag, type Html } from './html'
 
 const TYPE_LABELS: Record<string, string> = { full_time: 'Full time', part_time: 'Part time', casual: 'Casual', fixed_term: 'Fixed term', unknown: 'Unknown (from import)' }
 const money = (pay: { basis: string; amountCents: number | null; currency: string } | null) => pay ? formatPay(pay.basis, pay.amountCents, pay.currency) : '—'
@@ -50,9 +50,10 @@ export async function directoryPage(env: Bindings, actor: Actor, url: URL) {
   const manage = can(actor, 'people.manage')
   const joinerTemplates = manage ? (await templates(env)).filter(template => template.kind === 'joiner' && template.status === 'active') : []
   const options = manage ? await choices(env, actor) : null
-  const body = h`<h1>People</h1>
-<section class="card"><nav aria-label="People views"><a href="/app/people?asOf=${filters.date}">Directory</a> · <a href="/app/people?view=organization&asOf=${filters.date}">Organization chart</a></nav>
-<form method="get" action="/app/people">${hidden('view', organization ? 'organization' : 'directory')}${field('Record as of', 'asOf', { type: 'date', value: filters.date })}${!organization ? [field('Search name, location, department or role', 'q', { required: false, value: filters.q }), field('Name', 'name', { required: false, value: filters.name }), field('Location', 'location', { required: false, value: filters.location }), field('Department', 'department', { required: false, value: filters.department }), field('Role', 'role', { required: false, value: filters.role }), select('Status', 'status', [{ value: 'all', label: 'All visible records' }, { value: 'active', label: 'Active' }, { value: 'upcoming', label: 'Upcoming' }, { value: 'former', label: 'Former' }], filters.status)] : ''}<button type="submit">${organization ? 'Preview date' : 'Search'}</button></form><p>${chart.activeCount} active people${!organization ? ` · ${people.length} matching records` : ''}</p></section>
+  const views = [{ label: 'Directory', href: `/app/people?asOf=${filters.date}`, on: !organization }, { label: 'Organization chart', href: `/app/people?view=organization&asOf=${filters.date}`, on: organization }]
+  const body = h`<header class="page-head"><h1>People</h1><p class="count">${chart.activeCount} active people${!organization ? ` · ${people.length} matching records` : ''}</p></header>
+<nav class="tabs page-tabs" aria-label="People views">${views.map(view => h`<a href="${view.href}"${view.on ? raw(' aria-current="page"') : ''}>${view.label}</a>`)}</nav>
+<section class="card filters-card"><form method="get" action="/app/people" class="filters">${hidden('view', organization ? 'organization' : 'directory')}${field('Record as of', 'asOf', { type: 'date', value: filters.date })}${!organization ? [field('Search name, location, department or role', 'q', { required: false, value: filters.q }), field('Name', 'name', { required: false, value: filters.name }), field('Location', 'location', { required: false, value: filters.location }), field('Department', 'department', { required: false, value: filters.department }), field('Role', 'role', { required: false, value: filters.role }), select('Status', 'status', [{ value: 'all', label: 'All visible records' }, { value: 'active', label: 'Active' }, { value: 'upcoming', label: 'Upcoming' }, { value: 'former', label: 'Former' }], filters.status)] : ''}<button type="submit" class="secondary">${organization ? 'Preview date' : 'Search'}</button></form></section>
 ${organization ? organizationSection(chart, actor, url) : h`<section class="card">${people.length ? table(['Name', 'Role', 'Department', 'Location', 'Manager', 'Status'], people.map(person => [personName(person.name, `/app/people/${person.id}${url.searchParams.has('asOf') ? `?asOf=${filters.date}` : ''}`), person.jobTitle ?? '—', person.department?.name ?? '—', person.location?.name ?? '—', person.manager?.name ?? '—', tag(person.status)])) : h`<p class="muted">No people yet.${manage ? h` Start a joiner below, or <a href="/app/import">move in from BambooHR</a>.` : ''}</p>`}</section>`}
 ${!organization ? employeeExportSection(actor, filters) : ''}
 ${manage && !organization ? h`<section class="card"><h2>Start a joiner</h2>${joinerTemplates.length ? form('joiner.start', '/app/cases/{id}', [
@@ -61,7 +62,7 @@ ${manage && !organization ? h`<section class="card"><h2>Start a joiner</h2>${joi
     field('Start date', 'startDate', { type: 'date' }), select('Employment type', 'employmentType', EMPLOYMENT_TYPES.map(value => ({ value, label: TYPE_LABELS[value] }))), field('Payroll identifier', 'payrollId', { required: false, hint: 'The employee’s identifier in your payroll provider, if known.' }),
     ...termsFields(options!, true, actor),
   ], 'Start joiner', { layout: 'columns' }) : h`<p class="muted">Create a joiner template in <a href="/app/settings">Settings</a> first.</p>`}</section>` : ''}`
-  return page('People', actor, body, { current: '/app/people', url, art: 'frond' })
+  return page('People', actor, body, { current: organization ? '/app/people?view=organization' : '/app/people', url })
 }
 
 export async function personPage(env: Bindings, actor: Actor, id: string, url: URL) {
@@ -102,8 +103,10 @@ ${manage && options!.categories.length ? h`<details><summary>Add a document</sum
   if (manage) {
     sections.push(h`<section class="card facet-access"><h2>Willow access</h2><p>${member ? (member.status === 'active' ? 'Has access.' : 'Access ended.') : 'No access.'}</p>${member?.status === 'active' ? form('access.end', `/app/people/${id}`, [hidden('person', id)], 'End access', { secondary: true }) : view.workEmail ? form('access.give', `/app/people/${id}`, [hidden('person', id)], member ? 'Give access again' : 'Give access') : h`<p class="muted">Add a work email to give access.</p>`}</section>`)
   }
-  const body = h`<p class="back"><a href="/app/people">← People</a></p><h1>${view.name}</h1>
-<section class="card"><form method="get" action="/app/people/${id}">${field('Record as of', 'asOf', { type: 'date', value: view.asOf })}<button type="submit">View date</button> <a href="/app/people/${id}">Current record</a></form><p><a href="/api/willow/people/${id}?asOf=${view.asOf}">JSON record</a> · <a href="/api/willow/context/${id}?asOf=${view.asOf}">Agent context</a></p></section><div class="person-grid">${sections}</div>`
+  const facts = [view.current?.jobTitle, view.current?.department?.name, view.current?.location?.name].filter(Boolean).join(' · ')
+  const body = h`<p class="back"><a href="/app/people">← People</a></p><header class="profile-head">${avatar(view.name)}<div><h1>${view.name}</h1><p>${facts || 'No role recorded'}</p></div>
+<form method="get" action="/app/people/${id}" class="as-of">${field('Record as of', 'asOf', { type: 'date', value: view.asOf })}<button type="submit" class="secondary">View date</button></form></header>
+<p class="record-links"><a href="/app/people/${id}">Current record</a> · <a href="/api/willow/people/${id}?asOf=${view.asOf}">JSON record</a> · <a href="/api/willow/context/${id}?asOf=${view.asOf}">Agent context</a></p><div class="person-grid">${sections}</div>`
   return page(view.name, actor, body, { current: '/app/people', url })
 }
 

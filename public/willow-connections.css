@@ -2,7 +2,7 @@
    This file only arranges the details inside those shared components. */
 .connections { color: var(--ink); }
 .connections .feature-head { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 20px; align-items: start; padding-bottom: 20px; }
-.connections .icon-disc { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: var(--willow-wash) url('/homepage/disc-willow.webp') center / cover; color: var(--ink); }
+.connections .icon-disc { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-wash); color: var(--accent); }
 .connections .icon-disc svg { display: block; width: 24px; height: 24px; }
 .connections .description { margin: 0; color: var(--ink-2); }
 .connections .config { border-top: 1px solid var(--line); padding: 12px 0 10px; }

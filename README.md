@@ -126,7 +126,7 @@ to change Willow, including its JSON API for agents. [FIELD-AUTHORITY.md](FIELD-
 — which system owns each field, and the cutover checklist. [IMPORTING.md](IMPORTING.md)
 — move-in file shapes. [OPERATIONS.md](OPERATIONS.md) — data custody and
 deployment. Schema: `migrations/core/0006_willow.sql`. Licence: MIT
-([LICENSE](LICENSE)); Public Sans is under the SIL Open Font License
+([LICENSE](LICENSE)); its fonts are under the SIL Open Font License
 ([public/fonts](public/fonts/README.md)).
 
 Payroll drafts are bound to the payroll source values reviewed when drafted.

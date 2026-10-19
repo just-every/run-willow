@@ -6,9 +6,9 @@ private `RER_OPEN` link. `rer demo --stop` deletes the disposable state under
 
 The sample employer is Harbor & Field, a US employer in Austin and Denver, with twelve invented people, two
 locations, four departments, working schedules, completed onboarding history,
-three upcoming starters, a team move, a departure, leave accounts and requests,
+two upcoming starters, a recent starter whose laptop and workspace task is past due, a team move, a departure, leave accounts and requests,
 private welcome documents, an acknowledged payroll handoff, a configured and
-previewed current payroll draft, and a proposal awaiting review.
+previewed current payroll draft, an approved reminder cadence and a proposal awaiting review.
 Names reuse Willow's documented BambooHR fixtures. Dates follow the current day.
 `src/demo.ts` writes native records through Willow's domain operations; no test
 fixture runtime or simulated application implementation is used.

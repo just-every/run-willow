@@ -89,7 +89,7 @@ Rules that hold everywhere:
   `@runeditrun/rer` package in `package.json`; there is no vendored CLI.
   `scripts/edition-authoring/` verifies copies and `sources.lock.json`.
   Re-run `node scripts/edition-authoring/cli.mjs lock` after intentional edits.
-  `src/base/font-head.ts` is Willow's own Public Sans adaptation.
+  `src/base/font-head.ts` is Willow's own font preload (Figtree).
 - `tests/willow/` — `flows.mjs` (one check per clause against the built
   Worker), `journey.mjs` and `restore.mjs` (browser and recovery from a fresh
   clone), `fixtures.mjs` (documented-shape BambooHR fixtures, invented people).

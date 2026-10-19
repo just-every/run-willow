@@ -1,29 +1,42 @@
-/* Willow's design tokens, defined once: the app (public/willow.css), the sign-in and
-   setup frames (public/willow-frame.css) and the run site's pages all read these. */
+/* Willow's app tokens, defined once: the app (public/willow.css and its layouts), and
+   the sign-in and setup frames (public/willow-frame.css) read these. The values are the
+   run site's brand (public/site/theme.css): warm white paper, plum ink, the lantern's
+   crimson as the one accent, Source Serif 4 headings over Figtree. */
 :root {
-  --paper: #faf9f5;        /* page */
-  --card: #fefdfa;         /* cards, inputs */
-  --ink: #1f2a23;          /* headings, body */
-  --ink-2: #4a564e;        /* sentences, descriptions */
-  --ink-3: #6b756e;        /* labels, table heads, meta, hints */
-  --line: rgb(31 42 35 / .12);
-  --line-strong: rgb(31 42 35 / .2);
-  --pill: #26312a;
-  --pill-hover: #34413a;
-  --on-pill: #faf9f5;
-  --willow: #5f7444;       /* links, focus accent, mark */
-  --willow-wash: #e4eadb;  /* active nav, positive chips, avatar discs, success notice */
-  --gold-wash: #f4ecd0;
-  --gold-ink: #7a5d12;     /* upcoming, scheduled, draft, awaiting sign-off, pending chips */
-  --quiet-wash: #eeede8;   /* past, former, No, cancelled chips */
-  --alert-wash: #f6e3dc;
-  --alert-ink: #8c3a26;    /* overdue, unresolved, insufficient balance, errors */
-  --serif: 'Willow Serif', 'Source Serif 4', Georgia, serif;
-  --sans: 'Public Sans', system-ui, sans-serif;
+  --paper: #faf8f6;        /* page */
+  --card: #ffffff;         /* panels, cards, inputs */
+  --ink: #2a0b28;          /* headings, body */
+  --ink-2: #4b3a4c;        /* sentences, descriptions */
+  --ink-3: #6d6273;        /* labels, table heads, meta, hints */
+  --line: #eee8ee;         /* hairlines between rows, card borders */
+  --line-strong: #ddd3de;  /* input borders */
+  --accent: #b1054f;       /* selected nav, primary buttons, links, focus */
+  --accent-hover: #970443;
+  --accent-wash: #fbe9f2;  /* selected row, selected nav, the agent card */
+  --accent-line: #f0c9dc;
+  --on-accent: #ffffff;
+  --green: #2f9a5b;        /* agreed, done */
+  --green-wash: #e6f4eb;
+  --green-ink: #1d6d3e;
+  --amber: #e39a2d;        /* waiting, open, scheduled */
+  --amber-wash: #fcf1df;
+  --amber-ink: #8a5a10;
+  --orange: #ea6a1c;       /* the one exception dot: overdue, unresolved */
+  --orange-wash: #fdebe0;
+  --orange-ink: #a4430f;
+  --quiet-wash: #f3eff3;   /* past, former, none */
+  --tint-1: #f9dff0;       /* initials discs, by name */
+  --tint-2: #ece2fc;
+  --tint-3: #fde8d6;
+  --tint-4: #dff0e6;
+  --tint-5: #e2ecf8;
+  --serif: 'Source Serif 4', Georgia, serif;
+  --sans: 'Figtree', system-ui, sans-serif;
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --r-card: 14px;
-  --r-input: 10px;
-  --r-pill: 999px;
+  --r-input: 8px;
+  --r-button: 10px;
   --r-chip: 999px;
-  --shadow-card: 0 1px 2px rgb(31 42 35 / .04), 0 8px 24px -12px rgb(31 42 35 / .12);
+  --shadow-card: 0 1px 2px rgb(42 11 40 / .04), 0 10px 28px -18px rgb(74 16 56 / .18);
+  --rail: 198px;
 }

@@ -2,6 +2,7 @@
 import branding from '../../branding.json'
 import { can, type Actor } from '../actor'
 import { formatInstant } from '../dates'
+import { iconPaths, type IconName } from '../../ui/icon-paths'
 
 export const esc = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!))
 
@@ -19,19 +20,38 @@ function render(value: unknown): string {
   return esc(value)
 }
 
-const NAV: { href: string; label: string; show: (actor: Actor) => boolean }[] = [
-  { href: '/app', label: 'Home', show: () => true },
-  { href: '/app/people', label: 'People', show: () => true },
-  { href: '/app/leave', label: 'Leave', show: () => true },
-  { href: '/app/payroll', label: 'Payroll', show: actor => can(actor, 'payroll.handoff') && can(actor, 'pay.read') },
-  { href: '/app/reports', label: 'Reports', show: actor => can(actor, 'reports.read') || actor.reports.size > 0 },
-  { href: '/app/proposals', label: 'Proposals', show: actor => can(actor, 'people.manage') },
-  { href: '/app/settings', label: 'Settings', show: actor => can(actor, 'people.manage') || can(actor, 'leave.manage') },
-  { href: '/app/connections', label: 'Connections', show: actor => actor.owner },
-  { href: '/app/access', label: 'Access', show: actor => can(actor, 'people.manage') },
-  { href: '/app/import', label: 'Move in', show: actor => can(actor, 'people.manage') },
-  { href: '/app/audit', label: 'Audit', show: actor => can(actor, 'audit.read') },
-]
+type NavItem = { href: string; label: string; icon: IconName; show: (actor: Actor) => boolean }
+// The rail: everyday work, then administration, then Settings at the foot.
+const NAV: NavItem[][] = [[
+  { href: '/app', label: 'Home', icon: 'home', show: () => true },
+  { href: '/app/progress', label: 'In progress', icon: 'checklist', show: () => true },
+  { href: '/app/people', label: 'People', icon: 'people', show: () => true },
+  { href: '/app/leave', label: 'Leave', icon: 'calendar', show: () => true },
+  { href: '/app/people?view=organization', label: 'Organization chart', icon: 'org', show: () => true },
+  { href: '/app/payroll', label: 'Payroll', icon: 'wallet', show: actor => can(actor, 'payroll.handoff') && can(actor, 'pay.read') },
+  { href: '/app/reports', label: 'Reports', icon: 'chart', show: actor => can(actor, 'reports.read') || actor.reports.size > 0 },
+  { href: '/app/proposals', label: 'Proposals', icon: 'sparkle', show: actor => can(actor, 'people.manage') },
+], [
+  { href: '/app/import', label: 'Move in', icon: 'upload', show: actor => can(actor, 'people.manage') },
+  { href: '/app/access', label: 'Access', icon: 'shield', show: actor => can(actor, 'people.manage') },
+  { href: '/app/connections', label: 'Connections', icon: 'plug', show: actor => actor.owner },
+  { href: '/app/audit', label: 'Audit', icon: 'document', show: actor => can(actor, 'audit.read') },
+], [
+  { href: '/app/settings', label: 'Settings', icon: 'gear', show: actor => can(actor, 'people.manage') || can(actor, 'leave.manage') },
+]]
+const NAV_CLASSES = ['nav-main', 'nav-admin', 'nav-foot']
+
+/** A line icon from the shared set, decorative beside its text. */
+export const icon = (name: IconName) => raw(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${iconPaths[name]}"/></svg>`)
+
+/** What the signed-in member does here, from their explicit permissions. */
+function roleOf(actor: Actor) {
+  if (actor.owner) return 'Owner'
+  if (can(actor, 'people.manage')) return 'People ops'
+  if (can(actor, 'payroll.handoff')) return 'Payroll'
+  if (can(actor, 'it.tasks')) return 'IT'
+  return actor.reports.size ? 'Manager' : 'Employee'
+}
 
 const headers = {
   'content-type': 'text/html; charset=utf-8',
@@ -42,18 +62,19 @@ const headers = {
   'content-security-policy': "default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; media-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
 }
 
-// Watercolour only where the style allows it: 'frame' hangs fronds from both top
-// corners with the river at the foot (first-run pages), 'frond' one small frond
-// at the top right of the page title.
-type Art = 'frame' | 'frond'
+const STYLES = ['/fonts/fonts.css', '/rer-theme.css', '/willow-tokens.css', '/willow.css', '/willow-layouts.css', '/willow-progress.css', '/willow-connections.css']
 
-export function page(title: string, actor: Actor | null, body: Html, { current = '', url, status = 200, art, showNav = true }: { current?: string; url?: URL; status?: number; art?: Art; showNav?: boolean } = {}): Response {
+// `wide` lets a page use the whole work area (In progress). Without the nav (first run) the shell is bare.
+export function page(title: string, actor: Actor | null, body: Html, { current = '', url, status = 200, showNav = true, wide = false }: { current?: string; url?: URL; status?: number; showNav?: boolean; wide?: boolean } = {}): Response {
   const notice = url?.searchParams.get('notice'), error = url?.searchParams.get('error')
-  const nav = actor && showNav ? h`<nav aria-label="Main"><ul>${NAV.filter(item => item.show(actor)).map(item => h`<li><a href="${item.href}"${item.href === current ? raw(' aria-current="page"') : ''}>${item.label}</a></li>`)}</ul></nav>` : ''
-  const who = actor ? h`<span class="who">${actor.name}</span>` : ''
-  const document = h`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · ${branding.name}</title><link rel="stylesheet" href="/fonts/fonts.css"><link rel="stylesheet" href="/rer-theme.css"><link rel="stylesheet" href="/willow-tokens.css"><link rel="stylesheet" href="/willow.css"><link rel="stylesheet" href="/willow-layouts.css"><link rel="stylesheet" href="/willow-connections.css"><link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" type="image/svg+xml" href="/brand/favicon-32.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png"></head><body${art ? raw(` class="art-${art}"`) : ''}>
-<header class="top"><div class="top-inner"><a class="brand" href="/app"><img src="/brand/mark.svg" alt="" width="18" height="32"><span data-rer-name>${branding.name}</span></a>${nav}${who}</div></header>
-<main>${notice ? h`<p class="flash" role="status">${notice}</p>` : ''}${error ? h`<p class="flash error" role="alert">That did not work: ${describeError(error)}</p>` : ''}${body}</main></body></html>`
+  const nav = actor && showNav ? h`<input type="checkbox" id="menu-toggle" class="menu-toggle"><label for="menu-toggle" class="menu-button">${icon('menu')}Menu</label><nav aria-label="Main">${NAV.map((group, index) => {
+    const items = group.filter(item => item.show(actor))
+    return items.length ? h`<ul class="${NAV_CLASSES[index]}">${items.map(item => h`<li><a href="${item.href}"${item.href === current ? raw(' aria-current="page"') : ''}>${icon(item.icon)}${item.label}</a></li>`)}</ul>` : ''
+  })}</nav>` : ''
+  const top = actor && showNav ? h`<header class="topbar"><form class="find" method="get" action="/app/people" role="search">${icon('search')}<input type="search" name="q" placeholder="Find a person" aria-label="Find a person"></form><a class="bell" href="/app/tasks" aria-label="Open your task list" title="Your tasks">${icon('bell')}</a><div class="who">${avatar(actor.name)}<span>${actor.name}<small>${roleOf(actor)}</small></span></div></header>` : ''
+  const document = h`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · ${branding.name}</title>${STYLES.map(href => h`<link rel="stylesheet" href="${href}">`)}<link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" type="image/svg+xml" href="/brand/favicon-32.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png"></head><body>
+<div class="shell${actor && showNav ? '' : ' bare'}"><aside class="rail"><a class="brand" href="/app"><img src="/brand/mark.svg" alt="" width="21" height="38"><span data-rer-name>${branding.name}</span></a>${nav}</aside>
+<div class="work">${top}<main${wide ? raw(' class="wide"') : ''}>${notice ? h`<p class="flash" role="status">${notice}</p>` : ''}${error ? h`<p class="flash error" role="alert">That did not work: ${describeError(error)}</p>` : ''}${body}</main></div></div></body></html>`
   return new Response(document.html, { status, headers })
 }
 
@@ -119,9 +140,9 @@ export const when = (instant: number | null | undefined, zone: string) => instan
 export const table = (headers: string[], rows: unknown[][]) => h`<div class="table-wrap"><table><thead><tr>${headers.map(header => h`<th scope="col">${header}</th>`)}</tr></thead><tbody>${rows.map(row => h`<tr>${row.map((cell, index) => h`<td${headers[index] ? h` data-label="${headers[index]}"` : ''}>${cell}</td>`)}</tr>`)}</tbody></table></div>`
 
 // One mapping from a tag's words to its chip tone; anything not listed stays quiet.
-const TONES: Record<string, 'willow' | 'gold' | 'alert'> = {
-  active: 'willow', 'in force': 'willow', approved: 'willow', 'signed off': 'willow', done: 'willow', yes: 'willow', on: 'willow', 'receipt acknowledged': 'willow', completed: 'willow', acknowledged: 'willow', exported: 'willow', 'owner (everything)': 'willow', 'resolved in a later batch': 'willow', start: 'willow', change: 'willow',
-  upcoming: 'gold', scheduled: 'gold', draft: 'gold', 'awaiting sign-off': 'gold', pending: 'gold', open: 'gold', proposed: 'gold', 'receipt not yet acknowledged': 'gold', leave: 'gold',
+const TONES: Record<string, 'done' | 'wait' | 'alert'> = {
+  active: 'done', 'in force': 'done', approved: 'done', 'signed off': 'done', done: 'done', yes: 'done', on: 'done', 'receipt acknowledged': 'done', completed: 'done', acknowledged: 'done', exported: 'done', 'owner (everything)': 'done', 'resolved in a later batch': 'done', start: 'done', change: 'done',
+  upcoming: 'wait', scheduled: 'wait', draft: 'wait', 'awaiting sign-off': 'wait', pending: 'wait', open: 'wait', proposed: 'wait', 'receipt not yet acknowledged': 'wait', leave: 'wait',
   overdue: 'alert', unresolved: 'alert', failed: 'alert',
 }
 const toneOf = (text: string) => TONES[text.toLowerCase().replace(/^yes \(.*\)$/, 'yes')]
@@ -130,8 +151,11 @@ const toneOf = (text: string) => TONES[text.toLowerCase().replace(/^yes \(.*\)$/
 const US_LABELS: Record<string, string> = { cancelled: 'canceled' }
 export const tag = (text: unknown) => { const tone = toneOf(String(text ?? '')); return h`<span class="tag${tone ? ` tone-${tone}` : ''}">${US_LABELS[String(text)] ?? text}</span>` }
 
-/** A watercolour disc with a person's initials, beside their name (never part of a link's name). */
-export const avatar = (name: string) => h`<span class="avatar" aria-hidden="true">${name.split(/\s+/).filter(Boolean).map(part => part[0]).slice(0, 2).join('').toUpperCase()}</span>`
+/** An initials disc beside a person's name (never part of a link's name), tinted by the name. */
+export const avatar = (name: string) => {
+  const tint = [...name].reduce((sum, character) => sum + character.charCodeAt(0), 0) % 5 + 1
+  return h`<span class="avatar${tint > 1 ? ` t${tint}` : ''}" aria-hidden="true">${name.split(/\s+/).filter(Boolean).map(part => part[0]).slice(0, 2).join('').toUpperCase()}</span>`
+}
 
 /** A person's name with its initials disc; the link (when given) is the name alone. */
 export const person = (name: string, href?: string) => h`<span class="person">${avatar(name)}${href ? h`<a href="${href}">${name}</a>` : name}</span>`

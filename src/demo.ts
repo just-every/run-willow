@@ -10,6 +10,7 @@ import { addDocument } from './willow/documents'
 import { acknowledgeBatch, createBatch, CSV_COLUMNS, exportBatch } from './willow/payroll'
 import { configureLayout, previewPayroll } from './willow/payroll-layout'
 import { propose } from './willow/proposals'
+import { approveWorkPolicy } from './willow/work'
 
 /** Invented people from tests/willow/fixtures.mjs, expanded into native records.
  * No fixture parser or test dependency ships in the app. Each stage can resume. */
@@ -48,7 +49,7 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
   ['Hana Reid', 'People Partner', 3, -620, '92000'],
   ['Samira Patel', 'Operations Coordinator', 0, -210, '74000'],
   ['Lee Park', 'Design Researcher', 2, -120, '82000'],
-  ['Kit Morgan', 'Workshop Assistant', 0, 4, '62000'],
+  ['Kit Morgan', 'Workshop Assistant', 0, -3, '62000'],
   ['Amara Cole', 'Customer Care Specialist', 1, 8, '71000'],
   ['Theo Rivera', 'Designer', 2, 15, '79000'],
  ] as const
@@ -58,10 +59,13 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
   const existing = await one<{person: string; period: string; case: string}>(env, `SELECT p.id AS person, e.id AS period, c.id AS "case" FROM wl_people p JOIN wl_periods e ON e.person_id = p.id JOIN wl_cases c ON c.period_id = e.id AND c.kind = 'joiner' WHERE p.work_email = ?`, email)
   const record = existing ?? await startJoiner(env, actor, input({ template: joiner.id, legalName: name, preferredName: i === 1 ? 'Tam' : '', workEmail: email, employeeNumber: `HF-${101 + i}`, startDate: addDays(date, offset), employmentType: i === 1 ? 'part_time' : 'full_time', payrollId: `PAY-${101 + i}`, jobTitle: title, departmentId: departments[department].id, locationId: i === 2 || i === 9 ? denver.id : austin.id, managerPersonId: i ? records[0].person : '', scheduleId: i === 1 ? part.id : week.id, payBasis: 'salary', payAmount: salary, reason: 'Initial employment terms' }))
   records.push(record)
+  // Kit Morgan started this week: the welcome pack and payroll check are done, but the
+  // laptop and workspace task is still open past its due date (the In progress exception).
+  const recent = i === 9
   if (offset < 0) await stage(`welcome:${i}`, async () => {
-   const tasks = await all<{id: string}>(env, "SELECT id FROM wl_case_tasks WHERE case_id = ? AND status = 'open'", record.case)
-   for (const task of tasks) await completeTask(env, actor, input({ task: task.id, evidence: 'Sample history: welcome preparation and details checked with the team.' }), new Request(env.AUTH_ORIGIN))
-   await completeCase(env, actor, input({ case: record.case }))
+   const tasks = await all<{id: string; assignee: string}>(env, "SELECT id, assignee FROM wl_case_tasks WHERE case_id = ? AND status = 'open'", record.case)
+   for (const task of tasks.filter(task => !recent || task.assignee !== 'it')) await completeTask(env, actor, input({ task: task.id, evidence: recent ? (task.assignee === 'payroll' ? 'Payroll identifier PAY-110 confirmed in the payroll provider.' : 'Welcome pack sent with the first-week plan.') : 'Sample history: welcome preparation and details checked with the team.' }), new Request(env.AUTH_ORIGIN))
+   if (!recent) await completeCase(env, actor, input({ case: record.case }))
   })
  }
  actor.personId = records[0].person
@@ -92,6 +96,7 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
   for (const i of [0, 1, 9, 10]) await addDocument(env, actor, input({ person: records[i].person, category: category.id, title: 'Your first week at Harbor & Field', file: { filename: 'welcome.txt', base64: btoa('Welcome to Harbor & Field.\nMonday: meet your team and settle into your workspace.\nTuesday: customer care and workshop walkthrough.\nFriday: check in with Rowan about your first week.\nThis is an invented sample document for the Willow demo.') } }))
  })
  await stage('proposal', async () => { await propose(env, actor, input({ kind: 'joiner', summary: 'Prepare a new customer care starter for next month', agent: 'People planning assistant', plan: { template: joiner.id, legalName: 'Nia Lawson', workEmail: 'nia.lawson@harbour-field.example', startDate: addDays(date, 32), employmentType: 'full_time', jobTitle: 'Customer Care Specialist', departmentId: departments[1].id, locationId: austin.id, scheduleId: week.id, managerPersonId: records[0].person } })) })
+ await stage('reminders', async () => { await approveWorkPolicy(env, actor, input({ offsets: '0, 2, 5', quietStart: '20', quietEnd: '8', defaultDays: '1' })) })
  await stage('payroll-layout', async () => {
   await configureLayout(env, actor, input({ format: 'generic', columns: CSV_COLUMNS.map(source => ({ source, heading: source })) }))
  })

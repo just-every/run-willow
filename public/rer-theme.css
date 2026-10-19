@@ -2,11 +2,11 @@
    /setup, the Lobby) read, in the grammar Base accepts (hex colours and faces
    only). The same colours are Willow's own tokens in public/willow-tokens.css. */
 @font-face {
-  font-family: 'Public Sans';
+  font-family: 'Figtree';
   font-style: normal;
-  font-weight: 100 900;
+  font-weight: 300 900;
   font-display: swap;
-  src: url('/fonts/public-sans/public-sans-latin-wght-normal.woff2') format('woff2');
+  src: url('/fonts/figtree/figtree-latin-wght-normal.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Source Serif 4';
@@ -16,17 +16,17 @@
   src: url('/fonts/source-serif-4/source-serif-4-latin-opsz-normal.woff2') format('woff2');
 }
 :root {
-  --rer-font-body: 'Public Sans', Arial, sans-serif;
+  --rer-font-body: 'Figtree', Arial, sans-serif;
   --rer-font-heading: 'Source Serif 4', Georgia, serif;
-  --rer-page: #faf9f5;
-  --rer-surface: #fefdfa;
-  --rer-text: #1f2a23;
-  --rer-muted: #4a564e;
-  --rer-border: #7f8a82;
-  --rer-focus: #5f7444;
-  --rer-link: #5f7444;
-  --rer-accent: #26312a;
-  --rer-accent-text: #faf9f5;
+  --rer-page: #faf8f6;
+  --rer-surface: #ffffff;
+  --rer-text: #2a0b28;
+  --rer-muted: #5d5466;
+  --rer-border: #9c8f9f;
+  --rer-focus: #b1054f;
+  --rer-link: #b1054f;
+  --rer-accent: #b1054f;
+  --rer-accent-text: #ffffff;
   --rer-radius: 14px;
   --rer-logo: url('/brand/mark.svg');
 }

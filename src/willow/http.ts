@@ -24,6 +24,7 @@ import { auditPage, batchPage, payrollPage, proposalPage, proposalsPage, reports
 import { PAGE_DOORS, match } from './doors'
 import { route } from './views'
 import { connectionsPage } from './ui/connections'
+import { progressPage } from './ui/progress'
 
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } })
 
@@ -93,7 +94,7 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
   // The owner sets up the employer before anything else.
   if (!await employer(env)) {
     if (actor.owner) return path === '/app/employer' ? employerPage(env, actor, url) : Response.redirect(`${env.AUTH_ORIGIN}/app/employer`, 303)
-    return page('Not ready', actor, h`<div class="first-run"><h1>Willow is not set up yet</h1><p>The owner needs to set up the employer first.</p></div>`, { art: 'frame' })
+    return page('Not ready', actor, h`<div class="first-run"><h1>Willow is not set up yet</h1><p>The owner needs to set up the employer first.</p></div>`)
   }
   const found = match(PAGE_DOORS, path)
   if (!found) throw new WillowError('not_found', 404)
@@ -109,6 +110,7 @@ const pages: Record<string, Page> = {
   employeeXlsx: (env, actor, _request, url) => employeeExport(env, actor, url, 'xlsx'),
   connections: (env, actor, _request, url) => connectionsPage(env, actor, url),
   home: (env, actor, _request, url) => homePage(env, actor, url),
+  progress: (env, actor, _request, url) => progressPage(env, actor, url),
   employer: (env, actor, _request, url) => employerPage(env, actor, url),
   tasks: (env, actor, _request, url) => tasksPage(env, actor, url),
   people: (env, actor, _request, url) => directoryPage(env, actor, url),

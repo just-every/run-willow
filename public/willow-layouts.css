@@ -1,4 +1,4 @@
-/* Page arrangements from the picked screens; the parts are in willow.css. */
+/* Page arrangements in the picked app look; the parts are in willow.css. */
 
 /* Forms laid out in columns where the pictures show it */
 @media (min-width: 960px) {
@@ -10,6 +10,13 @@
   form.columns .field > .hint { grid-row: 3; }
 }
 
+/* Directory filters: one compact grid of fields with its button at the end */
+.filters-card { padding-bottom: 8px; }
+@media (min-width: 720px) {
+  form.filters { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0 16px; align-items: end; }
+  form.filters > button { justify-self: start; margin: 0 0 16px; }
+}
+
 /* Home: tasks beside the leave cards, Get started across the foot */
 @media (min-width: 960px) {
   .home-grid { grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr); grid-template-rows: auto 1fr; align-items: start; }
@@ -18,8 +25,8 @@
 }
 ol.steps { list-style: none; padding: 0; margin: 0; counter-reset: step; display: grid; gap: 20px; }
 ol.steps li { counter-increment: step; display: flex; gap: 16px; align-items: center; margin: 0; color: var(--ink); }
-ol.steps li::before { content: counter(step); flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--willow-wash) url('/homepage/disc-willow.webp') center / cover; font: 500 19px/1 var(--serif); color: var(--ink); }
-ol.steps a { color: var(--ink); }
+ol.steps li::before { content: counter(step); flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--accent-wash); font: 700 18px/1 var(--serif); color: var(--accent); }
+ol.steps a { color: var(--ink); text-decoration-color: var(--accent-line); }
 @media (min-width: 960px) {
   ol.steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
   ol.steps li { padding: 0 28px; }
@@ -27,6 +34,17 @@ ol.steps a { color: var(--ink); }
   ol.steps li + li { border-left: 1px solid var(--line); }
 }
 .your-leave .actions { margin-top: 20px; }
+
+/* Person: the profile head (disc, serif name, role facts) with the record date beside it */
+.profile-head { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 20px; margin: 10px 0 8px; }
+.profile-head > .avatar { width: 72px; height: 72px; font-size: 22px; }
+.profile-head h1 { margin: 0; }
+.profile-head > div { flex: 1 1 260px; min-width: 0; }
+.profile-head > div p { margin: 2px 0 0; color: var(--ink-2); font-size: 16px; }
+form.as-of { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0 10px; }
+form.as-of .field { margin: 0; }
+form.as-of button { margin: 0; }
+.record-links { margin: 0 0 20px; color: var(--ink-3); font-size: 14px; }
 
 /* Person: Directory beside Private details and Employment; the rest in a row of three */
 @media (min-width: 960px) {
@@ -40,7 +58,7 @@ ol.steps a { color: var(--ink); }
   .person-grid > .facet-documents { order: 1; }
   .person-grid > .card:only-child { grid-column: 1 / -1; }
 }
-h3.period { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; font: 500 19px/1.3 var(--serif); margin-top: 4px; }
+h3.period { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; font: 650 18px/1.3 var(--serif); margin-top: 4px; }
 h3.period span:first-child { margin-right: auto; }
 ul.cases { list-style: none; padding: 0; }
 
@@ -50,11 +68,11 @@ ul.cases { list-style: none; padding: 0; }
   .leave-layout > .card { margin: 0; grid-column: 1; }
   .leave-layout > .waiting { grid-column: 2; grid-row: 1 / span 3; }
 }
-.card > .quote { margin: 12px -32px -28px; padding: 24px 32px 28px; border-top: 1px solid var(--line); background: rgb(250 249 245 / .6); border-radius: 0 0 var(--r-card) var(--r-card); }
-.quote > h3:first-child { margin-top: 0; font: 500 24px/1.25 var(--serif); }
+.card > .quote { margin: 12px -28px -24px; padding: 22px 28px 24px; border-top: 1px solid var(--line); background: var(--paper); border-radius: 0 0 var(--r-card) var(--r-card); }
+.quote > h3:first-child { margin-top: 0; font: 700 22px/1.25 var(--serif); }
 .quote td { height: auto; padding: 8px 12px; }
 .quote td:first-child { padding-left: 0; }
-.quote .short { color: var(--alert-ink); }
+.quote .short { color: var(--orange-ink); }
 
 /* A short form on one row: choices, then its button (Leave quote, Reports range, Access preview) */
 @media (min-width: 720px) {
@@ -92,22 +110,27 @@ ul.cases { list-style: none; padding: 0; }
 .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin: 8px 0 24px; }
 .title-row h1 { margin: 0; }
 .title-row p { margin: 0; color: var(--ink-2); }
-.title-row .tag { padding: 5px 16px; font-size: 15px; }
+.title-row .tag { padding: 4px 14px; font-size: 14px; }
 .batch-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .batch-actions > form, .batch-actions > p { margin: 0; }
 .batch-actions button, .batch-actions .button { margin: 0; }
 .batch-actions > form:has(input[name=reference]) { flex-basis: 100%; }
 
-/* First-run pages: one quiet card in the middle of the watercolour */
-.first-run { max-width: 560px; margin: 0 auto; padding: 8vh 0 26vh; }
+/* First run (no nav yet): the lantern above one quiet card in the middle of the paper */
+.shell.bare { display: block; }
+.shell.bare .rail { position: static; height: auto; border: 0; background: none; align-items: center; padding: 56px 16px 0; }
+.shell.bare .topbar { display: none; }
+.shell.bare main { margin: 0 auto; }
+.first-run { max-width: 560px; margin: 0 auto; padding: 2vh 0 12vh; }
 .first-run h1 { text-align: center; }
 .first-run h1 + p { text-align: center; margin: -8px auto 28px; }
 
 @media (max-width: 719px) {
-  .card > .quote { margin: 12px -20px -20px; padding: 20px; }
+  .card > .quote { margin: 12px -18px -18px; padding: 18px; }
   .title-row { display: block; }
   .title-row p { margin-top: 12px; }
-  .first-run { padding: 4vh 0 200px; }
+  .first-run { padding: 0 0 80px; }
+  .shell.bare .rail { padding-top: 32px; }
 }
 @media (max-width: 600px) {
   .batch-actions > *, .batch-actions button { width: 100%; }

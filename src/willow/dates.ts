@@ -63,3 +63,9 @@ export function parseHours(value: string, code: string): number {
   insist(/^-?\d{1,5}(\.\d{1,4})?$/.test(text), code)
   return Math.round(Number(text) * 60)
 }
+
+/** A calendar day with its weekday, e.g. "Mon, Oct 26"; the year only when it is not this year's. */
+export function formatDay(date: string, today: string, { year = false } = {}): string {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', ...(year || date.slice(0, 4) !== today.slice(0, 4) ? { year: 'numeric' } : {}) }).format(Date.UTC(y, m - 1, d))
+}

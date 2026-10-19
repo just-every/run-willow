@@ -206,7 +206,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "20065ff8354821e2f2991a097ec984fc7119d9681e902b229754307a6fb46c7a",
+      "sha256": "a514b2ca4beedaa8d4cd9dc387f96a576b7d1dfa0f1da75f6ec7ba5604f2e6c3",
       "executable": false
     },
     "base-copies.json": {
@@ -413,10 +413,6 @@
       "sha256": "fd28359134dbf5ae249121f0abfc6211246d8f1247b6bc2bb7569174ffc9a858",
       "executable": false
     },
-    "public/brand/empty-willow.webp": {
-      "sha256": "93665476ff9342559e03881c554270e0f4713ffb57b1af0dca4c9225da253eb6",
-      "executable": false
-    },
     "public/brand/favicon-16.png": {
       "sha256": "062cf8a60978d8d0f2c9d166183a9e486511c4d89f681297e6299f89f6ed2f04",
       "executable": false
@@ -462,7 +458,7 @@
       "executable": false
     },
     "public/fonts/fonts.css": {
-      "sha256": "0813709663d76a967547d40c495d1aaae770ae6e5f85a46e7f38b7adcc02e487",
+      "sha256": "1f5132fa6e2452ec6872e67419d8e42dbbd583d9ee9fa421fd9b8f2949b970a1",
       "executable": false
     },
     "public/fonts/jetbrains-mono/jetbrains-mono-latin-wght-normal.woff2": {
@@ -473,20 +469,8 @@
       "sha256": "403581b69dac5cff4079205e01c6b467e56af449ecbd7247693ddb1baafa005b",
       "executable": false
     },
-    "public/fonts/public-sans/LICENSE.txt": {
-      "sha256": "705a497c781f6463ff819abb513bb495f3fb05256f1d20321e3275813c0bafa5",
-      "executable": false
-    },
-    "public/fonts/public-sans/public-sans-latin-ext-wght-normal.woff2": {
-      "sha256": "3a00a32f0242b723dcea79935747d6d27dd93675d03ef23f470dfe274e79586a",
-      "executable": false
-    },
-    "public/fonts/public-sans/public-sans-latin-wght-normal.woff2": {
-      "sha256": "5ed4d31c988e73b258894244f209069ebe77dc7e564861954b21198b6de90d68",
-      "executable": false
-    },
     "public/fonts/README.md": {
-      "sha256": "861d2fc5a3c49205cf8b65c5c5bd909c8e34dc083cfaceb668343ca3f842e58e",
+      "sha256": "af4578749943a0a67cae2d96c2b7e7a30992aa9ee1798a67b547b710ed5bd7b5",
       "executable": false
     },
     "public/fonts/source-serif-4/LICENSE.txt": {
@@ -497,44 +481,20 @@
       "sha256": "f2ea9c12d2fe9bd3a9589b02ad2c0909da88f30938c91adc838c4f4098f9f9e0",
       "executable": false
     },
-    "public/homepage/disc-willow.webp": {
-      "sha256": "ea076890f8433743306d5590383e7cc8861e798b8aa04cba0404d8870923dca9",
-      "executable": false
-    },
-    "public/homepage/fronds-left.webp": {
-      "sha256": "8be0db62ad0bdb429f1a83fb06d2d85723df09bc7f87f9f397c746af04e52369",
-      "executable": false
-    },
-    "public/homepage/fronds-right.webp": {
-      "sha256": "0944ce6a5a5aae4962d1a0872d8174445556ef12f81c77e2e55325d1e2cdd87d",
-      "executable": false
-    },
-    "public/homepage/river.webp": {
-      "sha256": "cc1e360e39ca64997534dec43d9ea3ec1e887bbdd7bf85c0fc9dfe90aa805794",
-      "executable": false
-    },
     "public/icons/alert.svg": {
-      "sha256": "0cae0b1a59f03096d531d8ea4809ea8fae646963b9b675fbed5db398485c3298",
+      "sha256": "5a4050d0647cc882ac69195343e90070f86a2126e8596b282daa3146c13e8127",
       "executable": false
     },
     "public/icons/check.svg": {
-      "sha256": "51a2e15cd547cce43963c99d5995a5748458b2e758b84ad262f0ee50226385f7",
-      "executable": false
-    },
-    "public/icons/chevron-down.svg": {
-      "sha256": "c928e46aff13489d74f1803eed47f92c3e771ab1632bc17b32045913af73655f",
+      "sha256": "67db864ff0feef36f3b43af988eb52e0b30faff5be3e3b05012c9520a841caa9",
       "executable": false
     },
     "public/icons/lock.svg": {
-      "sha256": "cab927d69f9eb12d63b12ecaf0a094960baa0f8a306a5c9953f00bfa8797bb4f",
-      "executable": false
-    },
-    "public/icons/select-chevron.svg": {
-      "sha256": "b787a5e6760d56124fc170c9180bf4d6aeafa6c6c6c0e79e9f4ea299f510f0e7",
+      "sha256": "969147fbd8a4edc8cc0023b6d88ad6de197252491f66beadde0471b308307fff",
       "executable": false
     },
     "public/rer-theme.css": {
-      "sha256": "d404e07b4e9ab9447c9baad8ef60c8ff085b05be0d2125db9ca9d5bb99c36988",
+      "sha256": "dd76d5671c8ac548d73c4c8e65ff107916df8950fc16430391eed9cc9293d1b7",
       "executable": false
     },
     "public/site/avatar-ana.webp": {
@@ -654,27 +614,27 @@
       "executable": false
     },
     "public/willow-connections.css": {
-      "sha256": "bc28d3de0ed1a99a7cd7c3960bc76e4cd1493d5b586ba32cbec9fd209e8f8f3a",
+      "sha256": "c48f0db2e9099f180152766f8570c4e008904555436a0e940b7bbc7320683d7e",
       "executable": false
     },
     "public/willow-frame.css": {
-      "sha256": "652b2cd41605d0d377fa6b0c6ae5833dcffd65558713c3cdd14f309bb83eb63f",
+      "sha256": "9201ba2cdd155e4a1d8b8c286e5af2529a74e95c328c0c1db8414d6c298c3200",
       "executable": false
     },
     "public/willow-layouts.css": {
-      "sha256": "a5560b56e8ea27c1ea6e9e7b38d9ca57d7ecf81cbb6eb130f6e26b529a443ef6",
+      "sha256": "41bfef37997fedec8953c58218a612a58b8c7698885533a7812523b17d1ea12e",
       "executable": false
     },
     "public/willow-tokens.css": {
-      "sha256": "e55c4cb2e06d66b3278980d943cfde16fb230e0a62365774966ba08be4020770",
+      "sha256": "7816c00350cd6655fb14df0dfa2f1af16c793356ac7fb07fbb652e6761293c21",
       "executable": false
     },
     "public/willow.css": {
-      "sha256": "5e4891dc6f4ed0835a3ee3ab5350b1c95202b969c065f253ed49501d3a886652",
+      "sha256": "38000a0ef91b86b1784853d4967363a1415c2147539f1f697166b2a14de5dd89",
       "executable": false
     },
     "README.md": {
-      "sha256": "1155cd0371db75cb97aaf28d5a90c9ccdd793ebfdfae28fb8a7a427eab97b382",
+      "sha256": "d31eab8edde1ed0e490ee61052854161156fcc5704974d95abca10088ddf44a2",
       "executable": false
     },
     "RELEASE.json": {
@@ -686,7 +646,7 @@
       "executable": false
     },
     "rer-setup.json": {
-      "sha256": "f80c798e23c007371ef8315c0bbd342d4ef2aeecca6e5f3c94a266538602fa90",
+      "sha256": "bfc16a64d301dd2e072f9b87ab2d017a890106db442175c54b1d83fe6f79a6b1",
       "executable": false
     },
     "RUN-LOCALLY.md": {
@@ -802,7 +762,7 @@
       "executable": false
     },
     "src/base/font-head.ts": {
-      "sha256": "61ccb72446442327b592fbc3320ae02db82cdafd917b387ac2f9e8e66042b7e9",
+      "sha256": "13105a4b416cb5d0677ca8661e619b301b1c06b84b1acf6c101da0f4bf53a162",
       "executable": false
     },
     "src/base/font-response.ts": {
@@ -878,7 +838,7 @@
       "executable": false
     },
     "src/branding.json": {
-      "sha256": "8ad419f4e67d4f947bc4e3d95234c5d1c16af262c983599b0fb3fcda95175350",
+      "sha256": "92f3431e0f08a758a7cb7aab6aa05ddcee7f5d10098b94f7e4e416604d3f2c1b",
       "executable": false
     },
     "src/client.tsx": {
@@ -2578,7 +2538,7 @@
       "executable": false
     },
     "src/ui/icon-paths.ts": {
-      "sha256": "239e2c165b5a9c253c06f245a4f384db6f3d60eb6061c66b1939d531477bd236",
+      "sha256": "363b076f82b0693af462d4f72d15d2f696d3af3b35f07a9c38beb20bdd31ee3b",
       "executable": false
     },
     "src/willow/access.ts": {
@@ -2602,7 +2562,7 @@
       "executable": false
     },
     "src/willow/dates.ts": {
-      "sha256": "cbae0aeff60eb3d8ab940c7a03124b8c11a929058c7da12360d28e46b9c4c28a",
+      "sha256": "c5ca17346ab110fbf9fb8ad5788f5b9dd5c451b70eeb46a5f6be574db430d2c0",
       "executable": false
     },
     "src/willow/documents.ts": {
@@ -2610,7 +2570,7 @@
       "executable": false
     },
     "src/willow/doors.ts": {
-      "sha256": "4cbb253d8c799ca63881ca558f09fe4d5427bcdd85754826b6fd291af4f1e768",
+      "sha256": "2ce193c65bec9351acfb1b7bc6e4fca5eca253aa764f36d7b6588a763f396c33",
       "executable": false
     },
     "src/willow/employee-bundle.ts": {
@@ -2650,7 +2610,7 @@
       "executable": false
     },
     "src/willow/http.ts": {
-      "sha256": "aa27affd60bcec04faa2c9ef2a800697039cc5b0bb97c58ecaa30e5efe94251a",
+      "sha256": "1e2bf5bfeb1b2dd919cbb30d1a60956888613fb39f46ad94612b18e3195de738",
       "executable": false
     },
     "src/willow/input.ts": {
@@ -2750,11 +2710,11 @@
       "executable": false
     },
     "src/willow/ui/home.ts": {
-      "sha256": "2a9eb1447068d4313c48820d39c1574c0a8cd8145d6e78195f6033b48900f53b",
+      "sha256": "1b2b25c081424310fd21dc28234d6058fb0ba37706cf806ecedec5e359ea04f4",
       "executable": false
     },
     "src/willow/ui/html.ts": {
-      "sha256": "17b6aaf4a8e6767d047d9fa068ccb5fd117c8921a9d24f8f20ecd14e5aec5752",
+      "sha256": "efa5462e75d02652ce175f129496a7baa924c71ae8cb6bc07896cc3dbbc55dfb",
       "executable": false
     },
     "src/willow/ui/leave.ts": {
@@ -2778,11 +2738,11 @@
       "executable": false
     },
     "src/willow/ui/people.ts": {
-      "sha256": "0b60fee23b91593b244e1737e62c5848495c2c158d127c7b681b6a9591a57add",
+      "sha256": "447c996ef87be7df7e438371e7e239b5ecbc986ff23aaf2fdfaadeb1378a7040",
       "executable": false
     },
     "src/willow/ui/settings.ts": {
-      "sha256": "4b15e77cdf97413ea18f12f5759d221ab51b0c47b88616e9f2b0aac6065e41f2",
+      "sha256": "e9eb6afbc6f30d983109d6c438f565bd7e19c24cc9a8fcc5af71ef959ffc0204",
       "executable": false
     },
     "src/willow/ui/work-followup.ts": {
@@ -2794,7 +2754,7 @@
       "executable": false
     },
     "src/willow/views.ts": {
-      "sha256": "9ef1617b5fdc3a79c09e727ad901e0c6fd752790fd8d7d597b7e87f3d43c3a34",
+      "sha256": "a624572192e5813b83dfbf3e3cc0e72b525f49a54f6a41a97efa5a5e07465097",
       "executable": false
     },
     "src/willow/work-scheduler.ts": {
