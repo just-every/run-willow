@@ -1,4 +1,5 @@
 import type { Actor } from '../actor'
+import { EXPORT_SECTIONS } from '../employee-bundle'
 import { DEFAULT_EXPORT_FIELDS, EMPLOYEE_EXPORT_FIELDS, organizationExport } from '../employee-export'
 import type { DirectoryFilters } from '../organization'
 import { field, h, hidden, raw, select } from './html'
@@ -17,6 +18,8 @@ ${select('Export scope', 'scope', scopes, scopes[0].value)}${field('Export as of
 ${['q', 'name', 'location', 'department', 'role', 'status'].map(key => hidden(key, filters[key as keyof DirectoryFilters]))}
 <p class="hint">The current directory search and filters also apply to the export.</p>
 <fieldset><legend>Fields to include</legend><div class="columns">${Object.entries(EMPLOYEE_EXPORT_FIELDS).map(([key, column]) => h`<label><input type="checkbox" name="fields" value="${key}"${DEFAULT_EXPORT_FIELDS.includes(key) ? raw(' checked') : ''}> ${column.label}</label>`)}</div></fieldset>
+<fieldset><legend>Include in a records bundle</legend>${Object.entries(EXPORT_SECTIONS).map(([key, label]) => h`<label><input type="checkbox" name="history" value="${key}" checked> ${label}</label>`)}</fieldset>
+<button type="submit" formaction="/app/exports/employees.zip" class="secondary">Download records and files ZIP</button><p class="hint">The ZIP contains your selected fields, permitted histories and readable document bytes. It is a readable export; an owner uses rer archives to restore an installation.</p>
 <button type="submit">Download employee CSV</button> <button type="submit" formaction="/app/exports/employees.xlsx" class="secondary">Download employee XLSX</button>
 </form></details></section>`
 }

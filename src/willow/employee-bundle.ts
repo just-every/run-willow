@@ -1,0 +1,85 @@
+// DATA-001: a readable export, distinct from the owner's restorable archive.
+import type { Bindings } from '../auth.server'
+import { currentActor, employerZone, type Actor } from './actor'
+import { auditRead, insist, now, sha256Hex, WillowError } from './core'
+import { today } from './dates'
+import { documentFile } from './documents'
+import { employeeExportData } from './employee-export'
+import { employeeCsv } from './export-formats'
+import { exportZipStream, type ZipStreamFile } from './export-zip-stream'
+import { caseDetail } from './lifecycle'
+
+export const EXPORT_SECTIONS = { employment: 'Employment history', leave: 'Leave accounts, ledger and requests', lifecycle: 'Lifecycle cases and tasks', documents: 'Document versions and receipts' } as const
+const SECTION_FACETS = { employment: 'employment', leave: 'leave', lifecycle: 'lifecycle', documents: 'documents' }
+const encoder = new TextEncoder()
+
+export async function employeeBundle(env: Bindings, actor: Actor, url: URL, request: Request) {
+  const sections = url.searchParams.getAll('history').flatMap(value => value.split(','))
+  insist(sections.length > 0 && sections.length <= Object.keys(EXPORT_SECTIONS).length
+    && new Set(sections).size === sections.length && sections.every(key => Object.hasOwn(EXPORT_SECTIONS, key)), 'invalid_export_history')
+  const data = await employeeExportData(env, actor, url)
+  const zone = await employerZone(env)
+  const files: ZipStreamFile[] = []
+  const manifestFiles: Record<string, unknown>[] = []
+  const records = []
+  const addText = async (path: string, content: string, mediaType: string) => {
+    const bytes = encoder.encode(content)
+    files.push({ name: path, size: bytes.length, open: async () => new Blob([bytes]).stream() })
+    manifestFiles.push({ path, size: bytes.length, sha256: await sha256Hex(bytes), mediaType })
+  }
+  for (const person of data.records) {
+    const record: Record<string, unknown> = { personId: person.id, revision: person.revision, asOf: data.asOf, withheldSections: [] }
+    for (const section of sections as (keyof typeof EXPORT_SECTIONS)[]) {
+      if (!person.facets.includes(SECTION_FACETS[section])) {
+        (record.withheldSections as string[]).push(section)
+        continue
+      }
+      if (section === 'employment') record.employment = person.employment
+      if (section === 'leave') record.leave = person.leave
+      if (section === 'lifecycle') {
+        const cases = []
+        for (const summary of person.cases) {
+          const detail = await caseDetail(env, actor, summary.id)
+          cases.push({ ...summary, period: detail.period, template: detail.template, tasks: detail.tasks.map(task => {
+            const completed = task.completedAt && today(zone, task.completedAt) <= data.asOf
+            return { id: task.id, title: task.title, assignee: task.assignee, dueDate: task.dueDate, evidenceRequired: task.evidenceRequired,
+              system: task.system, action: task.action, status: completed ? 'completed' : 'open', evidence: completed ? task.evidence : null, completedAt: completed ? task.completedAt : null }
+          }) })
+        }
+        record.lifecycle = cases
+      }
+      if (section === 'documents') {
+        record.documents = person.documents.map((document: Record<string, any>) => ({ ...document, versions: document.versions.map((version: Record<string, any>) => {
+          const path = `documents/${encodeURIComponent(person.id)}/${encodeURIComponent(version.id)}.bin`
+          files.push({ name: path, size: version.size, open: async () => {
+            // A long download must not open another file after access is revoked.
+            const current = await currentActor(env, request)
+            insist(current && current.id === actor.id, 'access_ended', 403)
+            const response = await documentFile(env, current, version.id, true)
+            insist(response.body, 'file_missing', 503)
+            return response.body
+          } })
+          manifestFiles.push({ path, size: version.size, sha256: version.sha256, mediaType: version.mediaType, personId: person.id, documentId: document.id, versionId: version.id })
+          return { ...version, path }
+        }) }))
+      }
+    }
+    records.push(record)
+  }
+  await addText('employees.csv', employeeCsv(data.rows), 'text/csv; charset=utf-8')
+  await addText('records.json', JSON.stringify({ schema: 'willow.employee-records/v1', records }, null, 2) + '\n', 'application/json')
+  const manifest = encoder.encode(JSON.stringify({ schema: 'willow.employee-bundle/v1', project: 'people/willow', exportedAt: now(), asOf: data.asOf,
+    scope: data.scope, fields: data.fields, sections, people: records.length, files: manifestFiles,
+    restore: 'Read-only export. Use the owner rer archive to restore an installation.' }, null, 2) + '\n')
+  // Put metadata first so a consumer can reconcile every later file and digest.
+  files.unshift({ name: 'manifest.json', size: manifest.length, open: async () => new Blob([manifest]).stream() })
+  await auditRead(env, actor.id, 'employee.bundle.export', data.scope, { asOf: data.asOf, fields: data.fields, sections, people: records.length, files: files.length })
+  let stream: ReadableStream<Uint8Array>
+  try { stream = exportZipStream(files) } catch (error) {
+    if (error instanceof RangeError) throw new WillowError('export_bundle.zip32_limit', 413)
+    throw error
+  }
+  return new Response(stream, { headers: { 'content-type': 'application/zip',
+    'content-disposition': `attachment; filename="willow-records-${data.asOf}.zip"`,
+    'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
+}

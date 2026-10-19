@@ -189,3 +189,5 @@ await import("./people.mjs")
 await import("./open-billing.mjs")
 
 await import("./employee-export.mjs")
+
+await import("./employee-bundle.mjs")
