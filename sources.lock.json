@@ -227,7 +227,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "14766fc3ee578ec69fa4b30329deac97349ef872bfbff1c15dc66a0e4647cece",
+      "sha256": "e1cd1badabbcb71ad33cd6e56bce71fdb33e74de0d164c61658f6b0530060127",
       "executable": false
     },
     "DEMO.md": {
@@ -295,7 +295,7 @@
       "executable": false
     },
     "HOMEPAGE-VARIANTS.md": {
-      "sha256": "019eccbd7b44557e1606ed127f384d7bddd6e66d5429e6d662845e9fe3ff14c4",
+      "sha256": "744f22a025280347aebff31efb105294251c0f31bf40fcf1e96c93ff56b0a957",
       "executable": false
     },
     "IMPORTING.md": {
@@ -558,6 +558,22 @@
       "sha256": "804d8771bf807f7eb658364bbbe821dbe52b5ed47f1e17d260906b9dbbada40d",
       "executable": false
     },
+    "public/site/closing-2304.avif": {
+      "sha256": "40007589756c8588fcebdb77862324a11b97bb1f1b450290bf4a3288a3f8b1f9",
+      "executable": false
+    },
+    "public/site/closing-2304.webp": {
+      "sha256": "082824f95a32d137a91d8a971a31f4b98a717bf168392d29f791cc0d68cd97b8",
+      "executable": false
+    },
+    "public/site/closing-3072.avif": {
+      "sha256": "bc5ba3daf4bd14de4e65137adb67bbc31d129afbebf1ec1b77c68f6903aa4804",
+      "executable": false
+    },
+    "public/site/closing-3072.webp": {
+      "sha256": "14157a532f4982a673f1c291ae283a0d3cccf95b0882b254b122042ad8bc2806",
+      "executable": false
+    },
     "public/site/closing-768.avif": {
       "sha256": "bd136104ffb0477a4f898cc8eb762a2a49acabe54c55eb714d3c4255149e9b09",
       "executable": false
@@ -588,6 +604,22 @@
     },
     "public/site/hero-1536.webp": {
       "sha256": "1f8247f99630406f92d80bf4f1f9e113a6d9245be5c8fb82f69142c2086eff68",
+      "executable": false
+    },
+    "public/site/hero-2304.avif": {
+      "sha256": "6b43127f45e522c948d373d9baf5250002943c189efc4ccc77a9a550af39358d",
+      "executable": false
+    },
+    "public/site/hero-2304.webp": {
+      "sha256": "fb31e688252aa09c3cf42052bf8dfd4c180970390f8cb506b2903aa8511343e0",
+      "executable": false
+    },
+    "public/site/hero-3072.avif": {
+      "sha256": "465d640ef8f0da95962566993c6a17b5043296bd6ce153787b78443fc40479cc",
+      "executable": false
+    },
+    "public/site/hero-3072.webp": {
+      "sha256": "6deca4b398259a921f73be921a739338696e8a4930c92b97f51cb30b171bd9f9",
       "executable": false
     },
     "public/site/hero-768.avif": {
@@ -622,6 +654,22 @@
       "sha256": "e1f13aa9931a209891e36754e3d98ff821bed93da43b264aabe6638f5451a222",
       "executable": false
     },
+    "public/site/interlude-2304.avif": {
+      "sha256": "c8421060bea99f799b1ec7da19e979429dcc4b37728a5b9c60cf6b52d1f6997a",
+      "executable": false
+    },
+    "public/site/interlude-2304.webp": {
+      "sha256": "145dfee7082f966159725170e79e5325ffebf24491dbbaa56d3e5c1a452bce6b",
+      "executable": false
+    },
+    "public/site/interlude-3072.avif": {
+      "sha256": "1e902704e7e71fbc543479fb829cd199c1832d0c9154cadf9563a4cfa3dd383a",
+      "executable": false
+    },
+    "public/site/interlude-3072.webp": {
+      "sha256": "6c80d822c6342643ef6b3ee340e7d82090ee01b7f554eeab83fb152d8dd2dcaf",
+      "executable": false
+    },
     "public/site/interlude-768.avif": {
       "sha256": "d378ab8cd97c301f7d987a4b847a0aa4f7471fd4d6bee34b1b9747e6913a621d",
       "executable": false
@@ -632,6 +680,14 @@
     },
     "public/site/share.jpg": {
       "sha256": "0612db91eff07cc62badfd58e107f1254222d9af913d12025823646d434946e8",
+      "executable": false
+    },
+    "public/site/sig-devon.svg": {
+      "sha256": "9e5feb16b9f4d5a2cfe996492283deb3ca2d9ede76a130606876a896cb8658c3",
+      "executable": false
+    },
+    "public/site/sig-maya.svg": {
+      "sha256": "6e82e4d90cf9e871c8a96e739d911080c1aa32fd586e850a3283dd448aa0c068",
       "executable": false
     },
     "public/site/theme.css": {
@@ -2479,51 +2535,63 @@
       "executable": false
     },
     "src/site/landing/Hero.tsx": {
-      "sha256": "ff21ca8668ae82ff3656a2d7520114088865ea0a90c98764f90c3abff7a3bcea",
+      "sha256": "6494cb5e2b68580fdd18beb8e0406a9cfc068e31b31e04bc5de49d750a89502d",
       "executable": false
     },
     "src/site/landing/HeroCards.tsx": {
-      "sha256": "14fe3fea126610e33c440ad9d68900c54abd6f1d6593376062fce3b58e6aed81",
+      "sha256": "22772690b85b20efea458b7d7d18dbe1cb145bb5abfb5222d686e161a2d93f10",
       "executable": false
     },
     "src/site/landing/Landing.tsx": {
-      "sha256": "887442c7b11a288fe5a5187bb264142700c21eda0991080f96bc34b567cb97f0",
+      "sha256": "d2f705873acb4f4723585a175ba07b42180e6e7b86ac35d1ccbeabefdc1f4820",
       "executable": false
     },
     "src/site/landing/parts.tsx": {
-      "sha256": "53d157e1f3f100b1b8bade07765b7937c2828878601508060793553ce5add047",
+      "sha256": "001f5c09ca1649b41aeeecad64b5b4a57a597346f072df299811426e04aa4428",
       "executable": false
     },
-    "src/site/landing/sections/ChangeMoveIn.tsx": {
-      "sha256": "d2bd9eb815ff31af9f5856ccfa443f0eb3df0fa1d2f661018f3709bb1d78ad6c",
+    "src/site/landing/sections/Checked.tsx": {
+      "sha256": "4ecb1b8a5038b120fc740bc1764c37783ca591e821eeb778e4a37e541b3e129f",
       "executable": false
     },
     "src/site/landing/sections/Closing.tsx": {
-      "sha256": "baf229abb9f328693294eeefeb82b045173cda35a95f5428715edacb0ae29453",
+      "sha256": "a599b373d69e901988046657d83dbf89b5dfb09643a6bd8a04706be6f8cc3058",
       "executable": false
     },
-    "src/site/landing/sections/Details.tsx": {
-      "sha256": "81a491b794b0aa4aad97089ff7b5d52dbb542b8a4d5b57c1254e84e92b15a9b5",
+    "src/site/landing/sections/DayOne.tsx": {
+      "sha256": "4eef9317bbd5df9252c86ab3d354e858f8eef6dbf6b73bda0d4ed1e955183c02",
       "executable": false
     },
     "src/site/landing/sections/Interlude.tsx": {
-      "sha256": "eec3f16a4284b57bed5b4b5d77cbc2a9738a0a679dbd007330f5e18477894e61",
+      "sha256": "9f177c98fa3547fb03ee9662f40088c426b958a90bfdb9f427d21995c3103010",
       "executable": false
     },
-    "src/site/landing/sections/Ownership.tsx": {
-      "sha256": "1e5d12ccc0a977cddc2381bf2dbc4fd8a2b6023771af8fa64e0492e0b1f5c239",
+    "src/site/landing/sections/LastDay.tsx": {
+      "sha256": "25c4019706888253018c4a37dc901a5b9b95af0cfdf15ad61a42735646cfc4cd",
       "executable": false
     },
-    "src/site/landing/sections/PayrollAccess.tsx": {
-      "sha256": "8cd0cf538cc81904445bb0ba3fadeb4c9fdb65017dc53acb05f8ec6376f79ce4",
+    "src/site/landing/sections/Limits.tsx": {
+      "sha256": "0722d0f446c6ba8f8c9d3f2696b2dd194c273e0c13e7526c6c646f3c6486ff87",
       "executable": false
     },
-    "src/site/landing/sections/Records.tsx": {
-      "sha256": "16f46d2e98a7bac7f1423d8d286355cfd4f13669b1db2ec39859f918c077d245",
+    "src/site/landing/sections/MoveIn.tsx": {
+      "sha256": "8a18d90e1b089e44c56dce9b421bb67b39f86e7c22f1440d915f340e66d5a2b0",
       "executable": false
     },
-    "src/site/landing/sections/SelfService.tsx": {
-      "sha256": "3ba068f6658517a8283877e1f40a7a201532c9f53406122b2071636509447a48",
+    "src/site/landing/sections/Offer.tsx": {
+      "sha256": "aff21fbf0c6cc26f63203b37ac5002b675afa66c19d44e3a0c9ecece3ff7ec58",
+      "executable": false
+    },
+    "src/site/landing/sections/Promotion.tsx": {
+      "sha256": "7317bfd8deb0f1e8830fdf4a16fea60a6f3fd9e91fd5b1d92aa5ec9811843145",
+      "executable": false
+    },
+    "src/site/landing/sections/TimeOff.tsx": {
+      "sha256": "55a750ed74e9f113b9876d7141d63cdb7294d13c835d6e8fb8af8d06879ef83a",
+      "executable": false
+    },
+    "src/site/landing/sections/Year.tsx": {
+      "sha256": "878599f0d2922229c125f47640d355586f6beca8528b916a0a53d71420072da5",
       "executable": false
     },
     "src/site/pages.tsx": {
@@ -2555,19 +2623,31 @@
       "executable": false
     },
     "src/site/styles/cards.css": {
-      "sha256": "5a187c0ff425db15659a9a874b78658c6242f40f5d674e3d2078d3bbc22389f8",
+      "sha256": "1faabf9907fc4499257d38008756f33ac3fd8ffe1a71e246ecccf3138e046bce",
+      "executable": false
+    },
+    "src/site/styles/changes.css": {
+      "sha256": "934233cecbe9deec76feba515efa27bffe35b86605237b5c508305fdb0f72be0",
       "executable": false
     },
     "src/site/styles/docs.css": {
       "sha256": "72578c012f3010ba3e46104960abe5aadc508e2a5130bd23bc1f6fc62a34e961",
       "executable": false
     },
+    "src/site/styles/hiring.css": {
+      "sha256": "3186b2837585d7fff57cec6fff83d0280d98b54e2268415887379e220f7e274d",
+      "executable": false
+    },
     "src/site/styles/landing.css": {
-      "sha256": "d134b3f2fb9f0723fb4e185554948d81b3ac64eef30643b6c26ffbd70ef37f17",
+      "sha256": "ee926789562c6b605a32ae1083baca84c840e77c6b8ba74bba1ec82cfaee1b0a",
       "executable": false
     },
     "src/site/styles/site.css": {
       "sha256": "363655075b42d3ef666e3426e7097cf3f1a3d6c081c8c07299068b77534c7e56",
+      "executable": false
+    },
+    "src/site/styles/year.css": {
+      "sha256": "46f36319a1e227b3b2f363a20f2b4bdc114608b3fd133117b237b013c88c5efd",
       "executable": false
     },
     "src/ui/icon-paths.ts": {
@@ -3047,7 +3127,7 @@
       "executable": false
     },
     "tests/willow/site.mjs": {
-      "sha256": "8105381ac0fd41441c87d421af1a8242c0196177f97ce2b1a8522df1771b2522",
+      "sha256": "45594337fdf195eb31424767db32444d108181e8d31e0f0e4d4700cde9db7bd3",
       "executable": false
     },
     "tests/willow/work-followup.mjs": {

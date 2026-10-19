@@ -13,7 +13,8 @@ Willow has two homepage surfaces:
 
 The homepage (`src/site/landing`, `src/site/shell`, `src/site/styles`) and its
 artwork and tokens under `public/site` are the design desk's approved look (17 Oct
-2026: hero K, mark 6). Preserve their layout, copy and palette when changing
+2026: hero K, mark 6) on the owner-approved page structure s1 (one illustrative company's year,
+Sep 2026 to Aug 2027; every capability claim is in CONTRACT.md's Homepage claims). Preserve their layout, copy and palette when changing
 hosting or command integration. The lantern mark is `public/brand/mark.svg` with
 hand-tuned `favicon-16.svg` and `favicon-32.svg`. The primary action opens `/run`. The run site
 has no links into an installed app's sign-in, setup or private routes.

@@ -1,0 +1,55 @@
+/* One company, one year: twelve months on one line, the change count under each month, six pinned events above
+   and below it, and the year's total at the line's end. A month list on a phone. */
+.year { --wrap: 1360px; --gutter: clamp(16px, 3vw, 48px); padding-block: 96px 40px; }
+.year-line { display: grid; grid-template-columns: 86px minmax(0, 1fr) auto; column-gap: 18px; align-items: start; margin-top: 24px; padding-block: 176px 146px; }
+.year-label { margin-top: 56px; font-size: 12px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--soft); }
+.months { container-type: inline-size; position: relative; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.months::before { content: ''; position: absolute; left: calc(100% / 24); right: -18px; top: 5px; height: 2px; background: var(--ink); opacity: .85; }
+.months > li { position: relative; display: grid; justify-items: center; align-content: start; }
+.months .dot { position: relative; z-index: 1; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); }
+.months .mon { margin-top: 14px; font-size: 16px; font-weight: 600; color: var(--ink); }
+.months .yr { position: absolute; left: 50%; top: -33px; transform: translateX(-50%); z-index: 3; padding: 2px 6px; background: var(--paper); font-size: 13px; font-weight: 500; color: var(--soft); }
+.months .count { margin-top: 6px; font-size: 16px; color: var(--soft); font-variant-numeric: tabular-nums; }
+.year-total { align-self: start; margin-top: -11px; padding: 6px 16px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 14px; font-weight: 600; white-space: nowrap; }
+
+/* The pins: a card on a stem to its month's dot; each links to its section. */
+.pin { --stem: 30px; position: absolute; left: calc(50% - var(--stem)); z-index: 2; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; width: min(212px, calc(200cqw / 12 + 18px)); padding: 12px 14px 13px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-card); border: 1px solid var(--line); color: var(--ink); font-size: 15px; line-height: 1.35; text-decoration: none; text-align: left; }
+.pin:hover { border-color: var(--accent-soft); }
+.pin .check { width: 22px; height: 22px; }
+.pin-text { grid-column: 1 / -1; text-wrap: balance; }
+.pin .initials { justify-self: end; margin: -2px -2px 0 0; }
+.pin::after { content: ''; position: absolute; left: calc(var(--stem) - 1px); width: 1px; background: var(--accent); opacity: .7; }
+.pin.up { bottom: calc(100% + 46px); }
+.pin.up::after { top: 100%; height: 51px; }
+.pin.down { top: calc(100% + 26px); }
+.pin.down::after { bottom: 100%; height: 22px; }
+.months > li:nth-child(1) .pin, .months > li:nth-child(2) .pin { --stem: 62px; }
+.months > li:nth-child(3) .pin, .months > li:nth-child(4) .pin, .months > li:nth-child(10) .pin, .months > li:nth-child(12) .pin { width: 212px; }
+
+@media (max-width: 1180px) {
+  .year-line { grid-template-columns: 80px minmax(0, 1fr); padding-bottom: 0; }
+  .months::before { right: calc(100% / 24); }
+  .year-total { grid-column: 1 / -1; justify-self: end; margin-top: 150px; }
+  .months > li:nth-child(12) .pin { left: auto; right: calc(50% - var(--stem)); }
+  .months > li:nth-child(12) .pin::after { left: auto; right: calc(var(--stem) - 1px); }
+  .months > li:nth-child(10) .pin { width: 196px; }
+}
+
+@media (max-width: 860px) {
+  .year { padding-block: 64px 40px; }
+  .year-line { display: block; position: relative; margin-top: 52px; padding: 0; }
+  .year-label { position: absolute; right: 0; top: -22px; margin: 0; font-size: 11px; }
+  .months { display: block; padding-left: 30px; }
+  .months::before { left: 5px; right: auto; top: 12px; bottom: 12px; width: 2px; height: auto; }
+  .months > li { display: grid; grid-template-columns: minmax(0, 1fr) auto; justify-items: stretch; align-items: center; padding-block: 9px; }
+  .months .dot { position: absolute; left: -30px; top: 50%; margin-top: -6px; width: 10px; height: 10px; }
+  .months > li.has-pin .dot { top: 21px; margin-top: 0; }
+  .months .mon { margin: 0; font-size: 19px; font-weight: 700; }
+  .months .yr { position: static; transform: none; padding: 0; background: none; font-size: inherit; font-weight: inherit; color: inherit; }
+  .months .count { margin: 0; font-size: 18px; }
+  .pin, .pin.up, .pin.down, .months > li:nth-child(n) .pin { position: static; grid-column: 1 / -1; width: auto; margin-top: 10px; display: flex; align-items: center; gap: 12px; padding: 13px 16px; font-size: 15.5px; }
+  .pin::after { display: none; }
+  .pin-text { flex: 1; }
+  .pin .initials { margin: 0; }
+  .year-total { display: block; margin-top: 28px; padding: 14px 18px; text-align: center; font-size: 17px; white-space: normal; }
+}

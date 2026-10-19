@@ -1,183 +1,47 @@
-/* The product drawings: white cards on the paper with hairline rows, real text, US sample data. */
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow-card); color: var(--ink); font-size: 17px; line-height: 1.35; }
-.feature-art { min-width: 0; }
-.sep { color: var(--faint); margin-inline: .38em; }
-.muted { color: var(--soft); }
+/* The product drawings' shared parts: white cards on the paper with hairline rows, real text, US sample data. */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow-card); color: var(--ink); font-size: 16px; line-height: 1.4; }
+.sep { color: var(--faint); margin-inline: .42em; }
+.sep.in-text { margin-inline: 0; }
+.meta { font-size: 15px; color: var(--soft); }
 
 /* Marks */
-.check { width: 26px; height: 26px; flex: none; }
+.check { width: 24px; height: 24px; flex: none; }
 .check circle { fill: var(--green); }
 .check path { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-.check.soft { width: 34px; height: 34px; }
+.check.soft { width: 28px; height: 28px; }
 .check.soft circle { fill: var(--green-tint); }
-.check.soft path { stroke: var(--green-ink); stroke-width: 2.1; transform: scale(.78); transform-origin: 12px 12px; }
-.alert { width: 26px; height: 26px; flex: none; }
+.check.soft path { stroke: var(--green-ink); stroke-width: 2.3; transform: scale(.8); transform-origin: 12px 12px; }
+.alert { width: 24px; height: 24px; flex: none; }
 .alert circle { fill: var(--orange); }
 .alert path { stroke: #fff; stroke-width: 2.6; stroke-linecap: round; }
 .alert .dot { fill: #fff; }
-.clock { width: 28px; height: 28px; flex: none; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.clock.orange { stroke: var(--orange-ink); }
-.clock.accent { stroke: var(--accent); }
+.clock { width: 24px; height: 24px; flex: none; }
+.clock circle { fill: var(--orange); }
+.clock path { fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .tick { display: inline-block; width: 15px; height: 15px; vertical-align: -2px; fill: none; stroke: var(--green-ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.note .tick { stroke: currentColor; }
+.arrow { width: 20px; height: 20px; flex: none; fill: none; stroke: var(--accent); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.icon { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .initials { display: inline-grid; place-items: center; flex: none; border-radius: 50%; font-weight: 700; letter-spacing: .01em; }
 .initials.pink { background: var(--pink-tint); color: var(--pink-ink); }
 .initials.lavender { background: var(--lavender); color: var(--lavender-ink); }
-.initials.lg { width: 66px; height: 66px; font-size: 23px; }
+.initials.blue { background: #e4ebfb; color: #2f4a86; }
+.initials.lg { width: 60px; height: 60px; font-size: 21px; }
 .initials.md { width: 42px; height: 42px; font-size: 15px; }
-.initials.sm { width: 32px; height: 32px; font-size: 12.5px; }
+.initials.sm { width: 30px; height: 30px; font-size: 12px; }
 
-/* Shared card parts */
-.card-head { display: flex; align-items: center; gap: 20px; }
-.card-head > p { display: grid; gap: 4px; min-width: 0; }
-.card-head .name { font-size: 23px; font-weight: 700; letter-spacing: -.01em; }
-.card-head .meta, .card .meta { font-size: 17px; color: var(--soft); }
-.card .row { display: flex; align-items: center; flex-wrap: wrap; gap: 0; padding: 14px 6px; border-top: 1px solid var(--line); }
-.card .row b { font-weight: 700; }
-.card .row > .check, .card .row > .clock, .card .row > .alert { margin-right: 22px; }
-.card .rows li { display: flex; align-items: center; gap: 22px; padding: 12px 6px; border-top: 1px solid var(--line); }
-.note { display: flex; align-items: center; gap: 0; border-radius: 12px; padding: 13px 18px; font-size: 16.5px; }
-.note > svg { margin-right: 14px; }
-.note > span { flex: 1; min-width: 0; }
-.note.warn { background: var(--orange-tint); color: var(--orange-ink); }
-.note.warn b { font-weight: 700; }
-.note.warn .sep { color: #e4ae86; }
-
-/* People records: Ana's dated record */
-.record { padding: 18px 22px 22px; }
-.record .card-head { padding: 0 0 16px; }
-.record .row.pay .pill { margin-left: auto; padding: 4px 12px; border-radius: 999px; background: var(--pink-tint); color: var(--accent); font-size: 14px; font-weight: 600; }
-.record .row.past { border-top: 0; padding-top: 2px; padding-left: 56px; color: var(--soft); }
-.record .note { margin-top: 2px; }
-
-/* Onboarding: Devon's checklist with an owner on each step */
-.checklist { padding: 18px 20px 20px; }
-.checklist .card-head { padding: 0 4px 16px; }
-.checklist .rows li { gap: 22px; padding: 10px 4px 10px 6px; }
-.checklist .what { flex: 1; min-width: 0; }
-.checklist .who { color: var(--soft); }
-.checklist .note { margin-top: 10px; }
-
-/* Self-service: Marcus's home */
-.home { padding: 26px 26px 14px; }
-.home .card-head { padding-bottom: 20px; }
-.home .hello { font-size: 23px; font-weight: 500; }
-.home .balance { margin-left: auto; text-align: right; }
-.home .balance strong { font: 700 36px/1 var(--font-head); letter-spacing: -.04em; }
-.home .balance span { font-size: 16px; color: var(--soft); }
-.home .row { gap: 0; padding: 18px 4px; flex-wrap: nowrap; }
-.home .row.two { align-items: flex-start; }
-.home .row p { display: grid; gap: 4px; }
-.home .row small { font-size: 15.5px; color: var(--soft); }
-.home .todo { position: relative; width: 34px; height: 34px; margin-right: 22px; flex: none; border-radius: 50%; background: var(--pink-tint); }
-.home .todo::after { content: ''; position: absolute; inset: 11px; border-radius: 50%; background: var(--accent); }
-
-/* Documents: the offer letter signed by both sides */
-.stack { display: grid; gap: 18px; }
-.letter { padding: 26px 30px 12px; }
-.letter-title { font: 700 29px/1.15 var(--font-head); letter-spacing: -.035em; }
-.letter .meta { margin-top: 6px; padding-bottom: 16px; }
-.letter .row { flex-wrap: nowrap; gap: 0; padding: 14px 0; }
-.letter .row .initials { margin-right: 28px; }
-.letter .row .check { margin-right: 14px; }
-.letter .row b { font-weight: 500; }
-.note.float { padding: 17px 20px; border: 1px solid #f7e2cf; font-size: 17px; color: var(--ink); }
-.note.float b { font-weight: 500; }
-
-/* Payroll: the October 30 run */
-.payrun { padding: 28px 30px 24px; }
-.payrun .card-title { font-size: 24px; font-weight: 700; letter-spacing: -.01em; }
-.okpill { display: inline-flex; align-items: center; gap: 12px; margin: 14px 0 18px; padding: 7px 18px 7px 10px; border-radius: 999px; background: var(--green-tint); color: var(--green-ink); font-size: 17.5px; font-weight: 600; }
-.okpill .check { width: 26px; height: 26px; }
-.payrun .rows li { padding: 14px 4px; }
-.payrun .note { margin-top: 10px; padding-inline: 14px; font-size: 15.5px; color: var(--ink); }
-.payrun .note b { font-weight: 700; }
-
-/* Access: Sam's last day */
-.offboard { padding: 20px 20px 20px 26px; }
-.offboard .card-head { padding-bottom: 14px; }
-.offboard .rows li { gap: 20px; }
-.offboard time { margin-left: auto; padding-left: 12px; color: var(--soft); white-space: nowrap; }
-.offboard .note { margin-top: 12px; color: var(--ink); }
-
-/* The change agent: Ana's move, step by step */
-.change { padding: 24px 30px 26px; }
-.change .card-head { padding-bottom: 18px; }
-.change .card-head .name { font-size: 21px; }
-.timeline { position: relative; display: grid; gap: 0; }
-.timeline::before { content: ''; position: absolute; left: 81px; top: 18px; bottom: 18px; width: 2px; background: var(--line-strong); }
-.timeline li { display: grid; grid-template-columns: 64px 36px 1fr; align-items: center; min-height: 39px; font-size: 16.5px; }
-.timeline time { color: var(--soft); font-size: 16px; }
-.timeline .dot { position: relative; justify-self: center; width: 13px; height: 13px; border-radius: 50%; box-shadow: 0 0 0 3px #fff; }
-.timeline .dot.accent { background: var(--accent); }
-.timeline .dot.green { background: var(--green); }
-.timeline .dot.orange { background: var(--orange); }
-.agree { display: flex; align-items: center; gap: 18px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 21px; font-weight: 700; }
-.agree .check { width: 38px; height: 38px; }
-
-/* Move in: the BambooHR import */
-.import { padding: 26px 32px 14px; }
-.import-head { display: flex; justify-content: space-between; font-size: 20px; }
-.import-head span { color: var(--accent); font-weight: 700; }
-.import .bar { display: block; height: 13px; margin: 12px 0 10px; border-radius: 99px; background: var(--pink-tint); overflow: hidden; }
-.import .bar span { display: block; height: 100%; width: 100%; border-radius: inherit; background: var(--accent); }
-.import .rows li { padding: 11px 2px; }
-.import .rows li:first-child { border-top: 0; }
-.import .rows .count { margin-left: auto; color: var(--soft); white-space: nowrap; }
-.import .warnrow .alert { width: 34px; height: 34px; }
-.import .warnrow .alert circle { fill: #fde1c2; }
-.import .warnrow .alert path { stroke: var(--orange); }
-.import .warnrow .alert .dot { fill: var(--orange); }
-
-@media (max-width: 1180px) {
-  .card { font-size: 15.5px; }
-  .change { padding-inline: 24px; }
-  .timeline::before { left: 80px; }
-  .timeline li { grid-template-columns: 60px 40px 1fr; font-size: 15px; }
-}
+/* Status strips inside a card */
+.note { display: flex; align-items: center; gap: 12px; border-radius: 12px; padding: 13px 18px; font-size: 15.5px; color: var(--ink); }
+.note > span { min-width: 0; }
+.note.warn { background: var(--orange-tint); }
+.note.ok { background: var(--green-tint); }
+.note .sep { color: #d9b9a0; }
+.note.ok .sep { color: #9fc9ad; }
 
 @media (max-width: 860px) {
   .card { font-size: 15px; border-radius: 16px; }
-  .initials.lg { width: 50px; height: 50px; font-size: 18px; }
-  .initials.md { width: 34px; height: 34px; font-size: 13px; }
-  .initials.sm { width: 28px; height: 28px; font-size: 11px; }
-  .card-head { gap: 14px; }
-  .card-head .name { font-size: 18.5px; }
-  .card-head .meta, .card .meta { font-size: 14.5px; }
+  .initials.lg { width: 48px; height: 48px; font-size: 17px; }
+  .initials.sm { width: 28px; height: 28px; font-size: 11.5px; }
   .check { width: 22px; height: 22px; }
-  .check.soft { width: 28px; height: 28px; }
-  .card .row { padding: 12px 2px; }
-  .card .row > .check, .card .row > .clock, .card .row > .alert { margin-right: 12px; }
-  .card .rows li { gap: 12px; padding: 11px 2px; }
-  .note { padding: 11px 13px; font-size: 14.5px; }
-  .note > svg { margin-right: 10px; width: 22px; height: 22px; }
-  .record, .checklist, .home, .letter, .payrun, .offboard, .change, .import { padding: 16px 16px 14px; }
-  .record .row.past { padding-left: 2px; }
-  .home .hello { font-size: 18px; }
-  .home .balance strong { font-size: 28px; }
-  .home .balance span { font-size: 13px; }
-  .home .row { padding: 13px 2px; }
-  .home .row small { font-size: 13.5px; }
-  .home .todo { width: 28px; height: 28px; margin-right: 12px; }
-  .home .todo::after { inset: 9px; }
-  .letter-title { font-size: 23px; }
-  .letter .row .initials { margin-right: 12px; }
-  .letter .row .check { margin-right: 10px; }
-  .note.float { font-size: 14.5px; padding: 13px 14px; }
-  .payrun .card-title { font-size: 19px; }
-  .okpill { font-size: 15px; }
-  .offboard .rows li { flex-wrap: wrap; }
-  .offboard .rows li > span { flex: 1; min-width: 0; }
-  .offboard time { padding-left: 0; }
-  .change .card-head .name { font-size: 17.5px; }
-  .timeline::before { left: 62px; }
-  .timeline li { grid-template-columns: 50px 26px 1fr; min-height: 0; padding: 7px 0; font-size: 14px; }
-  .timeline time { font-size: 13.5px; }
-  .agree { font-size: 17px; gap: 12px; }
-  .agree .check { width: 30px; height: 30px; }
-  .import-head { font-size: 17px; }
-  .import .rows .count { font-size: 14px; }
-  .import .warnrow { flex-wrap: wrap; }
-  .import .warnrow .count { margin-left: 46px; }
-  .import .warnrow .alert { width: 28px; height: 28px; }
+  .check.soft { width: 26px; height: 26px; }
+  .note { padding: 12px 14px; font-size: 14.5px; gap: 10px; }
 }

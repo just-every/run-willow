@@ -1,5 +1,5 @@
 // The run site as `rer build --site` wrote it to dist/site: the homepage's primary
-// action opens the Run page, the Run page clones the repository package.json names,
+// action opens the Run page, the year line's pins open their sections, the Run page clones the repository package.json names,
 // and every guide docs/site.json lists is published and reachable from /docs.
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -13,6 +13,9 @@ const home = site('index.html')
 const primary = home.match(/<a class="site-pill" href="([^"]+)"/)
 assert.equal(primary?.[1], '/run', 'the hero\'s primary action opens the Run page')
 assert.ok(hrefs(home).includes('/docs'), 'the homepage links the on-site docs')
+const ids = new Set([...home.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]))
+const anchors = hrefs(home).filter(href => href.startsWith('#'))
+assert.ok(anchors.length > 0 && anchors.every(href => ids.has(href.slice(1))), 'every month the year line pins opens its section')
 const run = site('run.html')
 const repository = pkg.repository.url.replace('https://github.com/', '')
 const commands = [...run.matchAll(/<code>([\s\S]*?)<\/code>/g)].map(([, html]) => html.replace(/<[^>]+>/g, ''))

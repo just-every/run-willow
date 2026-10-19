@@ -729,68 +729,66 @@ acceptance are part of US-001/002, not implied shipped capabilities.
 
 ## Homepage claims
 
-Every capability claim on the approved homepage (`src/site/landing/`, checked against br’s claims truth table of 17 October 2026, rows 1–58 in page order) maps to the clauses that promise it. A claim’s status is `done` when every mapped clause is done, `missing` when every one is missing, and `partial` otherwise. Hero and section cards are illustrations of the same capabilities and are held to them. 58 claims: 12 done, 36 partial, 10 missing.
+Every capability claim on the homepage (`src/site/landing/`, the owner-approved structure s1 built on 20 October 2026: one illustrative company's year, in page order) maps to the clauses that promise it. A claim's status is `done` when every mapped clause is done, `missing` when every one is missing, and `partial` otherwise; a claim that is not `done` is the contract, not yet in code, and a build priority. Hero, section and closing cards are illustrations of the same capabilities and are held to them. 56 claims: 15 done, 32 partial, 9 missing.
 
-| # | Claim | Clause(s) | Status |
-| --- | --- | --- | --- |
-| 1 | "keeps your people records" | WIL-03, WIL-04, WIL-07 | done |
-| 2 | "welcomes new hires" | WIL-04, WIL-05 | done |
-| 3 | "handles time off" | WIL-08, WIL-09, WIL-10 | done |
-| 4 | "and changes" | WIL-05, WIL-07, WIL-15 | done |
-| 5 | "makes payroll ... agree" | WIL-11, WIL-21, PAYROLL-001, PAYROLL-006 | partial |
-| 6 | "makes ... benefits ... agree" | BENEFITS-001, BENEFITS-002 | missing |
-| 7 | "makes ... access agree" | WIL-12, IDENTITY-001 | partial |
-| 8 | "100% free, open source alternative to BambooHR, Rippling and HiBob" | OPEN-001, MIGRATE-001 | partial |
-| 9 | Hero card: "Welcome, Priya": laptop shipped, Okta account ready | WIL-05, PEOPLE-003, IDENTITY-001 | partial |
-| 10 | Hero card: time off for Marcus, Dec 22 – Jan 2, approved | WIL-09, WIL-10 | done |
-| 11 | Hero card: raise for Ana to $84,000, payroll and benefits updated | WIL-07, FLOW-004, WIL-11, BENEFITS-002, AGENT-001 | partial |
-| 12 | Hero card: offboarding Sam, access removed in 5 systems | WIL-12, IDENTITY-001 | partial |
-| 13 | Hero card: benefits enrollment missing, reminder sent | BENEFITS-001, FLOW-002 | partial |
-| 14 | Hero card: org chart, 48 people | PEOPLE-002 | done |
-| 15 | "Job, pay, manager, documents and history live in one place, dated" | WIL-04, WIL-06, WIL-07 | done |
-| 16 | "so you always know what was true and when" | WIL-07 | done |
-| 17 | Card: offer letter signed, W-4 on file | SIGN-001, HIRING-004, US-001 | partial |
-| 18 | Card: I-9 reverification due Nov 30, reminder set | US-001, PEOPLE-004 | missing |
-| 19 | "Every new hire gets a checklist with owners and deadlines" | WIL-05 | done |
-| 20 | "from laptop and accounts to I-9, W-4 and state forms" | WIL-05, PEOPLE-003, IDENTITY-001, US-001, US-002 | partial |
-| 21 | "Willow chases each step until it is done" | FLOW-002, AGENT-003 | partial |
-| 22 | "People request leave" | WIL-09 | done |
-| 23 | "update their details" | SELF-001 | partial |
-| 24 | "find a teammate" | PEOPLE-002 | done |
-| 25 | "Managers approve in one tap" | WIL-09, MOBILE-001 | partial |
-| 26 | "balances stay right" | WIL-08, WIL-10 | done |
-| 27 | Card: 64 hours PTO balance; Dec 22 to Jan 2 approved | WIL-09, WIL-10 | done |
-| 28 | Card: "Dec 25 and Jan 1 are company holidays · not deducted" | LEAVE-002 | partial |
-| 29 | Card: address updated | SELF-001 | partial |
-| 30 | Card: to do, sign the 2027 handbook | SIGN-002, SELF-002 | missing |
-| 31 | "Offer letters and policies come from your templates" | SIGN-001 | missing |
-| 32 | "go out for e-signature" | SIGN-001, SIGN-002 | missing |
-| 33 | "and land in each person's record" | WIL-06, SIGN-001 | partial |
-| 34 | Card: 2027 handbook 46 of 48 signed, reminders sent to 2 | SIGN-002 | missing |
-| 35 | "Payday · 48 people · every system agrees" | PAYROLL-006, AGENT-001 | partial |
-| 36 | "Live two-way sync with Gusto, ADP RUN and QuickBooks Payroll" | PAYROLL-001, PAYROLL-002, PAYROLL-003, PAYROLL-004 | partial |
-| 37 | "Every change is acknowledged" | WIL-11, PAYROLL-001 | partial |
-| 38 | "any difference is caught before payday" | PAYROLL-006, PAYROLL-001 | partial |
-| 39 | Card: 401(k) for Marcus Hill, 5% vs 4%, corrected | RETIRE-001, BENEFITS-002 | missing |
-| 40 | "Google Workspace, Microsoft 365 and Okta accounts open on day one and close on the last" | IDENTITY-001 | partial |
-| 41 | "Willow checks each one is really gone" | IDENTITY-001 | partial |
-| 42 | "Approve a raise, a move or a leave" | WIL-15, FLOW-004, WIL-09 | done |
-| 43 | "The agent carries it through payroll, benefits, access and time off, then checks every system agrees" | AGENT-001 | partial |
-| 44 | "Move from BambooHR" | WIL-16, MIGRATE-002 | partial |
-| 45 | "Rippling or HiBob" | MIGRATE-001 | partial |
-| 46 | "with records, history, documents, balances and open checklists" | MIGRATE-001, MIGRATE-002 | partial |
-| 47 | "Payroll reconnects to the same people" | MIGRATE-001, PAYROLL-001 | partial |
-| 48 | "Run Willow on your own computer or server" | OPS-001 | partial |
-| 49 | "keep every record, document and change" | WIL-17, DATA-001, AUDIT-001 | partial |
-| 50 | "Export everything, any time" | WIL-17, DATA-001 | partial |
-| 51 | Org chart: "Always current, straight from the records" | PEOPLE-002 | done |
-| 52 | Reviews and goals | PERFORM-001 | missing |
-| 53 | Pulse surveys | ENGAGE-001 | missing |
-| 54 | History by date: "See anyone's record as of any day" | PEOPLE-005, WIL-07 | done |
-| 55 | New-hire reporting: "State forms ready for each hire" | US-002 | missing |
-| 56 | Activity log: "Every change and approval, recorded" | AUDIT-001, WIL-03 | partial |
-| 57 | "Open source HR software for small and mid-size businesses" · "Free and open source, MIT licensed" | OPEN-001 | done |
-| 58 | Closing art: Devon starts Monday, payroll sent | WIL-05, WIL-11 | done |
+| # | Section | Claim | Clause(s) | Status |
+| --- | --- | --- | --- | --- |
+| 1 | hero | "keeps your people records" | WIL-03, WIL-04, WIL-07 | done |
+| 2 | hero | "welcomes new hires" | WIL-04, WIL-05 | done |
+| 3 | hero | "handles time off" | WIL-08, WIL-09, WIL-10 | done |
+| 4 | hero | "and changes" | WIL-05, WIL-07, WIL-15 | done |
+| 5 | hero | "makes payroll ... agree" | WIL-11, WIL-21, PAYROLL-001, PAYROLL-006 | partial |
+| 6 | hero | "makes ... benefits ... agree" | BENEFITS-001, BENEFITS-002 | missing |
+| 7 | hero | "makes ... access agree" | WIL-12, IDENTITY-001 | partial |
+| 8 | hero | "100% free, open source alternative to BambooHR, Rippling and HiBob" | OPEN-001, MIGRATE-001 | partial |
+| 9 | hero | Hero card: "Welcome, Priya", starts Mon, Apr 12: laptop shipped, Okta account ready | WIL-05, PEOPLE-003, IDENTITY-001 | partial |
+| 10 | hero | Hero card: time off for Marcus, Dec 22 – Jan 2, approved | WIL-09, WIL-10 | done |
+| 11 | hero | Hero card: raise for Ana to $84,000, payroll and benefits updated | WIL-07, FLOW-004, WIL-11, BENEFITS-002, AGENT-001 | partial |
+| 12 | hero | Hero card: offboarding Sam, access removed in 9 systems | WIL-12, IDENTITY-001 | partial |
+| 13 | hero | Hero card: benefits enrollment missing, reminder sent | BENEFITS-001, FLOW-002 | partial |
+| 14 | hero | Hero card: org chart, 48 people | PEOPLE-002 | done |
+| 15 | year | "173 changes · every one verified" (each change checked against the system it touched) | AGENT-001, AUDIT-001, PAYROLL-006 | partial |
+| 16 | September | Terminal: `rer setup`, `rer deploy`, Willow running at the employer's own address | OPS-001 | partial |
+| 17 | September | "Records, pay history, documents, balances and open checklists come across from BambooHR" (import card: 47 people, 312 history entries, 1,146 documents, 47 balances, 2 checklists) | WIL-16, MIGRATE-002 | partial |
+| 18 | September | Import card: manager 'T. Kim' not found, matched to Taylor Kim | WIL-16 | done |
+| 19 | September | "Gusto reconnects to the same people" (Gusto 47 of 47 people linked) | MIGRATE-001, PAYROLL-002 | partial |
+| 20 | October | "Offers come from your templates" | SIGN-001 | missing |
+| 21 | October | "go out for e-signature" (both signers sign the same day) | SIGN-001 | missing |
+| 22 | October | "and file themselves to the new hire's record" ("Filed to Devon Brooks › Offer letters") | WIL-06, SIGN-001 | partial |
+| 23 | October | Signing certificate: signers, sign-in method, times, ESIGN consent, SHA-256 digest, sealed | SIGN-001 | missing |
+| 24 | November | "Every task has an owner and a deadline" | WIL-05, FLOW-001 | done |
+| 25 | November | "Willow chases each one until it is done" (direct deposit form a day late, reminder sent, done Friday) | FLOW-002, AGENT-003 | partial |
+| 26 | November | Board: W-4, I-9 Sections 1 and 2, Texas new-hire report | US-001, US-002 | missing |
+| 27 | November | Board: Okta and Google Workspace ready for Nov 2 | IDENTITY-001 | partial |
+| 28 | November | Board: UnitedHealthcare enrollment | BENEFITS-001 | missing |
+| 29 | November | Board: added to Gusto, acknowledged | WIL-11, PAYROLL-002 | partial |
+| 30 | December | "People request time off" | WIL-09 | done |
+| 31 | December | "check balances" (88 hours) | WIL-08, WIL-10 | done |
+| 32 | December | "and update their details themselves" (Update my address, Directory) | SELF-001, PEOPLE-002 | partial |
+| 33 | December | "Managers see who is out before they approve" (the Sales team calendar, 3 of 5 out, Taylor Kim covering) | LEAVE-002 | partial |
+| 34 | December | Phone: 15 days a year, granted at hire | WIL-08, LEAVE-001 | partial |
+| 35 | December | Phone: Dec 25 and Jan 1 are company holidays | LEAVE-002 | partial |
+| 36 | December | Self-service on a phone | SELF-001, MOBILE-001 | partial |
+| 37 | interlude | "Payday · 48 people · every system agrees" | PAYROLL-006, AGENT-001 | partial |
+| 38 | June | "Approve it once. Willow does the rest." | FLOW-004, WIL-15, AGENT-001 | partial |
+| 39 | June | "Before anything changes, Willow shows every change it will make" | WIL-15, FLOW-001, FLOW-004 | done |
+| 40 | June | Preview: job, pay and work location from Jun 14 | WIL-07, FLOW-004 | done |
+| 41 | June | Preview: Gusto Colorado withholding and FAMLI | PAYROLL-002 | missing |
+| 42 | June | Preview: UnitedHealthcare PPO Denver address, in network | BENEFITS-001 | missing |
+| 43 | June | Preview: Colorado paid sick leave added | LEAVE-001 | partial |
+| 44 | June | Preview: Okta group Sales Austin to Sales Denver | IDENTITY-001 | partial |
+| 45 | June | "Willow compares what each system should say with what it actually says, and keeps going until they match" | AGENT-001 | partial |
+| 46 | June | Run log: Okta change set for its date and verified on it | IDENTITY-001, AGENT-001 | partial |
+| 47 | June | Run log: no reply from UnitedHealthcare, followed up with the broker, address confirmed | BENEFITS-001, AGENT-001 | partial |
+| 48 | June | Run log: paycheck preview missing Colorado tax, withholding resent and the preview corrected | PAYROLL-002, PAYROLL-006, AGENT-001 | partial |
+| 49 | August | "access closes on time" (nine accounts, Okta first, then each app via Okta) | WIL-12, IDENTITY-001 | partial |
+| 50 | August | "final pay goes to payroll" (final pay sent to Gusto, acknowledged) | WIL-11, PAYROLL-001 | partial |
+| 51 | August | "Willow checks every account is really gone" (license still assigned, removed and verified) | IDENTITY-001 | partial |
+| 52 | August | COBRA notice sent by UnitedHealthcare | BENEFITS-001 | missing |
+| 53 | August | Laptop return label sent | PEOPLE-003, WIL-12 | done |
+| 54 | limits | "It doesn't run payroll, pay people or file taxes; Gusto, ADP, QuickBooks Payroll or Paychex still does. Your broker and carrier still run coverage." | BOUNDARY-001 | partial |
+| 55 | closing | "Open source HR software for small and mid-size businesses" · "Free and open source, MIT licensed" | OPEN-001 | done |
+| 56 | closing | Closing art: Devon · Denver, payroll sent | WIL-07, WIL-11 | done |
 
 ## Status
 
