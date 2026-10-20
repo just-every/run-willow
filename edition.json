@@ -50,7 +50,8 @@
           "migrations/core/0034_performance.sql",
           "migrations/core/0035_performance_goals.sql",
           "migrations/core/0036_access_levels.sql",
-          "migrations/core/0037_personal_field_rights.sql"
+          "migrations/core/0037_personal_field_rights.sql",
+          "migrations/core/0038_hiring_pipeline.sql"
         ]
       }
     },

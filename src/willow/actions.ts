@@ -1,3 +1,4 @@
+import { createHiringOpening, setHiringTeam, addHiringCandidate, moveHiringCandidate, scoreHiringCandidate } from './hiring'
 import { previewLevel, applyLevel } from './levels/actions'
 import { createReviewCycle, assignReview, respondReview, closeReviewCycle } from './performance/cycles'
 import { calibrateReview, releaseReview, withholdReview, acknowledgeReview, appealReview } from './performance/releases'
@@ -48,6 +49,7 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'hiring.opening': createHiringOpening, 'hiring.team': setHiringTeam, 'hiring.candidate': addHiringCandidate, 'hiring.move': moveHiringCandidate, 'hiring.scorecard': scoreHiringCandidate,
   'level.preview': previewLevel, 'level.apply': applyLevel,
   'survey.create': createSurvey, 'survey.close': closeSurvey, 'survey.respond': respondSurvey,
   'survey.plan': createActionPlan, 'survey.plan.complete': completeActionPlan, 'survey.comment.hide': hideSurveyComment,

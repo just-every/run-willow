@@ -77,7 +77,7 @@ export async function endAccessStatements(env: Bindings, actor: Actor, request: 
     await auth.setOperatorStatus(request, operator.id, 'inactive')
     for (const session of await auth.listSessions(request, operator.id)) if (session.active) await auth.revokeSession(request, session.id)
   }
-  return [stmt(env, 'DELETE FROM wl_member_levels WHERE member_id = ?', member.id), stmt(env, 'DELETE FROM wl_permissions WHERE member_id = ?', member.id), stmt(env, "UPDATE wl_members SET status = 'ended' WHERE id = ?", member.id)]
+  return [stmt(env, 'DELETE FROM wl_hiring_team WHERE member_id = ?', member.id), stmt(env, 'DELETE FROM wl_member_levels WHERE member_id = ?', member.id), stmt(env, 'DELETE FROM wl_permissions WHERE member_id = ?', member.id), stmt(env, "UPDATE wl_members SET status = 'ended' WHERE id = ?", member.id)]
 }
 
 export async function endAccess(env: Bindings, actor: Actor, input: Input, request: Request) {

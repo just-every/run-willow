@@ -1,3 +1,4 @@
+import { hiringOpenings, hiringOpening, hiringApplication } from './hiring'
 import { selfWriteModes } from './levels/personal'
 import { levels } from './levels/store'
 import { levelReview } from './levels/actions'
@@ -58,6 +59,7 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  hiring: hiringOpenings, hiringOpening: (env,actor,_request,id)=>hiringOpening(env,actor,id), hiringApplication: (env,actor,_request,id)=>hiringApplication(env,actor,id),
   performance: performanceHome, performanceCycle: (env,actor,_request,id)=>performanceDetail(env,actor,id), goals: goalHome,
   surveyPlan: (env,actor,_request,id)=>ownSurveyPlan(env,actor,id),
   surveys: surveyList, survey: (env,actor,_request,id)=>surveyDetail(env,actor,id),

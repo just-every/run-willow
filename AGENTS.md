@@ -138,3 +138,5 @@ The signed-in owner's forms call that same handler; `import.preview`,
 upload envelope, owner/Business authority, reviewed plans and reversible catch-up.
 Migration 0021 adds current kit evolutions and the door without rewriting
 applied migrations. DATA-002's future erasure inventory includes all door custody.
+
+HIRING-003's partial manual pipeline is API-only: `hiring.opening` (HR creates initial name/stages/members), `hiring.team` (HR replaces members with opening/revision), `hiring.candidate` (opening/name/contactEmail/source), `hiring.move` (application/revision/stage) and `hiring.scorecard` (application/version/evidence; author is always the current member). Reads: `hiring`, `hiring/openings/:id`, `hiring/applications/:id`. HR or the current explicit opening team alone can read or act. Contact email is not verified identity; never use it for automatic merging or cross-opening disclosure. Calendar/email, native screens and ct's approved verified/reversible merge flow remain unimplemented.
