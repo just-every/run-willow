@@ -10,7 +10,7 @@ import { join, resolve } from 'node:path'
 import { createRequire } from 'node:module'
 import { workerEnvironment } from '../worker-environment.mjs'
 
-async function freePort() {
+export async function freePort() {
   const socket = createServer()
   await new Promise(resolve => socket.listen(0, '127.0.0.1', resolve))
   const { port } = socket.address()

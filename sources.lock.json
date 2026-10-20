@@ -3356,7 +3356,7 @@
       "executable": false
     },
     "tests/willow/harness.mjs": {
-      "sha256": "6573d414bc72ed1496aad6aef06d401fb37a87c8cdcbdebb9f8f3d2ad2c4c5ce",
+      "sha256": "9574d7722e41d75cc65ff92196f071851024bf4b54f9638604f0516295739d18",
       "executable": false
     },
     "tests/willow/import-door.mjs": {
@@ -3424,7 +3424,7 @@
       "executable": false
     },
     "tests/willow/restore-access.mjs": {
-      "sha256": "8220314f8cbe61404f411c5fe02451197250d78cf7d160b950300d8806f30649",
+      "sha256": "533f17719bbcbf8177e7f27be33331ce0508fcd7ed17363199025042000ab73d",
       "executable": false
     },
     "tests/willow/restore-archive-fixture.mjs": {

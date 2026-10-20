@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, copyFile, writeFile, readFile, rm } from 'node:fs/promi
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { command } from './cli.mjs'
-import { harness } from './harness.mjs'
+import { freePort, harness } from './harness.mjs'
 import { fixture, day } from './regression-fixture.mjs'
 import { readArchive } from '@runeditrun/rer/modules/portability'
 import { enabledArchive } from './restore-archive-fixture.mjs'
@@ -40,10 +40,15 @@ async function clone(path) {
   }
   await command(path, ['install'])
 }
-async function setup(path, port) {
+async function setup(path) {
   await mkdir(join(path, 'exports'), { recursive: true })
   await writeFile(join(path, 'exports/answers.json'), JSON.stringify({ OWNER_EMAIL: 'owner@example.com' }), { mode: 0o600 })
+  // A future fixed port can already be occupied by an earlier HTTP client's
+  // ephemeral connection, including TIME_WAIT with no listening process.
+  // Ask the OS immediately before setup, rather than claiming both ports early.
+  const port = await freePort()
   await command(path, ['setup', '--answers', 'exports/answers.json', '--non-interactive', '--port', String(port)])
+  return port
 }
 async function confirm(base, cookie) {
   const r = await fetch(`${base}/setup`, { method: 'POST', redirect: 'manual', headers: { cookie, origin: base, 'content-type': 'application/x-www-form-urlencoded' }, body: 'confirm=yes' }); assert.equal(r.status, 303)
@@ -100,8 +105,8 @@ async function archiveCustomFields(api, owner, person) {
 }
 
 try {
-  await clone(source); await setup(source, 45931)
-  server = await harness({persistTo:join(source,'.wrangler/state'),port:45931,bindings:modelBindings,provider:provider('source')})
+  await clone(source); const sourcePort = await setup(source)
+  server = await harness({persistTo:join(source,'.wrangler/state'),port:sourcePort,bindings:modelBindings,provider:provider('source')})
   origin=server.origin
   const owner = await server.signIn('owner@example.com')
   await confirm(origin, owner)
@@ -144,7 +149,7 @@ try {
   assert.equal(importSettings.length, 1, 'DATA-001: owner enabled Business imports through the public setting')
   assert.equal(importSettings[0].row.enabled, 0, 'DATA-001: export pauses Business import authority')
   assert.ok(items.some(item => item.table === 'ik_door_revoked_keys' && item.row.kid === 'restore-revoked-key'), 'DATA-001: permanent key revocation is portable')
-  server = await harness({persistTo:join(source,'.wrangler/state'),port:45931,bindings:modelBindings,provider:provider('source')})
+  server = await harness({persistTo:join(source,'.wrangler/state'),port:sourcePort,bindings:modelBindings,provider:provider('source')})
   const sourceOwner = await server.signIn('owner@example.com')
   const sourceConnections = await api('connections', sourceOwner)
   assert.equal(sourceConnections.notices, true)
@@ -179,8 +184,8 @@ try {
   assert.equal(report.archiveHash, legacyRecords.at(-1).archiveHash, 'DATA-001: receipt authenticates original archive bytes')
   assert.equal(report.contentHash, legacyRecords.at(-1).contentHash, 'DATA-001: original content integrity is preserved')
   assert.deepEqual(await readFile(join(target, 'exports/enabled.rer')), oldArchive, 'DATA-001: original backup bytes untouched')
-  await setup(target, 45932)
-  destination = await harness({persistTo:join(target,'.wrangler/state'),port:45932,bindings:modelBindings,provider:provider('restored')})
+  const targetPort = await setup(target)
+  destination = await harness({persistTo:join(target,'.wrangler/state'),port:targetPort,bindings:modelBindings,provider:provider('restored')})
   restored=destination.origin
   // First restored-member request uses the actual HTML form, before any JSON
   // magic-link request could recreate identities as a side effect.
