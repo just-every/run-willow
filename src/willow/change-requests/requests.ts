@@ -10,12 +10,13 @@ import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
 import { commit, guard, insist, json, newId, now, one, stmt, type Row } from '../core'
 import { CURRENT_TERMS } from '../employment'
+import { bandPosition, guardBandSnapshot } from '../compensation/bands'
 import { store, type Stored } from '../files'
 import { Input } from '../input'
 import { prepareMover } from '../lifecycle'
 import { EMPLOYMENT_TYPES, readPay, termsOn } from '../people'
 import { prepareTypeChange } from './employment-type'
-import { currentChain, mayApprove, resolveSteps, type RequestType, type ResolvedStep } from './chain'
+import { currentChain, mayApprove, resolveSteps, type BandPosition, type RequestType, type ResolvedStep } from './chain'
 
 const FIELDS = ['jobTitle', 'departmentId', 'locationId', 'managerPersonId', 'scheduleId'] as const
 const COLUMNS: Record<typeof FIELDS[number], string> = { jobTitle: 'job_title', departmentId: 'department_id', locationId: 'location_id', managerPersonId: 'manager_person_id', scheduleId: 'schedule_id' }
@@ -23,7 +24,7 @@ const ATTACHMENT_BYTES = 10_000_000
 
 export type PayPlan = { mode: 'percent'; percent: string } | { mode: 'amount'; basis: string; amount: string }
 export interface Plan { effectiveFrom: string; reason: string; fields: Partial<Record<typeof FIELDS[number], string | null>>; pay: PayPlan | null; employmentType?: string | null }
-export interface Base { periodType: string; periodRevision: string; termId: string; payBasis: string; payCents: number | null; newPayBasis: string | null; newPayCents: number | null; currency: string }
+export interface Base { periodType: string; periodRevision: string; termId: string; payBasis: string; payCents: number | null; newPayBasis: string | null; newPayCents: number | null; currency: string; band?: { id: string | null; position: BandPosition; levelRevision: string | null } }
 export interface Attachment extends Stored { revision: number; by: string; at: number }
 
 /** Percent raises round half up to the cent on the pay in force on the effective date. */
@@ -70,9 +71,13 @@ async function readRequest(env: Bindings, actor: Actor, personId: string, input:
   const type: RequestType = payChanged ? 'compensation' : 'job'
   const chain = await currentChain(env, type)
   insist(chain, 'change_chain_missing', 409)
-  const steps = await resolveSteps(env, chain.steps, { personId, locationAfter, increasePercent, payChanged }, actor.today)
-  const baseRecord: Base = { periodType: period.employment_type, periodRevision: period.revision, termId: base.id, payBasis: basePay.pay_basis, payCents: basePay.amount_cents, newPayBasis: payChanged ? newPayBasis : null, newPayCents: payChanged ? newPayCents : null, currency: basePay.currency }
-  return { period, plan: { ...plan, pay: payChanged ? pay : null }, base: baseRecord, type, chain, steps }
+  const band = chain.steps.some(step => step.bandPositions?.length) ? await bandPosition(env, {
+    personId, date: effectiveFrom, jobTitle: fields.jobTitle ?? base.job_title, locationId: locationAfter,
+    basis: payChanged ? newPayBasis! : basePay.pay_basis, amountCents: payChanged ? newPayCents : basePay.amount_cents,
+  }) : null
+  const steps = await resolveSteps(env, chain.steps, { personId, locationAfter, increasePercent, payChanged, bandPosition: band?.position }, actor.today)
+  const baseRecord: Base = { periodType: period.employment_type, periodRevision: period.revision, termId: base.id, payBasis: basePay.pay_basis, payCents: basePay.amount_cents, newPayBasis: payChanged ? newPayBasis : null, newPayCents: payChanged ? newPayCents : null, currency: basePay.currency, ...(band ? { band: { id: band.band?.id ?? null, position: band.position, levelRevision: band.levelRevision } } : {}) }
+  return { period, plan: { ...plan, pay: payChanged ? pay : null }, base: baseRecord, type, chain, steps, band }
 }
 
 function executionPlan(periodId: string, plan: Plan, pay: { newPayBasis: string | null; newPayCents: number | null }, template: string): Record<string, string> {
@@ -98,6 +103,7 @@ export async function requestChange(env: Bindings, actor: Actor, input: Input) {
   const read = await readRequest(env, actor, personId, input)
   const id = newId(), at = now()
   await commit(env, [
+    ...(read.band ? [guardBandSnapshot(env, read.band.source)] : []),
     stmt(env, "INSERT INTO wl_change_requests (id, person_id, period_id, request_type, requested_by, requested_at, status, revision, chain_id, steps_json, step, plan_json, base_json, attachments_json, state, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'pending', 1, ?, ?, 0, ?, ?, ?, ?, ?)",
       id, personId, read.period.id, read.type, actor.id, at, read.chain.id, JSON.stringify(read.steps), JSON.stringify(read.plan), JSON.stringify(read.base), JSON.stringify(await attachment(env, actor, input, 1)), newId(), at),
     event(env, id, 1, null, 'submitted', actor.id, input.text('comment', { optional: true, max: 1000 }) || null, at),
@@ -124,6 +130,7 @@ export async function editChange(env: Bindings, actor: Actor, input: Input) {
   const attachments = [...json<Attachment[]>(row.attachments_json, []), ...await attachment(env, actor, input, revision)]
   await commit(env, [
     fence(env, row),
+    ...(read.band ? [guardBandSnapshot(env, read.band.source)] : []),
     stmt(env, "UPDATE wl_change_requests SET status = 'pending', revision = ?, request_type = ?, chain_id = ?, steps_json = ?, step = 0, plan_json = ?, base_json = ?, attachments_json = ?, state = ?, updated_at = ? WHERE id = ?",
       revision, read.type, read.chain.id, JSON.stringify(read.steps), JSON.stringify(read.plan), JSON.stringify(read.base), JSON.stringify(attachments), newId(), at, row.id),
     event(env, row.id, revision, null, 'edited', actor.id, input.text('comment', { optional: true, max: 1000 }) || null, at),
@@ -155,10 +162,20 @@ export async function decideChange(env: Bindings, actor: Actor, input: Input) {
   // Final approval: the approved values execute only while the period is exactly as the chain saw it.
   const base = json<Base>(row.base_json, {} as Base), plan = json<Plan>(row.plan_json, {} as Plan)
   insist(await one(env, 'SELECT 1 FROM wl_periods WHERE id = ? AND revision = ?', row.period_id, base.periodRevision), 'change_request_stale', 409)
+  let bandSource: number | null = null
+  if (base.band) {
+    const terms = (await one(env, 'SELECT job_title, location_id FROM wl_terms WHERE id = ?', base.termId))!
+    const band = await bandPosition(env, { personId: row.person_id, date: plan.effectiveFrom,
+      jobTitle: plan.fields.jobTitle ?? terms.job_title, locationId: plan.fields.locationId ?? terms.location_id,
+      basis: base.newPayBasis ?? base.payBasis, amountCents: plan.pay ? base.newPayCents : base.payCents })
+    insist((band.band?.id ?? null) === base.band.id && band.position === base.band.position && band.levelRevision === base.band.levelRevision, 'change_request_band_stale', 409)
+    bandSource = band.source
+  }
   const chain = (await one(env, 'SELECT template_id FROM wl_change_chains WHERE id = ?', row.chain_id))!
   const prepared = await execute(env, actor, row.period_id, plan, base, chain.template_id)
   await commit(env, [
     fence(env, row),
+    ...(bandSource === null ? [] : [guardBandSnapshot(env, bandSource)]),
     guard(env, 'change_request_stale', 'EXISTS(SELECT 1 FROM wl_periods WHERE id = ? AND revision = ?)', row.period_id, base.periodRevision),
     stmt(env, "UPDATE wl_change_requests SET status = 'approved', result_json = ?, state = ?, updated_at = ? WHERE id = ?", JSON.stringify(prepared.result), newId(), at, row.id),
     event(env, row.id, row.revision, row.step, 'approved', actor.id, comment, at),

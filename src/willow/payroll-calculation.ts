@@ -6,7 +6,7 @@ import { plainMoney } from './money'
 import { displayName } from './people'
 import type { PayrollSourceRows } from './payroll-sources'
 
-export interface Line { key: string; kind: 'start' | 'end' | 'change' | 'leave' | 'leave_reversal'; person: string; name: string; employeeNumber: string | null; payrollId: string | null; effectiveDate: string; endDate?: string; policyId?: string; periodId?: string; units?: string; unit?: string; changes?: { field: string; from: string | null; to: string | null }[]; note: string }
+export interface Line { key: string; kind: 'bonus' | 'start' | 'end' | 'change' | 'leave' | 'leave_reversal'; person: string; name: string; employeeNumber: string | null; payrollId: string | null; effectiveDate: string; endDate?: string; policyId?: string; periodId?: string; units?: string; unit?: string; changes?: { field: string; from: string | null; to: string | null }[]; note: string }
 
 type Terms = PayrollSourceRows['wl_terms'][number] & PayrollSourceRows['wl_term_pay'][number]
 const money = (cents: number | null, currency: string) => cents === null ? null : plainMoney(cents, currency)
@@ -69,6 +69,10 @@ export function calculatePayroll(sources: PayrollSourceRows, end: string) {
     } else if (claimed.has(`ledger:${row.reverses}`)) {
       lines.push({ key: `ledger:${row.id}`, kind: 'leave_reversal', policyId: row.policyId, ...base(periods.get(row.period_id)!), effectiveDate: row.start_date, endDate: row.end_date, units: hours(-row.minutes), unit: 'hours', note: `${row.policy} cancelled after handoff: reverse ${hours(row.minutes)} hours` })
     }
+  }
+  for (const bonus of sources.wl_comp_bonuses) {
+    const period = periods.get(bonus.period_id)
+    if (period && bonus.effective_from <= end && !claimed.has(`bonus:${bonus.id}`)) lines.push({ key: `bonus:${bonus.id}`, kind: 'bonus', ...base(period), effectiveDate: bonus.effective_from, units: (bonus.amount_cents / 100).toFixed(2), unit: 'USD', note: 'Owner-approved one-time bonus; payroll provider calculates tax and payment' })
   }
   const exceptions = lines.filter(line => !line.payrollId).map(line => ({ key: line.key, person: line.person, name: line.name, reason: 'No payroll identifier on the employment period' }))
   const resolvedSelf = new Set(sources.wl_self_reconciliation.map(r => r.change_id))

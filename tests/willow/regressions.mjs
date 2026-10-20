@@ -225,3 +225,5 @@ await import("./custom-reports.mjs")
 await import("./leave-policies.mjs")
 
 await import("./company-home.mjs")
+
+await import('./compensation.mjs')

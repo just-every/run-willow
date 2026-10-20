@@ -1,3 +1,5 @@
+import { compensationHome, compensationCycle } from './compensation/cycles'
+import { equityReport } from './compensation/equity'
 import { companyHome,companyAdmin } from './company/views'
 import { companyTeam } from './company-team'
 import { protectedCases, protectedCase } from './protected-leave/records'
@@ -48,6 +50,9 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  compensation: compensationHome,
+  compensationCycle: (env,actor,_request,id)=>compensationCycle(env,actor,id),
+  compensationEquity: (env,actor,_request,_id,url)=>equityReport(env,actor,Object.fromEntries(url.searchParams) as {asOf:string;level:string}),
   company: async(env,actor)=>({...await companyHome(env,actor),...await companyTeam(env,actor)}),
   companyAdmin,
   protectedCases,

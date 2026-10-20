@@ -8,6 +8,7 @@ import { can, type Actor } from './actor'
 import { guard, insist, one } from './core'
 
 const sources = {
+  wl_comp_bonuses: ['id','cycle_id','person_id','period_id','effective_from','amount_cents','recorded_at'],
   wl_self_changes: ['id', 'person_id', 'kind', 'due_date', 'requested_at'],
   wl_self_decisions: ['change_id', 'outcome'],
   wl_self_reconciliation: ['change_id'],

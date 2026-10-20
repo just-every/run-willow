@@ -4,7 +4,7 @@
 // the subject's manager's manager in force today, any HR member
 // (people.manage) or any payroll member (payroll.handoff + pay.read). A step
 // may apply only at or above a pay increase percentage (inclusive) or only
-// when the person's location after the change is one of a list.
+// when the person's location or effective-dated band position matches.
 import type { Bindings } from '../../auth.server'
 import { can, requirePermission, type Actor } from '../actor'
 import { all, commit, insist, json, newId, now, one, stmt } from '../core'
@@ -17,7 +17,9 @@ export const ROLES = ['skip_manager', 'hr', 'payroll'] as const
 export type Role = typeof ROLES[number]
 export const ROLE_LABELS: Record<Role, string> = { skip_manager: 'Manager’s manager', hr: 'HR', payroll: 'Payroll' }
 export type RequestType = 'compensation' | 'job'
-export interface ChainStep { role: Role; minIncreasePercent: number | null; locations: string[] }
+export const BAND_POSITIONS = ['below', 'within', 'above', 'unbanded'] as const
+export type BandPosition = typeof BAND_POSITIONS[number]
+export interface ChainStep { role: Role; minIncreasePercent: number | null; locations: string[]; bandPositions?: BandPosition[] }
 /** A step as resolved for one request revision; `member` is the named skip-level approver. */
 export interface ResolvedStep { role: Role; member: string | null; note: string | null }
 
@@ -27,13 +29,15 @@ export async function configureChain(env: Bindings, actor: Actor, input: Input) 
   insist(type === 'compensation' || type === 'job', 'invalid_requestType')
   const template = await activeTemplate(env, input.text('template', { max: 100 }), 'mover')
   // Form rows left blank are unused; JSON may send just the rows it needs.
-  const roles = input.list('stepRole', { keepEmpty: true }), increases = input.list('stepMinIncrease', { keepEmpty: true }), locations = input.list('stepLocations', { keepEmpty: true })
+  const roles = input.list('stepRole', { keepEmpty: true }), increases = input.list('stepMinIncrease', { keepEmpty: true }), locations = input.list('stepLocations', { keepEmpty: true }), bands = input.list('stepBandPositions', { keepEmpty: true })
   const steps: ChainStep[] = roles.flatMap((role, index) => role.trim() ? [index] : []).map(index => {
     const role = roles[index]
     insist((ROLES as readonly string[]).includes(role), 'invalid_stepRole')
     const increase = (increases[index] ?? '').trim()
     insist(!increase || /^\d{1,3}(\.\d{1,2})?$/.test(increase), 'invalid_stepMinIncrease')
-    return { role: role as Role, minIncreasePercent: increase ? Number(increase) : null, locations: (locations[index] ?? '').split(',').map(s => s.trim()).filter(Boolean) }
+    const bandPositions = (bands[index] ?? '').split(',').map(s => s.trim()).filter(Boolean)
+    insist(bandPositions.every(value => (BAND_POSITIONS as readonly string[]).includes(value)), 'invalid_stepBandPositions')
+    return { role: role as Role, minIncreasePercent: increase ? Number(increase) : null, bandPositions: [...new Set(bandPositions)] as BandPosition[], locations: (locations[index] ?? '').split(',').map(s => s.trim()).filter(Boolean) }
   })
   insist(steps.length >= 1 && steps.length <= 6, 'invalid_steps')
   for (const id of steps.flatMap(s => s.locations)) insist(await one(env, 'SELECT 1 FROM wl_locations WHERE id = ?', id), 'location_not_found', 404)
@@ -65,11 +69,12 @@ async function skipManager(env: Bindings, personId: string, date: string) {
  * manager's manager holding an active membership is assigned to HR and says so;
  * a revision where no step applies still needs HR.
  */
-export async function resolveSteps(env: Bindings, steps: ChainStep[], subject: { personId: string; locationAfter: string | null; increasePercent: number | null; payChanged: boolean }, date: string): Promise<ResolvedStep[]> {
+export async function resolveSteps(env: Bindings, steps: ChainStep[], subject: { personId: string; locationAfter: string | null; increasePercent: number | null; payChanged: boolean; bandPosition?: BandPosition }, date: string): Promise<ResolvedStep[]> {
   const resolved: ResolvedStep[] = []
   for (const step of steps) {
     if (step.minIncreasePercent !== null && !(subject.payChanged && (subject.increasePercent === null || subject.increasePercent >= step.minIncreasePercent))) continue
     if (step.locations.length && !(subject.locationAfter && step.locations.includes(subject.locationAfter))) continue
+    if (step.bandPositions?.length && !(subject.bandPosition && step.bandPositions.includes(subject.bandPosition))) continue
     if (step.role === 'skip_manager') {
       const member = await skipManager(env, subject.personId, date)
       resolved.push(member ? { role: 'skip_manager', member, note: null } : { role: 'hr', member: null, note: 'No manager’s manager with Willow access; HR approves this step' })

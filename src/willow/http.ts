@@ -1,3 +1,4 @@
+import { compensationPage, cyclePage, equityPage } from './ui/compensation'
 import { companyPage } from './ui/company'
 import { companyFile } from './company/files'
 import { protectedListPage, protectedDetailPage } from './ui/protected-leave'
@@ -124,6 +125,9 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  compensation: (env,actor,_request,url)=>compensationPage(env,actor,url),
+  compensationCycle: (env,actor,_request,url,id)=>cyclePage(env,actor,id,url),
+  compensationEquity: (env,actor,_request,url)=>equityPage(env,actor,url),
   company: (env,actor,_request,url)=>companyPage(env,actor,url),
   companyFile: (env,actor,_request,_url,id)=>companyFile(env,actor,id,true),
   protectedList: (env,actor,_request,url) => protectedListPage(env,actor,url),

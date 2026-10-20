@@ -1,3 +1,6 @@
+import { defineBand } from './compensation/bands'
+import { createCycle, approveBudget, publishCycle } from './compensation/cycles'
+import { proposeCompensation } from './compensation/proposals'
 import { announce, acknowledge as acknowledgeCompany, folder as companyFolder, file as companyUpload, celebrations } from './company/actions'
 import { openProtected, recordProtectedAbsence, reverseProtectedAbsence, certifyProtected } from './protected-leave/records'
 import { decideOverride } from './protected-leave/overrides'
@@ -39,6 +42,11 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'compensation.band': defineBand,
+  'compensation.cycle': createCycle,
+  'compensation.budget': approveBudget,
+  'compensation.propose': proposeCompensation,
+  'compensation.publish': publishCycle,
   'company.announce': announce,
   'company.acknowledge': acknowledgeCompany,
   'company.folder': companyFolder,
