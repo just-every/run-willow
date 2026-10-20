@@ -195,11 +195,17 @@ try {
 
   // Permission changes apply to the existing session, including cached download links.
   await api('member.permissions', { member: s.hr.member, permissions: [] })
+  await as(s.hr.cookie,'performance',undefined,401)
+  await as(s.hr.cookie,`performance/${cycle.id}`,undefined,401)
+  await download(s.hr.cookie,cycle.id,303)
+  await hr('performance.note',{cycle:second.id,person:s.employee.person,note:'Ended session cannot write',rating:'Unapproved'},401)
+  s.hr.cookie=await h.signIn('hr@example.com')
   excludes(await as(s.hr.cookie, 'performance'), [...Object.values(answers), privateNote, 'RELEASE-FIRST', withholdingReason])
   await as(s.hr.cookie, `performance/${cycle.id}`, undefined, 404)
   await download(s.hr.cookie, cycle.id, 404)
   await hr('performance.note', { cycle: second.id, person: s.employee.person, note: 'Revoked HR cannot write', rating: 'Unapproved' }, 403)
   await api('member.permissions', { member: s.hr.member, permissions: ['people.manage'] })
+  s.hr.cookie=await h.signIn('hr@example.com')
   await browserEvidence(h,owner,s,{cycle:cycle.id,person:s.employee.person,subjectCookie:s.employee.cookie})
   for(const cookie of [s.employee.cookie,s.managera.cookie,s.managerb.cookie,s.hr.cookie]) excludes(await as(cookie,`context/${s.employee.person}`),[...Object.values(answers),privateNote,'RELEASE-FIRST','RELEASE-CORRECTED','DEVELOPMENT-GOAL'])
   const exportBeforeExit = await download()
