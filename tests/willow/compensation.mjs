@@ -92,6 +92,7 @@ try {
  await api('compensation.budget',{cycle:bonus.id})
  await as(s.hr.cookie,'compensation.propose',{cycle:bonus.id,person:a.person,amount:'1000.01',note:'One-time award'})
  out=await api(`compensation/${bonus.id}`)
+ assert.equal(out.rows[0].position,'not applicable','COMP-001 one-time bonus has no recurring salary-band position')
  const bonusResult=await api('compensation.publish',{cycle:bonus.id,review:out.fingerprint})
  assert.ok(bonusResult.results[0].bonus)
  assert.ok(!(await api(`people/${a.person}`)).employment[0].terms.some(t=>t.effectiveFrom===day(35)))

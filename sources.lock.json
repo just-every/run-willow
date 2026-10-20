@@ -2751,7 +2751,7 @@
       "executable": false
     },
     "src/willow/compensation/cycles.ts": {
-      "sha256": "99ce09c27973f961e47e9c9ebe68765f17963ef04f712a8daf90fcb54b84c69c",
+      "sha256": "b3b988a241595e9d45b169781a548bcbfa4c80bac71763d5345ac6e694298664",
       "executable": false
     },
     "src/willow/compensation/equity.ts": {
@@ -3259,7 +3259,7 @@
       "executable": false
     },
     "tests/willow/compensation.mjs": {
-      "sha256": "995d3a98ed12df1a48fec0a015d9c64e51cb8e74d05676ca24d5ba4d25385dee",
+      "sha256": "86f53482d36f21aa69e9073611ea98ac2a7eada3ed87415231fb88bcead373cc",
       "executable": false
     },
     "tests/willow/custom-fields-browser.mjs": {

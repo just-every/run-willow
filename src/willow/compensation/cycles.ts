@@ -45,7 +45,7 @@ export async function reviewCycle(env:Bindings,actor:Actor,id:string):Promise<Cy
   const band=await bandPosition(env,{personId:p.person_id,date:cycle.effective_from,jobTitle:p.job_title,locationId:term?.location_id??null,basis:p.basis,amountCents:p.amount_cents})
   const incremental=cycle.kind==='bonus'?p.amount_cents:Math.max(0,annualCents(p.basis,p.amount_cents,schedule?.minutes??0)-annualCents(p.basis,p.previous_cents,schedule?.minutes??0))
   cost+=incremental;insist(Number.isSafeInteger(cost),'compensation_out_of_range')
-  rows.push({...p,annualCostCents:incremental,position:band.position,band:band.band,level:band.level,conflict:!period||period.revision!==p.period_revision||!!period.end_date&&period.end_date<cycle.effective_from})
+  rows.push({...p,annualCostCents:incremental,position:cycle.kind==='bonus'?'not applicable':band.position,band:cycle.kind==='bonus'?null:band.band,level:band.level,conflict:!period||period.revision!==p.period_revision||!!period.end_date&&period.end_date<cycle.effective_from})
  }
  insist(source===await businessVersion(env),'compensation_source_changed',409)
  const fingerprint=await sha256Hex(JSON.stringify({cycle,rows,source,reviewer:actor.id}))
