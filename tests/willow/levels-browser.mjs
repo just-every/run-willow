@@ -1,3 +1,4 @@
+import { personalBrowserProof } from './levels-personal-browser.mjs'
 import assert from 'node:assert/strict'
 import { pathToFileURL } from 'node:url'
 import { evidenceDirectory } from './evidence.mjs'
@@ -64,6 +65,7 @@ export async function browserEvidence(h,owner,staff) {
     assert.ok(!(await h.api('me',staff.managera.cookie)).permissions.includes('reports.read'))
     await capture('revoked-end-state')
    }
+   await personalBrowserProof(browser,h,owner,staff)
   } finally {await context.close()}
  } finally {await browser.close()}
 }

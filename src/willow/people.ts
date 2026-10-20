@@ -1,3 +1,4 @@
+import { selfWriteModes, type SelfField } from './levels/personal'
 // Flows 3 and 6: people, employment periods and effective-dated terms.
 // A person is separate from each employment period; terms are complete
 // versions effective from a date, never edited in place.
@@ -101,8 +102,13 @@ export async function updatePerson(env: Bindings, actor: Actor, input: Input) {
   const existing = await one(env, 'SELECT * FROM wl_people WHERE id = ?', id)
   insist(existing, 'person_not_found', 404)
   const self = actor.personId === id
+  const accessSnapshot=self ? (await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq : null
+  const modes=self ? await selfWriteModes(env,actor) : null
+  const writable=(field:SelfField)=>insist(!modes||modes[field]==='edit',modes?.[field]==='approval'?'hr_approval_required':'field_read_only',403)
+  if(self&&input.provided('preferredName')&&input.text('preferredName',{optional:true})!==(existing.preferred_name??'')) writable('preferredName')
   insist(can(actor, 'people.manage') || self, 'forbidden', 403)
   const statements: D1PreparedStatement[] = [guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_people WHERE id = ? AND revision = ?)', id, revision)]
+  if(self) statements.push(guard(env,'access_changed','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',accessSnapshot))
   const next = newId(), changed: string[] = []
   if (self && input.has('legalName')) insist(input.text('legalName') === existing.legal_name, 'hr_approval_required', 403)
   if (can(actor, 'people.manage') && input.has('legalName')) {
@@ -119,6 +125,10 @@ export async function updatePerson(env: Bindings, actor: Actor, input: Input) {
   if (PRIVATE_FIELDS.some(field => input.has(field)) || input.flag('private')) {
     insist(self || (can(actor, 'people.manage') && can(actor, 'people.private')), 'forbidden', 403)
     const values = readPrivate(input)
+    if(self) {
+      const previous=(await one(env,'SELECT * FROM wl_person_private WHERE person_id=?',id))!
+      for(const field of PRIVATE_FIELDS) if(values[field]!==previous[field]) writable(field)
+    }
     statements.push(stmt(env, `UPDATE wl_person_private SET ${PRIVATE_FIELDS.map(field => `${field} = ?`).join(', ')} WHERE person_id = ?`, ...PRIVATE_FIELDS.map(field => values[field]), id))
     changed.push('private')
   }

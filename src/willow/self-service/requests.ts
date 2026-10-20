@@ -6,17 +6,29 @@ import { addDays } from '../dates'
 import { Input } from '../input'
 import { DEPENDENTS, recordTables, validateRowValues } from '../record-tables/schema'
 import { personRecordTables, prepareRow } from '../record-tables/rows'
+import { personView } from '../profile'
+import { approvePersonalStatements, personalField, personalModeSnapshot, personalValue } from './personal'
 import { handlesSelfExceptions, reviewsSelfChanges } from './view'
 
 export async function proposeSelfChange(env: Bindings, actor: Actor, input: Input) {
- input.only(['returnTo','kind','legalName','row','remove','values','col.name','col.relationship','col.date_of_birth'])
+ const kind=input.text('kind')
+ input.only(kind==='personal' ? ['returnTo','kind','field','value'] : ['returnTo','kind','legalName','row','remove','values','col.name','col.relationship','col.date_of_birth'])
  insist(actor.personId,'person_required',403)
- const kind=input.text('kind'), person=await one(env,'SELECT * FROM wl_people WHERE id=?',actor.personId)
+ const person=await one(env,'SELECT * FROM wl_people WHERE id=?',actor.personId)
  insist(person,'not_found',404)
- insist(kind==='legalName'||kind==='dependent','invalid_change_kind')
+ insist(kind==='legalName'||kind==='dependent'||kind==='personal','invalid_change_kind')
+ const guards: D1PreparedStatement[]=[]
  let before: unknown, after: unknown, source=person.revision, rowId: string|null=null, tableVersion: string|null=null
  if(kind==='legalName') { before={legalName:person.legal_name}; after={legalName:input.text('legalName',{max:160})}; insist(JSON.stringify(before)!==JSON.stringify(after),'nothing_to_change') }
- else {
+ else if(kind==='personal') {
+  const field=personalField(input.text('field')), value=personalValue(input,field)
+  guards.push(await personalModeSnapshot(env,actor,field),guard(env,'stale','EXISTS(SELECT 1 FROM wl_people WHERE id=? AND revision=?)',actor.personId,source))
+  const view=await personView(env,actor,actor.personId)
+  before={[field]:field==='preferredName'?view.preferredName:(view.private as Record<string,unknown>)[field]}
+  after={[field]:value}
+  rowId=field
+  insist(JSON.stringify(before)!==JSON.stringify(after),'nothing_to_change')
+ } else {
   const table=(await recordTables(env)).find(t=>t.id===DEPENDENTS)!
   insist(!table.current.retired,'table_retired',409)
   rowId=input.text('row',{optional:true,max:100})||null
@@ -30,7 +42,7 @@ export async function proposeSelfChange(env: Bindings, actor: Actor, input: Inpu
   tableVersion=table.current.id
  }
  const id=newId(), at=now(), due=addDays(actor.today,7)
- await commit(env,[stmt(env,'INSERT INTO wl_self_changes (id,person_id,kind,row_id,before_json,after_json,source_revision,table_version_id,requested_by,requested_at,due_date) VALUES (?,?,?,?,?,?,?,?,?,?,?)',id,actor.personId,kind,rowId,JSON.stringify(before),JSON.stringify(after),source,tableVersion,actor.id,at,due)],
+ await commit(env,[...guards,stmt(env,'INSERT INTO wl_self_changes (id,person_id,kind,row_id,before_json,after_json,source_revision,table_version_id,requested_by,requested_at,due_date) VALUES (?,?,?,?,?,?,?,?,?,?,?)',id,actor.personId,kind,rowId,JSON.stringify(before),JSON.stringify(after),source,tableVersion,actor.id,at,due)],
  {actor:actor.id,action:'selfChange.request',subject:id,detail:{person:actor.personId,kind}})
  return {id,status:'pending'}
 }
@@ -47,6 +59,8 @@ export async function decideSelfChange(env: Bindings, actor: Actor, input: Input
   if(row.kind==='legalName') {
    statements.push(guard(env,'stale','EXISTS(SELECT 1 FROM wl_people WHERE id=? AND revision=?)',row.person_id,row.source_revision),
     stmt(env,'UPDATE wl_people SET legal_name=?,revision=?,updated_at=? WHERE id=?',JSON.parse(row.after_json).legalName,newId(),now(),row.person_id))
+  } else if(row.kind==='personal') {
+   statements.push(...await approvePersonalStatements(env,actor,row))
   } else {
    statements.push(guard(env,'stale','(SELECT COUNT(*) FROM wl_record_row_versions v JOIN wl_record_rows r ON r.id=v.row_id WHERE r.person_id=? AND r.table_id=?)=?',row.person_id,DEPENDENTS,Number(row.source_revision)),
     guard(env,'table_definition_changed','(SELECT id FROM wl_record_table_versions WHERE table_id=? ORDER BY version DESC LIMIT 1)=?',DEPENDENTS,row.table_version_id))

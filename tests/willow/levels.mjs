@@ -1,5 +1,6 @@
 // ROLE-001 named-level slice: public HTTP doors against the production Worker.
 import assert from 'node:assert/strict'
+import { personalFieldProof } from './levels-personal.mjs'
 import { harness } from './harness.mjs'
 import { fixture } from './regression-fixture.mjs'
 import { browserEvidence } from './levels-browser.mjs'
@@ -83,6 +84,7 @@ try {
  const awaitOwnerId=(await api('me')).id
  const audit=await api('audit')
  assert.ok(audit.some(e=>e.action==='level.level'&&e.actor===(awaitOwnerId)))
- await browserEvidence(h,owner,s)
- console.log('ROLE-001: PASS — exact union, owner-only reviewed changes, stale/replay refusal, same-session revocation and ended-access clearing (field-level rights remain partial)')
+ const personal=await personalFieldProof(h,owner,s)
+ await browserEvidence(h,owner,s,personal)
+ console.log('ROLE-001: PASS — exact union, owner-only reviewed changes, stale/replay refusal, same-session revocation and ended-access clearing (personal self-write modes and immutable HR routing proved; other field/section rights remain partial)')
 } finally { await h.close() }

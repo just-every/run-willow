@@ -118,7 +118,7 @@ it is refused if the records changed meanwhile. To explain a record, read
 member may read, names what is withheld, and cites the leave policy versions —
 answer from it, cite the version, and say what is withheld rather than guess.
 
-Named access levels (partial ROLE-001) are owner-managed on `/app/access`: `level.preview` creates an immutable review, `level.apply` consumes it once, and `levels`/`level-reviews/:id` are owner-only reads. All permission SQL reads use `wl_effective_permissions`, the union of explicit direct grants and assigned level grants. Keep actor, picker, import and restored-identity authority on that same view. `member.permissions` replaces every source; ending access clears assignments too. Field-level self/other edit modes remain unimplemented.
+Named access levels (partial ROLE-001) are owner-managed on `/app/access`: `level.preview` creates an immutable review, `level.apply` consumes it once, and `levels`/`level-reviews/:id` are owner-only reads. All permission SQL reads use `wl_effective_permissions`, the union of explicit direct grants and assigned level grants. Keep actor, picker, import and restored-identity authority on that same view. `member.permissions` replaces every source; ending access clears assignments too. Personal self-write modes for six fields use `levels/personal.ts`; explicit assigned modes union as edit > approval > view, and absent rules preserve existing self-service rights. Approval routes through the SELF-001 immutable queue; current mode and native revision are checked again at HR approval. Other self/other section rights remain unimplemented.
 
 ## Tests
 

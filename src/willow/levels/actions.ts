@@ -4,12 +4,13 @@ import { PERMISSIONS, requireOwner, type Actor } from '../actor'
 import { all, commit, guard, insist, newId, now, one, stmt } from '../core'
 import type { Input } from '../input'
 import { effectivePermissions, levels } from './store'
+import { combineSelfRules, readSelfRules, SELF_FIELDS, type SelfRules } from './personal'
 
-type Plan = { kind: 'level'; level: string; name: string; permissions: string[] } | { kind: 'assignment'; member: string; levels: string[] }
+type Plan = { kind: 'level'; level: string; name: string; permissions: string[]; selfFields: SelfRules } | { kind: 'assignment'; member: string; levels: string[] }
 
 export async function previewLevel(env: Bindings, actor: Actor, input: Input) {
  requireOwner(actor)
- input.only(['kind','level','name','permissions','member','levels','returnTo'])
+ input.only(['kind','level','name','permissions','member','levels','returnTo','selfFields',...SELF_FIELDS.map(field=>`selfMode.${field}`)])
  const snapshot=(await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
  const data=await levels(env,actor), kind=input.text('kind')
  let plan: Plan
@@ -19,7 +20,8 @@ export async function previewLevel(env: Bindings, actor: Actor, input: Input) {
   insist(permissions.every(p=>(PERMISSIONS as readonly string[]).includes(p)),'invalid_permissions')
   insist(!data.levels.some(row=>row.name===name && row.id!==level),'level_name_used',409)
   if(input.has('level')) insist(data.levels.some(row=>row.id===level),'level_not_found',404)
-  plan={kind,level,name,permissions}
+  const selfFields=readSelfRules(input) ?? data.levels.find(row=>row.id===level)?.selfFields ?? {}
+  plan={kind,level,name,permissions,selfFields}
  } else {
   insist(kind==='assignment','invalid_kind')
   const member=input.text('member'), assigned=[...new Set(input.list('levels'))].sort()
@@ -37,7 +39,9 @@ export async function previewLevel(env: Bindings, actor: Actor, input: Input) {
   const ids=plan.kind==='assignment' ? plan.levels : data.assignments.filter(a=>a.member_id===member.id).map(a=>a.level_id)
   const direct=await all(env,'SELECT permission FROM wl_permissions WHERE member_id=?',member.id)
   const after=[...new Set([...direct.map(p=>p.permission), ...ids.flatMap(id=>plan.kind==='level'&&id===plan.level ? plan.permissions : data.levels.find(l=>l.id===id)!.permissions)])].sort()
-  impact.push({member:member.id,name:member.name,before,after,added:after.filter(p=>!before.includes(p)),removed:before.filter(p=>!after.includes(p))})
+  const beforeSelf=combineSelfRules(data.assignments.filter(a=>a.member_id===member.id).map(a=>data.levels.find(l=>l.id===a.level_id)!.selfFields))
+  const afterSelf=combineSelfRules(ids.map(id=>plan.kind==='level'&&id===plan.level ? plan.selfFields : data.levels.find(l=>l.id===id)!.selfFields))
+  impact.push({beforeSelf,afterSelf,changedFields:SELF_FIELDS.filter(field=>beforeSelf[field]!==afterSelf[field]),member:member.id,name:member.name,before,after,added:after.filter(p=>!before.includes(p)),removed:before.filter(p=>!after.includes(p))})
  }
  const id=newId()
  await env.DB.batch([guard(env,'stale','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',snapshot),stmt(env,'INSERT INTO wl_level_reviews(id,actor,snapshot,plan,impact) VALUES(?,?,?,?,?)',id,actor.id,snapshot,JSON.stringify(plan),JSON.stringify(impact)),stmt(env,'DELETE FROM wl_guard')])
@@ -72,6 +76,8 @@ export async function applyLevel(env: Bindings, actor: Actor, input: Input, requ
  if(plan.kind==='level') statements.push(
   stmt(env,'INSERT INTO wl_levels(id,name) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,version=version+1',plan.level,plan.name),
   stmt(env,'DELETE FROM wl_level_permissions WHERE level_id=?',plan.level),
+  stmt(env,'DELETE FROM wl_level_self_fields WHERE level_id=?',plan.level),
+  ...Object.entries(plan.selfFields).map(([field,mode])=>stmt(env,'INSERT INTO wl_level_self_fields(level_id,field,mode) VALUES(?,?,?)',plan.level,field,mode)),
   ...plan.permissions.map(p=>stmt(env,'INSERT INTO wl_level_permissions(level_id,permission,granted_by,granted_at) VALUES(?,?,?,?)',plan.level,p,actor.id,now())),
  )
  else statements.push(stmt(env,'DELETE FROM wl_member_levels WHERE member_id=?',plan.member),...plan.levels.map(level=>stmt(env,'INSERT INTO wl_member_levels(member_id,level_id) VALUES(?,?)',plan.member,level)))

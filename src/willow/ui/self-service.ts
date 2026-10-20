@@ -2,7 +2,8 @@
 import type { Bindings } from '../../auth.server'
 import { can, employerZone, type Actor } from '../actor'
 import { formatDate } from '../dates'
-import { personNames } from '../people'
+import { personNames, PRIVATE_LABELS } from '../people'
+import { SELF_FIELDS, selfWriteModes, type SelfField } from '../levels/personal'
 import { personView } from '../profile'
 import type { PersonRecordTables } from '../record-tables/rows'
 import { selfChange, selfChanges, selfExceptions, handlesSelfExceptions } from '../self-service/view'
@@ -10,8 +11,10 @@ import { area, field, form, h, hidden, page, select, table, tag, when, type Html
 
 const route = '/app/self-changes'
 const hr = (actor: Actor) => can(actor, 'people.manage') && can(actor, 'people.private')
-const title = (kind: string) => kind === 'legalName' ? 'Legal name change' : 'Dependent change'
-const LABELS: Record<string, string> = { legalName: 'Legal name', name: 'Name', relationship: 'Relationship', date_of_birth: 'Date of birth', row: 'Dependent row', values: 'Details', removed: 'Removed' }
+const title = (kind: string) => kind === 'legalName' ? 'Legal name change' : kind === 'dependent' ? 'Dependent change' : 'Personal detail change'
+const PERSONAL_LABELS: Record<SelfField, string> = { preferredName: 'Preferred name', ...PRIVATE_LABELS }
+const LABELS: Record<string, string> = { ...PERSONAL_LABELS, legalName: 'Legal name', name: 'Name', relationship: 'Relationship', row: 'Dependent row', values: 'Details', removed: 'Removed' }
+type PersonalModes = Record<SelfField, 'view' | 'approval' | 'edit'>
 
 /** Render the saved proposal itself, never a reconstruction from today's record. */
 function snapshot(value: unknown): Html {
@@ -25,9 +28,14 @@ function dependentFields(values: Record<string, unknown> = {}) {
   return [field('Name', 'col.name', { value: values.name }), field('Relationship', 'col.relationship', { value: values.relationship }), field('Date of birth', 'col.date_of_birth', { type: 'date', required: false, value: values.date_of_birth })]
 }
 
-function requestForms(view: Record<string, unknown>) {
+function personalRequestForms(view: Record<string, unknown>, modes: PersonalModes) {
+  const fields = SELF_FIELDS.filter(key => modes[key] === 'approval')
+  return fields.length ? h`<section class="card private"><h2>Request a personal detail change</h2><p>HR reviews these fields before they change. Leave a value blank to request its removal.</p>${fields.map(key => h`<details><summary>Change ${PERSONAL_LABELS[key].toLowerCase()}</summary>${form('self.request', `${route}/{id}`, [hidden('kind', 'personal'), hidden('field', key), field(PERSONAL_LABELS[key], 'value', { required: false, type: key === 'date_of_birth' ? 'date' : 'text', value: key === 'preferredName' ? view.preferredName : (view.private as Record<string, unknown>)[key] })], `Request ${PERSONAL_LABELS[key].toLowerCase()} change`)}</details>`)}</section>` : h``
+}
+
+function requestForms(view: Record<string, unknown>, modes: PersonalModes) {
   const dependents = (view.recordTables as PersonRecordTables).tables.find(item => item.key === 'dependents')
-  return h`<section class="card"><h2>Request a legal name change</h2><p>HR reviews your request before your legal name changes.</p>${form('self.request', `${route}/{id}`, [hidden('kind', 'legalName'), field('New legal name', 'legalName', { value: view.legalName })], 'Request legal name change')}</section>
+  return h`${personalRequestForms(view, modes)}<section class="card"><h2>Request a legal name change</h2><p>HR reviews your request before your legal name changes.</p>${form('self.request', `${route}/{id}`, [hidden('kind', 'legalName'), field('New legal name', 'legalName', { value: view.legalName })], 'Request legal name change')}</section>
 <section class="card private"><h2>Dependents</h2><p>Dependent details are private. HR reviews additions, changes and removals before they take effect.</p>
 ${dependents?.rows.length ? table(['Name', 'Relationship', 'Date of birth'], dependents.rows.map(row => [row.values!.name, row.values!.relationship, row.values!.date_of_birth ? formatDate(String(row.values!.date_of_birth)) : '—'])) : h`<p class="muted">No dependents recorded.</p>`}
 ${!dependents?.retired ? h`<details><summary>Add a dependent</summary>${form('self.request', `${route}/{id}`, [hidden('kind', 'dependent'), ...dependentFields()], 'Request dependent addition')}</details>
@@ -35,12 +43,12 @@ ${dependents?.rows.map(row => h`<details><summary>Change ${row.values!.name}</su
 }
 
 export async function selfChangesPage(env: Bindings, actor: Actor, url: URL) {
-  const [changes, names, view] = await Promise.all([selfChanges(env, actor), personNames(env), actor.personId ? personView(env, actor, actor.personId) : null])
+  const [changes, names, view, modes] = await Promise.all([selfChanges(env, actor), personNames(env), actor.personId ? personView(env, actor, actor.personId) : null, selfWriteModes(env, actor)])
   const exceptions = handlesSelfExceptions(actor) ? await selfExceptions(env,actor) : []
-  const body = h`<h1>Personal change requests</h1><p>Legal names and dependent details change after HR approval. You can save your preferred name and private contact details directly on <a href="${actor.personId ? `/app/people/${actor.personId}` : '/app/people'}">your record</a>.</p>
+  const body = h`<h1>Personal change requests</h1><p>Legal names and dependent details change after HR approval. Your access determines which other personal details need approval and which you can save directly on <a href="${actor.personId ? `/app/people/${actor.personId}` : '/app/people'}">your record</a>.</p>
 <section class="card"><h2>${hr(actor) ? 'Requests in your scope' : 'Your requests'}</h2>${changes.length ? table(['Person', 'Request', 'Status', 'Due', 'Owner', 'Reconciliation'], changes.map(change => [h`<a href="/app/people/${change.personId}">${names.get(change.personId) ?? change.personId}</a>`, h`<a href="${route}/${change.id}">${title(change.kind)}</a>`, tag(change.status), formatDate(change.dueDate), change.owner, change.reconciliation ? tag(change.reconciliation.status) : '—'])) : h`<p class="muted">No personal change requests.</p>`}</section>
 ${handlesSelfExceptions(actor) ? h`<section class="card"><h2>Approved revisions to reconcile</h2><p>Private values remain with HR. Record the downstream handoff; no provider confirmation is implied.</p>${exceptions.length ? table(['Person','Change','Due','Reconciliation'],exceptions.map(r=>[names.get(r.personId)??r.personId,title(r.kind),formatDate(r.dueDate),r.status==='resolved'?h`${tag('resolved')} ${r.reference}`:form('self.reconcile',route,[hidden('change',r.id),field('Handoff reference','reference')],'Record handoff',{secondary:true})])) : h`<p class="muted">No approved revisions.</p>`}</section>` : ''}
-${view ? requestForms(view) : ''}`
+${view ? requestForms(view, modes) : ''}`
   return page('Personal change requests', actor, body, { current: route, url })
 }
 
@@ -61,10 +69,11 @@ export async function selfChangesPanel(env: Bindings, actor: Actor) {
   const changes = await selfChanges(env, actor)
   const pending = changes.filter(change => change.status === 'pending').length
   const open = changes.filter(change => change.status === 'approved' && change.reconciliation?.status === 'open').length
-  return h`<section class="card"><h2><a href="${route}">Personal change requests</a></h2><p>${pending} awaiting HR approval · ${open} awaiting reconciliation</p>${actor.personId ? h`<p><a href="${route}">Request a legal name or dependent change</a></p>` : ''}</section>`
+  return h`<section class="card"><h2><a href="${route}">Personal change requests</a></h2><p>${pending} awaiting HR approval · ${open} awaiting reconciliation</p>${actor.personId ? h`<p><a href="${route}">Request a personal detail, legal name or dependent change</a></p>` : ''}</section>`
 }
 
-export function selfProfilePanel(actor: Actor, view: Record<string, unknown>) {
+export function selfProfilePanel(actor: Actor, view: Record<string, unknown>, modes?: PersonalModes) {
   if (actor.personId !== view.id || view.asOf !== actor.today) return h``
-  return h`<section class="card"><h2>Your personal details</h2><p>Your preferred name saves immediately. HR approves legal name and dependent changes.</p>${form('person.update', `/app/people/${view.id}`, [hidden('person', view.id), hidden('revision', view.revision), field('Preferred name', 'preferredName', { required: false, value: view.preferredName })], 'Save preferred name')}<p><a href="${route}">Request a legal name or dependent change and track its progress</a></p></section>`
+  const mode = modes?.preferredName ?? 'edit'
+  return h`<section class="card"><h2>Your personal details</h2><p>${mode === 'edit' ? 'Your preferred name saves immediately.' : mode === 'approval' ? 'HR approves changes to your preferred name.' : 'Your preferred name is view only.'} HR approves legal name and dependent changes.</p>${mode === 'edit' ? form('person.update', `/app/people/${view.id}`, [hidden('person', view.id), hidden('revision', view.revision), field('Preferred name', 'preferredName', { required: false, value: view.preferredName })], 'Save preferred name') : h`<dl class="facts"><dt>Preferred name</dt><dd>${view.preferredName || '—'}</dd></dl>`}<p><a href="${route}">${mode === 'approval' ? 'Request a preferred name, legal name or dependent change and track its progress' : 'Request a legal name or dependent change and track its progress'}</a></p></section>`
 }
