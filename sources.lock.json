@@ -3238,7 +3238,7 @@
       "executable": false
     },
     "src/willow/ui/performance.ts": {
-      "sha256": "a45af06c3cc45c3a2751398a79ed5e14ff86609a41caaebd42b95d13e54512e6",
+      "sha256": "6c9fcc6d81df4f8c51023dcb9dcf232609e482fe1860a14b98c479ee18ab802e",
       "executable": false
     },
     "src/willow/ui/progress.ts": {
