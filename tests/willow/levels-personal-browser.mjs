@@ -41,6 +41,7 @@ export async function personalBrowserProof(browser,h,owner,staff) {
    await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
    await employee.goto(h.origin+`/app/people/${staff.employee.person}`)
    assert.equal(await employee.getByRole('button',{name:'Save preferred name',exact:true}).count(),0)
+   await employee.getByText('Edit private details',{exact:true}).click()
    await capture(employee,'profile',width)
    await employee.goto(h.origin+'/app/self-changes')
    const request=employee.locator('form[action="/app/do/self.request"]').filter({has:employee.locator('input[name="field"][value="phone"]')})

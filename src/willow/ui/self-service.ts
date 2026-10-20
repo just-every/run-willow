@@ -69,7 +69,7 @@ export async function selfChangesPanel(env: Bindings, actor: Actor) {
   const changes = await selfChanges(env, actor)
   const pending = changes.filter(change => change.status === 'pending').length
   const open = changes.filter(change => change.status === 'approved' && change.reconciliation?.status === 'open').length
-  return h`<section class="card"><h2><a href="${route}">Personal change requests</a></h2><p>${pending} awaiting HR approval · ${open} awaiting reconciliation</p>${actor.personId ? h`<p><a href="${route}">Request a personal detail, legal name or dependent change</a></p>` : ''}</section>`
+  return h`<section class="card"><h2><a href="${route}">Personal change requests</a></h2><p>${pending} awaiting HR approval · ${open} awaiting reconciliation</p>${actor.personId ? h`<p><a href="${route}">Request a legal name or dependent change</a></p>` : ''}</section>`
 }
 
 export function selfProfilePanel(actor: Actor, view: Record<string, unknown>, modes?: PersonalModes) {
