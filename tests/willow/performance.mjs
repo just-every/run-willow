@@ -135,6 +135,7 @@ try {
   await as(s.managera.cookie, 'performance.release', { cycle: cycle.id, person: s.employee.person, summary: 'Manager cannot release', rating: 'Unapproved' }, 403)
   const first = await release('RELEASE-FIRST agreed delivery summary')
   const firstSnapshot = (await detail()).summaries.find(summary => summary.id === first.id)
+  assert.equal(firstSnapshot.rating,'Meets agreed outcomes','PERFORM-001 retains the human rating without inference')
   await as(s.employee.cookie, 'performance.ack', { summary: first.id })
   await as(s.employee.cookie, 'performance.appeal', { summary: first.id, reason: 'APPEAL-FIRST missing the recovery exercise' })
   const correction = await release('RELEASE-CORRECTED includes the recovery exercise', 'Exceeds agreed outcomes')
@@ -143,6 +144,7 @@ try {
   const withholdingReason = 'WITHHOLD-PRIVATE pending employee discussion before succession'
   await hr('performance.withhold', { summary: correction.id, manager: s.managerb.member, reason: withholdingReason })
   await api('mover.schedule', { period: s.employee.period, effectiveFrom: today, managerPersonId: s.managerb.person, reason: 'Review-cycle team transfer' })
+  const employmentAfterTransfer=(await api(`people/${s.employee.person}`)).employment
   const incoming = await detail(s.managerb.cookie)
   contains(incoming.summaries, ['RELEASE-FIRST'])
   assert.ok(incoming.inputs.every(input => input.author === s.managerb.member), 'Succession transfers released summaries without transferring confidential input')
@@ -172,6 +174,7 @@ try {
   const goal = await as(s.employee.cookie, 'goal.create', { person: s.employee.person, title: 'DEVELOPMENT-GOAL incident leadership', milestones: ['Shadow an incident', 'Lead a recovery exercise'], dueDate: day(60), development: true, owner: s.employee.member })
   assert.ok((await work(s.employee.cookie)).some(w => w.source === `development:${goal.id}`), 'A development action has accountable work')
   await as(s.employee.cookie, 'goal.checkin', { goal: goal.id, progress: 40, note: 'CHECKIN-FIRST shadowed the incident owner' })
+  await as(s.managerb.cookie,'goal.checkin',{goal:goal.id,progress:70,note:'MANAGER-CHECKIN coached the recovery exercise'})
   await hr('performance.close', { cycle: cycle.id })
   const locked = await detail()
   await respond(s.employee.cookie, assignments.self, 'Cannot overwrite closed feedback', 409)
@@ -188,10 +191,10 @@ try {
   assert.ok(!(await work(s.employee.cookie)).some(w => w.source === `development:${goal.id}`), 'Completion evidence finishes development work')
   await release('RELEASE-SECOND-CYCLE development completed', 'Meets agreed outcomes', s.employee.person, second.id)
   await hr('performance.close', { cycle: second.id })
-  contains((await as(s.employee.cookie, 'performance')).goals, ['DEVELOPMENT-GOAL', 'Shadow an incident', 'Lead a recovery exercise', 'CHECKIN-FIRST', 'CHECKIN-SECOND', 'GOAL-EVIDENCE'])
+  contains((await as(s.employee.cookie, 'performance')).goals, ['DEVELOPMENT-GOAL', 'Shadow an incident', 'Lead a recovery exercise', 'CHECKIN-FIRST', 'MANAGER-CHECKIN', 'CHECKIN-SECOND', 'GOAL-EVIDENCE'])
   await as(s.managera.cookie, `performance/${second.id}`, undefined, 404)
   await as(s.managera.cookie, 'goal.checkin', { goal: goal.id, progress: 50, note: 'Former manager has no continuing goal authority' }, 404)
-  excludes(await as(s.managera.cookie, 'performance'), ['RELEASE-SECOND-CYCLE', 'DEVELOPMENT-GOAL', 'CHECKIN-FIRST', 'CHECKIN-SECOND', 'GOAL-EVIDENCE'])
+  excludes(await as(s.managera.cookie, 'performance'), ['RELEASE-SECOND-CYCLE', 'DEVELOPMENT-GOAL', 'CHECKIN-FIRST', 'MANAGER-CHECKIN', 'CHECKIN-SECOND', 'GOAL-EVIDENCE'])
 
   // Permission changes apply to the existing session, including cached download links.
   await api('member.permissions', { member: s.hr.member, permissions: [] })
@@ -208,6 +211,7 @@ try {
   s.hr.cookie=await h.signIn('hr@example.com')
   await browserEvidence(h,owner,s,{cycle:cycle.id,person:s.employee.person,subjectCookie:s.employee.cookie})
   for(const cookie of [s.employee.cookie,s.managera.cookie,s.managerb.cookie,s.hr.cookie]) excludes(await as(cookie,`context/${s.employee.person}`),[...Object.values(answers),privateNote,'RELEASE-FIRST','RELEASE-CORRECTED','DEVELOPMENT-GOAL'])
+  assert.deepEqual((await api(`people/${s.employee.person}`)).employment,employmentAfterTransfer,'PERFORM-001 reviews and goals never decide employment, promotion or compensation')
   const exportBeforeExit = await download()
   await api('leaver.start', { period: s.employee.period, template: templates.leaver, endDate: today, reason: 'Review subject departure' })
   await api('access.end', { person: s.employee.person })
