@@ -177,12 +177,16 @@ export async function prepareTerms(env: Bindings, actor: Actor, input: Input, { 
   const currency = pay ? (await one<{ currency: string }>(env, 'SELECT currency FROM wl_employer'))!.currency : previousPay.currency
   const termId = newId()
   const organizationGuard = await managerChangeGuard(env, { period: { id: periodId, personId: period.person_id, startDate: period.start_date, endDate: period.end_date }, term: { id: termId, effectiveFrom: effective, managerPersonId: terms.managerPersonId } })
+  // Batch publishers run every source guard before the first write.
+  const guards = [
+    organizationGuard,
+    guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_periods WHERE id = ? AND revision = ?)', periodId, period.revision),
+    guard(env, 'stale', "NOT EXISTS(SELECT 1 FROM wl_terms WHERE period_id = ? AND effective_from = ? AND status = 'active')", periodId, effective),
+  ]
   return {
-    period, base, terms, termId, effective,
+    period, base, terms, termId, effective, guards,
     statements: [
-      organizationGuard,
-      guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_periods WHERE id = ? AND revision = ?)', periodId, period.revision),
-      guard(env, 'stale', "NOT EXISTS(SELECT 1 FROM wl_terms WHERE period_id = ? AND effective_from = ? AND status = 'active')", periodId, effective),
+      ...guards,
       ...termsStatements(env, termId, periodId, terms, pay ?? { basis: previousPay.pay_basis, amountCents: previousPay.amount_cents }, currency, actor.id),
       stmt(env, 'UPDATE wl_periods SET revision = ? WHERE id = ?', newId(), periodId),
     ],

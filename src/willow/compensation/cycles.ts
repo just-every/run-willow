@@ -25,7 +25,7 @@ export async function cycleRow(env:Bindings,id:string) {
  const row=await one<Cycle>(env,'SELECT * FROM wl_comp_cycles WHERE id=?',id);insist(row,'not_found',404);return row
 }
 export async function currentProposals(env:Bindings,cycle:string) {
- return all<Proposal>(env,`SELECT p.*,n.legal_name,n.preferred_name FROM wl_comp_proposals p JOIN wl_people n ON n.id=p.person_id WHERE p.cycle_id=? AND p.id=(SELECT v.id FROM wl_comp_proposals v WHERE v.cycle_id=p.cycle_id AND v.person_id=p.person_id ORDER BY requested_at DESC,id DESC LIMIT 1) ORDER BY p.person_id`,cycle)
+ return all<Proposal>(env,`SELECT p.*,n.legal_name,n.preferred_name FROM wl_comp_proposals p JOIN wl_people n ON n.id=p.person_id WHERE p.cycle_id=? AND p.id=(SELECT v.id FROM wl_comp_proposals v WHERE v.cycle_id=p.cycle_id AND v.person_id=p.person_id ORDER BY sequence DESC LIMIT 1) ORDER BY p.person_id`,cycle)
 }
 export async function reviewCycle(env:Bindings,actor:Actor,id:string) {
  requirePermission(actor,'pay.read','people.manage')
@@ -59,18 +59,18 @@ export async function publishCycle(env:Bindings,actor:Actor,input:Input) {
  const exceptions=review.rows.filter(r=>r.position!=='within'&&review.cycle.kind!=='bonus')
  const reason=input.text('exceptionReason',{optional:true,max:500});insist(!exceptions.length||reason,'compensation_band_exception_reason',409)
  const statements:D1PreparedStatement[]=[guardBandSnapshot(env,review.source),guard(env,'compensation_cycle_not_open',"EXISTS(SELECT 1 FROM wl_comp_cycles WHERE id=? AND status='approved')",id)]
- const audits=[];const results=[]
+ const audits=[];const results=[];const sourceGuards:D1PreparedStatement[]=[]
  for(const p of review.rows) {
   if(review.cycle.kind==='bonus') {
    const bonus=newId();statements.push(stmt(env,'INSERT INTO wl_comp_bonuses VALUES (?,?,?,?,?,?,?)',bonus,id,p.person_id,p.period_id,review.cycle.effective_from,p.amount_cents,now()));results.push({proposal:p.id,person:p.person_id,bonus})
   } else {
    const prepared=await prepareTerms(env,actor,Input.of({period:p.period_id,effectiveFrom:review.cycle.effective_from,jobTitle:p.job_title,payBasis:p.basis,payAmount:(p.amount_cents/100).toFixed(2),reason:p.note}),{approved:true})
-   statements.push(...prepared.statements);audits.push(prepared.audit);results.push({proposal:p.id,person:p.person_id,terms:prepared.termId})
+   sourceGuards.push(...prepared.guards);statements.push(...prepared.statements.slice(prepared.guards.length));audits.push(prepared.audit);results.push({proposal:p.id,person:p.person_id,terms:prepared.termId})
   }
  }
  const publication={results,review:review.fingerprint,costCents:review.costCents,exceptionReason:reason||null,exceptions:exceptions.map(p=>({proposal:p.id,position:p.position,band:p.band?.id??null}))}
  statements.push(stmt(env,"UPDATE wl_comp_cycles SET status='published',published_by=?,published_at=?,publication_json=? WHERE id=?",actor.id,now(),JSON.stringify(publication),id))
- await commit(env,statements,[...audits,{actor:actor.id,action:'compensation.cycle.publish',subject:id,detail:{count:results.length,costCents:review.costCents,exceptionReason:reason||null}}])
+ await commit(env,[...sourceGuards,...statements],[...audits,{actor:actor.id,action:'compensation.cycle.publish',subject:id,detail:{count:results.length,costCents:review.costCents,exceptionReason:reason||null}}])
  return {id,status:'published',results}
 }
 export async function compensationHome(env:Bindings,actor:Actor) {

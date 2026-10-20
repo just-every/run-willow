@@ -447,7 +447,7 @@
       "executable": false
     },
     "migrations/core/0032_compensation.sql": {
-      "sha256": "a1b068c80cc67a284bfec2b59dce1a6fc446a95fdc240a9178faee36f2a8ba80",
+      "sha256": "81a4bd6019eddb1c66789f6afb8782d394d84d7e3d3aa2ead3da5db0d3130286",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -2747,11 +2747,11 @@
       "executable": false
     },
     "src/willow/compensation/bands.ts": {
-      "sha256": "c4c25af5d7e84039e91aa0ad6494de0652c089cb5d2681600861786b3524d7e0",
+      "sha256": "810a59fd171c5b911fc17957ddcf6d305f254db65c321f0b6139a2de4a60e8a3",
       "executable": false
     },
     "src/willow/compensation/cycles.ts": {
-      "sha256": "dbfb253ec9a742b12553abcf635ce00fa78830b1fd0e7403324fd75bcabf4429",
+      "sha256": "5db01995949681c6d0d155d49ca41daee704b3baea8997a5b92a0a093f3d8fb4",
       "executable": false
     },
     "src/willow/compensation/equity.ts": {
@@ -2759,7 +2759,7 @@
       "executable": false
     },
     "src/willow/compensation/proposals.ts": {
-      "sha256": "c0a71ea29a2204ab36ae9daf62290b20a0baf7f750d816b88a1c2c0171a09bcd",
+      "sha256": "4b0473962c362e1bb49a46c4d139c67762d9714869b6efa487a75a7784728134",
       "executable": false
     },
     "src/willow/compensation/types.ts": {
@@ -3007,7 +3007,7 @@
       "executable": false
     },
     "src/willow/people.ts": {
-      "sha256": "07acccfdbca0c53343d902e1ef5dbd808cf398786d473421740fd51b8f96301a",
+      "sha256": "6a8347455083ebbb95ac1f7cbf06e51ce8ba78cf2c08431aa76f95d4c76e44e8",
       "executable": false
     },
     "src/willow/profile.ts": {

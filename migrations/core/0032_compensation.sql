@@ -1,6 +1,6 @@
 -- COMP-001: versioned bands, owner-approved budgets, immutable proposals and bonus custody.
 CREATE TABLE wl_comp_bands (
- id TEXT PRIMARY KEY, job_title TEXT NOT NULL, level TEXT NOT NULL, location_id TEXT NOT NULL DEFAULT '',
+ id TEXT PRIMARY KEY, sequence INTEGER NOT NULL UNIQUE, job_title TEXT NOT NULL, level TEXT NOT NULL, location_id TEXT NOT NULL DEFAULT '',
  basis TEXT NOT NULL CHECK(basis IN ('salary','hourly')), effective_from TEXT NOT NULL,
  minimum_cents INTEGER NOT NULL, maximum_cents INTEGER NOT NULL, recorded_at INTEGER NOT NULL, recorded_by TEXT NOT NULL
 );
@@ -11,7 +11,7 @@ CREATE TABLE wl_comp_cycles (
  published_by TEXT, published_at INTEGER, publication_json TEXT
 );
 CREATE TABLE wl_comp_proposals (
- id TEXT PRIMARY KEY, cycle_id TEXT NOT NULL REFERENCES wl_comp_cycles(id), person_id TEXT NOT NULL,
+ id TEXT PRIMARY KEY, sequence INTEGER NOT NULL UNIQUE, cycle_id TEXT NOT NULL REFERENCES wl_comp_cycles(id), person_id TEXT NOT NULL,
  period_id TEXT NOT NULL, period_revision TEXT NOT NULL, base_term TEXT NOT NULL,
  basis TEXT NOT NULL, amount_cents INTEGER NOT NULL, previous_cents INTEGER NOT NULL,
  job_title TEXT NOT NULL, note TEXT NOT NULL, requested_by TEXT NOT NULL, requested_at INTEGER NOT NULL

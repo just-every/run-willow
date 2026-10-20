@@ -29,7 +29,7 @@ export async function jobLevel(env:Bindings,personId:string,date:string) {
 }
 export async function bandPosition(env:Bindings,subject:{personId:string;date:string;jobTitle:string;locationId:string|null;basis:string;amountCents:number|null}) {
  const source=await businessVersion(env),level=await jobLevel(env,subject.personId,subject.date)
- const band=level.level?await one(env,'SELECT * FROM wl_comp_bands WHERE job_title=? AND level=? AND location_id=? AND basis=? AND effective_from<=? ORDER BY effective_from DESC,recorded_at DESC,id DESC LIMIT 1',subject.jobTitle,level.level,subject.locationId??'',subject.basis,subject.date):null
+ const band=level.level?await one(env,'SELECT * FROM wl_comp_bands WHERE job_title=? AND level=? AND location_id=? AND basis=? AND effective_from<=? ORDER BY effective_from DESC,sequence DESC LIMIT 1',subject.jobTitle,level.level,subject.locationId??'',subject.basis,subject.date):null
  const position: 'below'|'within'|'above'|'unbanded'=!band||subject.amountCents===null?'unbanded':subject.amountCents<band.minimum_cents?'below':subject.amountCents>band.maximum_cents?'above':'within'
  return {position,band,level:level.level,levelRevision:level.revision,source}
 }
@@ -41,10 +41,10 @@ export async function defineBand(env:Bindings,actor:Actor,input:Input) {
  insist((await one(env,'SELECT currency FROM wl_employer'))?.currency==='USD','compensation_usd_required',409)
  if(location)insist(await one(env,'SELECT 1 FROM wl_locations WHERE id=?',location),'location_not_found',404)
  const id=newId()
- await commit(env,[stmt(env,'INSERT INTO wl_comp_bands (id,job_title,level,location_id,basis,effective_from,minimum_cents,maximum_cents,recorded_at,recorded_by) VALUES (?,?,?,?,?,?,?,?,?,?)',id,job,level,location,basis,date,minimum,maximum,now(),actor.id)],{actor:actor.id,action:'compensation.band',subject:id,detail:{job,level,basis,effectiveFrom:date}})
+ await commit(env,[stmt(env,'INSERT INTO wl_comp_bands (id,sequence,job_title,level,location_id,basis,effective_from,minimum_cents,maximum_cents,recorded_at,recorded_by) SELECT ?,COALESCE(MAX(sequence),0)+1,?,?,?,?,?,?,?,?,? FROM wl_comp_bands',id,job,level,location,basis,date,minimum,maximum,now(),actor.id)],{actor:actor.id,action:'compensation.band',subject:id,detail:{job,level,basis,effectiveFrom:date}})
  return {id}
 }
 export async function bands(env:Bindings,actor:Actor) {
  requirePermission(actor,'pay.read');await auditRead(env,actor.id,'compensation.bands.read','employer')
- return all(env,'SELECT * FROM wl_comp_bands ORDER BY effective_from DESC,recorded_at DESC,id DESC')
+ return all(env,'SELECT * FROM wl_comp_bands ORDER BY effective_from DESC,sequence DESC')
 }
