@@ -23,7 +23,7 @@ export async function browserEvidence(h,owner,staff,ids) {
      ]:[['/app/compensation','manager-list'],[`/app/compensation/${ids.cycle}`,'manager-restricted-cycle']]
      for(const [path,name] of paths) {
       assert.equal((await page.goto(h.origin+path)).status(),200)
-      for(const summary of await page.locator('details:not([open]) > summary').all())await summary.click()
+      for(const summary of await page.locator('details > summary').all())if(await summary.locator('..').getAttribute('open')===null)await summary.click()
       await page.evaluate(()=>document.fonts.ready)
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`COMP-001 ${name} fits ${width}`)
       await page.screenshot({path:`${destination}/COMP-001-${who}-${name}-${width}.png`,fullPage:true})

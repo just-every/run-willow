@@ -3255,7 +3255,7 @@
       "executable": false
     },
     "tests/willow/compensation-browser.mjs": {
-      "sha256": "ea9a54d5962f8a10a32ffae1f0c17e3bd83bc79f989f87c3ae134cba3c394951",
+      "sha256": "7684f8abc4c4c0217e10b28fac919a676439d3768ac896eb273cb1e6e5e91586",
       "executable": false
     },
     "tests/willow/compensation.mjs": {
