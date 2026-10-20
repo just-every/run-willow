@@ -3231,7 +3231,7 @@
       "executable": false
     },
     "src/willow/ui/levels.ts": {
-      "sha256": "6eb50ad564c6a90652edd4a40ec7a6775f81d6c9679f6ee07932417a7fc1b176",
+      "sha256": "a3eaf1bae5e1e5d7d0820a0df789c1d8bb21668c93e90c58a5dc23cb1825eb98",
       "executable": false
     },
     "src/willow/ui/model-drafts.ts": {
@@ -3435,7 +3435,7 @@
       "executable": false
     },
     "tests/willow/levels-browser.mjs": {
-      "sha256": "48b6a81cdb0ab27faba7941509071fffbeb2819c614f12c3bb19cbf1e905935d",
+      "sha256": "1fb3b24d5e21934f49110b3af9acec11a6f7cd71bb4e597ca81472d66c98cebe",
       "executable": false
     },
     "tests/willow/levels.mjs": {
