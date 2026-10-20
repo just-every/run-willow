@@ -30,6 +30,7 @@ export async function respondSurvey(env:Bindings,actor:Actor,input:Input) {
   guard(env,'not_a_participant','EXISTS(SELECT 1 FROM wl_periods WHERE person_id=? AND start_date<=? AND (end_date IS NULL OR end_date>=?))',actor.personId,actor.today,actor.today),
   guard(env,'survey_already_answered','EXISTS(SELECT 1 FROM wl_survey_members WHERE survey_id=? AND member_id=? AND person_id=? AND answered=0 AND declined=0)',id,actor.id,actor.personId),
   stmt(env,`UPDATE wl_survey_members SET ${declined?'declined':'answered'}=1 WHERE survey_id=? AND member_id=?`,id,actor.id),
+  stmt(env,'UPDATE wl_surveys SET response_revision=response_revision+1 WHERE id=?',id),
   ...(!declined?[stmt(env,'INSERT INTO wl_survey_answers (id,survey_id,member_id,answers_json) VALUES (?,?,?,?)',newId(),id,survey.mode==='named'?actor.id:null,JSON.stringify(answers))]:[]),
  ]
  if(survey.mode==='anonymous') {
@@ -45,6 +46,6 @@ export async function hideSurveyComment(env:Bindings,actor:Actor,input:Input) {
  insist(reason.length>=3,'comment_reason_required')
  const row=await one(env,"SELECT s.* FROM wl_survey_answers a JOIN wl_surveys s ON s.id=a.survey_id WHERE a.id=? AND s.mode='anonymous'",answer)
  insist(row,'not_found',404)
- await commit(env,[guard(env,'comment_already_hidden','NOT EXISTS(SELECT 1 FROM wl_survey_hidden_comments WHERE answer_id=?)',answer),stmt(env,'INSERT INTO wl_survey_hidden_comments VALUES (?,?,?,?)',answer,reason,actor.id,Date.now())],{actor:actor.id,action:'survey.comment.hide',subject:row.id,detail:{hidden:1}})
+ await commit(env,[guard(env,'comment_already_hidden','NOT EXISTS(SELECT 1 FROM wl_survey_hidden_comments WHERE answer_id=?)',answer),stmt(env,'INSERT INTO wl_survey_hidden_comments VALUES (?,?,?,?)',answer,reason,actor.id,Date.now()),stmt(env,'UPDATE wl_surveys SET response_revision=response_revision+1 WHERE id=?',row.id)],{actor:actor.id,action:'survey.comment.hide',subject:row.id,detail:{hidden:1}})
  return {id:row.id,hidden:1}
 }

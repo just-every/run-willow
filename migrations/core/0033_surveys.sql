@@ -8,6 +8,7 @@ CREATE TABLE wl_surveys (
   questions_json TEXT NOT NULL CHECK (json_valid(questions_json)),
   delivery_date TEXT NOT NULL,
   due_date TEXT NOT NULL CHECK (due_date >= delivery_date),
+  response_revision INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL CHECK (status IN ('open','closed')),
   created_by TEXT NOT NULL REFERENCES wl_members(id),
   created_at INTEGER NOT NULL,

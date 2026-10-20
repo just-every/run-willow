@@ -36,6 +36,7 @@ export interface Survey {
   questions_json: string
   delivery_date: string
   due_date: string
+  response_revision: number
   status: 'open' | 'closed'
   created_by: string
   created_at: number

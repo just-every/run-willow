@@ -162,8 +162,12 @@ export async function surveyResults(env: Bindings, actor: Actor, id: string,
       FROM wl_survey_members WHERE survey_id=?`, JSON.stringify([...actor.reports]), id)
     insist(scope && scope.total > 0 && scope.outside === 0, 'forbidden', 403)
   }
+  const versions=new Map([[survey.id,survey.response_revision]])
   const plans = await publishedPlans(env, id)
-  const fence = async () => insist((await one<{ seq: number }>(env, WATERMARK))!.seq === started, 'survey_source_changed', 409)
+  const fence = async () => {
+    insist((await one<{ seq: number }>(env, WATERMARK))!.seq === started, 'survey_source_changed', 409)
+    for(const [key,revision] of versions)insist((await one<{response_revision:number}>(env,'SELECT response_revision FROM wl_surveys WHERE id=?',key))?.response_revision===revision,'survey_source_changed',409)
+  }
   if (!hr) {
     await fence()
     await auditRead(env, actor.id, 'survey.themes.read', id, { count: plans.length })
@@ -172,6 +176,7 @@ export async function surveyResults(env: Bindings, actor: Actor, id: string,
   const results = await aggregate(env, actor, survey)
   const comparisons: SurveyComparison[] = []
   for (const related of await comparisonSurveys(env, survey)) {
+    versions.set(related.id,related.response_revision)
     comparisons.push({ survey: metadata(related), aggregate: await aggregate(env, actor, related) })
   }
   let namedAnswers: SurveyNamedAnswer[] = [], comments: SurveyComment[] = []

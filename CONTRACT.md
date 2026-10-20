@@ -274,6 +274,8 @@ The responsive portal and iOS/Android companion apps let employees update permit
 
 **Acceptance evidence:** Use real employee/manager accounts for request, approval, task completion, document access and an hourly worker's clock-in, break and clock-out at 1440 and 390 pixels and on iOS/Android; interrupt a draft, revoke access, reconnect and prove no stale submission or private push content. Complete keyboard and screen-reader checks. A manager approves a pending PTO request from the push notice or the home list with one confirming action and no further form, while WIL-09's routed-approver and self-approval rules still hold.
 
+
+Before shipping, MOBILE-001 preserves ENGAGE-001 named/anonymous result grants, HR-only anonymous comments and recipient-only anonymous participation/reminder visibility in its new doors or channels.
 #### LOCALE-001 — Employee-facing languages, starting with Spanish.
 
 Each member and candidate chooses their own display language. Willow ships English and US Spanish for every employee- and candidate-facing screen: self-service and company home (SELF-001/002), mobile apps and push notices (MOBILE-001), preboarding packets (FLOW-003), native signing screens and ESIGN consent (SIGN-001/002), careers pages and application forms (HIRING-002), the time clock (TIME-001), EEO self-identification (EEO-001), surveys (ENGAGE-001) and fixed notices and reminders (WIL-18, FLOW-002). Administrators add translations for custom field labels and options (PEOPLE-001), announcements, task and workflow templates, signature-template cover text and survey questions; untranslated employer content shows in its original language, marked as such, and is never machine-translated silently. Official forms appear in the versions their agencies publish (such as the IRS's Spanish Form W-4(SP)); where an agency restricts a translation (USCIS permits the Spanish I-9 only in Puerto Rico), the official English form is completed with the Spanish version offered for reference. A signature records the language shown at signing. Stored values are language-independent; reports and exports translate labels only. Further languages are added from translation files without code changes.
@@ -294,6 +296,8 @@ Before shipping, field-level immediate/edit-with-approval rules reuse SELF-001's
 
 
 Before shipping, ROLE-001 names compensation-owner authority for COMP-001 budget/cycle decisions while preserving no self-proposal approval and current field/pay boundaries.
+
+Before shipping, ROLE-001 preserves ENGAGE-001 named/anonymous result grants, HR-only anonymous comments and recipient-only anonymous participation/reminder visibility in its new doors or channels.
 #### ROLE-002 — Group-scoped levels and bulk assignment.
 
 The "about others" part of a level is scoped to everyone, direct reports, direct and indirect reports, or a group defined by location, department, division, employment type, legal entity or custom field. Group membership follows effective-dated terms (WIL-07): when someone transfers, the scope changes on the effective date without manual edits. HR assigns or changes a level for many people at once by selection or filter, previews each member whose rights change, and applies it in one audited step that can be reverted as a batch while no later change depends on it.
@@ -604,6 +608,8 @@ Before this clause ships, Slack and Teams become PEOPLE-004 alert channels with 
 
 **Acceptance evidence:** Connect each service, request PTO and deliver a manager reminder, follow an approval link as the right/wrong actor and revoke the connection. Replay an interaction and inject delivery failure; only one authorized decision occurs, failures remain visible and private fields never appear in channel content.
 
+
+Before shipping, COMMS-001 preserves ENGAGE-001 named/anonymous result grants, HR-only anonymous comments and recipient-only anonymous participation/reminder visibility in its new doors or channels.
 ### Performance and HR modules
 
 #### PERFORM-001 — Performance reviews, goals and feedback.
@@ -615,6 +621,12 @@ HR runs configurable review cycles with self, manager, peer/360 feedback, role-s
 #### ENGAGE-001 — Engagement surveys and accountable action.
 
 HR designs pulse/eNPS and lifecycle surveys, schedules delivery/reminders, selects cohorts and chooses named or anonymous collection with explicit participant disclosure. Anonymous cohorts suppress small groups and overlapping filters that could identify a respondent; no manager export exposes raw identities. Permitted trends, themes and comments link to human-owned action plans and follow-up surveys; optional AI summaries cite source groups and do not score individual employees.
+
+Current semantics (20 October 2026, ct ENGAGE-001 ruling): `people.manage` publishes immutable questions and a fixed cohort for named onboarding/lifecycle or anonymous pulse/eNPS collection. Delivery and due dates are inclusive employer-local dates; portal assignments appear on the delivery date, and existing approved FLOW-002 cadence/quiet hours provide actual fixed mail reminders, with accepted/refused/uncertain outcomes. Declining, responding or closing collection stops that participant work. Named collection discloses that HR sees identity with the answer; managers receive only human-written published themes/plans for a cohort wholly within their current direct reports and require `reports.read`.
+
+Anonymous publication requires at least five active invitees; any overlap with an earlier anonymous cohort must be the identical cohort, otherwise publication refuses. No result filters exist. Answers have random IDs, no member/person/token or response timestamp; separate timestamp-free membership decisions prevent duplicates. An internal revision counter fences concurrent result reads without linking a response to its member. Individual anonymous assignment/reminder work is visible only to its recipient, including against owner/HR reporting; HR receives a generic survey-level task, not individual participation. At least five answers are required before release. Any positive score/choice category below five suppresses every count, mean, score and anonymous comment in that survey; eNPS categories are promoters (9–10), passives (7–8) and detractors (0–6), and eNPS is 100 × (promoters − detractors) / scored answers. Other score means use integer 0–10 answers. Every read and CSV repeats current authority and the same suppression.
+
+An anonymous survey may include one optional open-text question, with the disclosure “your words are shown as written to HR; leave out names and details that identify you”. Comments stay in the unlinked answer record, are released to `people.manage` only after the same threshold/suppression, and appear as written in fresh random order, never in manager views or exports. HR may hide a comment with a reason, audited by count only; it cannot edit it. Human-written themes link to action plans with an active human owner, a due date and completion evidence, plus an identically scoped follow-up survey with protected comparison results. Questions, answers and cohort membership retain history. Survey responses do not enter person projections, agent/model context or optional model calls. A future survey-summary capability must cite source groups and never score individuals; it is not claimed here. ROLE-001, MOBILE-001 and COMMS-001 inherit these field boundaries and anonymous participation protection before adding levels, app doors or channels.
 
 **Acceptance evidence:** Run named onboarding and anonymous engagement surveys, collect responses, try small/overlapping cohort filters and inspect manager/HR exports. Publish a theme/action plan, assign an owner and measure the next pulse; suppression holds and no individual inference appears in AI context.
 
