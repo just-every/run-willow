@@ -60,6 +60,8 @@ export async function applyLevel(env: Bindings, actor: Actor, input: Input, requ
  input.only(['review','returnTo'])
  const review=await levelReview(env,actor,input.text('review')), plan=review.plan as Plan
  insist(!review.consumed,'review_consumed',409)
+ // A pre-field-rules preview cannot authorize replacing rules it never showed.
+ insist(plan.kind!=='level'||plan.selfFields,'review_stale',409)
  insist((await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq===review.snapshot,'review_stale',409)
  // Base administration follows the existing people.manage grant; Base revokes
  // sessions on an admin-role transition just as member.permissions does.
