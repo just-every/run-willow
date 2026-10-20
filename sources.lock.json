@@ -236,7 +236,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "a49786d76265ab3ac92dcc3b394335eae04bd92a965635c83d68224e1097c3c3",
+      "sha256": "93f7f97147b307b850575333b259c53cda28a04a86629e1e1774aac8aad880f4",
       "executable": false
     },
     "DEMO.md": {
@@ -3092,7 +3092,11 @@
       "executable": false
     },
     "src/willow/surveys/export.ts": {
-      "sha256": "a860676e93a6104a49d51644d3e2ae7fa042ca2fe96dae9c0db67f728fa18bbf",
+      "sha256": "a5c6098484d06c4fff6bba8e4c4f8d35ff620ce0034fc31f3cc9765741df7326",
+      "executable": false
+    },
+    "src/willow/surveys/plans.ts": {
+      "sha256": "35733718e13a2e9be493a084d5d26f4fcff68dda6d6610c2e982d4aef35602c8",
       "executable": false
     },
     "src/willow/surveys/responses.ts": {
@@ -3116,7 +3120,7 @@
       "executable": false
     },
     "src/willow/surveys/work.ts": {
-      "sha256": "7e8c6f2fbbe4dd01ebcf964f4ddb6ab43d8877143ba3f615d9d09b494d71a910",
+      "sha256": "99a67fcad94cfb286ed1fa1e9cdceb2ec2d8450377aaf8c452d375a06810cfa1",
       "executable": false
     },
     "src/willow/ui/accrual-calculations.ts": {
@@ -3219,8 +3223,12 @@
       "sha256": "200932887dc0c6b18778ba49c577f9fa458bc78b279fef1576fcdf2447aee4be",
       "executable": false
     },
+    "src/willow/ui/survey-plan.ts": {
+      "sha256": "0726e6408bd753f1233224909b41b22bfafb5f1e21bfe795acb3c74b81742dbc",
+      "executable": false
+    },
     "src/willow/ui/surveys.ts": {
-      "sha256": "d3b276f0f50c54e07b570b06647e2ce9482018b5e1cfa772fac39ba248d94253",
+      "sha256": "6ccd01e12c1aa1759382c6dd2f21824853d91929be5f32e4c6904f4f1b28f8f4",
       "executable": false
     },
     "src/willow/ui/work-followup.ts": {
@@ -3296,7 +3304,7 @@
       "executable": false
     },
     "tests/willow/compensation.mjs": {
-      "sha256": "86f53482d36f21aa69e9073611ea98ac2a7eada3ed87415231fb88bcead373cc",
+      "sha256": "9cef74fa74f3c5a8f14d2f803c14d31660f841dcc26b32a22ec7ce1fe861b133",
       "executable": false
     },
     "tests/willow/custom-fields-browser.mjs": {
@@ -3444,7 +3452,7 @@
       "executable": false
     },
     "tests/willow/surveys.mjs": {
-      "sha256": "e406ec842bd025b32ec95e8b0af9f4fdcc170ad85b2e113599ddf701e6db719b",
+      "sha256": "b1a3b2914c0d45e36a52c19c75e6909323fbf1436196b93bd06dcd1d956ff379",
       "executable": false
     },
     "tests/willow/work-followup.mjs": {

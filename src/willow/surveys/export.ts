@@ -7,7 +7,7 @@ export async function surveyCsv(env:Bindings,actor:Actor,id:string) {
  if(result.access==='hr') {
   rows.push(['Suppressed',result.aggregate.suppressed?'yes':'no'],['Invited',result.aggregate.invitedCount??'Suppressed'],['Responses',result.aggregate.answerCount??'Suppressed'])
   rows.push(['Question','Count','Mean','eNPS','Category','Category count'])
-  for(const q of result.aggregate.questions)for(const c of q.categories.length?q.categories:[null])rows.push([q.label,q.count??'Suppressed',q.mean??'',q.nps??'',c?.category??'',c?.count??'Suppressed'])
+  for(const q of result.aggregate.questions.filter(q=>q.type!=='text'))for(const c of q.categories.length?q.categories:[null])rows.push([q.label,q.count??'Suppressed',q.mean??'',q.nps??'',c?.category==='__unanswered__'?'Unanswered':c?.category??'',c?.count??'Suppressed'])
   for(const answer of result.namedAnswers)for(const [key,value] of Object.entries(answer.answers))rows.push(['Named answer',answer.name,key,value])
   for(const comment of result.comments)rows.push(['Anonymous words',comment.questionKey,comment.text])
  }

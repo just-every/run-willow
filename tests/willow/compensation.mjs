@@ -134,13 +134,14 @@ try {
   await as(cookie,'eeo.self.write',{sex:i<5?'female':'male',raceEthnicity:i<5?'asian':'white'})
   equityPeople.push({...p,cookie})
  }
+ const payBeforeEquity=(await api(`people/${equityPeople[0].person}`)).employment
  let equity=await api(`compensation/equity?asOf=${today}&level=E2`)
  assert.equal(equity.suppressed,false);assert.equal(equity.count,10)
  assert.equal(equity.strata[0].meanAnnualPayCents,9000000)
  assert.equal(equity.strata[0].sex.find(c=>c.category==='female').meanAnnualPayCents,8000000)
  assert.ok(Math.abs(equity.strata[0].sex.find(c=>c.category==='female').relativeToOverallPercent-800/9)<0.0001)
  assert.deepEqual(equity.controls,['Exact job level','Job title','Location','Pay basis'])
- assert.ok(!JSON.stringify(equity).includes(equityPeople[0].person));assert.ok(equity.calculation.includes('No pay changes'))
+ assert.ok(!JSON.stringify(equity).includes(equityPeople[0].person))
  for(const cookie of [s.managera.cookie,s.employee.cookie,s.payroll.cookie])await as(cookie,`compensation/equity?asOf=${today}&level=E2`,undefined,403)
  await api(`compensation/equity?asOf=${today}&level=E2&location=other`,undefined,400)
  await api(`compensation/equity?asOf=${day(1)}&level=E2`,undefined,400)
@@ -148,6 +149,7 @@ try {
  equity=await api(`compensation/equity?asOf=${today}&level=E2`)
  assert.equal(equity.suppressed,true);assert.equal(equity.count,null)
  assert.ok(equity.strata.every(r=>r.meanAnnualPayCents===null&&r.sex.every(c=>c.count===null&&c.meanAnnualPayCents===null)&&r.raceEthnicity.every(c=>c.count===null)))
+ assert.deepEqual((await api(`people/${equityPeople[0].person}`)).employment,payBeforeEquity,'COMP-001 equity analysis never changes pay')
  await browserEvidence(h,owner,s,{cycle:cycle.id,promotion:promotion.id,conflict:conflict.id,bonus:bonus.id,equityLevel:'E2',pending:request.id,person:a.person})
  await api('member.permissions',{member:s.hr.member,permissions:['people.manage','reports.read','eeo.read']})
  await as(s.hr.cookie,`compensation/equity?asOf=${today}&level=E2`,undefined,403)

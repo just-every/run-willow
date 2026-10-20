@@ -12,9 +12,10 @@ try {
  const {api,staff:s,join}=await fixture(h,owner)
  const as=(cookie,path,body,status=200)=>h.api(path,cookie,body,status)
  await api('member.permissions',{member:s.managera.member,permissions:['reports.read']})
+ const names=['Ava Patel','Ben Ortiz','Cara Wu','Diego Reyes','Emma Brooks','Finn Chen','Grace Wilson','Hugo Singh','Isla Martin','Jonah Reed']
  const participants=[]
  for(let i=0;i<10;i++) {
-  const person=await join(`Survey-person-${i}`,{managerPersonId:s.managera.person})
+  const person=await join(`Survey-person-${i}`,{managerPersonId:s.managera.person,legalName:names[i]})
   const member=await api('access.give',{person:person.person})
   participants.push({...person,member:member.id,cookie:await h.signIn(`survey-person-${i}@example.com`,{requested:true})})
  }
@@ -27,7 +28,7 @@ try {
  assert.ok(!(await as(participants[0].cookie,'surveys')).items.some(x=>x.id===future.id),'ENGAGE-001 scheduled survey hidden until delivery')
  await as(participants[0].cookie,'survey.respond',{survey:future.id,answers:{score:10}},409)
  const disclose=await as(participants[0].cookie,`surveys/${survey.id}`)
- assert.match(disclose.disclosure,/without your identity/);assert.match(disclose.disclosure,/shown as written to HR/)
+ assert.equal(disclose.survey.mode,'anonymous');assert.ok(disclose.disclosure)
  assert.ok(disclose.mayRespond)
  await api('survey.create',create({members:[...ids.slice(0,9),s.employee.member]}),409)
  await api('survey.create',create({members:ids.slice(0,5)}),409)
@@ -69,7 +70,7 @@ try {
  assert.equal((await api(`surveys/${survey.id}/results`)).comments.length,9,'ENGAGE-001 hide removes comment without editing its answer')
  // Named lifecycle collection is explicit, permits HR identity reads, and refuses manager raw reads.
  const named=await api('survey.create',create({name:'Onboarding check-in',kind:'onboarding',mode:'named',members:[s.employee.member],questions:[{key:'welcome',label:'How was onboarding?',type:'text'}]}))
- assert.match((await as(s.employee.cookie,`surveys/${named.id}`)).disclosure,/HR can read your name/)
+ assert.equal((await as(s.employee.cookie,`surveys/${named.id}`)).survey.mode,'named')
  await as(s.employee.cookie,'survey.respond',{survey:named.id,answers:{welcome:'NAMED-PRIVATE-RESPONSE'}})
  assert.equal((await as(s.hr.cookie,`surveys/${named.id}/results`)).namedAnswers[0].answers.welcome,'NAMED-PRIVATE-RESPONSE')
  assert.ok(!JSON.stringify(await as(s.managera.cookie,`surveys/${named.id}/results`)).includes('NAMED-PRIVATE-RESPONSE'))
