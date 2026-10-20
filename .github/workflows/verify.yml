@@ -35,7 +35,6 @@ jobs:
       - run: pnpm exec rer check --profile first-party
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm exec rer verify
-      - run: WILLOW_PERFORMANCE_BROWSER=1 node tests/willow/performance.mjs
       - run: pnpm run test:phase2-browser
       - run: pnpm run test:site
       # The checkout is a fresh clone: the journey runs setup, dev, build,
@@ -49,3 +48,31 @@ jobs:
           name: willow-pages
           path: |
             ${{ runner.temp }}/willow-evidence/*.png
+
+  performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - name: Set external evidence directory
+        run: printf 'WILLOW_EVIDENCE_DIR=%s/willow-evidence\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.20.0'
+      - run: npm install --global pnpm@10.12.4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec rer install
+      - run: pnpm exec vite build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: WILLOW_PERFORMANCE_BROWSER=1 node tests/willow/performance.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: willow-performance-pages
+          path: ${{ runner.temp }}/willow-evidence/*.png
