@@ -1,3 +1,5 @@
+import { surveyList, surveyDetail } from './surveys/views'
+import { surveyResults } from './surveys/results'
 import { compensationHome, compensationCycle } from './compensation/cycles'
 import { equityReport } from './compensation/equity'
 import { companyHome,companyAdmin } from './company/views'
@@ -50,6 +52,8 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  surveys: surveyList, survey: (env,actor,_request,id)=>surveyDetail(env,actor,id),
+  surveyResults: (env,actor,_request,id,url)=>surveyResults(env,actor,id,Object.fromEntries(url.searchParams)),
   compensation: compensationHome,
   compensationCycle: (env,actor,_request,id)=>compensationCycle(env,actor,id),
   compensationEquity: (env,actor,_request,_id,url)=>equityReport(env,actor,Object.fromEntries(url.searchParams) as {asOf:string;level:string}),

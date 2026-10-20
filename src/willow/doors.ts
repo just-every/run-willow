@@ -3,6 +3,7 @@
 // entry, so a new door cannot be added without being crawled.
 // Patterns are relative to /api/willow/ (API) or absolute (pages).
 export const API_DOORS: [string, string][] = [
+  ['^surveys$', 'surveys'], ['^surveys/([\\w-]+)/results$', 'surveyResults'], ['^surveys/([\\w-]+)$', 'survey'],
   ['^compensation$', 'compensation'], ['^compensation/equity$', 'compensationEquity'], ['^compensation/([\\w-]+)$', 'compensationCycle'],
   ['^company$', 'company'], ['^company-admin$', 'companyAdmin'],
   ['^protected-leave$', 'protectedCases'], ['^protected-leave/([\\w-]+)$', 'protectedCase'], ['^leave-overrides$', 'leaveOverrides'],
@@ -19,6 +20,7 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/surveys/([\\w-]+)\\.csv$', 'surveyCsv'], ['^/app/surveys$', 'surveys'], ['^/app/surveys/([\\w-]+)/results$', 'surveyResults'], ['^/app/surveys/([\\w-]+)$', 'survey'],
   ['^/app/compensation$', 'compensation'], ['^/app/compensation/equity$', 'compensationEquity'], ['^/app/compensation/([\\w-]+)$', 'compensationCycle'],
   ['^/app/company$', 'company'], ['^/app/company/files/([\\w-]+)$', 'companyFile'],
   ['^/app/protected-leave$', 'protectedList'], ['^/app/protected-leave/([\\w-]+)$', 'protectedDetail'],

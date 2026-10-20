@@ -1,3 +1,5 @@
+import { surveyCsv } from './surveys/export'
+import { surveysPage, surveyPage, surveyResultsPage } from './ui/surveys'
 import { compensationPage, cyclePage, equityPage } from './ui/compensation'
 import { companyPage } from './ui/company'
 import { companyFile } from './company/files'
@@ -125,6 +127,10 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  surveyCsv: (env,actor,_request,_url,id)=>surveyCsv(env,actor,id),
+  surveys: (env,actor,_request,url)=>surveysPage(env,actor,url),
+  survey: (env,actor,_request,url,id)=>surveyPage(env,actor,id,url),
+  surveyResults: (env,actor,_request,url,id)=>surveyResultsPage(env,actor,id,url),
   compensation: (env,actor,_request,url)=>compensationPage(env,actor,url),
   compensationCycle: (env,actor,_request,url,id)=>cyclePage(env,actor,id,url),
   compensationEquity: (env,actor,_request,url)=>equityPage(env,actor,url),

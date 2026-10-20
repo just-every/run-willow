@@ -1,3 +1,4 @@
+import { surveyWork } from './surveys/work'
 import { latestAnnouncements } from './company/store'
 import { currentMembership, matchesAudience } from './company/audience'
 import { reviewsSelfChanges, handlesSelfExceptions } from './self-service/view'
@@ -99,5 +100,5 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  // PEOPLE-003: certifications expiring within the renewal lead are HR work until a renewed (or removed) row replaces them.
  const certifications = (await recordTables(env)).find(t => t.id === CERTIFICATIONS)!
  for (const r of await renewalsDue(env, today(zone, Date.now()))) add('renewal',r,'Renew certification',`/app/people/${r.person_id}`,r.due,a=>readsTable(a,r.person_id,certifications) && (hr(a) || a.personId===r.person_id),a=>hr(a) && readsTable(a,r.person_id,certifications),null,'Certification expiring; record the renewal on the person’s record')
- return result
+ return [...result,...await surveyWork(env)]
 }

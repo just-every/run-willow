@@ -45,7 +45,8 @@
           "migrations/core/0029_leave_policy.sql",
           "migrations/core/0030_protected_leave.sql",
           "migrations/core/0031_company_home.sql",
-          "migrations/core/0032_compensation.sql"
+          "migrations/core/0032_compensation.sql",
+          "migrations/core/0033_surveys.sql"
         ]
       }
     },

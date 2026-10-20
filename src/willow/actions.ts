@@ -1,3 +1,5 @@
+import { createSurvey, closeSurvey, createActionPlan, completeActionPlan } from './surveys/setup'
+import { respondSurvey, hideSurveyComment } from './surveys/responses'
 import { defineBand } from './compensation/bands'
 import { createCycle, approveBudget, publishCycle } from './compensation/cycles'
 import { proposeCompensation } from './compensation/proposals'
@@ -42,6 +44,8 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'survey.create': createSurvey, 'survey.close': closeSurvey, 'survey.respond': respondSurvey,
+  'survey.plan': createActionPlan, 'survey.plan.complete': completeActionPlan, 'survey.comment.hide': hideSurveyComment,
   'compensation.band': defineBand,
   'compensation.cycle': createCycle,
   'compensation.budget': approveBudget,
