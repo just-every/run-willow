@@ -68,6 +68,9 @@ Neighboring products stay separate: payroll execution, insurance, retirement
 custody, background screening and device management are bought from their own
 providers and connected (see BOUNDARY-001).
 
+The RunEditRun sibling for payroll is
+[Envelope](https://github.com/just-every/run-envelope).
+
 ## Retained foundation
 
 ### WIL-01 — Employer setup and explicit membership.
@@ -745,6 +748,9 @@ Willow is free and open source under the MIT license: the source repository and 
 ### Honest boundaries
 
 #### BOUNDARY-001 — US-first HRIS with accountable external execution.
+
+The RunEditRun sibling for payroll is
+[Envelope](https://github.com/just-every/run-envelope).
 
 The first buyer is a US 20–200-person employer using USD, US work states, W-2 employees and separately classified 1099 contractors. Willow owns core HR, hiring (openings, careers page, board posting, candidates, offers, background-check orders), self-service in English and Spanish, native second-factor sign-in, access levels, the open API and webhooks, native e-signature, PTO, lifecycle completion, EEO-1 preparation, ACA measurement data, HR performance/engagement and the integrations above. Payroll providers (Gusto, ADP, QuickBooks Payroll, Paychex) execute gross-to-net, ACH/wage payments, tax filing and W-2/1099 issuance; brokers/carriers administer coverage and COBRA, retirement providers hold funds, Mitratech/enrolled employers perform official I-9/E-Verify work, and identity/device platforms enforce their accounts/devices. Employers that keep Greenhouse, Lever, Workable or JazzHR hand accepted hires over (HIRING-001); background screening is performed by a consumer reporting agency such as Checkr under the FCRA, with Willow ordering it and tracking status (HIRING-005); EEO-1 submission is completed in the EEOC's filing system and ACA filing by the payroll provider or broker, with Willow recording each receipt; the LMS owns course delivery. Willow must complete its connected handoffs and record verified outcomes; provider approval, native apps, protected-data agreements and commercial partnerships remain delivery obligations, never reasons to remove clauses. Non-US payroll/EOR, insurance underwriting, investment advice, device-management networks, surveillance and automated employment decisions are outside this HRIS; buyers use licensed providers and dedicated products for them.
 

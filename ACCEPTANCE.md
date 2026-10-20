@@ -248,6 +248,9 @@ expanded module that cites them as a foundation.
 
 ### Honest boundaries
 
+The RunEditRun sibling for payroll is
+[Envelope](https://github.com/just-every/run-envelope) (BOUNDARY-001).
+
 - **BOUNDARY-001 — US-first HRIS with accountable external execution. Status: partial.** Walk a US hire/change/exit through the employee, HR, payroll, benefits and IT doors; inspect the system of record, external owner, USD amounts, required approval, receipt and final observed outcome for each step. An unconnected or unacknowledged dependency remains open, and the UI never claims payroll payment, insurance coverage or legal compliance from a checked task. Current evidence: `src/willow/payroll.ts`, `src/willow/lifecycle.ts`; `tests/willow/flows.mjs` (WIL-11, WIL-12): current provider and manual-work boundaries. Remaining: Connected execution and US entity/classification workflows.
 
 ## Upgrade and recovery
