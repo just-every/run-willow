@@ -3026,7 +3026,7 @@
       "executable": false
     },
     "src/willow/performance/cycles.ts": {
-      "sha256": "c7347b626e95ea0ca833f671bb70261a7901ad6962b085a4c6162ea3242f4ee9",
+      "sha256": "f4c54d01e98dac9af4c9ff279289eb34ee4ae16263e615ba9fdec8fc312ee7d1",
       "executable": false
     },
     "src/willow/performance/goals.ts": {
@@ -3042,7 +3042,7 @@
       "executable": false
     },
     "src/willow/performance/views.ts": {
-      "sha256": "e5aa33164d059f9841c671e882a83accaada44376cb53c8bd6ceb709f1f0596d",
+      "sha256": "e1b1fad3de533c864e3b0a9abca44a08dff9a7f834abaa471f184e9d6c364cc3",
       "executable": false
     },
     "src/willow/performance/work.ts": {
@@ -3238,7 +3238,7 @@
       "executable": false
     },
     "src/willow/ui/performance.ts": {
-      "sha256": "ba1e72a05d80495f2f7f6315e69334b92afd0313335946ad16bae927a24f45eb",
+      "sha256": "a45af06c3cc45c3a2751398a79ed5e14ff86609a41caaebd42b95d13e54512e6",
       "executable": false
     },
     "src/willow/ui/progress.ts": {

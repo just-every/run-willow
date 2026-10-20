@@ -1,9 +1,9 @@
 import type { Bindings } from '../../auth.server'
 import { requirePermission, type Actor } from '../actor'
-import { all, commit, guard, insist, json, newId, now, one, stmt } from '../core'
+import { commit, guard, insist, json, newId, now, one, stmt } from '../core'
 import { requireDate } from '../dates'
 import type { Input } from '../input'
-import { cycleRow, openGuard } from './store'
+import { cycleRow, currentManager, openGuard } from './store'
 export async function createReviewCycle(env:Bindings,actor:Actor,input:Input) {
  requirePermission(actor,'people.manage')
  const id=newId(),name=input.text('name',{max:160}),due=requireDate(input.text('dueDate'),'invalid_dueDate'),people=[...new Set(input.list('people'))]
@@ -24,7 +24,7 @@ export async function assignReview(env:Bindings,actor:Actor,input:Input) {
  insist(m,'member_not_active',409)
  insist(role!=='self'||m.person_id===person,'self_mismatch')
  if(role==='manager') {
-  const {currentManager}=await import('./store');insist((await currentManager(env,person,actor.today))?.id===member,'manager_mismatch',409)
+  insist((await currentManager(env,person,actor.today))?.id===member,'manager_mismatch',409)
  }
  insist(await one(env,'SELECT 1 FROM wl_review_subjects WHERE cycle_id=? AND person_id=?',cycle,person),'subject_not_found',404)
  insist(!await one(env,'SELECT 1 FROM wl_review_assignments WHERE cycle_id=? AND person_id=? AND member_id=? AND role=?',cycle,person,member,role),'assignment_exists',409)
@@ -42,8 +42,8 @@ export async function respondReview(env:Bindings,actor:Actor,input:Input) {
 }
 export async function closeReviewCycle(env:Bindings,actor:Actor,input:Input) {
  requirePermission(actor,'people.manage');const id=input.text('cycle');const c=await cycleRow(env,id);insist(c.status==='open','cycle_locked',409)
- const complete=`NOT EXISTS(SELECT 1 FROM wl_review_subjects s WHERE s.cycle_id=?1 AND (NOT EXISTS(SELECT 1 FROM wl_review_summaries r WHERE r.cycle_id=s.cycle_id AND r.person_id=s.person_id) OR EXISTS(SELECT 1 FROM json_each('["self","peer","manager"]') role WHERE NOT EXISTS(SELECT 1 FROM wl_review_assignments a JOIN wl_review_inputs i ON i.assignment_id=a.id WHERE a.cycle_id=s.cycle_id AND a.person_id=s.person_id AND a.role=role.value)))) AND NOT EXISTS(SELECT 1 FROM wl_review_assignments a WHERE a.cycle_id=?1 AND NOT EXISTS(SELECT 1 FROM wl_review_inputs i WHERE i.assignment_id=a.id))`
- insist((await one(env,`SELECT (${complete}) AS ok`,id))?.ok,'cycle_incomplete',409)
- await commit(env,[openGuard(env,id),guard(env,'incomplete',complete,id),stmt(env,"UPDATE wl_review_cycles SET status='closed' WHERE id=?",id)],{actor:actor.id,action:'performance.cycle.close',subject:id})
+ const complete=`NOT EXISTS(SELECT 1 FROM wl_review_subjects s WHERE s.cycle_id=? AND (NOT EXISTS(SELECT 1 FROM wl_review_summaries r WHERE r.cycle_id=s.cycle_id AND r.person_id=s.person_id) OR EXISTS(SELECT 1 FROM json_each('["self","peer","manager"]') role WHERE NOT EXISTS(SELECT 1 FROM wl_review_assignments a JOIN wl_review_inputs i ON i.assignment_id=a.id WHERE a.cycle_id=s.cycle_id AND a.person_id=s.person_id AND a.role=role.value)))) AND NOT EXISTS(SELECT 1 FROM wl_review_assignments a WHERE a.cycle_id=? AND NOT EXISTS(SELECT 1 FROM wl_review_inputs i WHERE i.assignment_id=a.id))`
+ insist((await one(env,`SELECT (${complete}) AS ok`,id,id))?.ok,'cycle_incomplete',409)
+ await commit(env,[openGuard(env,id),guard(env,'incomplete',complete,id,id),stmt(env,"UPDATE wl_review_cycles SET status='closed' WHERE id=?",id)],{actor:actor.id,action:'performance.cycle.close',subject:id})
  return {id}
 }
