@@ -30,7 +30,7 @@ export async function previewLevel(env: Bindings, actor: Actor, input: Input) {
   insist(assigned.every(id=>data.levels.some(row=>row.id===id)),'level_not_found',404)
   plan={kind,member,levels:assigned}
  }
- const affected=plan.kind==='assignment' ? data.members.filter(m=>m.id===plan.member) : data.members.filter(m=>data.assignments.some(a=>a.member_id===m.id && a.level_id===plan.level))
+ const affected=plan.kind==='assignment' ? data.members.filter(m=>m.id===plan.member) : data.members.filter(m=>!m.owner && data.assignments.some(a=>a.member_id===m.id && a.level_id===plan.level))
  const impact=[]
  for(const member of affected) {
   const before=await effectivePermissions(env,member.id)
