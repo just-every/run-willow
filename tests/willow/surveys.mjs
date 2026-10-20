@@ -100,6 +100,8 @@ try {
  assert.ok(!JSON.stringify(await as(s.employee.cookie,'context/me')).includes('NAMED-PRIVATE-RESPONSE'))
  await browserEvidence(h,owner,s,participants,{survey:survey.id,named:named.id,small:small.id,followup:followup.id,plan:plan.id})
  await api('member.permissions',{member:s.hr.member,permissions:[]})
- await as(s.hr.cookie,`surveys/${survey.id}/results`,undefined,403)
+ await as(s.hr.cookie,`surveys/${survey.id}/results`,undefined,401)
+ const freshHr=await h.signIn('hr@example.com')
+ await as(freshHr,`surveys/${survey.id}/results`,undefined,403)
  console.log('ENGAGE-001 named/anonymous collection, disclosure, suppression, comments, work and follow-up: PASS')
 }finally{await h.close()}
