@@ -235,7 +235,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "4bf9902559ba020eee67f89187a477ef27da6d3547d2016869c44c99cbe06d70",
+      "sha256": "a63c7f0b2a9174f707f934758c7cf63a14768226772508fbd4d875a52cdb005f",
       "executable": false
     },
     "DEMO.md": {
@@ -2751,7 +2751,7 @@
       "executable": false
     },
     "src/willow/compensation/cycles.ts": {
-      "sha256": "5db01995949681c6d0d155d49ca41daee704b3baea8997a5b92a0a093f3d8fb4",
+      "sha256": "99ce09c27973f961e47e9c9ebe68765f17963ef04f712a8daf90fcb54b84c69c",
       "executable": false
     },
     "src/willow/compensation/equity.ts": {
@@ -3259,7 +3259,7 @@
       "executable": false
     },
     "tests/willow/compensation.mjs": {
-      "sha256": "0bb6e5946070c9f9ea2540ad37446d504de05ed8d6572171565267cf568044c5",
+      "sha256": "995d3a98ed12df1a48fec0a015d9c64e51cb8e74d05676ca24d5ba4d25385dee",
       "executable": false
     },
     "tests/willow/custom-fields-browser.mjs": {

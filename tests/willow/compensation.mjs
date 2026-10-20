@@ -48,6 +48,7 @@ try {
  await as(s.managera.cookie,'compensation.publish',{cycle:cycle.id,review:review.fingerprint},403)
  const published=await api('compensation.publish',{cycle:cycle.id,review:review.fingerprint})
  assert.equal(published.results.length,2)
+ assert.ok((await api(`compensation/${cycle.id}`)).rows.every(r=>!r.conflict),'COMP-001 completed cycle keeps its reviewed snapshot')
  for(const [p,cents] of [[a,8800000],[b,9270000]]) {
   const term=(await api(`people/${p.person}`)).employment[0].terms.find(t=>t.effectiveFrom===day(30))
   assert.equal(term.pay.amountCents,cents,'COMP-001 approved exact terms')

@@ -27,11 +27,17 @@ export async function cycleRow(env:Bindings,id:string) {
 export async function currentProposals(env:Bindings,cycle:string) {
  return all<Proposal>(env,`SELECT p.*,n.legal_name,n.preferred_name FROM wl_comp_proposals p JOIN wl_people n ON n.id=p.person_id WHERE p.cycle_id=? AND p.id=(SELECT v.id FROM wl_comp_proposals v WHERE v.cycle_id=p.cycle_id AND v.person_id=p.person_id ORDER BY sequence DESC LIMIT 1) ORDER BY p.person_id`,cycle)
 }
-export async function reviewCycle(env:Bindings,actor:Actor,id:string) {
+interface ReviewRow extends Proposal {annualCostCents:number;position:string;band:Row|null;level:string|null;conflict:boolean}
+interface CycleReview {cycle:Cycle;rows:ReviewRow[];costCents:number;remainingCents:number;overBudget:boolean;source:number;fingerprint:string;calculation:string}
+
+export async function reviewCycle(env:Bindings,actor:Actor,id:string):Promise<CycleReview> {
  requirePermission(actor,'pay.read','people.manage')
- const source=await businessVersion(env),cycle=await cycleRow(env,id),proposals=await currentProposals(env,id)
+ const source=await businessVersion(env),cycle=await cycleRow(env,id)
+ const frozen=json<{snapshot?:CycleReview}>(cycle.publication_json,{}).snapshot
+ if(cycle.status==='published'&&frozen) {await auditRead(env,actor.id,'compensation.cycle.read',id);return {...frozen,cycle}}
+ const proposals=await currentProposals(env,id)
  let cost=0
- const rows:(Proposal & {annualCostCents:number;position:string;band:Row|null;level:string|null;conflict:boolean})[]=[]
+ const rows:ReviewRow[]=[]
  for(const p of proposals) {
   const period=await one(env,'SELECT * FROM wl_periods WHERE id=?',p.period_id)
   const term=await one(env,'SELECT * FROM wl_terms WHERE id=?',p.base_term)
@@ -68,7 +74,7 @@ export async function publishCycle(env:Bindings,actor:Actor,input:Input) {
    sourceGuards.push(...prepared.guards);statements.push(...prepared.statements.slice(prepared.guards.length));audits.push(prepared.audit);results.push({proposal:p.id,person:p.person_id,terms:prepared.termId})
   }
  }
- const publication={results,review:review.fingerprint,costCents:review.costCents,exceptionReason:reason||null,exceptions:exceptions.map(p=>({proposal:p.id,position:p.position,band:p.band?.id??null}))}
+ const publication={results,snapshot:review,review:review.fingerprint,costCents:review.costCents,exceptionReason:reason||null,exceptions:exceptions.map(p=>({proposal:p.id,position:p.position,band:p.band?.id??null}))}
  statements.push(stmt(env,"UPDATE wl_comp_cycles SET status='published',published_by=?,published_at=?,publication_json=? WHERE id=?",actor.id,now(),JSON.stringify(publication),id))
  await commit(env,[...sourceGuards,...statements],[...audits,{actor:actor.id,action:'compensation.cycle.publish',subject:id,detail:{count:results.length,costCents:review.costCents,exceptionReason:reason||null}}])
  return {id,status:'published',results}
