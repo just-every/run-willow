@@ -9,7 +9,7 @@ export async function browserEvidence(h,owner,staff,participants,ids) {
  const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
  const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
  try {
-  for(const who of ['owner','hr','managera','participant']) {
+  for(const who of ['owner','hr','managera','participant','payroll']) {
    const cookie=who==='owner'?owner:who==='participant'?participants[0].cookie:staff[who].cookie
    const context=await browser.newContext({ignoreHTTPSErrors:true})
    try {
@@ -17,14 +17,24 @@ export async function browserEvidence(h,owner,staff,participants,ids) {
     const page=await context.newPage()
     for(const width of [1440,390]) {
      await page.setViewportSize({width,height:1000})
-     const paths=[['/app/surveys','list'],[`/app/surveys/${ids.survey}`,'survey-and-plan'],['/app/tasks','private-work']]
-     if(who!=='participant')paths.push([`/app/surveys/${ids.survey}/results`,'results'],[`/app/surveys/${ids.small}/results`,'small-cell'])
+     const paths=who==='payroll'?[[`/app/survey-plans/${ids.outsidePlan}`,'own-plan']]:[['/app/surveys','list'],[`/app/surveys/${ids.survey}`,'survey-and-plan'],['/app/tasks','private-work']]
+     if(!['participant','payroll'].includes(who))paths.push([`/app/surveys/${ids.survey}/results`,'results'],[`/app/surveys/${ids.small}/results`,'small-cell'])
      for(const [path,name] of paths) {
       assert.equal((await page.goto(h.origin+path)).status(),200)
       for(const summary of await page.locator('details > summary').all())if(await summary.locator('..').getAttribute('open')===null)await summary.click()
       await page.evaluate(()=>document.fonts.ready)
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`ENGAGE-001 ${who} ${name} fits ${width}`)
       await page.screenshot({path:`${destination}/ENGAGE-001-${who}-${name}-${width}.png`,fullPage:true})
+     }
+     if(who==='payroll') {
+      const form=page.locator('form[action="/app/do/survey.plan.complete"]')
+      if(await form.count()) {
+       await form.getByLabel('Completion evidence',{exact:true}).fill('Career guide published at the approved team location')
+       await form.getByRole('button',{name:'Complete action plan',exact:true}).click()
+       await page.waitForURL(url=>url.searchParams.has('notice'))
+      }
+      assert.ok((await h.api(`survey-plans/${ids.outsidePlan}`,cookie)).evidence)
+      await page.screenshot({path:`${destination}/ENGAGE-001-payroll-own-plan-completed-${width}.png`,fullPage:true})
      }
      if(who==='owner') {
       await page.goto(h.origin+'/app/surveys')
