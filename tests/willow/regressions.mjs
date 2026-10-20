@@ -229,3 +229,5 @@ await import("./company-home.mjs")
 await import('./compensation.mjs')
 
 await import('./surveys.mjs')
+
+await import('./performance.mjs')

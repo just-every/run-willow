@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "people/willow",
-  "manifest": "adc7c579a492f4ad4385232fdcee43e32e398ec31f6fe431811d278ab2fe1e6e",
+  "manifest": "f3e0c438e6d256a1f1e124803e021cc26a97d13397aaa9654f2fe1f637815437",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -46,7 +46,9 @@
           "migrations/core/0030_protected_leave.sql",
           "migrations/core/0031_company_home.sql",
           "migrations/core/0032_compensation.sql",
-          "migrations/core/0033_surveys.sql"
+          "migrations/core/0033_surveys.sql",
+          "migrations/core/0034_performance.sql",
+          "migrations/core/0035_performance_goals.sql"
         ]
       },
       "baseline": null
@@ -200,7 +202,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "6e10a214762fee93f98dbc21a1adfc004cb065b1c614bfa3f0c58a635b743998",
+      "sha256": "5d42dec16cf41b09a7f7803da8ac4d2403659169b1b59bf9f46a05c25d359f1c",
       "executable": false
     },
     ".gitignore": {
@@ -212,7 +214,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "0a5caac2c5b616558e94ba6f871f53945e5639fc4f8658bd443467799fbb6785",
+      "sha256": "b8f58917c21e13a349fbeb8e3dcdb144885504e889bba9cd9dadfcf6d72a7939",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -236,7 +238,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "d7bbea4a7587cf544f5f029e6c0c816a2132f6225ab3709c747978a564574d29",
+      "sha256": "3c3246e5ae733ae3c1673612ebb8983b4e093040418f0eb5cc46273a4ee1a764",
       "executable": false
     },
     "DEMO.md": {
@@ -292,7 +294,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "adc7c579a492f4ad4385232fdcee43e32e398ec31f6fe431811d278ab2fe1e6e",
+      "sha256": "f3e0c438e6d256a1f1e124803e021cc26a97d13397aaa9654f2fe1f637815437",
       "executable": false
     },
     "EXPORTING.md": {
@@ -453,6 +455,14 @@
     },
     "migrations/core/0033_surveys.sql": {
       "sha256": "cbed56cbb9aad3a0739bd3899a694f0bedab83f85bb09b15a361923eb16ba261",
+      "executable": false
+    },
+    "migrations/core/0034_performance.sql": {
+      "sha256": "7b8bd28b0d0d98ea384d9ce9d6b7eefbce4ebf90bc05345a08fa5f5ce63753ad",
+      "executable": false
+    },
+    "migrations/core/0035_performance_goals.sql": {
+      "sha256": "90b3b43b623fe49d29bca999855a941de7bc0f24df8b08eb228360a24a18c3bd",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -2704,7 +2714,7 @@
       "executable": false
     },
     "src/willow/actions.ts": {
-      "sha256": "43a2b553ae22014d094b57bc033d46e3515169f77c114e388f1be3410fbc931b",
+      "sha256": "d2d28e6d8ea7319d7e5e1274745c9d9aec26b9ce6dfd12175d718bfd78e2408e",
       "executable": false
     },
     "src/willow/actor.ts": {
@@ -2824,7 +2834,7 @@
       "executable": false
     },
     "src/willow/doors.ts": {
-      "sha256": "d3a289f42feb1a346b54641fde7e43cc82c557b8d06e700f7108a317d6032d5c",
+      "sha256": "c4529eebd2666cf00881b6b9b98ba3869760d4d3bdcf6c732766e7bef291c461",
       "executable": false
     },
     "src/willow/eeo/index.ts": {
@@ -2884,7 +2894,7 @@
       "executable": false
     },
     "src/willow/http.ts": {
-      "sha256": "f0ed37882f777ccdac4fcb16ec60a5fa15cf0dc123b1b58c4ab65190c8b471dd",
+      "sha256": "4789a73ecd7acde042786dd5639890f7f75ca795de60d74e45112775f3f58ad9",
       "executable": false
     },
     "src/willow/input.ts": {
@@ -3013,6 +3023,30 @@
     },
     "src/willow/people.ts": {
       "sha256": "6a8347455083ebbb95ac1f7cbf06e51ce8ba78cf2c08431aa76f95d4c76e44e8",
+      "executable": false
+    },
+    "src/willow/performance/cycles.ts": {
+      "sha256": "c7347b626e95ea0ca833f671bb70261a7901ad6962b085a4c6162ea3242f4ee9",
+      "executable": false
+    },
+    "src/willow/performance/goals.ts": {
+      "sha256": "270e445db97b01b3d59497af76db5d153da6be1cb8823707aac2a1b643fb890e",
+      "executable": false
+    },
+    "src/willow/performance/releases.ts": {
+      "sha256": "7d896f601cadd1502353f60a9c3a83b0182424e49fde68e41fe0d135342c823f",
+      "executable": false
+    },
+    "src/willow/performance/store.ts": {
+      "sha256": "8b511dd2398aa96fea4bc841d5b64e98cbecb96ef47cff8851acb8e77b65e06e",
+      "executable": false
+    },
+    "src/willow/performance/views.ts": {
+      "sha256": "e5aa33164d059f9841c671e882a83accaada44376cb53c8bd6ceb709f1f0596d",
+      "executable": false
+    },
+    "src/willow/performance/work.ts": {
+      "sha256": "704fa1fa07621993258013a6e3a0f6055181bdf7158d5c42d88e2b572f33e541",
       "executable": false
     },
     "src/willow/profile.ts": {
@@ -3168,7 +3202,7 @@
       "executable": false
     },
     "src/willow/ui/html.ts": {
-      "sha256": "c121e089339c807f4b66ad131cb6033809ced05835bc87216b58739cf283c02f",
+      "sha256": "ea77a59791aa8f1a4cb3ca2ea623e8c16e2f6329ab171129e3ac3f3ed698ff36",
       "executable": false
     },
     "src/willow/ui/labels.ts": {
@@ -3201,6 +3235,10 @@
     },
     "src/willow/ui/people.ts": {
       "sha256": "d282f8c50a6edabdf336c29c2d1aaf2011eff403224fb10b8935ca6369e398e1",
+      "executable": false
+    },
+    "src/willow/ui/performance.ts": {
+      "sha256": "ba1e72a05d80495f2f7f6315e69334b92afd0313335946ad16bae927a24f45eb",
       "executable": false
     },
     "src/willow/ui/progress.ts": {
@@ -3244,15 +3282,15 @@
       "executable": false
     },
     "src/willow/views.ts": {
-      "sha256": "eb5a2328da45f413d4dc6b2019b45cfb00276638a230e7d7bd3e583608e12d14",
+      "sha256": "8710fdf5bc9009eac72bf9e58884f2b690636f0402612548f50e5df279407090",
       "executable": false
     },
     "src/willow/work-scheduler.ts": {
-      "sha256": "6ccbaf8c9ad5de292e49b3297dd5c23c64bcaebc47b1cd97863502bff23678ea",
+      "sha256": "e8de132ca8b68bf6b6be86ae3498d0ee156c8cecce5ee8ede356ab0de3ffe46c",
       "executable": false
     },
     "src/willow/work-sources.ts": {
-      "sha256": "fc6904019020e5843465692f36babec938b554b3d6c263936ed98b62b7f6d307",
+      "sha256": "fa19bfe3fc3ebcf09a9b9add1796be1f8fdbf98df28cad9ebcb956172a8b2af0",
       "executable": false
     },
     "src/willow/work.ts": {
@@ -3352,7 +3390,7 @@
       "executable": false
     },
     "tests/willow/flows.mjs": {
-      "sha256": "90cd41bccce62058b248cad7ea03671a45a3147357df62a5a6227029ae4734fb",
+      "sha256": "c1f5d2c220a003c62cd95ff76384d8c4d5d42a3e085f5cee6c6090aeb547e2bd",
       "executable": false
     },
     "tests/willow/harness.mjs": {
@@ -3395,6 +3433,14 @@
       "sha256": "302b9e6fa7af000126be4ef6ffe1597a1fadc39d32d75d57551e5297c86e34f6",
       "executable": false
     },
+    "tests/willow/performance-browser.mjs": {
+      "sha256": "0d6914062121729b3b119c26d0aece8ac3daffaf3c63b1bf8253253b47b4de48",
+      "executable": false
+    },
+    "tests/willow/performance.mjs": {
+      "sha256": "d5950422d8f6d67069bf1e282364f1d98ea9c5fa14845f0930356eb3aa40bae6",
+      "executable": false
+    },
     "tests/willow/phase2-fixtures.mjs": {
       "sha256": "453fb53680e1a3d68cc2b9384b7e1679b8dd09a65d44ecf6cf72ee103e8956ae",
       "executable": false
@@ -3420,7 +3466,7 @@
       "executable": false
     },
     "tests/willow/regressions.mjs": {
-      "sha256": "89ee973bd1ab54f344e0e64e641124951166b835d1110ad6b004ae998195696a",
+      "sha256": "4b49b58a2b02d563d796895390a4840ffda91c5db4231708818a86da9bc69a0f",
       "executable": false
     },
     "tests/willow/restore-access.mjs": {

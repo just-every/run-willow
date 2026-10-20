@@ -1,3 +1,6 @@
+import { createReviewCycle, assignReview, respondReview, closeReviewCycle } from './performance/cycles'
+import { calibrateReview, releaseReview, withholdReview, acknowledgeReview, appealReview } from './performance/releases'
+import { saveGoal, checkinGoal, finishDevelopment } from './performance/goals'
 import { createSurvey, closeSurvey, createActionPlan, completeActionPlan } from './surveys/setup'
 import { respondSurvey, hideSurveyComment } from './surveys/responses'
 import { defineBand } from './compensation/bands'
@@ -46,6 +49,9 @@ import { runWorkNow } from './work-scheduler'
 export const actions: Record<string, Handler> = {
   'survey.create': createSurvey, 'survey.close': closeSurvey, 'survey.respond': respondSurvey,
   'survey.plan': createActionPlan, 'survey.plan.complete': completeActionPlan, 'survey.comment.hide': hideSurveyComment,
+  'performance.cycle': createReviewCycle, 'performance.assign': assignReview, 'performance.respond': respondReview, 'performance.close': closeReviewCycle,
+  'performance.note': calibrateReview, 'performance.release': releaseReview, 'performance.withhold': withholdReview, 'performance.ack': acknowledgeReview, 'performance.appeal': appealReview,
+  'goal.create': saveGoal, 'goal.checkin': checkinGoal, 'goal.complete': finishDevelopment,
   'compensation.band': defineBand,
   'compensation.cycle': createCycle,
   'compensation.budget': approveBudget,

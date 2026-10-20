@@ -1,3 +1,5 @@
+import { performanceHome, performanceDetail } from './performance/views'
+import { goalHome } from './performance/goals'
 import { ownSurveyPlan } from './surveys/plans'
 import { surveyList, surveyDetail } from './surveys/views'
 import { surveyResults } from './surveys/results'
@@ -53,6 +55,7 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  performance: performanceHome, performanceCycle: (env,actor,_request,id)=>performanceDetail(env,actor,id), goals: goalHome,
   surveyPlan: (env,actor,_request,id)=>ownSurveyPlan(env,actor,id),
   surveys: surveyList, survey: (env,actor,_request,id)=>surveyDetail(env,actor,id),
   surveyResults: (env,actor,_request,id,url)=>surveyResults(env,actor,id,Object.fromEntries(url.searchParams)),

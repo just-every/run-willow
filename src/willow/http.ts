@@ -1,3 +1,6 @@
+import { reconcileRecipients } from './performance/store'
+import { performancePage, reviewPage, goalsPage } from './ui/performance'
+import { performanceFile } from './performance/views'
 import { surveyPlanPage } from './ui/survey-plan'
 import { surveyCsv } from './surveys/export'
 import { surveysPage, surveyPage, surveyResultsPage } from './ui/surveys'
@@ -82,6 +85,7 @@ async function apiResponse(env: Bindings, actor: Actor, request: Request, url: U
     const action = actions[path]
     if (!action) throw new WillowError('not_found', 404)
     const result = await action(env, actor, await Input.from(request), request)
+    await reconcileRecipients(env,actor.today)
     const notices = await notifyAction(env, path, result)
     return json(notices ? { ...(result as any), notices } : result)
   }
@@ -95,6 +99,7 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
     if (path === '/app/import/preview') return await previewPage(env, actor, await Input.from(request), url, request)
     if (path === '/app/import/execute') {
       const input=await Input.from(request), result=await importForm(env,actor,request,input)
+      await reconcileRecipients(env,actor.today)
       if(input.text('action')==='reconcile') return page('Import reconciliation',actor,h`<p class="back"><a href="/app/import">← Move in</a></p><h1>Import reconciliation</h1><section class="card"><p>${result.ok?'The imported records agree with the reviewed source.':'Some records differ from the reviewed source.'}</p><dl><dt>Source records</dt><dd>${result.counts.sourceRecords}</dd><dt>Present</dt><dd>${result.counts.present}</dd><dt>Explained omissions</dt><dd>${result.counts.explained}</dd><dt>Native records</dt><dd>${result.counts.nativeTargets}</dd></dl></section>`,{current:'/app/import',url})
       return redirect(env,'/app/import','notice','Import updated. Review its status below.')
     }
@@ -105,6 +110,7 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
     const returnTo = safeReturnTo(input.text('returnTo', { optional: true, max: 300 }) || '/app', '/app')
     try {
       const result = await action(env, actor, input, request) as { id?: string; notice?: string } | null
+      await reconcileRecipients(env,actor.today)
       const notices = await notifyAction(env, name!, result)
       const failed = notices?.failure || notices?.deliveries?.some(item => ['failed','refused'].includes(item.status))
       return redirect(env, returnTo.replace('{id}', encodeURIComponent(result?.id ?? '')), 'notice', failed ? 'Saved. Email notice delivery failed; continue the work in Willow.' : result?.notice ?? 'Saved.')
@@ -128,6 +134,10 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  performance: (env,actor,_request,url)=>performancePage(env,actor,url),
+  performanceCycle: (env,actor,_request,url,id)=>reviewPage(env,actor,id,url),
+  performanceFile: (env,actor,_request,_url,id)=>performanceFile(env,actor,id),
+  goals: (env,actor,_request,url)=>goalsPage(env,actor,url),
   surveyPlan: (env,actor,_request,url,id)=>surveyPlanPage(env,actor,id,url),
   surveyCsv: (env,actor,_request,_url,id)=>surveyCsv(env,actor,id),
   surveys: (env,actor,_request,url)=>surveysPage(env,actor,url),

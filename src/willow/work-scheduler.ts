@@ -1,3 +1,4 @@
+import { reconcileRecipients } from './performance/store'
 // A durable attempt claim precedes mail. Uncertain attempts are visible and never retried blindly.
 import type { Bindings } from '../auth.server'
 import { operatorMail } from '../mail.server.mjs'
@@ -10,6 +11,7 @@ import { freshWork, memberUnavailable, workHistory, workPolicy, workState } from
 import { runDateAlerts } from './date-alerts/alerts'
 
 export async function runWorkScheduler(env: Bindings, instant=now()) {
+ await reconcileRecipients(env,today(await employerZone(env),instant))
  // PEOPLE-004 alerts fire first, in any hour; their review tasks then follow the FLOW-002 cadence.
  await runDateAlerts(env, instant)
  const state = await workState(env), policy = state.policy

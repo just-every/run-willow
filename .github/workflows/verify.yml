@@ -35,6 +35,7 @@ jobs:
       - run: pnpm exec rer check --profile first-party
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm exec rer verify
+      - run: WILLOW_PERFORMANCE_BROWSER=1 node tests/willow/performance.mjs
       - run: pnpm run test:phase2-browser
       - run: pnpm run test:site
       # The checkout is a fresh clone: the journey runs setup, dev, build,
