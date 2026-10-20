@@ -1,3 +1,4 @@
+import { previewLevel, applyLevel } from './levels/actions'
 import { createReviewCycle, assignReview, respondReview, closeReviewCycle } from './performance/cycles'
 import { calibrateReview, releaseReview, withholdReview, acknowledgeReview, appealReview } from './performance/releases'
 import { saveGoal, checkinGoal, finishDevelopment } from './performance/goals'
@@ -47,6 +48,7 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'level.preview': previewLevel, 'level.apply': applyLevel,
   'survey.create': createSurvey, 'survey.close': closeSurvey, 'survey.respond': respondSurvey,
   'survey.plan': createActionPlan, 'survey.plan.complete': completeActionPlan, 'survey.comment.hide': hideSurveyComment,
   'performance.cycle': createReviewCycle, 'performance.assign': assignReview, 'performance.respond': respondReview, 'performance.close': closeReviewCycle,

@@ -140,7 +140,12 @@ try {
   const header = records[0]
   assert.ok(!header.tables.some(t => /^oa_/.test(t.name)), 'auth credentials, sessions and tokens excluded')
   const items = records.filter(r => r.kind === 'part').flatMap(r => r.items)
-  assert.ok(items.some(r => r.table === 'wl_permissions'), 'grants are portable')
+  // ROLE-001: portable authority is the exact union of direct and assigned grants.
+  for (const member of members.filter(member => !member.owner)) {
+    const assigned = items.filter(item => item.table === 'wl_member_levels' && item.row.member_id === member.id).map(item => item.row.level_id)
+    const grants = items.filter(item => item.table === 'wl_permissions' && item.row.member_id === member.id || item.table === 'wl_level_permissions' && assigned.includes(item.row.level_id)).map(item => item.row.permission)
+    assert.deepEqual([...new Set(grants)].sort(), [...member.permissions].sort(), 'ROLE-001 archive preserves the exact authority sources, including empty combinations')
+  }
   const settings = items.find(item => item.table === 'wl_connections').row
   assert.equal(settings.notices, 0, 'DATA-001: export pauses notice authority')
   assert.equal(settings.oidc, 0, 'DATA-001: export pauses identity authority')

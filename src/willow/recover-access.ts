@@ -8,7 +8,7 @@ import type { Bindings } from '../auth.server'
 export async function recoverMemberIdentities(env: Bindings) {
   await env.DB.prepare(`INSERT INTO oa_operators (id, email, display_name, role, status, created_at)
     SELECT lower(hex(randomblob(16))), m.email, m.name,
-      CASE WHEN EXISTS(SELECT 1 FROM wl_permissions p WHERE p.member_id = m.id AND p.permission = 'people.manage')
+      CASE WHEN EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id = m.id AND p.permission = 'people.manage')
         THEN 'admin' ELSE 'member' END, 'active', ?
     FROM wl_members m WHERE m.status = 'active'
       AND m.email NOT LIKE '%@dev.localhost'

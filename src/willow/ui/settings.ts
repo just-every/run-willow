@@ -1,3 +1,4 @@
+import { levelPanel } from './levels'
 import { policyRuleFields, policyRuleSummary } from './leave-policy'
 // Employer setup, settings (places, teams, schedules, document categories,
 // lifecycle templates, leave policies) and access (permissions and preview).
@@ -74,6 +75,7 @@ export async function accessPage(env: Bindings, actor: Actor, request: Request, 
   const previewMember = url.searchParams.get('member'), previewPerson = url.searchParams.get('person')
   const preview = previewMember && previewPerson ? await visibilityPreview(env, actor, previewMember, previewPerson) : null
   const body = h`<h1>Access</h1><p class="lead">Every permission is explicit. Managing someone shows you their work details and leave dates, never their pay, private contact details or confidential reasons.</p>
+${await levelPanel(env,actor,url)}
 <section class="card"><h2>Members</h2>${table(['Member', 'Sign-in', 'Permissions', ''], list.map(member => [h`${person(member.name)}<br><span class="muted">${member.email}</span>`, member.status === 'ended' ? tag('ended') : member.signIn ?? '—',
     member.owner ? tag('Owner (everything)') : member.permissions.length ? member.permissions.map((permission: string) => PERMISSION_LABELS[permission as keyof typeof PERMISSION_LABELS] ?? permission).join('; ') : tag('None (employee)'),
     actor.owner && !member.owner && member.status === 'active' ? h`<details><summary>Change</summary>${form('member.permissions', '/app/access', [hidden('member', member.id), checks('Permissions', 'permissions', PERMISSIONS.map(value => ({ value, label: PERMISSION_LABELS[value] })), member.permissions)], 'Save permissions', { secondary: true })}<p class="muted">Bundles: HR = ${PRESETS.hr.join(', ')}; payroll = ${PRESETS.payroll.join(', ')}; IT = ${PRESETS.it.join(', ')}.</p></details>` : '']))}</section>

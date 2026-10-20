@@ -16,7 +16,7 @@ const activeMember = `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON l
  WHERE m.id=? AND m.status='active' AND o.status='active')`
 const scopedOwner = `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email
  WHERE m.id=? AND m.status='active' AND o.status='active' AND (m.person_id=? OR o.role='owner'
- OR EXISTS(SELECT 1 FROM wl_permissions permission WHERE permission.member_id=m.id AND permission.permission='people.manage')
+ OR EXISTS(SELECT 1 FROM wl_effective_permissions permission WHERE permission.member_id=m.id AND permission.permission='people.manage')
  OR EXISTS(SELECT 1 FROM wl_periods p JOIN wl_terms t ON t.period_id=p.id
   WHERE p.person_id=? AND p.start_date<=? AND (p.end_date IS NULL OR p.end_date>=?)
   AND t.status='active' AND t.effective_from=(SELECT MAX(n.effective_from) FROM wl_terms n
@@ -47,7 +47,7 @@ export async function goalHome(env: Bindings, actor: Actor) {
  const [people, members, rows]=await Promise.all([
   all(env,`${currentManagers} SELECT p.id,COALESCE(NULLIF(p.preferred_name,''),p.legal_name) AS name,m.manager_person_id
    FROM wl_people p LEFT JOIN current_managers m ON m.person_id=p.id ORDER BY name`,actor.today),
-  all(env,`SELECT m.id,m.name,m.person_id,(o.role='owner' OR EXISTS(SELECT 1 FROM wl_permissions permission
+  all(env,`SELECT m.id,m.name,m.person_id,(o.role='owner' OR EXISTS(SELECT 1 FROM wl_effective_permissions permission
    WHERE permission.member_id=m.id AND permission.permission='people.manage')) AS manages_people
    FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email
    WHERE m.status='active' AND o.status='active' ORDER BY m.name`),

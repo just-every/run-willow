@@ -66,7 +66,7 @@ export async function actorFor(env: Bindings, member: { id: string; email: strin
   const admission = await one(env, `SELECT m.status, o.status AS sign_in FROM wl_members m
     LEFT JOIN oa_operators o ON lower(o.email) = m.email WHERE m.id = ?`, member.id)
   insist(admission?.status === 'active' && admission.sign_in === 'active', 'access_ended', 403)
-  const permissions = new Set((await all<{ permission: Permission }>(env, 'SELECT permission FROM wl_permissions WHERE member_id = ?', member.id)).map(row => row.permission))
+  const permissions = new Set((await all<{ permission: Permission }>(env, 'SELECT permission FROM wl_effective_permissions WHERE member_id = ?', member.id)).map(row => row.permission))
   if (member.owner) PERMISSIONS.forEach(permission => permissions.add(permission))
   const date = today(await employerZone(env))
   const reports = new Set(member.personId ? (await all<{ person_id: string }>(env, `${CURRENT_TERMS} AND t.manager_person_id = ?`, date, member.personId)).map(row => row.person_id) : [])

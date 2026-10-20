@@ -380,7 +380,7 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
 /** Import authority is checked in SQL on every batch: an active session of the owner or of a member holding people.manage. */
 function importContext(env: Bindings, actor: Actor): D1ImportContext {
   const predicate = () => ({ sql: `EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id = s.operator_id WHERE s.id = ? AND s.revoked_at IS NULL AND s.expires_at > CAST(strftime('%s','now') AS INTEGER) * 1000 AND o.version = s.operator_version AND o.status = 'active'
-    AND (o.role = 'owner' OR EXISTS(SELECT 1 FROM wl_members m JOIN wl_permissions p ON p.member_id = m.id WHERE m.email = lower(o.email) AND m.status = 'active' AND p.permission = 'people.manage')))`, params: [actor.sessionId] })
+    AND (o.role = 'owner' OR EXISTS(SELECT 1 FROM wl_members m JOIN wl_effective_permissions p ON p.member_id = m.id WHERE m.email = lower(o.email) AND m.status = 'active' AND p.permission = 'people.manage')))`, params: [actor.sessionId] })
   return { destination, namespace, mappingVersion, storage: { database: env.DB as never, targets: willowTargets }, authorization: { principalId: actor.id, predicate }, batchSize: 25 }
 }
 

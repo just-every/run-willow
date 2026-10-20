@@ -424,13 +424,33 @@ try {
   })
 
   await check('WIL-03', async () => {
+    // ROLE-001: preserve the exact legacy combinations in named levels before
+    // crawling every registered door. No preset substitution or extra grants.
+    const named = {}
+    for (const who of ['mia', 'ivan', 'pat', 'hana', 'sam']) {
+      const before = (await h.api('me', cookie[who])).permissions.sort()
+      const created = await h.api('level.preview', cookie.owner, { kind: 'level', name: `Exact ${who} access`, permissions: before })
+      const level = await h.api('level.apply', cookie.owner, { review: created.id })
+      const review = await h.api('level.preview', cookie.owner, { kind: 'assignment', member: ids[`${who}Member`], levels: [level.id] })
+      assert.deepEqual(review.impact[0].added, [])
+      await h.api('level.apply', cookie.owner, { review: review.id })
+      // Remove direct grants only after the named source carries the same set.
+      // member.permissions is a full replacement; use an empty direct source
+      // first, then attach the exact level and recover an admin session if needed.
+      await h.api('member.permissions', cookie.owner, { member: ids[`${who}Member`], permissions: [] })
+      const onlyNamed = await h.api('level.preview', cookie.owner, { kind: 'assignment', member: ids[`${who}Member`], levels: [level.id] })
+      await h.api('level.apply', cookie.owner, { review: onlyNamed.id })
+      if (before.includes('people.manage')) cookie[who] = await h.signIn(`${who}@example.com`)
+      assert.deepEqual((await h.api('me', cookie[who])).permissions.sort(), before)
+      named[who] = { id: level.id, permissions: before }
+    }
     // Every GET door, for every record, for members without each grant: no private value appears.
     const people = (await h.api('people', cookie.owner)).map(person => person.id)
     const cases = (await Promise.all(people.map(id => personOf('owner', id)))).flatMap(person => person.cases?.map(item => item.id) ?? [])
     const requests = (await Promise.all(people.map(id => personOf('owner', id)))).flatMap(person => person.leave?.requests.map(item => item.id) ?? [])
     const versions = [ids.contractV1, ids.contractV2, ids.medicalVersion, ids.notesVersion]
     const memberIds = (await h.api('members', cookie.owner)).map(member => member.id)
-    const values = { performanceCycle: ['unknown-review'], performanceFile: ['unknown-review'], surveyPlan: ['unknown-plan'], surveyCsv: ['unknown-survey'], survey: ['unknown-survey'], surveyResults: ['unknown-survey'], compensationCycle: ['unknown-cycle'], companyFile: ['unknown-shared-file'], protectedCase: ['unknown-protected'], protectedDetail: ['unknown-protected','unknown-protected?certificate=1'], customReport: ['unknown-report'], customReportCsv: ['unknown-report'], customReportXlsx: ['unknown-report'], selfChange: ['unknown-self-change'], modelDraft: ['unknown-proposal'], changeRequest: ['unknown-request'], change: ['unknown-request', 'unknown-request?attachment=unknown'], person: [...people, 'me'], context: [...people, 'me'], case: cases, leave: requests, batch: ids.batches, proposal: ids.proposals, request: requests, batchFile: ids.batches, document: versions }
+    const values = { levelReview: ['unknown-review'], performanceCycle: ['unknown-review'], performanceFile: ['unknown-review'], surveyPlan: ['unknown-plan'], surveyCsv: ['unknown-survey'], survey: ['unknown-survey'], surveyResults: ['unknown-survey'], compensationCycle: ['unknown-cycle'], companyFile: ['unknown-shared-file'], protectedCase: ['unknown-protected'], protectedDetail: ['unknown-protected','unknown-protected?certificate=1'], customReport: ['unknown-report'], customReportCsv: ['unknown-report'], customReportXlsx: ['unknown-report'], selfChange: ['unknown-self-change'], modelDraft: ['unknown-proposal'], changeRequest: ['unknown-request'], change: ['unknown-request', 'unknown-request?attachment=unknown'], person: [...people, 'me'], context: [...people, 'me'], case: cases, leave: requests, batch: ids.batches, proposal: ids.proposals, request: requests, batchFile: ids.batches, document: versions }
     const fill = (pattern, name) => {
       const base = pattern.replace(/^\^|\$$/g, '').replace(/\\\./g, '.')
       if (name === 'employeeBundle') return ['self', 'team', 'organization'].map(scope => `${base}?scope=${scope}&fields=name,phone,payAmount,payrollId&history=employment,leave,lifecycle,documents`)
@@ -462,6 +482,18 @@ try {
     }
     // Positive control: each holder does read the values they are entitled to through some door.
     for (const expected of ['pat:salaryCents', 'hana:phone', 'hana:reason', 'hana:endReason', 'hana:docTitle', 'hana:docBytes', 'sam:phone', 'sam:salaryCents', 'sam:reason']) assert.ok(seen.has(expected), `${expected} is readable by its holder`)
+    // Revoke the payroll level in the same session and repeat the whole crawl.
+    const revoke = await h.api('level.preview', cookie.owner, { kind: 'level', level: named.pat.id, name: 'Exact pat access', permissions: [] })
+    assert.deepEqual(revoke.impact[0].removed.sort(), named.pat.permissions)
+    await h.api('level.apply', cookie.owner, { review: revoke.id })
+    for (const url of urls) {
+      const response = await h.raw(url, { cookie: cookie.pat })
+      const body = await response.text()
+      for (const value of Object.values(SECRET)) assert.ok(!body.includes(value), `ROLE-001 revoked level leaked through ${url}`)
+    }
+    const restore = await h.api('level.preview', cookie.owner, { kind: 'level', level: named.pat.id, name: 'Exact pat access', permissions: named.pat.permissions })
+    await h.api('level.apply', cookie.owner, { review: restore.id })
+    console.log(`ROLE-001 crawled ${urls.length} doors with exact named levels and same-session revocation`)
     // Reads of someone else's private details are audited.
     const audit = await h.api('audit', cookie.owner)
     assert.ok(audit.some(event => event.action === 'person.private.read' && event.subject === ids.sam && event.actor === ids.hanaMember))

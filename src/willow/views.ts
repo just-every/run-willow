@@ -1,3 +1,5 @@
+import { levels } from './levels/store'
+import { levelReview } from './levels/actions'
 import { performanceHome, performanceDetail } from './performance/views'
 import { goalHome } from './performance/goals'
 import { ownSurveyPlan } from './surveys/plans'
@@ -86,6 +88,8 @@ export const views: Record<string, View> = {
   payrollLayout: layoutView,
   modelDrafts,
   modelDraft: (env, actor, _request, id) => modelDraft(env, actor, id),
+  levels: (env, actor) => levels(env,actor),
+  levelReview: (env, actor, request, id) => levelReview(env,actor,id!),
   me: async (env, actor) => ({ id: actor.id, email: actor.email, name: actor.name, owner: actor.owner, person: actor.personId, permissions: [...actor.permissions], manages: [...actor.reports], today: actor.today, employer: await employer(env) }),
   permissions: async () => PERMISSION_LABELS,
   settings: env => settings(env),

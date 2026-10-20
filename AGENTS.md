@@ -118,6 +118,8 @@ it is refused if the records changed meanwhile. To explain a record, read
 member may read, names what is withheld, and cites the leave policy versions —
 answer from it, cite the version, and say what is withheld rather than guess.
 
+Named access levels (partial ROLE-001) are owner-managed on `/app/access`: `level.preview` creates an immutable review, `level.apply` consumes it once, and `levels`/`level-reviews/:id` are owner-only reads. All permission SQL reads use `wl_effective_permissions`, the union of explicit direct grants and assigned level grants. Keep actor, picker, import and restored-identity authority on that same view. `member.permissions` replaces every source; ending access clears assignments too. Field-level self/other edit modes remain unimplemented.
+
 ## Tests
 
 Keep tests to flows a person would notice breaking, through public doors, one

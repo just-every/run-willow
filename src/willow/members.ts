@@ -14,7 +14,7 @@ import { personView } from './profile'
 
 export async function members(env: Bindings, actor: Actor, request: Request) {
   requirePermission(actor, 'people.manage')
-  const rows = await all(env, 'SELECT m.id, m.email, m.name, m.person_id, m.status, (SELECT json_group_array(permission) FROM wl_permissions p WHERE p.member_id = m.id) AS permissions FROM wl_members m ORDER BY m.name')
+  const rows = await all(env, 'SELECT m.id, m.email, m.name, m.person_id, m.status, (SELECT json_group_array(permission) FROM wl_effective_permissions p WHERE p.member_id = m.id) AS permissions FROM wl_members m ORDER BY m.name')
   const operators = new Map((await operatorAuth(env).listOperators(request)).map(operator => [operator.email.toLowerCase(), operator]))
   return rows.map(row => {
     const operator = operators.get(row.email)
@@ -40,7 +40,7 @@ export async function setPermissions(env: Bindings, actor: Actor, input: Input, 
   insist(operator.role !== 'owner', 'owner_permissions_fixed', 409)
   const role = permissions.includes('people.manage') ? 'admin' : 'member'
   if (operator.role !== role) await operatorAuth(env).setRole(request, operator.id, role)
-  await commit(env, [stmt(env, 'DELETE FROM wl_permissions WHERE member_id = ?', member.id), ...permissions.map(permission => stmt(env, 'INSERT INTO wl_permissions (member_id, permission, granted_by, granted_at) VALUES (?, ?, ?, ?)', member.id, permission, actor.id, now()))], { actor: actor.id, action: 'member.permissions', subject: member.id, detail: { permissions } })
+  await commit(env, [stmt(env, 'DELETE FROM wl_member_levels WHERE member_id = ?', member.id), stmt(env, 'DELETE FROM wl_permissions WHERE member_id = ?', member.id), ...permissions.map(permission => stmt(env, 'INSERT INTO wl_permissions (member_id, permission, granted_by, granted_at) VALUES (?, ?, ?, ?)', member.id, permission, actor.id, now()))], { actor: actor.id, action: 'member.permissions', subject: member.id, detail: { permissions } })
   return { id: member.id, permissions }
 }
 
@@ -77,7 +77,7 @@ export async function endAccessStatements(env: Bindings, actor: Actor, request: 
     await auth.setOperatorStatus(request, operator.id, 'inactive')
     for (const session of await auth.listSessions(request, operator.id)) if (session.active) await auth.revokeSession(request, session.id)
   }
-  return [stmt(env, 'DELETE FROM wl_permissions WHERE member_id = ?', member.id), stmt(env, "UPDATE wl_members SET status = 'ended' WHERE id = ?", member.id)]
+  return [stmt(env, 'DELETE FROM wl_member_levels WHERE member_id = ?', member.id), stmt(env, 'DELETE FROM wl_permissions WHERE member_id = ?', member.id), stmt(env, "UPDATE wl_members SET status = 'ended' WHERE id = ?", member.id)]
 }
 
 export async function endAccess(env: Bindings, actor: Actor, input: Input, request: Request) {

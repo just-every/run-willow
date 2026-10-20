@@ -48,7 +48,8 @@
           "migrations/core/0032_compensation.sql",
           "migrations/core/0033_surveys.sql",
           "migrations/core/0034_performance.sql",
-          "migrations/core/0035_performance_goals.sql"
+          "migrations/core/0035_performance_goals.sql",
+          "migrations/core/0036_access_levels.sql"
         ]
       }
     },

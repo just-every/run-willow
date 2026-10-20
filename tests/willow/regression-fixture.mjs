@@ -19,7 +19,10 @@ export async function fixture(h, owner) {
     if (key !== 'invited') staff[key].cookie = await h.signIn(`${key}@example.com`, { requested: true })
   }
   for (const [key, permissions] of [['payroll', ['pay.read', 'payroll.handoff']], ['hr', ['people.manage', 'people.private', 'documents.private', 'leave.manage']]]) {
-    await api('member.permissions', { member: staff[key].member, permissions })
+    const draft = await api('level.preview', { kind: 'level', name: `Fixture ${key} access`, permissions })
+    const level = await api('level.apply', { review: draft.id })
+    const assignment = await api('level.preview', { kind: 'assignment', member: staff[key].member, levels: [level.id] })
+    await api('level.apply', { review: assignment.id })
     staff[key].cookie = await h.signIn(`${key}@example.com`)
   }
   const policy = await api('policy.write', { name: 'Annual', summary: 'Hours from schedule', accrualWeeks: '4', negativeLimitHours: '0' })
