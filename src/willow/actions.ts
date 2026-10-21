@@ -14,6 +14,9 @@ import { decideOverride } from './protected-leave/overrides'
 import { saveReport } from './reporting/definitions'
 import { scheduleReport } from './reporting/schedule'
 import { writeEeoSelf } from './eeo'
+import { adoptTable, recordState, recordMapping, recordContractor } from './retention/settings'
+import { placeHold, releaseHold, reviewHold } from './retention/holds'
+import { openRequest, withdrawRequest, confirmErasure } from './retention/erasure'
 import { proposeSelfChange, decideSelfChange, reconcileSelfChange } from './self-service/requests'
 import { defineField, writeFieldValues } from './custom-fields/actions'
 import { configureDoor } from './movein/authority'
@@ -74,6 +77,9 @@ export const actions: Record<string, Handler> = {
   'report.save': saveReport,
   'report.schedule': scheduleReport,
   'eeo.self.write': writeEeoSelf,
+  'retention.adopt': adoptTable, 'retention.state': recordState, 'retention.map': recordMapping, 'retention.contractor': recordContractor,
+  'hold.place': placeHold, 'hold.release': releaseHold, 'hold.review': reviewHold,
+  'erasure.request': openRequest, 'erasure.withdraw': withdrawRequest, 'erasure.confirm': confirmErasure,
   'self.request': proposeSelfChange,
   'self.decide': decideSelfChange,
   'self.reconcile': reconcileSelfChange,

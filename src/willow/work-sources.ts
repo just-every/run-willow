@@ -7,7 +7,7 @@ import { reviewsSelfChanges, handlesSelfExceptions } from './self-service/view'
 import type { Bindings } from '../auth.server'
 import { actorFor, can, canAbout, employerZone, type Actor } from './actor'
 import { readsCategory, sees } from './access'
-import { all, json, type Row } from './core'
+import { all, json, one, type Row } from './core'
 import { addDays, today } from './dates'
 import { blockedBy } from './workflow-plan'
 import { answersFor, missingFields } from './lifecycle'
@@ -15,6 +15,7 @@ import { renewalsDue } from './record-tables/rows'
 import { CERTIFICATIONS, readsTable, recordTables } from './record-tables/schema'
 import { mayApprove, mayRead, type ResolvedStep } from './change-requests/chain'
 import { answersTask } from './date-alerts/alerts'
+import { holds } from './retention/holds'
 
 export interface WorkSource {
  key: string; kind: string; title: string; path: string; due: string; preferred?: string | null
@@ -101,5 +102,11 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  // PEOPLE-003: certifications expiring within the renewal lead are HR work until a renewed (or removed) row replaces them.
  const certifications = (await recordTables(env)).find(t => t.id === CERTIFICATIONS)!
  for (const r of await renewalsDue(env, today(zone, Date.now()))) add('renewal',r,'Renew certification',`/app/people/${r.person_id}`,r.due,a=>readsTable(a,r.person_id,certifications) && (hr(a) || a.personId===r.person_id),a=>hr(a) && readsTable(a,r.person_id,certifications),null,'Certification expiring; record the renewal on the person’s record')
+ // DATA-002: a hold's review is its owner's work, moving to the owner when they lose access; an open erasure request awaits the owner.
+ for (const hold of await holds(env,{active:true})) {
+  const active = !!await one(env,"SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active'",hold.owner_member)
+  add('hold-review',hold,'Review legal hold','/app/retention',hold.review_date,a=>a.owner||a.id===hold.owner_member,a=>active?a.id===hold.owner_member||a.owner:a.owner,active?hold.owner_member:null,active?'Awaiting the hold owner':'Hold owner lost access; the owner reviews')
+ }
+ for (const r of await all(env,"SELECT id,person_id,requested_at FROM wl_erasure_requests WHERE status='open'")) add('erasure-request',r,'Decide erasure request',`/app/retention/erasure?person=${r.person_id}`,deadline(r.requested_at),a=>a.owner)
  return [...result,...await surveyWork(env),...await performanceWork(env)]
 }

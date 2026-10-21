@@ -42,6 +42,7 @@ const NAV: NavItem[][] = [[
   { href: '/app/import', label: 'Move in', icon: 'upload', show: actor => can(actor, 'people.manage') },
   { href: '/app/access', label: 'Access', icon: 'shield', show: actor => can(actor, 'people.manage') },
   { href: '/app/connections', label: 'Connections', icon: 'plug', show: actor => actor.owner },
+  { href: '/app/retention', label: 'Retention', icon: 'shield', show: actor => actor.owner || can(actor, 'people.manage') },
   { href: '/app/audit', label: 'Audit', icon: 'document', show: actor => can(actor, 'audit.read') },
 ], [
   { href: '/app/settings', label: 'Settings', icon: 'gear', show: actor => can(actor, 'people.manage') || can(actor, 'leave.manage') },
