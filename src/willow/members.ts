@@ -106,7 +106,7 @@ export async function visibilityPreview(env: Bindings, actor: Actor, memberId: s
   const view = await personView(env, actor, personId, { admissionActor: target, facets: both, categories: category => readsCategory(target, personId, category) && readsCategory(actor, personId, category), customFields: definition => readsCustomField(target, personId, definition), recordTables: table => readsTable(target, personId, table) })
   const customDefinitions = await effectiveFieldDefinitions(env, actor.today)
   return {
-    member: { id: member.id, name: member.name, status: member.status, permissions: [...target.permissions] as Permission[], managesThisPerson: target.reports.has(personId), isThisPerson: target.personId === personId },
+    member: { id: member.id, name: member.name, status: member.status, permissions: [...target.permissions] as Permission[], scoped: target.scoped.map(grant => ({ level: grant.level, permissions: [...grant.permissions].sort(), reachesThisPerson: grant.people.has(personId) })), managesThisPerson: target.reports.has(personId), isThisPerson: target.personId === personId },
     customFields: customDefinitions.map(definition => ({ id: definition.id, key: definition.key, label: definition.label, visible: readsCustomField(target, personId, definition), withheldFromYou: readsCustomField(target, personId, definition) && !readsCustomField(actor, personId, definition) })),
     facets: (Object.keys(FACET_LABELS) as Facet[]).map(facet => ({ facet, label: FACET_LABELS[facet], visible: theirs.has(facet), withheldFromYou: theirs.has(facet) && !mine.has(facet) })),
     view,

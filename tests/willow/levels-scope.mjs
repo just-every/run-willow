@@ -115,6 +115,12 @@ export async function scopeProof(h, owner, fx) {
   for (const secret of outsideSecrets) assert.ok(!body.includes(secret), `${who.key} read ${secret} through ${url} (${response.status})`)
   for (const person of insiders) for (const secret of person.secrets) if (body.includes(secret)) seen.set(secret, (seen.get(secret) ?? 0) + 1)
  }
+ // The visibility preview names a member's scoped rights and applies them per person.
+ const previewIn = await api(`preview?member=${ten[0].member}&person=${inside.person}`)
+ assert.ok(previewIn.facets.find(item => item.facet === 'private').visible && previewIn.member.scoped[0].reachesThisPerson)
+ const previewOut = await api(`preview?member=${ten[0].member}&person=${b0.person}`)
+ assert.deepEqual(previewOut.facets.filter(item => item.visible).map(item => item.facet), ['directory'])
+ assert.equal(previewOut.member.scoped[0].reachesThisPerson, false)
  const read = who => who.secrets.filter(secret => seen.has(secret))
  for (const who of [inside, ten[0]]) for (const secret of [`PRIVATE-sc${who.key}`, ...payForms(who.cents).slice(0, 1), `EMPNO-${who.key}`, `SCPAY-${who.key}`]) assert.ok(seen.has(secret), `${secret} is readable in scope`)
  assert.ok(seen.has('SECRET-REASON-in') && seen.has('SECRET-DOC-in') && seen.has('ENDREASON-in'), 'Leave reasons, documents and end reasons of in-location people are readable in scope')
