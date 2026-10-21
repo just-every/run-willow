@@ -8,7 +8,7 @@ import { harness, file } from './harness.mjs'
 import { fixture, today, day } from './regression-fixture.mjs'
 import { balancesCsv, documentsZip, employeesCsv } from './fixtures.mjs'
 import { imports } from './import-transport.mjs'
-import { findText, rowCounts } from './retention-counts.mjs'
+import { findText, rowCounts, stubIdentities } from './retention-counts.mjs'
 import { browserEvidence } from './retention-browser.mjs'
 
 const directory = await mkdtemp(join(tmpdir(), 'willow-retention-'))
@@ -178,6 +178,11 @@ try {
   const strings = [q, quinnMember, 'quinn@example.com', 'synthetic-willow-3', 'synthetic-willow-6', 'synthetic-willow-7']
   const found = await findText(directory, strings)
   assert.deepEqual(Object.keys(found), ['wl_retained_records'], `only restricted custody holds the person: ${JSON.stringify(found)}`)
+  // Nothing else still points at the person: only the stub identity and the audit, request and member rows that carry it.
+  const stubIds = await stubIdentities(directory, erased.label)
+  assert.equal(stubIds.length, 2, 'one stub person and one stub member carry the label')
+  const pointing = await findText(directory, stubIds)
+  assert.deepEqual(Object.keys(pointing).sort(), ['wl_audit', 'wl_erasure_requests', 'wl_members', 'wl_people', 'wl_work_history', 'wl_work_schedule'].sort(), `only identity, audit, request and work-history rows carry the stub: ${JSON.stringify(pointing)}`)
   const auditAfter = JSON.stringify(await api('audit'))
   for (const value of [q, quinnMember, 'quinn@example.com']) assert.ok(!auditAfter.includes(value), 'audit and history no longer name the person')
   assert.ok(auditAfter.includes(erased.label.split(' ')[2]) === false, 'the label is stored as a stub identity, not as text')

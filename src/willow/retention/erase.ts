@@ -133,7 +133,8 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
     stmt(env, 'DELETE FROM wl_erasure_window'),
   )
   await commitBatch(env, statements, { actor: actor.id, action: 'erasure.execute', subject: erasureId, detail: { digest, rows: view.summary.rows } })
-  await finishBlobs(env, erasureId)
+  // The erasure is committed; a failed object delete stays on the durable list and the scheduler retries it.
+  await finishBlobs(env, erasureId).catch(() => 0)
   return { id: request.id, status: 'confirmed', receipt: erasureId, label, digest }
 }
 

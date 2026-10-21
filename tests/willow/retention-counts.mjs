@@ -32,3 +32,16 @@ export async function findText(directory, needles) {
   }
   return found
 }
+
+/** The ids of the stub person and stub member an erasure leaves under its label. */
+export async function stubIdentities(directory, label) {
+  const ids = []
+  for (const path of walk(join(directory, 'v3')).filter(p => p.includes('/d1/') && p.endsWith('.sqlite'))) {
+    const db = new DatabaseSync(path, { readOnly: true })
+    if (db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'wl_people'").get()) {
+      for (const table of ['wl_people', 'wl_members']) ids.push(...db.prepare(`SELECT id FROM ${table} WHERE ${table === 'wl_people' ? 'legal_name' : 'name'} = ?`).all(label).map(row => row.id))
+    }
+    db.close()
+  }
+  return ids
+}

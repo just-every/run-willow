@@ -3237,7 +3237,7 @@
       "executable": false
     },
     "src/willow/retention/erase.ts": {
-      "sha256": "172ad35a5e5e9e1cacb0e4412c4043b01821172df7dd2971bf46ecf79b9d67fd",
+      "sha256": "18cecba706b8c97d160849208368d23731d5ee7c7d7510c989c474e9c58df52f",
       "executable": false
     },
     "src/willow/retention/erasure.ts": {
@@ -3265,7 +3265,7 @@
       "executable": false
     },
     "src/willow/retention/purge.ts": {
-      "sha256": "798947dc355137f903f32594efa11ca3c576ff9e5c46f6bd719517252b6b9956",
+      "sha256": "196aa084910c3cefe2e1d5626e3e90a491946a99aef25d401ffb5e5a7ec1b420",
       "executable": false
     },
     "src/willow/retention/rules.ts": {
@@ -3753,11 +3753,11 @@
       "executable": false
     },
     "tests/willow/retention-counts.mjs": {
-      "sha256": "15a2699ef69ba1e62e3c30cc68ebd144242950da10da35dc0189797d0e75d16f",
+      "sha256": "624a1bf152490fa213aa9c07a407e6d67741897e0606ddc4b570184a776eaaf9",
       "executable": false
     },
     "tests/willow/retention.mjs": {
-      "sha256": "bf390b57e555bb579bb08847c22798db21de8532b9d649707c14fc702bbec967",
+      "sha256": "77fd458ba328aa9207a4a5bc3e9b9368c5977575925331c53ae870065f2dc4ee",
       "executable": false
     },
     "tests/willow/self-service-browser.mjs": {

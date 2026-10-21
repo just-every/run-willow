@@ -5,6 +5,7 @@ import type { Bindings } from '../../auth.server'
 import { employerZone } from '../actor'
 import { all, commit, now, stmt } from '../core'
 import { addDays, today } from '../dates'
+import { finishBlobs } from './erase'
 
 export const WARNING_DAYS = 30
 const BLOB_TABLES = ['wl_document_versions', 'wl_hiring_resumes', 'wl_protected_certifications']
@@ -18,6 +19,7 @@ export async function expiringSoon(env: Bindings, date: string) {
 }
 
 export async function runPurgeScheduler(env: Bindings, instant = now()) {
+  for (const row of await all<{ erasure_id: string }>(env, 'SELECT DISTINCT erasure_id FROM wl_erasure_blobs WHERE deleted = 0')) await finishBlobs(env, row.erasure_id).catch(() => 0)
   const date = today(await employerZone(env), instant)
   const due = (await expiringSoon(env, date)).filter(row => row.purgeOn <= date)
   if (!due.length) return { purged: 0 }
