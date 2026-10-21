@@ -3,8 +3,8 @@
 On **People**, open **Export employee records**, choose fields, scope and an
 as-of date, then download CSV or XLSX. The current directory search, location,
 department, role and status filters apply. This is the standard-field slice of
-DATA-001; custom fields/tables and complete target-product portability remain
-work. The owner archive is still the separate `rer export` / `rer import` flow
+DATA-001; complete target-product portability remains work. Custom fields and
+tables use the shared projections described below. The owner archive is still the separate `rer export` / `rer import` flow
 covered by WIL-17.
 
 Both signed-in download doors accept identical query parameters:
@@ -63,9 +63,8 @@ without executing formulas. No macro, external reference or formula is emitted.
 ## Typed custom fields: PEOPLE-001 acceptance
 
 The approved custom-field export interface uses `custom.<key>` in `fields`,
-alongside standard keys and in the requested column order. PEOPLE-001 remains
-missing until its implementation and public-door proof are accepted; these
-requirements do not add current export evidence or complete DATA-001.
+alongside standard keys and in the requested column order. PEOPLE-001 is
+implemented and proved separately; these exports do not complete DATA-001.
 
 CSV, XLSX, bundles and reports must use the same definitions and dated values
 as the profile and agent context. Select the latest definition effective on
@@ -100,7 +99,8 @@ The same People form offers **Download records and files ZIP**. Choose which
 history sections to include using its checkboxes. The signed-in door is
 `/app/exports/employees.zip`, using the same `scope`, `fields`, date, filters and
 optional `person` selections as CSV/XLSX. It also requires `history`, repeated
-or comma-separated: `employment`, `leave`, `lifecycle`, `documents`, `tables`.
+or comma-separated: `employment`, `leave`, `lifecycle`, `documents`, `tables`,
+`profileChanges`, `goals`.
 
 The ZIP is a readable export, not an installation backup. It contains:
 
@@ -132,9 +132,29 @@ reader and its existing size bound. The current bundle format is standard
 ZIP32, so more than its 4 GiB size/address range or 65,534 entries is refused
 as `export_bundle.zip32_limit` before download. Reference-size multipart/ZIP64
 transfer remains OPS-002 work. Only selected sections that exist in this edition
-are exported; custom tables, signatures, performance, benefits and other future
-modules, complete target-product archives and restore send fences remain the
+are exported; signatures, review-cycle histories, benefits and other module
+histories, complete target-product archives and erasure restore fences remain the
 outstanding DATA-001 target.
+
+## Profile approvals and goals
+
+`profileChanges` contains the native SELF-001 request projection: immutable
+before/after values, pending/approved/rejected decisions, and recorded HR/payroll
+handoffs. It uses the same self or current `people.private` access as the native
+request door; managers and payroll holders gain no private proposal values.
+`goals` contains each selected person's goals, milestones, check-ins and
+development-completion evidence from PERFORM-001's current self/manager/HR
+projection. Unrelated people and member pickers never enter the bundle. A section
+the reader cannot enter is named in `withheldSections`; a readable section with
+no records is an empty array. Neither section includes review-cycle feedback.
+
+The inclusive `asOf` cutoff uses the employer's time zone for request, decision,
+handoff, goal, check-in and completion timestamps. A later request or goal is
+absent; a later decision leaves its request pending; a later handoff leaves an
+approved request unresolved without that handoff's reference, actor or time.
+Later check-ins and completion evidence are absent. Current permissions and
+current manager scope still govern all dates. The ZIP manifest covers these
+histories in `records.json` with the same byte count and SHA-256 verification.
 
 ## Record tables: PEOPLE-003
 

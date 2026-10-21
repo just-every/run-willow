@@ -10,10 +10,11 @@ import { exportZipStream, type ZipStreamFile } from './export-zip-stream'
 import { caseDetail } from './lifecycle'
 import { tableRows } from './record-tables/report'
 import type { Column } from './record-tables/schema'
+import { exportModuleHistory } from './export-module-history'
 
-export const EXPORT_SECTIONS = { employment: 'Employment history', leave: 'Leave accounts, ledger and requests', lifecycle: 'Lifecycle cases and tasks', documents: 'Document versions and receipts', tables: 'Record tables (contacts, education, certifications, assets, custom tables)' } as const
+export const EXPORT_SECTIONS = { employment: 'Employment history', leave: 'Leave accounts, ledger and requests', lifecycle: 'Lifecycle cases and tasks', documents: 'Document versions and receipts', tables: 'Record tables (contacts, education, certifications, assets, custom tables)', profileChanges: 'Profile requests, HR decisions and handoffs', goals: 'Goals, check-ins and development completion' } as const
 // Record tables carry their own per-table access in the shared projection.
-const SECTION_FACETS: Record<string, string | null> = { employment: 'employment', leave: 'leave', lifecycle: 'lifecycle', documents: 'documents', tables: null }
+const SECTION_FACETS: Record<string, string | null> = { employment: 'employment', leave: 'leave', lifecycle: 'lifecycle', documents: 'documents', tables: null, profileChanges: 'private', goals: null }
 const encoder = new TextEncoder()
 
 export async function employeeBundle(env: Bindings, actor: Actor, url: URL, request: Request) {
@@ -22,6 +23,7 @@ export async function employeeBundle(env: Bindings, actor: Actor, url: URL, requ
     && new Set(sections).size === sections.length && sections.every(key => Object.hasOwn(EXPORT_SECTIONS, key)), 'invalid_export_history')
   const data = await employeeExportData(env, actor, url)
   const zone = await employerZone(env)
+  const history = await exportModuleHistory(env, actor, sections, data.asOf, zone)
   const files: ZipStreamFile[] = []
   const manifestFiles: Record<string, unknown>[] = []
   const records: Record<string, unknown>[] = []
@@ -41,6 +43,13 @@ export async function employeeBundle(env: Bindings, actor: Actor, url: URL, requ
         continue
       }
       if (section === 'employment') record.employment = person.employment
+      if (section === 'profileChanges') {
+        record.profileChanges = history.changes.filter(change => change.personId === person.id)
+      }
+      if (section === 'goals') {
+        if (!history.goalPeople.has(person.id)) (record.withheldSections as string[]).push(section)
+        else record.goals = history.goals.filter(goal => goal.personId === person.id)
+      }
       if (section === 'tables') {
         record.tables = person.recordTables
         for (const item of person.recordTables.tables) {
