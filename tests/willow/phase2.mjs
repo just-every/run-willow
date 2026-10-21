@@ -77,6 +77,8 @@ try {
     await as(s.managera.cookie,'hiring.scorecard',{application:alice.id,version:first.version,evidence:'HIRING-PRIVATE-Corrected evidence'})
     const scored = await view()
     assert.deepEqual(scored.scorecards.filter(c=>c.author===s.managera.member).map(c=>c.version).sort(),[1,2])
+    assert.equal(scored.scorecards.find(c=>c.author===s.payroll.member).authorName,'payroll')
+    assert.equal(scored.timeline[1].actorName,'managera')
     assert.equal(scored.scorecards.find(c=>c.author===s.payroll.member).version,1,'A supplied author cannot impersonate another interviewer')
     assert.equal(scored.stage,moved.stage,'Recording scorecards never advances or rejects a candidate')
     assert.equal((await view(bob.id)).stage,'Interview','Unrelated candidates never move automatically')

@@ -41,6 +41,6 @@ export async function hiringApplicationPage(env: Bindings, actor: Actor, url: UR
  <dl><dt>Contact email</dt><dd>${candidate.contact_email}</dd><dt>Source</dt><dd>${candidate.source}</dd><dt>Stage</dt><dd>${tag(candidate.stage)}</dd></dl>
  <section class="card"><h2>Move candidate</h2>${form('hiring.move',here,[hidden('application',id),hidden('revision',candidate.revision),select('Next stage','stage',opening.stages.filter(s=>s!==candidate.stage).map(value=>({value,label:value})))], 'Move candidate')}</section>
  <section class="card"><h2>Your interviewer evidence</h2><p>Saving a correction keeps earlier versions. Evidence never advances, ranks or rejects a candidate.</p>${form('hiring.scorecard',here,[hidden('application',id),hidden('version',own?.version??0),area('Observed evidence','evidence',String(own?.evidence??''))], own?'Save correction':'Record evidence')}</section>
- <section class="card"><h2>Interviewer history</h2>${table(['Interviewer','Version','Evidence','Recorded'],candidate.scorecards.map(s=>[s.author,s.version,s.evidence,when(s.created_at,zone)]))}</section>
- <section class="card"><h2>Stage timeline</h2>${table(['From','To','By','Recorded'],candidate.timeline.map(e=>[e.from_stage??'New application',e.to_stage,e.actor,when(e.at,zone)]))}</section>`,{current:root,url})
+ <section class="card"><h2>Interviewer history</h2>${table(['Interviewer','Version','Evidence','Recorded'],candidate.scorecards.map(s=>[s.authorName,s.version,s.evidence,when(s.created_at,zone)]))}</section>
+ <section class="card"><h2>Stage timeline</h2>${table(['From','To','By','Recorded'],candidate.timeline.map(e=>[e.from_stage??'New application',e.to_stage,e.actorName,when(e.at,zone)]))}</section>`,{current:root,url})
 }

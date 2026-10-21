@@ -106,8 +106,8 @@ export async function hiringOpening(env: Bindings, actor: Actor, id: string) {
 }
 export async function hiringApplication(env: Bindings, actor: Actor, id: string) {
  const { row } = await application(env, actor, id)
- const timeline = await all(env, 'SELECT seq,actor,kind,from_stage,to_stage,at FROM wl_hiring_events WHERE application_id=? ORDER BY seq', id)
- const scorecards = await all(env, 'SELECT id,author,version,evidence,created_at FROM wl_hiring_scorecards WHERE application_id=? ORDER BY created_at,id', id)
+ const timeline = await all(env, 'SELECT e.seq,e.actor,m.name AS actorName,e.kind,e.from_stage,e.to_stage,e.at FROM wl_hiring_events e JOIN wl_members m ON m.id=e.actor WHERE e.application_id=? ORDER BY e.seq', id)
+ const scorecards = await all(env, 'SELECT s.id,s.author,m.name AS authorName,s.version,s.evidence,s.created_at FROM wl_hiring_scorecards s JOIN wl_members m ON m.id=s.author WHERE s.application_id=? ORDER BY s.created_at,s.id', id)
  await auditRead(env, actor.id, 'hiring.candidate.read', id)
  return { ...row, timeline, scorecards }
 }
