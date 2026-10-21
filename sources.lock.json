@@ -3473,7 +3473,7 @@
       "executable": false
     },
     "tests/willow/levels-bulk.mjs": {
-      "sha256": "376aec73fa8046fe99e5dbbeeee29c51469b77c206902e089c645a008d16f4b0",
+      "sha256": "de656b0fcdd9b2d1b3a7d88bc825658f4b694c24a9f828b531544b5ebcb726d6",
       "executable": false
     },
     "tests/willow/levels-personal-browser.mjs": {

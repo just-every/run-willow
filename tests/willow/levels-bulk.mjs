@@ -60,7 +60,7 @@ export async function bulkLevelProof(h, owner, staff, join) {
  await api('level.preview',selection,409)
  assert.equal((await api('levels')).levels.find(l=>l.id===level.id).members.length,0)
  await api('access.give',{person:members.at(-1).person})
- members.at(-1).cookie=await h.signIn('jordan-reed@example.com',{requested:true})
+ members.at(-1).cookie=await h.signIn('jordan-reed@example.com')
  console.log('ROLE-002: PASS — ten-member reviewed selection, one audited atomic assignment, exact union, stale/replay/race refusal and same-session revocation; scopes, filters and revert remain partial')
  return {members,level:level.id}
 }
