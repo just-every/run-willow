@@ -3522,7 +3522,7 @@
       "executable": false
     },
     "tests/willow/open-public-start.mjs": {
-      "sha256": "5278fb600d43c3d4ac640241882621818395d4b2058492d0483fcfc7bf9321fd",
+      "sha256": "f5387e0e130cf92ab71c16e01b5203696c2ce33accc360b44c03460f5a102fd5",
       "executable": false
     },
     "tests/willow/open-start-process.mjs": {

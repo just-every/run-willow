@@ -2,6 +2,7 @@
 // This is remote-source evidence; local connection billing is proved separately.
 import assert from 'node:assert/strict'
 import { publishTemplate } from './publish-template.mjs'
+import { openAreaFixtures } from './open-area-fixtures.mjs'
 import { execFile } from 'node:child_process'
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -136,14 +137,16 @@ async function run() {
     const batch = await api('payroll.draft', { periodStart: day(-14), periodEnd: today })
     const preview = await api('payroll.preview', { batch: batch.id })
     await api('payroll.export', { batch: batch.id, previewRevision: preview.previewRevision })
+    const areaDetails = await openAreaFixtures(h, { owner, employees, today, day })
     const routes = new Set(['/app/people?view=organization'])
     const detail = { person: `/app/people/${employee.person}`, case: `/app/cases/${employee.case}`, request: `/app/leave/${leave.id}`, batch: `/app/payroll/${batch.id}`, batchFile: `/app/payroll/${batch.id}.csv`, proposal: `/app/proposals/${proposal.id}`, document: `/app/files/document/${document.version}` }
+    Object.assign(detail, areaDetails)
     // Enumerate the actual downloaded edition, including pages absent from nav.
     const doors = await readFile(join(root, 'src/willow/doors.ts'), 'utf8')
     const registered = [...doors.matchAll(/\['(\^\/app[^']+)',\s*'([^']+)'\]/g)]
     assert.ok(registered.length > 0, 'Discover public pages in the downloaded edition')
     for (const [, pattern, name] of registered) {
-      const route = pattern.includes('(') ? detail[name] : pattern.slice(1, -1).replaceAll('\\\\', '\\').replaceAll('\\.', '.')
+      const route = Object.hasOwn(detail, name) ? detail[name] : pattern.includes('(') ? undefined : pattern.slice(1, -1).replaceAll('\\\\', '\\').replaceAll('\\.', '.')
       assert.ok(route, `Add public business data to open shipped page ${name}`)
       routes.add(route)
     }
