@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { harness, file } from './harness.mjs'
 import { fixture, day } from './regression-fixture.mjs'
 import { publishTemplate } from './publish-template.mjs'
+import { followProof } from './levels-follow.mjs'
 import { browserEvidence } from './change-requests-browser.mjs'
 
 const h = await harness()
@@ -42,6 +43,8 @@ try {
   assert.equal((await h.raw(`/app/changes/${id}?attachment=${detail.attachments[0].sha256}`, { cookie: s.ended.cookie })).status, 404)
   await as('hr', 'change.decide', { request: id, state: detail.state, decision: 'approve' }, 403)
   assert.equal(detail.changes.find(c => c.field === 'Pay').to, '10% change', 'the requester sees the percentage they entered, not amounts')
+
+  await followProof(h,owner,f,id)
 
   // A skip-level approver without pay rights sees the request with pay withheld, its attachment and its follow-up work.
   const skip = await as('managerb', `change-requests/${id}`)

@@ -11,10 +11,10 @@ import { addDays } from '../dates'
 import { formatPay } from '../money'
 import { displayName } from '../people'
 import { chainTemplates, chains, mayApprove, mayRead, ROLE_LABELS, type ResolvedStep } from './chain'
+import { ownChangeStatus, LABELS, COLUMNS } from './status'
+import { followsOwnChanges } from '../levels/follow'
 import type { Attachment, Base, Plan } from './requests'
 
-const LABELS: Record<string, [string, string]> = { jobTitle: ['Job title', ''], departmentId: ['Department', 'wl_departments'], locationId: ['Location', 'wl_locations'], managerPersonId: ['Manager', 'people'], scheduleId: ['Working schedule', 'wl_schedules'] }
-const COLUMNS: Record<string, string> = { jobTitle: 'job_title', departmentId: 'department_id', locationId: 'location_id', managerPersonId: 'manager_person_id', scheduleId: 'schedule_id' }
 export const WITHHELD = 'Withheld (you cannot read compensation)'
 
 async function name(env: Bindings, table: string, id: string | null) {
@@ -32,9 +32,12 @@ export async function changeRequests(env: Bindings, actor: Actor) {
   const rows = await all(env, 'SELECT r.*, p.legal_name, p.preferred_name, m.name AS requester FROM wl_change_requests r JOIN wl_people p ON p.id = r.person_id JOIN wl_members m ON m.id = r.requested_by ORDER BY r.updated_at DESC')
   const items = []
   for (const row of rows) {
-    if (!await readable(env, actor, row)) continue
+    if (!await readable(env, actor, row)) {
+      if(actor.personId===row.person_id && await followsOwnChanges(env,actor)) items.push(await ownChangeStatus(env,actor,row))
+      continue
+    }
     const steps = json<ResolvedStep[]>(row.steps_json, [])
-    items.push({ id: row.id, person: { id: row.person_id, name: displayName(row) }, type: row.request_type, status: row.status, revision: row.revision, requestedBy: row.requester, effectiveFrom: json<Plan>(row.plan_json, {} as Plan).effectiveFrom,
+    items.push({ statusOnly:false as const, id: row.id, person: { id: row.person_id, name: displayName(row) }, type: row.request_type, status: row.status, revision: row.revision, requestedBy: row.requester, effectiveFrom: json<Plan>(row.plan_json, {} as Plan).effectiveFrom,
       waitingOn: row.status === 'pending' ? ROLE_LABELS[steps[row.step].role] : row.status === 'returned' ? 'Requester' : null,
       yourTurn: row.status === 'pending' && await mayApprove(env, actor, row as { requested_by: string; person_id: string }, steps[row.step]) })
   }
@@ -50,7 +53,11 @@ export async function changeRequests(env: Bindings, actor: Actor) {
 
 export async function changeRequest(env: Bindings, actor: Actor, id: string) {
   const row = await one(env, 'SELECT r.*, p.legal_name, p.preferred_name FROM wl_change_requests r JOIN wl_people p ON p.id = r.person_id WHERE r.id = ?', id)
-  insist(row && await readable(env, actor, row), 'not_found', 404)
+  insist(row, 'not_found', 404)
+  if(!await readable(env,actor,row)) {
+    insist(actor.personId===row.person_id && await followsOwnChanges(env,actor),'not_found',404)
+    return await ownChangeStatus(env,actor,row)
+  }
   const plan = json<Plan>(row.plan_json, {} as Plan), base = json<Base>(row.base_json, {} as Base), steps = json<ResolvedStep[]>(row.steps_json, [])
   const terms = (await one(env, 'SELECT * FROM wl_terms WHERE id = ?', base.termId))!
   const changes = []
@@ -67,7 +74,7 @@ export async function changeRequest(env: Bindings, actor: Actor, id: string) {
   const events = await all(env, 'SELECT revision, step, kind, actor, comment, at FROM wl_change_events WHERE request_id = ? ORDER BY at, id', id)
   const current = row.status === 'pending' ? steps[row.step] : undefined
   return {
-    id: row.id, person: { id: row.person_id, name: displayName(row) }, type: row.request_type, status: row.status, revision: row.revision, state: row.state,
+    statusOnly:false as const, id: row.id, person: { id: row.person_id, name: displayName(row) }, type: row.request_type, status: row.status, revision: row.revision, state: row.state,
     requestedBy: { id: row.requested_by, name: members.get(row.requested_by) }, effectiveFrom: plan.effectiveFrom, reason: plan.reason, changes,
     fields: actor.id === row.requested_by ? plan.fields : undefined, employmentType: actor.id === row.requested_by ? plan.employmentType ?? null : undefined,
     steps: steps.map((step, index) => ({ position: index + 1, role: step.role, label: ROLE_LABELS[step.role], member: step.member ? members.get(step.member) ?? null : null, note: step.note,
