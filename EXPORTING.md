@@ -100,7 +100,7 @@ history sections to include using its checkboxes. The signed-in door is
 `/app/exports/employees.zip`, using the same `scope`, `fields`, date, filters and
 optional `person` selections as CSV/XLSX. It also requires `history`, repeated
 or comma-separated: `employment`, `leave`, `lifecycle`, `documents`, `tables`,
-`profileChanges`, `goals`.
+`profileChanges`, `goals`, `reviews`.
 
 The ZIP is a readable export, not an installation backup. It contains:
 
@@ -132,7 +132,7 @@ reader and its existing size bound. The current bundle format is standard
 ZIP32, so more than its 4 GiB size/address range or 65,534 entries is refused
 as `export_bundle.zip32_limit` before download. Reference-size multipart/ZIP64
 transfer remains OPS-002 work. Only selected sections that exist in this edition
-are exported; signatures, review-cycle histories, benefits and other module
+are exported; signatures, benefits and other module
 histories, complete target-product archives and erasure restore fences remain the
 outstanding DATA-001 target.
 
@@ -146,7 +146,7 @@ request door; managers and payroll holders gain no private proposal values.
 development-completion evidence from PERFORM-001's current self/manager/HR
 projection. Unrelated people and member pickers never enter the bundle. A section
 the reader cannot enter is named in `withheldSections`; a readable section with
-no records is an empty array. Neither section includes review-cycle feedback.
+no records is an empty array. Review-cycle feedback uses the separate `reviews` section.
 
 The inclusive `asOf` cutoff uses the employer's time zone for request, decision,
 handoff, goal, check-in and completion timestamps. A later request or goal is
@@ -155,6 +155,25 @@ approved request unresolved without that handoff's reference, actor or time.
 Later check-ins and completion evidence are absent. Current permissions and
 current manager scope still govern all dates. The ZIP manifest covers these
 histories in `records.json` with the same byte count and SHA-256 verification.
+
+## Performance review history
+
+`reviews` reuses the current native PERFORM-001 review projection and then
+restricts every assignment, authored input revision, HR calibration note,
+released summary, acknowledgment, appeal and release/withholding custody row to
+the selected person. Other subjects and member pickers are excluded, including
+feedback the selected employee authored about somebody else. Existing native
+rules still govern: employees and reviewers receive their own authored input;
+HR receives calibration notes; summaries require their explicit native release
+receipt, including succession withholding and retained former-manager releases.
+Payroll authority alone grants no review history. An accessible review section
+with no permitted cycles is an empty array.
+
+The inclusive employer-local cutoff applies to cycle creation and every recorded
+history timestamp. Assignment creation and cycle closure use their native audit
+events; a close after the cutoff leaves the exported status open. Later feedback,
+notes, releases, appeals and acknowledgment/custody events are omitted. Current
+reader authority governs historical exports, as on the native review door.
 
 ## Record tables: PEOPLE-003
 

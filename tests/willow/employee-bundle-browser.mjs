@@ -28,6 +28,7 @@ export async function bundleBrowser(h, owner, staff, expected) {
      for (const input of await page.locator('input[name=history]').all()) await input.uncheck()
      await page.getByLabel('Profile requests, HR decisions and handoffs', { exact: true }).check()
      await page.getByLabel('Goals, check-ins and development completion', { exact: true }).check()
+     await page.getByLabel('Performance reviews and released feedback', { exact: true }).check()
      await page.evaluate(() => document.fonts.ready)
      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `DATA-001 form fits ${width}`)
      await page.screenshot({ path: `${destination}/DATA-001-history-${who}-${width}.png`, fullPage: true })
@@ -38,6 +39,10 @@ export async function bundleBrowser(h, owner, staff, expected) {
      assert.equal(records.length, 1)
      assert.equal(records[0].goals[0].id, expected.goal)
      assert.equal(records[0].goals[0].completion.evidence, 'Supervisor signoff SAF-204')
+     const review = records[0].reviews.find(row => row.cycle.id === expected.review)
+     assert.ok(review.summaries.some(row => row.id === expected.release))
+     assert.ok(!JSON.stringify(records[0].reviews).includes('HR-CONFIDENTIAL'))
+     if (who === 'managerb') assert.ok(!JSON.stringify(records[0].reviews).includes('WITHHELD-SUCCESSION'))
      if (who === 'employee') assert.ok(records[0].profileChanges.some(row => row.id === expected.proposal))
      else assert.deepEqual(records[0].withheldSections, ['profileChanges'])
     }
