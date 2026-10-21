@@ -3,7 +3,7 @@
 // tables whose typed columns use PEOPLE-001's validator. Key and
 // classification never change; every other edit appends a complete version.
 import type { Bindings } from '../../auth.server'
-import { can, requirePermission, type Actor } from '../actor'
+import { can, canAbout, requirePermission, type Actor } from '../actor'
 import { all, commit, guard, insist, newId, now, stmt } from '../core'
 import type { Input } from '../input'
 import { readsCustomField } from '../custom-fields/read'
@@ -71,7 +71,7 @@ export async function recordTables(env: Bindings): Promise<RecordTable[]> {
 /** Current visibility flags and the reader's current grants decide every read, including history. */
 export function readsTable(actor: Actor, personId: string, table: RecordTable): boolean {
   if (actor.owner) return true
-  if (table.classification === 'contact') return actor.personId === personId || can(actor, 'people.private')
+  if (table.classification === 'contact') return actor.personId === personId || canAbout(actor, 'people.private', personId)
   return readsCustomField(actor, personId, { classification: table.classification, employeeRead: table.current.employeeRead, managerRead: table.current.managerRead })
 }
 

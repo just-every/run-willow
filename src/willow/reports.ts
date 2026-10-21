@@ -4,7 +4,7 @@
 // totals appear only for members holding pay.read as well. Filters and
 // calculations are returned with the figures.
 import type { Bindings } from '../auth.server'
-import { can, type Actor } from './actor'
+import { can, canAbout, hasScopedGrant, type Actor } from './actor'
 import { all, auditRead, insist } from './core'
 import { hours, isDate } from './dates'
 import { personCustomFields } from './custom-fields/read'
@@ -15,11 +15,12 @@ import { currentTerms } from './people'
 
 export async function summary(env: Bindings, actor: Actor, url: URL) {
   const organisation = can(actor, 'reports.read')
-  insist(organisation || actor.reports.size > 0, 'forbidden', 403)
+  const scopedReports = !organisation && hasScopedGrant(actor, 'reports.read')
+  insist(organisation || scopedReports || actor.reports.size > 0, 'forbidden', 403)
   const asOf = url.searchParams.get('asOf') || actor.today
   const from = url.searchParams.get('from') || `${asOf.slice(0, 8)}01`, to = url.searchParams.get('to') || asOf
   insist(isDate(asOf) && isDate(from) && isDate(to) && from <= to, 'invalid_dates')
-  const inScope = (personId: string) => organisation || actor.reports.has(personId)
+  const inScope = (personId: string) => organisation || actor.reports.has(personId) || canAbout(actor, 'reports.read', personId)
   const terms = [...(await currentTerms(env, asOf)).values()].filter(row => inScope(row.person_id))
   const periods = (await all(env, 'SELECT * FROM wl_periods')).filter(row => inScope(row.person_id))
   const active = new Set(periods.filter(row => row.start_date <= asOf && (!row.end_date || row.end_date >= asOf)).map(row => row.id))
@@ -36,15 +37,17 @@ export async function summary(env: Bindings, actor: Actor, url: URL) {
   for (const row of leave) byPolicy.set(row.policy, (byPolicy.get(row.policy) ?? 0) - row.minutes)
   const tasks = (await all(env, "SELECT t.due_date, c.person_id FROM wl_case_tasks t JOIN wl_cases c ON c.id = t.case_id WHERE t.status = 'open' AND t.superseded_at IS NULL")).filter(row => inScope(row.person_id))
   const result: Record<string, unknown> = {
-    scope: organisation ? 'organisation' : 'your team', filters: { asOf, from, to },
+    scope: organisation ? 'organisation' : scopedReports ? 'your scope' : 'your team', filters: { asOf, from, to },
     calculation: 'Headcount counts employment periods in force on the as-of date by the terms in force that day. Leave taken is approved use minus reversals for requests starting in the range, in hours.',
     headcount: { total: active.size, byDepartment: count(row => departments.get(row.department_id) ?? 'No department'), byLocation: count(row => locations.get(row.location_id) ?? 'No location'), byType: periods.filter(row => active.has(row.id)).reduce((acc: Record<string, number>, row) => ({ ...acc, [row.employment_type]: (acc[row.employment_type] ?? 0) + 1 }), {}) },
     movements: { starters: periods.filter(row => row.start_date >= from && row.start_date <= to).length, leavers: periods.filter(row => row.end_date && row.end_date >= from && row.end_date <= to).length },
     leaveTaken: [...byPolicy].sort().map(([policy, minutes]) => ({ policy, hours: hours(minutes) })),
     lifecycleWork: { openTasks: tasks.length, overdue: tasks.filter(row => row.due_date < actor.today).length },
   }
-  if (organisation && can(actor, 'pay.read')) {
-    const pay = await all(env, `SELECT t.department_id, p.pay_basis, p.amount_cents, p.currency, (s.mon + s.tue + s.wed + s.thu + s.fri + s.sat + s.sun) AS weekly FROM wl_term_pay p JOIN wl_terms t ON t.id = p.term_id LEFT JOIN wl_schedules s ON s.id = t.schedule_id WHERE t.id IN (${terms.filter(row => active.has(row.period_id)).map(() => '?').join(', ') || "''"})`, ...terms.filter(row => active.has(row.period_id)).map(row => row.id))
+  // Compensation totals need both rights about the same person: pay.read and reports.read.
+  const payTerms = terms.filter(row => active.has(row.period_id) && canAbout(actor, 'pay.read', row.person_id) && canAbout(actor, 'reports.read', row.person_id))
+  if ((organisation && can(actor, 'pay.read')) || payTerms.length) {
+    const pay = await all(env, `SELECT t.department_id, p.pay_basis, p.amount_cents, p.currency, (s.mon + s.tue + s.wed + s.thu + s.fri + s.sat + s.sun) AS weekly FROM wl_term_pay p JOIN wl_terms t ON t.id = p.term_id LEFT JOIN wl_schedules s ON s.id = t.schedule_id WHERE t.id IN (${payTerms.map(() => '?').join(', ') || "''"})`, ...payTerms.map(row => row.id))
     const totals = new Map<string, { people: number; annualCents: number; unknown: number; currency: string }>()
     for (const row of pay) {
       const key = `${departments.get(row.department_id) ?? 'No department'} (${row.currency})`

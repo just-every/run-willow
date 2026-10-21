@@ -1,9 +1,10 @@
 import { bulkBrowserProof } from './levels-bulk-browser.mjs'
 import { personalBrowserProof } from './levels-personal-browser.mjs'
+import { scopeBrowserProof } from './levels-scope-browser.mjs'
 import assert from 'node:assert/strict'
 import { pathToFileURL } from 'node:url'
 import { evidenceDirectory } from './evidence.mjs'
-export async function browserEvidence(h,owner,staff,bulk) {
+export async function browserEvidence(h,owner,staff,bulk,scoped) {
  if(process.env.WILLOW_LEVELS_BROWSER!=='1') return
  assert.ok(process.platform!=='darwin'||process.env.WILLOW_PLAYWRIGHT_PATH)
  const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
@@ -68,6 +69,7 @@ export async function browserEvidence(h,owner,staff,bulk) {
    }
    await bulkBrowserProof(page,h,owner,bulk)
    await personalBrowserProof(browser,h,owner,staff)
+   await scopeBrowserProof(browser,h,owner,scoped)
   } finally {await context.close()}
  } finally {await browser.close()}
 }

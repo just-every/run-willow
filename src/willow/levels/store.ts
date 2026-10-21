@@ -2,22 +2,24 @@ import type { Bindings } from '../../auth.server'
 import { requireOwner, type Actor, type Permission } from '../actor'
 import { all } from '../core'
 import type { SelfRules } from './personal'
+import { EVERYONE, levelScopes } from './scope'
 
 export async function levels(env: Bindings, actor: Actor) {
  requireOwner(actor)
- const [rows, grants, assignments, members, migration, fields] = await Promise.all([
+ const [rows, grants, assignments, members, migration, fields, scopes] = await Promise.all([
   all<{id:string;name:string;version:number;follow_own_changes:number}>(env,'SELECT * FROM wl_levels ORDER BY name'),
   all(env,'SELECT level_id,permission FROM wl_level_permissions ORDER BY permission'),
   all(env,'SELECT * FROM wl_member_levels ORDER BY member_id,level_id'),
   all(env,`SELECT m.id,m.name,m.status,m.person_id, o.role='owner' AS owner FROM wl_members m LEFT JOIN oa_operators o ON lower(o.email)=m.email ORDER BY m.name`),
   all(env,'SELECT * FROM wl_level_migration ORDER BY name'),
   all(env,'SELECT * FROM wl_level_self_fields ORDER BY field'),
+  levelScopes(env),
  ])
  const batches=await all<{id:string;impact:string;at:number;reverted:number}>(env,`SELECT r.id,r.impact,a.at,
   EXISTS(SELECT 1 FROM wl_audit undo WHERE undo.action='level.revert' AND undo.subject=r.id) AS reverted
   FROM wl_level_reviews r JOIN wl_audit a ON a.subject=r.id AND a.action='level.bulk-assignment'
   WHERE r.consumed=1 ORDER BY a.seq DESC LIMIT 20`)
- return {batches:batches.map(batch=>({...batch,impact:JSON.parse(batch.impact)})), levels: rows.map(row=>({...row, followOwnChanges:!!row.follow_own_changes, selfFields: Object.fromEntries(fields.filter(f=>f.level_id===row.id).map(f=>[f.field,f.mode])) as SelfRules, permissions: grants.filter(p=>p.level_id===row.id).map(p=>p.permission as Permission), members: assignments.filter(a=>a.level_id===row.id).map(a=>a.member_id)})), assignments, members, migration }
+ return {batches:batches.map(batch=>({...batch,impact:JSON.parse(batch.impact)})), levels: rows.map(row=>({...row, followOwnChanges:!!row.follow_own_changes, scope:scopes.get(row.id) ?? EVERYONE, selfFields: Object.fromEntries(fields.filter(f=>f.level_id===row.id).map(f=>[f.field,f.mode])) as SelfRules, permissions: grants.filter(p=>p.level_id===row.id).map(p=>p.permission as Permission), members: assignments.filter(a=>a.level_id===row.id).map(a=>a.member_id)})), assignments, members, migration }
 }
 
 export async function effectivePermissions(env: Bindings, member: string) {

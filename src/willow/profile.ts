@@ -9,7 +9,7 @@ import type { EffectiveField } from './custom-fields/store'
 import type { Bindings } from '../auth.server'
 import { employerZone, type Actor } from './actor'
 import { requireDate } from './dates'
-import { facets as facetsOf, readsCategory, seesEveryone, type Facet } from './access'
+import { facets as facetsOf, readsCategory, seesEveryone, seesFormer, type Facet } from './access'
 import { all, auditRead, insist, one, type Row } from './core'
 import { selectedPeriods } from './employment'
 import { documentsFor } from './documents'
@@ -82,7 +82,7 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
   const admitted = options.admissionActor ?? actor
   // Former employees appear only to members who see everyone.
   const admittedPeriod = (await selectedPeriods(env, admitted.today)).get(personId)
-  insist(statusOf(admittedPeriod, admitted.today) !== 'former' || seesEveryone(admitted) || admitted.personId === personId || facetsOf(admitted, personId).has('employment'), 'not_found', 404)
+  insist(statusOf(admittedPeriod, admitted.today) !== 'former' || seesFormer(admitted, personId) || admitted.personId === personId || facetsOf(admitted, personId).has('employment'), 'not_found', 404)
   const visible = options.facets ?? facetsOf(actor, personId)
   // Resolve independent facets together, after admission and before rendering.
   const [employment, privateValues, leave, cases, documents, customFields, recordTables] = await Promise.all([
@@ -124,7 +124,7 @@ export async function directory(env: Bindings, actor: Actor, asOf = actor.today)
   const admitted = await selectedPeriods(env, actor.today)
   return people
     .map(person => ({ person, status: statusOf(selected.get(person.id), date) }))
-    .filter(({ person }) => everyone || ['active', 'upcoming'].includes(statusOf(admitted.get(person.id), actor.today)))
+    .filter(({ person }) => everyone || ['active', 'upcoming'].includes(statusOf(admitted.get(person.id), actor.today)) || seesFormer(actor, person.id))
     .map(({ person, status }) => ({ id: person.id, name: displayName(person), workEmail: person.work_email, status, ...termsSummary(current.get(person.id), look) }))
 }
 

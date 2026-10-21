@@ -5,7 +5,8 @@ import { selfWriteModes, type SelfField } from './levels/personal'
 import { customValueStatements, customValuesInput } from './custom-fields/store'
 import type { Bindings } from '../auth.server'
 import { normalizeEmail } from '../modules/operator-auth/index.mjs'
-import { can, requirePermission, type Actor } from './actor'
+import { can, canAbout, requirePermission, type Actor } from './actor'
+import { scopeFence } from './levels/scope'
 import { all, commit, guard, insist, newId, now, one, stmt, type Row } from './core'
 import { isDate, requireDate } from './dates'
 import { CURRENT_TERMS } from './employment'
@@ -106,12 +107,14 @@ export async function updatePerson(env: Bindings, actor: Actor, input: Input) {
   const modes=self ? await selfWriteModes(env,actor) : null
   const writable=(field:SelfField)=>insist(!modes||modes[field]==='edit',modes?.[field]==='approval'?'hr_approval_required':'field_read_only',403)
   if(self&&input.provided('preferredName')&&input.text('preferredName',{optional:true})!==(existing.preferred_name??'')) writable('preferredName')
-  insist(can(actor, 'people.manage') || self, 'forbidden', 403)
-  const statements: D1PreparedStatement[] = [guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_people WHERE id = ? AND revision = ?)', id, revision)]
+  insist(canAbout(actor, 'people.manage', id) || self, 'forbidden', 403)
+  const manages = canAbout(actor, 'people.manage', id)
+  // A scoped holder's authority over this person is rechecked inside the write (ROLE-002).
+  const statements: D1PreparedStatement[] = [...(self || can(actor, 'people.manage') ? [] : await scopeFence(env, actor, id, 'people.manage', ...(PRIVATE_FIELDS.some(field => input.has(field)) || input.flag('private') ? ['people.private' as const] : []))), guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_people WHERE id = ? AND revision = ?)', id, revision)]
   if(self) statements.push(guard(env,'access_changed','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',accessSnapshot))
   const next = newId(), changed: string[] = []
   if (self && input.has('legalName')) insist(input.text('legalName') === existing.legal_name, 'hr_approval_required', 403)
-  if (can(actor, 'people.manage') && input.has('legalName')) {
+  if (manages && input.has('legalName')) {
     const person = readPerson(input)
     await uniqueIdentity(env, person, id)
     statements.push(stmt(env, 'UPDATE wl_people SET legal_name = ?, preferred_name = ?, work_email = ?, employee_number = ? WHERE id = ?', person.legalName, person.preferredName, person.workEmail, person.employeeNumber, id))
@@ -123,7 +126,7 @@ export async function updatePerson(env: Bindings, actor: Actor, input: Input) {
   }
   // Private contact details: the person themselves, or HR holding both people.manage and people.private.
   if (PRIVATE_FIELDS.some(field => input.has(field)) || input.flag('private')) {
-    insist(self || (can(actor, 'people.manage') && can(actor, 'people.private')), 'forbidden', 403)
+    insist(self || (manages && canAbout(actor, 'people.private', id)), 'forbidden', 403)
     const values = readPrivate(input)
     if(self) {
       const previous=(await one(env,'SELECT * FROM wl_person_private WHERE person_id=?',id))!

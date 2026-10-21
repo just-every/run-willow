@@ -1,6 +1,6 @@
 // Page frame and small form helpers. Every value is escaped; pages need no script.
 import branding from '../../branding.json'
-import { can, type Actor } from '../actor'
+import { can, hasScopedGrant, type Actor } from '../actor'
 import { formatInstant } from '../dates'
 import { iconPaths, type IconName } from '../../ui/icon-paths'
 import { sentence } from './labels'
@@ -30,7 +30,7 @@ const NAV: NavItem[][] = [[
   { href: '/app/leave', label: 'Leave', icon: 'calendar', show: () => true },
   { href: '/app/people?view=organization', label: 'Organization chart', icon: 'org', show: () => true },
   { href: '/app/payroll', label: 'Payroll', icon: 'wallet', show: actor => can(actor, 'payroll.handoff') && can(actor, 'pay.read') },
-  { href: '/app/reports', label: 'Reports', icon: 'chart', show: actor => can(actor, 'reports.read') || actor.reports.size > 0 },
+  { href: '/app/reports', label: 'Reports', icon: 'chart', show: actor => can(actor, 'reports.read') || hasScopedGrant(actor, 'reports.read') || actor.reports.size > 0 },
   { href: '/app/proposals', label: 'Proposals', icon: 'sparkle', show: actor => can(actor, 'people.manage') },
   { href: '/app/eeo/self', label: 'Voluntary self-ID', icon: 'people', show: actor => !!actor.personId },
   { href: '/app/self-changes', label: 'Personal changes', icon: 'checklist', show: actor => !!actor.personId || can(actor,'people.private') },

@@ -3,7 +3,7 @@
 // an export or an agent's context. Managerial rank grants only the manager
 // facets listed here; private contact, pay and confidential reasons need an
 // explicit permission or being that person.
-import { can, type Actor } from './actor'
+import { can, canAbout, permissionsAbout, type Actor, type Permission } from './actor'
 
 export type Facet =
   | 'directory'     // name, work email, job title, department, location, manager
@@ -31,15 +31,17 @@ export const FACET_LABELS: Record<Facet, string> = {
 export function facets(actor: Actor, personId: string): Set<Facet> {
   const self = actor.personId === personId
   const manager = actor.reports.has(personId)
+  // Rights about this person: employer-wide ones plus those of each scoped level that reaches them (ROLE-002).
+  const rights = permissionsAbout(actor, personId), has = (permission: Permission) => actor.owner || rights.has(permission)
   const result = new Set<Facet>(['directory'])
-  if (self || manager || can(actor, 'people.manage') || can(actor, 'payroll.handoff')) result.add('employment')
-  if (can(actor, 'people.manage') || can(actor, 'payroll.handoff')) result.add('payroll')
-  if (self || can(actor, 'people.private')) result.add('private')
-  if (self || can(actor, 'pay.read')) result.add('pay')
-  if (self || manager || can(actor, 'leave.manage')) result.add('leave')
-  if (self || can(actor, 'leave.manage')) result.add('leave_reason')
-  if (self || manager || can(actor, 'people.manage')) result.add('lifecycle')
-  if (self || manager || can(actor, 'documents.private')) result.add('documents')
+  if (self || manager || has('people.manage') || has('payroll.handoff')) result.add('employment')
+  if (has('people.manage') || has('payroll.handoff')) result.add('payroll')
+  if (self || has('people.private')) result.add('private')
+  if (self || has('pay.read')) result.add('pay')
+  if (self || manager || has('leave.manage')) result.add('leave')
+  if (self || has('leave.manage')) result.add('leave_reason')
+  if (self || manager || has('people.manage')) result.add('lifecycle')
+  if (self || manager || has('documents.private')) result.add('documents')
   return result
 }
 
@@ -47,10 +49,13 @@ export const sees = (actor: Actor, personId: string, facet: Facet) => facets(act
 
 /** Whether a member may read a document category for a person. */
 export function readsCategory(actor: Actor, personId: string, category: Record<string, any>) {
-  if (can(actor, 'documents.private')) return true
+  if (canAbout(actor, 'documents.private', personId)) return true
   if (actor.personId === personId && category.subject_reads) return true
   return actor.reports.has(personId) && !!category.manager_reads
 }
 
 /** Organisation-wide lists: people.manage, reports.read and leave/payroll holders see everyone; others see the current directory. */
 export const seesEveryone = (actor: Actor) => can(actor, 'people.manage') || can(actor, 'reports.read') || can(actor, 'leave.manage') || can(actor, 'payroll.handoff')
+
+/** Former people: employer-wide holders see them all; a scoped holder only those their scope reaches today. */
+export const seesFormer = (actor: Actor, personId: string) => seesEveryone(actor) || (['people.manage', 'reports.read', 'leave.manage'] as const).some(permission => canAbout(actor, permission, personId))

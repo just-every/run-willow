@@ -1,5 +1,5 @@
 import type { Bindings } from '../../auth.server'
-import { can, type Actor } from '../actor'
+import { canAbout, type Actor } from '../actor'
 import { all, auditRead, insist } from '../core'
 import { effectiveField, fieldSchemas, type EffectiveField } from './store'
 import type { FieldClassification, FieldValueRevision, FieldValueRow } from './types'
@@ -10,9 +10,9 @@ export type ReadableDefinition = { classification: FieldClassification; employee
 /** Existing current-or-first-upcoming reports and current flags confer general-field access. */
 export function readsCustomField(actor: Actor, personId: string, definition: ReadableDefinition): boolean {
   if (actor.owner) return true
-  if (definition.classification === 'hr') return can(actor, 'people.private')
-  if (definition.classification === 'payroll') return can(actor, 'pay.read')
-  return can(actor, 'people.manage') || (actor.personId === personId && definition.employeeRead) ||
+  if (definition.classification === 'hr') return canAbout(actor, 'people.private', personId)
+  if (definition.classification === 'payroll') return canAbout(actor, 'pay.read', personId)
+  return canAbout(actor, 'people.manage', personId) || (actor.personId === personId && definition.employeeRead) ||
     (actor.reports.has(personId) && definition.managerRead)
 }
 

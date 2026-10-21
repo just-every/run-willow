@@ -8,7 +8,8 @@ import { policyRulesInput } from './leave-policy-input'
 // approved leave writes a reversal of the use entry. Confidential reasons
 // live in their own table and are read only with the leave_reason facet.
 import type { Bindings } from '../auth.server'
-import { can, requireOwner, requirePermission, type Actor } from './actor'
+import { can, canAbout, requireOwner, requirePermission, type Actor } from './actor'
+import { scopeFence } from './levels/scope'
 import { sees } from './access'
 import { all, auditRead, commit, guard, insist, json, newId, now, one, stmt, type Row } from './core'
 import { addDays, daysBetween, hours, parseHours, requireDate, weekday } from './dates'
@@ -193,7 +194,7 @@ async function approverFor(env: Bindings, account: Row, start: string, requester
 export async function requestLeave(env: Bindings, actor: Actor, input: Input) {
   const account = await signedOff(env, input.text('account', { max: 100 }))
   const self = actor.personId === account.person_id
-  insist(self || can(actor, 'leave.manage'), self ? 'forbidden' : 'not_found', self ? 403 : 404)
+  insist(self || canAbout(actor, 'leave.manage', account.person_id), self ? 'forbidden' : 'not_found', self ? 403 : 404)
   const start = requireDate(input.text('startDate', { max: 10 }), 'invalid_startDate'), end = requireDate(input.text('endDate', { max: 10 }), 'invalid_endDate')
   const calculation = await calculate(env, account, start, end)
   insist(!await one(env, "SELECT 1 FROM wl_leave_requests WHERE person_id = ? AND status IN ('pending', 'approved') AND start_date <= ? AND end_date >= ?", account.person_id, end, start), 'overlaps_existing_leave', 409)
@@ -201,6 +202,7 @@ export async function requestLeave(env: Bindings, actor: Actor, input: Input) {
   const limit = (await one<{ negative_limit_minutes: number }>(env, 'SELECT negative_limit_minutes FROM wl_policy_versions WHERE id = ?', account.policy_version_id))!.negative_limit_minutes
   const id = newId(), approver = await approverFor(env, account, start, actor.id)
   await commit(env, [
+    ...await scopeGuard(env, actor, account.person_id, self),
     // The balance check and the reservation are one atomic batch: two requests cannot spend the same minutes.
     guard(env, 'insufficient_balance', `${BALANCE} - ? >= ?`, account.id, calculation.minutes, -limit),
     guard(env, 'stale', "NOT EXISTS(SELECT 1 FROM wl_leave_requests WHERE person_id = ? AND status IN ('pending', 'approved') AND start_date <= ? AND end_date >= ?)", account.person_id, end, start),
@@ -220,8 +222,11 @@ async function requestRow(env: Bindings, id: string) {
 /** The routed approver decides; a leave manager may decide any request except their own. */
 function mayDecide(actor: Actor, request: Row) {
   if (request.requested_by === actor.id || request.person_id === actor.personId) return false
-  return request.approver_member_id === actor.id || can(actor, 'leave.manage')
+  return request.approver_member_id === actor.id || canAbout(actor, 'leave.manage', request.person_id)
 }
+
+/** A leave manager whose authority comes only from a scoped level is rechecked inside the write (ROLE-002). */
+const scopeGuard = async (env: Bindings, actor: Actor, personId: string, otherAuthority: boolean) => otherAuthority || can(actor, 'leave.manage') ? [] : await scopeFence(env, actor, personId, 'leave.manage')
 
 // A route grants access to this request only, never the person's account/facets.
 const mayReadRequest = (actor: Actor, request: Row) => sees(actor, request.person_id, 'leave') || request.approver_member_id === actor.id
@@ -238,6 +243,7 @@ export async function decideLeave(env: Bindings, actor: Actor, input: Input) {
   const note = input.text('note', { optional: true, max: 500 }) || null
   const approved = decision === 'approve'
   await commit(env, [
+    ...await scopeGuard(env, actor, request.person_id, request.approver_member_id === actor.id),
     guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_leave_requests WHERE id = ? AND status = 'pending')", request.id),
     stmt(env, "UPDATE wl_leave_requests SET status = ?, decided_by = ?, decided_at = ?, decision_note = ? WHERE id = ? AND status = 'pending'", approved ? 'approved' : 'declined', actor.id, now(), note, request.id),
     guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_leave_requests WHERE id = ? AND status = ? AND decided_by = ?)', request.id, approved ? 'approved' : 'declined', actor.id),
@@ -249,8 +255,9 @@ export async function decideLeave(env: Bindings, actor: Actor, input: Input) {
 
 export async function withdrawLeave(env: Bindings, actor: Actor, input: Input) {
   const request = await requestRow(env, input.text('request', { max: 100 }))
-  insist(request.person_id === actor.personId || can(actor, 'leave.manage'), 'not_found', 404)
+  insist(request.person_id === actor.personId || canAbout(actor, 'leave.manage', request.person_id), 'not_found', 404)
   await commit(env, [
+    ...await scopeGuard(env, actor, request.person_id, request.person_id === actor.personId),
     stmt(env, "UPDATE wl_leave_requests SET status = 'withdrawn', cancelled_by = ?, cancelled_at = ? WHERE id = ? AND status = 'pending'", actor.id, now(), request.id),
     guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_leave_requests WHERE id = ? AND status = 'withdrawn' AND cancelled_by = ?)", request.id, actor.id),
     ledgerEntry(env, actor, request, 'release', request.minutes, 'Reservation released on withdrawal'),
@@ -274,9 +281,9 @@ export async function cancelLeave(env: Bindings, actor: Actor, input: Input) {
   insist(mayReadRequest(actor, request), 'not_found', 404)
   const own = request.person_id === actor.personId
   insist(request.status === 'approved', 'request_not_approved', 409)
-  insist(can(actor, 'leave.manage') || request.approver_member_id === actor.id || (own && request.start_date > actor.today), 'not_your_decision', 403)
+  insist(canAbout(actor, 'leave.manage', request.person_id) || request.approver_member_id === actor.id || (own && request.start_date > actor.today), 'not_your_decision', 403)
   const note = input.text('note', { max: 500 })
-  await commit(env, await reversalStatements(env, actor, request, note), { actor: actor.id, action: 'leave.cancel', subject: request.id })
+  await commit(env, [...await scopeGuard(env, actor, request.person_id, request.approver_member_id === actor.id || (own && request.start_date > actor.today)), ...await reversalStatements(env, actor, request, note)], { actor: actor.id, action: 'leave.cancel', subject: request.id })
   return { id: request.id, status: 'cancelled' }
 }
 
@@ -284,7 +291,7 @@ export async function cancelLeave(env: Bindings, actor: Actor, input: Input) {
 export async function correctLeave(env: Bindings, actor: Actor, input: Input) {
   const request = await requestRow(env, input.text('request', { max: 100 }))
   insist(mayReadRequest(actor, request), 'not_found', 404)
-  insist(can(actor, 'leave.manage') || (request.approver_member_id === actor.id && mayDecide(actor, request)), 'not_your_decision', 403)
+  insist(canAbout(actor, 'leave.manage', request.person_id) || (request.approver_member_id === actor.id && mayDecide(actor, request)), 'not_your_decision', 403)
   insist(request.status === 'approved', 'request_not_approved', 409)
   const account = await signedOff(env, request.account_id)
   const start = requireDate(input.text('startDate', { max: 10 }), 'invalid_startDate'), end = requireDate(input.text('endDate', { max: 10 }), 'invalid_endDate')
@@ -294,6 +301,7 @@ export async function correctLeave(env: Bindings, actor: Actor, input: Input) {
   const note = input.text('note', { max: 500 }), id = newId()
   const corrected = { ...request, id, start_date: start, minutes: calculation.minutes }
   await commit(env, [
+    ...await scopeGuard(env, actor, request.person_id, request.approver_member_id === actor.id),
     ...await reversalStatements(env, actor, request, `Corrected: ${note}`),
     stmt(env, "INSERT INTO wl_leave_requests (id, account_id, person_id, start_date, end_date, minutes, calculation, approver_member_id, status, corrects, requested_by, requested_at, decided_by, decided_at, decision_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?, ?, ?, ?, ?)", id, request.account_id, request.person_id, start, end, calculation.minutes, JSON.stringify(calculation), request.approver_member_id, request.id, request.requested_by, request.requested_at, actor.id, now(), note),
     stmt(env, 'INSERT INTO wl_leave_reasons (request_id, reason) SELECT ?, reason FROM wl_leave_reasons WHERE request_id = ?', id, request.id),
@@ -337,8 +345,8 @@ export async function leaveDetail(env: Bindings, actor: Actor, id: string) {
     ...(sees(actor, row.person_id, 'leave') ? { balanceMinutes: await balance(env, row.account_id) } : {}),
     coverage: await coverage(env, row.person_id, (await one<{ period_id: string }>(env, 'SELECT period_id FROM wl_leave_accounts WHERE id = ?', row.account_id))!.period_id, row.start_date, row.end_date),
     canDecide: row.status === 'pending' && mayDecide(actor, row),
-    canCancel: row.status === 'approved' && (can(actor, 'leave.manage') || row.approver_member_id === actor.id || (row.person_id === actor.personId && row.start_date > actor.today)),
-    canCorrect: row.status === 'approved' && (can(actor, 'leave.manage') || (row.approver_member_id === actor.id && mayDecide(actor, row))),
+    canCancel: row.status === 'approved' && (canAbout(actor, 'leave.manage', row.person_id) || row.approver_member_id === actor.id || (row.person_id === actor.personId && row.start_date > actor.today)),
+    canCorrect: row.status === 'approved' && (canAbout(actor, 'leave.manage', row.person_id) || (row.approver_member_id === actor.id && mayDecide(actor, row))),
   }
 }
 

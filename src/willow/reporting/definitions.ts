@@ -1,6 +1,6 @@
 // REPORT-001: definitions describe a report, never grant permission to its rows or columns.
 import type { Bindings } from '../../auth.server'
-import { can, type Actor } from '../actor'
+import { can, hasScopedGrant, type Actor } from '../actor'
 import { all, commit, guard, insist, newId, now, one } from '../core'
 import { stmt } from '../core'
 import { isDate } from '../dates'
@@ -8,7 +8,7 @@ import type { Input } from '../input'
 import { effectiveFieldDefinitions } from '../custom-fields/store'
 export interface ReportDefinition { name:string; columns:string[]; asOf:string; from:string; to:string; department:string; location:string; status:'active'|'all' }
 export const STANDARD_COLUMNS: Record<string,string>={name:'Name',employeeNumber:'Employee number',jobTitle:'Job title',department:'Department',location:'Location',employmentType:'Employment type',fte:'FTE',tenureDays:'Tenure (days)',leaveHours:'Leave balance (hours)',leaveLiability:'Leave liability',payAmount:'Pay amount',phone:'Private phone',personal_email:'Personal email',openExceptions:'Open exceptions',overdueWork:'Overdue work'}
-export function requireReporter(a:Actor) { insist(can(a,'reports.read')||a.reports.size>0,'forbidden',403) }
+export function requireReporter(a:Actor) { insist(can(a,'reports.read')||hasScopedGrant(a,'reports.read')||a.reports.size>0,'forbidden',403) }
 export async function reportDefinition(env:Bindings,raw:unknown,date:string):Promise<ReportDefinition> {
  insist(raw && typeof raw==='object'&&!Array.isArray(raw),'invalid_report')
  const d=raw as Record<string,any>

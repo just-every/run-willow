@@ -1,6 +1,6 @@
 // DATA-001: exports consume the same permission projection as a person's page.
 import type { Bindings } from '../auth.server'
-import type { Actor } from './actor'
+import { hasScopedGrant, scopedPeople, type Actor } from './actor'
 import { seesEveryone, type Facet } from './access'
 import { auditRead, insist } from './core'
 import { directoryFilters, filterDirectory } from './organization'
@@ -39,7 +39,10 @@ export const EMPLOYEE_EXPORT_FIELDS: Record<string, Column> = {
   emergencyContact: { label: 'Emergency contact', facet: 'private', value: p => p.private?.emergency_contact },
 }
 
-export const organizationExport = (actor: Actor) => seesEveryone(actor)
+// A scoped holder's organization export is exactly the people their scoped levels reach.
+const EXPORT_RIGHTS = ['people.manage', 'reports.read', 'leave.manage'] as const
+export const organizationExport = (actor: Actor) => seesEveryone(actor) || hasScopedGrant(actor, ...EXPORT_RIGHTS)
+const exportPeople = (actor: Actor) => seesEveryone(actor) ? null : scopedPeople(actor, ...EXPORT_RIGHTS)
 export const DEFAULT_EXPORT_FIELDS = ['name', 'workEmail', 'jobTitle', 'department', 'location', 'manager', 'status']
 
 /** Display choices use current visibility even when the export date is historic. */
@@ -47,7 +50,7 @@ export async function employeeCustomColumns(env: Bindings, actor: Actor, asOf = 
   return (await fieldSchemas(env, asOf)).flatMap(schema => {
     const definition = effectiveField(schema), current = schema.versions.find(version => version.effectiveFrom <= actor.today)
     const policy = current ? effectiveField(schema, current) : definition ? { ...definition, employeeRead: false, managerRead: false } : null
-    const visible = policy && [actor.personId ?? '', ...actor.reports].some(personId => readsCustomField(actor, personId, policy))
+    const visible = policy && [actor.personId ?? '', ...actor.reports, ...scopedPeople(actor, ...EXPORT_RIGHTS)].some(personId => readsCustomField(actor, personId, policy))
     return definition && visible ? [{ key: `custom.${schema.key}`, label: definition.label, definition }] : []
   })
 }
@@ -72,8 +75,9 @@ export async function employeeExportData(env: Bindings, actor: Actor, url: URL) 
   insist(fields.length > 0 && fields.length <= Object.keys(columns).length
     && new Set(fields).size === fields.length && fields.every(key => Object.hasOwn(columns, key)), 'invalid_export_fields')
   const customKeys = new Set(selectedCustomFields(url))
+  const limit = exportPeople(actor)
   const scoped = (await directory(env, actor, filters.date)).filter(person =>
-    scope === 'organization' || (scope === 'self' ? person.id === actor.personId : actor.reports.has(person.id)))
+    scope === 'organization' ? !limit || limit.has(person.id) : (scope === 'self' ? person.id === actor.personId : actor.reports.has(person.id)))
   const selected = url.searchParams.getAll('person')
   insist(selected.every(id => scoped.some(person => person.id === id)), 'export_person_out_of_scope', 403)
   const people = filterDirectory(scoped, filters).filter(person => !selected.length || selected.includes(person.id))

@@ -1,4 +1,5 @@
 import { followsOwnChanges } from './levels/follow'
+import { scopedGrants, type ScopedGrant } from './levels/scope'
 import { initializeProvisionedDoor } from './movein/authority'
 // The signed-in person as Willow sees them: an operator-auth session joined to a
 // Willow member, that member's explicit permissions, the person they are, and
@@ -44,6 +45,8 @@ export interface Actor {
   /** People whose current (or first upcoming) terms name this actor's person as manager. */
   reports: Set<string>
   followOwnChanges: boolean
+  /** ROLE-002: about-others rights from scoped levels, each with the people it reaches today. Never in `permissions`. */
+  scoped: ScopedGrant[]
   today: string
 }
 
@@ -72,7 +75,7 @@ export async function actorFor(env: Bindings, member: { id: string; email: strin
   if (member.owner) PERMISSIONS.forEach(permission => permissions.add(permission))
   const date = today(await employerZone(env))
   const reports = new Set(member.personId ? (await all<{ person_id: string }>(env, `${CURRENT_TERMS} AND t.manager_person_id = ?`, date, member.personId)).map(row => row.person_id) : [])
-  return { ...member, permissions, reports, today: date, followOwnChanges: await followsOwnChanges(env,member) }
+  return { ...member, permissions, reports, today: date, followOwnChanges: await followsOwnChanges(env,member), scoped: member.owner ? [] : await scopedGrants(env, member.id, member.personId, date) }
 }
 
 export async function ensureMember(env: Bindings, email: string, name: string) {
@@ -80,7 +83,28 @@ export async function ensureMember(env: Bindings, email: string, name: string) {
   return (await one<{ id: string; name: string; person_id: string | null; status: string }>(env, 'SELECT id, name, person_id, status FROM wl_members WHERE email = ?', email))!
 }
 
+/** Employer-wide: direct grants, unscoped levels and the owner. A scoped level never satisfies this. */
 export const can = (actor: Actor, permission: Permission) => actor.owner || actor.permissions.has(permission)
+
+/** About one person: the employer-wide right, or a scoped level whose scope reaches them today. */
+export const canAbout = (actor: Actor, permission: Permission, personId: string) => can(actor, permission) || actor.scoped.some(grant => grant.permissions.has(permission) && grant.people.has(personId))
+
+/** Every right held about one person: the union of employer-wide rights and each reaching level's own rights. */
+export function permissionsAbout(actor: Actor, personId: string): Set<Permission> {
+  if (actor.owner) return new Set(PERMISSIONS)
+  const rights = new Set(actor.permissions)
+  for (const grant of actor.scoped) if (grant.people.has(personId)) grant.permissions.forEach(permission => rights.add(permission))
+  return rights
+}
+
+/** The people a permission reaches through scoped levels only (the employer-wide right is `can`). */
+export function scopedPeople(actor: Actor, ...permissions: Permission[]): Set<string> {
+  const people = new Set<string>()
+  for (const grant of actor.scoped) if (permissions.some(permission => grant.permissions.has(permission))) grant.people.forEach(person => people.add(person))
+  return people
+}
+
+export const hasScopedGrant = (actor: Actor, ...permissions: Permission[]) => actor.scoped.some(grant => permissions.some(permission => grant.permissions.has(permission)))
 
 export function requirePermission(actor: Actor, ...permissions: Permission[]) {
   insist(permissions.every(permission => can(actor, permission)), 'forbidden', 403)

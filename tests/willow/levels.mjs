@@ -5,12 +5,15 @@ import { personalFieldProof } from './levels-personal.mjs'
 import { harness } from './harness.mjs'
 import { fixture } from './regression-fixture.mjs'
 import { browserEvidence } from './levels-browser.mjs'
+import { scopeProof, transferProof } from './levels-scope.mjs'
+import { scopeKindsProof } from './levels-scope-kinds.mjs'
 const h=await harness()
 try {
  assert.equal((await h.raw('/auth/bootstrap',{body:{token:h.vars.SETUP_TOKEN,displayName:'Olive Owner'}})).status,303)
  const owner=await h.signIn(h.vars.OWNER_EMAIL)
  await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})
- const {api,join,staff:s}=await fixture(h,owner)
+ const fx=await fixture(h,owner)
+ const {api,join,staff:s}=fx
  const as=(who,path,body,status)=>h.api(path,s[who].cookie,body,status)
  const preview=plan=>api('level.preview',plan)
  const apply=review=>api('level.apply',{review:review.id})
@@ -87,6 +90,10 @@ try {
  assert.ok(audit.some(e=>e.action==='level.level'&&e.actor===(awaitOwnerId)))
  const personal=await personalFieldProof(h,owner,s)
  const bulk=await bulkLevelProof(h,owner,s,join)
- await browserEvidence(h,owner,s,bulk)
+ const scoped=await scopeProof(h,owner,fx)
+ await transferProof(h,scoped)
+ await scopeKindsProof(h,owner,fx)
+ console.log('ROLE-002 scopes: PASS — everyone, direct, direct and indirect, location, department, employment type, custom field and combined group scopes reach exactly their people through every registered door, control members, dated transfers on each side of the effective date, scoped writes rechecked, invalid scopes refused and batch revert (division and legal-entity scopes need person attributes that do not exist yet)')
+ await browserEvidence(h,owner,s,bulk,scoped)
  console.log('ROLE-001: PASS — exact union, owner-only reviewed changes, stale/replay refusal, same-session revocation and ended-access clearing (personal self-write modes and immutable HR routing proved; other field/section rights remain partial)')
 } finally { await h.close() }

@@ -93,7 +93,7 @@ export const views: Record<string, View> = {
   modelDraft: (env, actor, _request, id) => modelDraft(env, actor, id),
   levels: (env, actor) => levels(env,actor),
   levelReview: (env, actor, request, id) => levelReview(env,actor,id!),
-  me: async (env, actor) => ({ id: actor.id, email: actor.email, name: actor.name, owner: actor.owner, person: actor.personId, permissions: [...actor.permissions], selfWriteModes: await selfWriteModes(env,actor), manages: [...actor.reports], today: actor.today, employer: await employer(env) }),
+  me: async (env, actor) => ({ id: actor.id, email: actor.email, name: actor.name, owner: actor.owner, person: actor.personId, permissions: [...actor.permissions], scoped: actor.scoped.map(grant => ({ level: grant.level, scope: grant.scope, permissions: [...grant.permissions].sort(), people: grant.people.size })), selfWriteModes: await selfWriteModes(env,actor), manages: [...actor.reports], today: actor.today, employer: await employer(env) }),
   permissions: async () => PERMISSION_LABELS,
   settings: env => settings(env),
   members: (env, actor, request) => members(env, actor, request),

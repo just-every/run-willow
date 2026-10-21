@@ -72,9 +72,9 @@ export async function harness({ bindings = {}, provider, persistTo, port: chosen
     assert.ok(ready, 'the Worker became healthy')
   } catch (error) { await close(); throw error }
 
-  const raw = (path, { cookie, body, form, method } = {}) => fetch(origin + path, {
+  const raw = (path, { cookie, body, form, method, ip } = {}) => fetch(origin + path, {
     method: method ?? (body !== undefined || form ? 'POST' : 'GET'), redirect: 'manual',
-    headers: { 'CF-Connecting-IP': '127.0.0.1', ...(cookie ? { cookie } : {}), ...(body !== undefined || form ? { origin } : {}), ...(body !== undefined ? { 'content-type': 'application/json' } : {}) },
+    headers: { 'CF-Connecting-IP': ip ?? '127.0.0.1', ...(cookie ? { cookie } : {}), ...(body !== undefined || form ? { origin } : {}), ...(body !== undefined ? { 'content-type': 'application/json' } : {}) },
     body: body !== undefined ? JSON.stringify(body) : form,
   })
 
@@ -97,15 +97,15 @@ export async function harness({ bindings = {}, provider, persistTo, port: chosen
   }
 
   /** Provider-edge mail is captured only in this test harness. */
-  async function signIn(email, { requested = false } = {}) {
+  async function signIn(email, { requested = false, ip } = {}) {
     if (!requested) {
       links.delete(email)
-      assert.equal((await raw('/auth/magic-link', { body: { email, returnTo: '/app' } })).status, 202)
+      assert.equal((await raw('/auth/magic-link', { body: { email, returnTo: '/app' }, ip })).status, 202)
     }
     const link = links.get(email)
     if (!link) throw new Error(`no sign-in message for ${email}`)
     const token = new URL(link).searchParams.get('token')
-    const confirmed = await raw('/auth/confirm', { body: { token } })
+    const confirmed = await raw('/auth/confirm', { body: { token }, ip })
     assert.equal(confirmed.status, 303, 'ordinary link confirmation')
     links.delete(email)
     return confirmed.headers.getSetCookie().map(line => line.split(';')[0]).join('; ')

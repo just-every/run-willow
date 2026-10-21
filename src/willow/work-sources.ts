@@ -5,7 +5,7 @@ import { currentMembership, matchesAudience } from './company/audience'
 import { reviewsSelfChanges, handlesSelfExceptions } from './self-service/view'
 // Adapters for every shipped work source. No private values enter this projection.
 import type { Bindings } from '../auth.server'
-import { actorFor, can, employerZone, type Actor } from './actor'
+import { actorFor, can, canAbout, employerZone, type Actor } from './actor'
 import { readsCategory, sees } from './access'
 import { all, json, type Row } from './core'
 import { addDays, today } from './dates'
@@ -64,7 +64,7 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
   if (missing.length) add('information',c,'Complete required information',`/app/cases/${c.id}`,c.anchor_date,hr,hr,null,`${missing.length} required field(s) missing`)
  }
  for (const r of await all(env,"SELECT * FROM wl_leave_requests WHERE status='pending'")) {
-  const decide = (a: Actor) => a.id!==r.requested_by && a.personId!==r.person_id && (a.id===r.approver_member_id || can(a,'leave.manage'))
+  const decide = (a: Actor) => a.id!==r.requested_by && a.personId!==r.person_id && (a.id===r.approver_member_id || canAbout(a,'leave.manage',r.person_id))
   add('leave',r,'Review time-off request',`/app/leave/${r.id}`,r.start_date,a=>decide(a) || a.id===r.requested_by || a.personId===r.person_id,decide,r.approver_member_id)
  }
  for (const r of await all(env,"SELECT id,proposed_at FROM wl_proposals WHERE status='pending'")) add('proposal',r,'Review employee change',`/app/proposals/${r.id}`,deadline(r.proposed_at),hr)
