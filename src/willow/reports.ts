@@ -12,6 +12,7 @@ import { effectiveFieldDefinitions } from './custom-fields/store'
 import { employeeCsv } from './export-formats'
 import { selectedCustomFields } from './employee-export'
 import { currentTerms } from './people'
+import { erasedExcluded } from './retention/excluded'
 
 export async function summary(env: Bindings, actor: Actor, url: URL) {
   const organisation = can(actor, 'reports.read')
@@ -37,7 +38,7 @@ export async function summary(env: Bindings, actor: Actor, url: URL) {
   for (const row of leave) byPolicy.set(row.policy, (byPolicy.get(row.policy) ?? 0) - row.minutes)
   const tasks = (await all(env, "SELECT t.due_date, c.person_id FROM wl_case_tasks t JOIN wl_cases c ON c.id = t.case_id WHERE t.status = 'open' AND t.superseded_at IS NULL")).filter(row => inScope(row.person_id))
   const result: Record<string, unknown> = {
-    scope: organisation ? 'organisation' : scopedReports ? 'your scope' : 'your team', filters: { asOf, from, to },
+    scope: organisation ? 'organisation' : scopedReports ? 'your scope' : 'your team', filters: { asOf, from, to }, ...(organisation ? { excludesErased: await erasedExcluded(env, asOf) } : {}),
     calculation: 'Headcount counts employment periods in force on the as-of date by the terms in force that day. Leave taken is approved use minus reversals for requests starting in the range, in hours.',
     headcount: { total: active.size, byDepartment: count(row => departments.get(row.department_id) ?? 'No department'), byLocation: count(row => locations.get(row.location_id) ?? 'No location'), byType: periods.filter(row => active.has(row.id)).reduce((acc: Record<string, number>, row) => ({ ...acc, [row.employment_type]: (acc[row.employment_type] ?? 0) + 1 }), {}) },
     movements: { starters: periods.filter(row => row.start_date >= from && row.start_date <= to).length, leavers: periods.filter(row => row.end_date && row.end_date >= from && row.end_date <= to).length },

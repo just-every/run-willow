@@ -146,7 +146,16 @@ export const AUTHORED: [string, string][] = [
   ['wl_model_drafts', 'proposed_by'], ['wl_workflow_reviews', 'actor'], ['wl_level_reviews', 'actor'], ['wl_change_chains', 'recorded_by'],
   ['wl_date_alerts', 'recorded_by'], ['wl_company_announcement_versions', 'recorded_by'], ['wl_company_file_versions', 'recorded_by'],
   ['wl_company_folder_versions', 'recorded_by'], ['wl_work_schedule', 'updated_by'], ['wl_retention_adoptions', 'adopted_by'], ['wl_retention_states', 'recorded_by'],
-  ['wl_retention_mappings', 'recorded_by'], ['wl_contractor_status', 'recorded_by'], ['wl_eeo_title_map', 'recorded_by'], ['wl_eeo_establishments', 'recorded_by'], ['wl_eeo_runs', 'created_by'], ['wl_eeo_recorded', 'recorded_by'], ['wl_holds', 'placed_by'], ['wl_hold_reviews', 'reviewed_by'], ['wl_erasure_requests', 'requested_by'], ['wl_provider_requests', 'recorded_by'], ['wl_provider_requests', 'assignee'],
+  ['wl_retention_mappings', 'recorded_by'], ['wl_contractor_status', 'recorded_by'], ['wl_eeo_title_map', 'recorded_by'], ['wl_eeo_establishments', 'recorded_by'], ['wl_eeo_runs', 'created_by'], ['wl_eeo_recorded', 'recorded_by'], ['wl_holds', 'placed_by'], ['wl_hold_reviews', 'reviewed_by'], ['wl_erasure_requests', 'requested_by'],
+  ['wl_terms', 'recorded_by'], ['wl_terms', 'cancelled_by'], ['wl_policy_versions', 'written_by'], ['wl_policy_versions', 'approved_by'], ['wl_leave_accounts', 'approved_by'],
+  ['wl_leave_requests', 'requested_by'], ['wl_leave_requests', 'decided_by'], ['wl_leave_requests', 'cancelled_by'], ['wl_ledger', 'recorded_by'], ['wl_cases', 'opened_by'], ['wl_cases', 'completed_by'],
+  ['wl_case_tasks', 'assignee'], ['wl_case_tasks', 'completed_by'], ['wl_payroll_batches', 'created_by'], ['wl_payroll_batches', 'exported_by'], ['wl_payroll_batches', 'acknowledged_by'],
+  ['wl_proposals', 'proposed_by'], ['wl_proposals', 'decided_by'], ['wl_model_drafts', 'decided_by'], ['wl_work_policy', 'approved_by'], ['wl_workflow_upgrades', 'actor'], ['wl_change_events', 'actor'],
+  ['wl_date_alerts', 'task_assignee'], ['wl_date_alerts', 'retired_by'], ['wl_date_alert_tasks', 'assignee'], ['wl_date_alert_tasks', 'closed_by'], ['wl_report_schedules', 'approved_by'],
+  ['wl_protected_cases', 'created_by'], ['wl_protected_certifications', 'uploaded_by'], ['wl_protected_absences', 'recorded_by'], ['wl_leave_overrides', 'requested_by'], ['wl_leave_override_decisions', 'decided_by'],
+  ['wl_company_preferences', 'updated_by'], ['wl_comp_cycles', 'approved_by'], ['wl_comp_cycles', 'published_by'], ['wl_comp_proposals', 'requested_by'], ['wl_review_inputs', 'author'], ['wl_review_notes', 'author'],
+  ['wl_review_summaries', 'created_by'], ['wl_review_withholdings', 'author'], ['wl_level_permissions', 'granted_by'], ['wl_self_changes', 'requested_by'], ['wl_self_decisions', 'decided_by'],
+  ['wl_self_reconciliation', 'recorded_by'], ['wl_period_entities', 'set_by'], ['wl_permissions', 'granted_by'], ['wl_work_history', 'actor'], ['wl_audit', 'actor'], ['wl_work_schedule', 'owner'], ['wl_work_schedule', 'substitute'], ['wl_survey_plans', 'owner_member'], ['wl_provider_requests', 'recorded_by'], ['wl_provider_requests', 'assignee'],
 ]
 export const AUTHORED_STORES: Store[] = AUTHORED.map(([table, column]) => MEMBER_ROWS(table, column))
 

@@ -85,9 +85,9 @@ function classify(context: Context, store: { id: string; table: string; label: s
   if (typeof kind === 'object' || cls) {
     const key = cls ?? (kind as { class: ClassKey }).class
     const hold = heldBy(context, key, category)
-    if (hold) return { ...base, class: key, rule: CLASSES[key].citation, disposition: 'held', hold }
-    if (store.awaiting) return { ...base, class: key, rule: 'Until the run\'s submission confirmation or abandonment', disposition: 'retained' }
+    if (store.awaiting) return { ...base, class: key, rule: 'Until the run\'s submission confirmation or abandonment', disposition: hold ? 'held' : 'retained', hold }
     const expiry = classExpiry(key, { hire: context.hire, end: context.end, record: measured.record }, context.contractor, context.extra(key))
+    if (hold) return { ...base, class: key, rule: CLASSES[key].citation, expiry, disposition: 'held', hold }
     return { ...base, class: key, rule: CLASSES[key].citation, expiry, disposition: expiry > context.today ? 'retained' : 'erased' }
   }
   const hold = heldBy(context, null, null)
@@ -167,13 +167,14 @@ export async function planErasure(env: Bindings, actor: Actor, personId: string)
     if (!['people', 'private'].includes(item.id)) continue
     const hold = needing.find(other => other.disposition === 'held')
     const last = needing.some(other => !other.expiry) ? null : needing.map(other => other.expiry!).sort().at(-1) ?? null
-    if (hold) Object.assign(item, { disposition: 'held', hold: hold.hold, expiry: null })
+    if (hold) Object.assign(item, { disposition: 'held', hold: hold.hold, expiry: last })
     else if (needing.length) Object.assign(item, { disposition: 'retained', expiry: last, rule: 'longest retained rule' })
     else Object.assign(item, { disposition: 'erased', expiry: null })
   }
   items.sort((a, b) => a.id.localeCompare(b.id))
   const copies = await declaredCopies(env, subject, person.created_at)
   const request = await one<{ id: string; status: string; source: string; received_on: string }>(env, "SELECT id, status, source, received_on FROM wl_erasure_requests WHERE person_id = ? AND status IN ('open', 'confirmed')", personId)
+  for (const item of items) if (item.id === 'payroll_batches') blockers.push({ kind: 'shared_record_unredacted', ref: item.id, reason: 'A payroll handoff batch names the person among others and line-level redaction is not yet available' })
   for (const item of items) if (item.id.startsWith('import_')) blockers.push({ kind: 'import_custody_unredacted', ref: item.id, reason: 'Import custody still holds the person and Base\'s custody redaction is not yet wired into erasure' })
   blockers.sort((a, b) => (a.kind + a.ref).localeCompare(b.kind + b.ref))
   const digest = await sha256Hex(JSON.stringify({ version: TABLE_VERSION, adopted: adopted?.id ?? null, rules: rules.map(rule => rule.id), holds: activeHolds.map(hold => [hold.id, hold.review_date]), contractor, mapped: [...mapped].sort(),

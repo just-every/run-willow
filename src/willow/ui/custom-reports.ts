@@ -1,3 +1,4 @@
+import { excludesText } from '../retention/excluded'
 import { readsCustomField } from '../custom-fields/read'
 // REPORT-001: saved definitions, authorized results and versioned delivery schedules.
 import type { Bindings } from '../../auth.server'
@@ -53,7 +54,7 @@ function totals(result: ReportResult) {
   const t = result.totals
   const knownTenure = result.rows.filter(row => row.measures.tenureDays !== null).length
   const unknownLeave = result.rows.filter(row => row.measures.leaveMinutes === null).length
-  return h`<section class="card" id="calculations"><h2>Totals and calculations</h2>
+  return h`<section class="card" id="calculations"><h2>Totals and calculations</h2>${result.excludesErased ? h`<p role="status">${excludesText(result.excludesErased)}</p>` : ''}
 ${table(['Measure', 'Result', 'Calculation and coverage'], [
     ['Headcount', number(t.headcount), 'People active on the record date, including start and end dates.'],
     ['FTE', number(t.fte), `Active people’s scheduled weekly minutes ÷ 2,400 (40 hours), rounded to three decimals per person before summing. ${t.unknownFte} active people have unknown or withheld schedules; they do not add to the total.`],

@@ -12,7 +12,7 @@ import { findText, rowCounts } from './retention-counts.mjs'
 import { browserEvidence } from './retention-browser.mjs'
 
 const directory = await mkdtemp(join(tmpdir(), 'willow-retention-'))
-const h = await harness({ persistTo: directory })
+const h = await harness({ persistTo: directory, scheduled: true })
 const years = (date, n) => { const d = new Date(`${date}T00:00:00Z`); d.setUTCFullYear(d.getUTCFullYear() + n); return d.toISOString().slice(0, 10) }
 try {
   assert.equal((await h.raw('/auth/bootstrap', { body: { token: h.vars.SETUP_TOKEN, displayName: 'Olive Owner' } })).status, 303)
@@ -209,6 +209,17 @@ try {
   for (const version of [offerVersion, formVersion]) for (const who of ['managera', 'employee']) assert.equal((await h.raw(`/app/files/document/${version}`, { cookie: s[who].cookie })).status, 404, 'documents are no longer served')
   assert.equal(afterCounts.blobs, sourceBefore.blobs, 'retained and held bytes stay in custody')
 
+
+  // REPORT-001: a result where the erased person would have counted says so and never lists them.
+  const then = day(-30)
+  assert.equal((await api(`eeo/report?asOf=${then}`)).excludesErased, 1)
+  assert.equal((await api('eeo/report')).excludesErased, 0, 'no label where they would not have counted')
+  assert.equal((await api(`reports?asOf=${then}`)).excludesErased, 1)
+  const past = await api('report.save', { definition: { name: 'Past headcount', columns: ['name'], asOf: then, from: day(-60), to: then, status: 'active' } })
+  const pastRun = await api(`custom-reports/${past.id}`)
+  assert.equal(pastRun.result.excludesErased, 1)
+  assert.ok(!JSON.stringify(pastRun).includes(q) && !JSON.stringify(pastRun).includes('quinn'), 'drill-down never reaches them')
+
   // A class whose period has run out is erased with its bytes: an I-9-class document of someone who left years ago.
   const rae = await f.join('rae', { startDate: '2019-01-01' })
   const identity = (await api('category.create', { name: 'Identity checks' })).id
@@ -231,5 +242,24 @@ try {
   assert.deepEqual([raeReceipt.blobs.total, raeReceipt.blobs.deleted], [1, 1], 'the bytes are deleted after the commit and the receipt says so')
   assert.equal((await rowCounts(directory)).blobs, blobsBefore - 1)
   assert.equal((await h.raw(`/app/files/document/${raeVersion}`, { cookie: owner })).status, 404)
+
+  // The purge: records warn 30 days ahead and go when their last rule has expired; held and longer-lived ones stay.
+  const tick = async date => assert.equal((await h.raw(`/cdn-cgi/local/scheduled?time=${Date.parse(`${date}T09:00:00Z`)}&cron=${encodeURIComponent('*/15 * * * *')}&format=json`)).status, 200)
+  const oneYear = years(today, 1)
+  assert.equal((await get('owner', 'retention')).expiring.length, 0, 'nothing is inside its warning window yet')
+  const beforePurge = await rowCounts(directory), baseline = (await api('retained')).records.length
+  await tick(day(0))
+  assert.deepEqual((await api('retained')).records.length, baseline, 'a tick before any expiry purges nothing')
+  const warned = new Date(Date.parse(`${oneYear}T00:00:00Z`) - 20 * 86400000).toISOString().slice(0, 10)
+  await tick(warned)
+  assert.ok((await get('owner', `retention?asOf=${warned}`)).expiring.length > 0, 'the owner\'s retention page lists what expires within 30 days')
+  assert.equal((await api('retained')).records.length, baseline, 'the warning purges nothing')
+  await tick(oneYear)
+  const remaining = (await api('retained')).records
+  const stores = new Set(remaining.map(record => record.store))
+  assert.ok(!stores.has('cases') && !stores.has(`documents:${offers}`), 'one-year personnel records are purged at their expiry')
+  assert.ok(stores.has('terms') && stores.has(`documents:${forms}`) && stores.has('people'), 'longer rules, holds and the identity they need remain')
+  assert.ok((await api('audit')).some(event => event.action === 'retained.purge'), 'the purge is audited without values')
+  assert.equal((await rowCounts(directory)).blobs, beforePurge.blobs - 1, 'the purged offer letter\'s bytes go with its last record')
   console.log('DATA-002 retention census: passed')
 } finally { await h.close(); await rm(directory, { recursive: true, force: true }) }

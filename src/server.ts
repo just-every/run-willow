@@ -1,3 +1,4 @@
+import { runPurgeScheduler } from './willow/retention/purge'
 import { runLeaveScheduler } from './willow/leave-policy'
 import { runReportScheduler } from './willow/reporting/schedule'
 import { withDemo } from './modules/demo/index.mjs'
@@ -33,6 +34,7 @@ export default withDemo({
     await runLeaveScheduler(runtimeBindings(env), event.scheduledTime)
     await runReportScheduler(runtimeBindings(env), event.scheduledTime)
     await runWorkScheduler(runtimeBindings(env), event.scheduledTime)
+    await runPurgeScheduler(runtimeBindings(env), event.scheduledTime)
   },
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)

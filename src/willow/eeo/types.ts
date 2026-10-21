@@ -83,6 +83,8 @@ export interface DiversityCell {
 export interface DiversityReport {
   scope: 'employer'
   asOf: string
+  /** Erased people whose retained employment would have counted on this date; they are in custody, never here. */
+  excludesErased: number
   total: number | null
   suppressed: boolean
   minimumCellSize: number

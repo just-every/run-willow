@@ -3,13 +3,16 @@
 import type { Bindings } from '../../auth.server'
 import { can, requireOwner, type Actor } from '../actor'
 import { all, auditRead, insist, json, one } from '../core'
+import { isDate } from '../dates'
 import { holds } from './holds'
 import { providerRequests } from './providers'
+import { expiringSoon } from './purge'
 import { requests, previewErasure } from './erasure'
 import { CLASSES, TABLE_VERSION } from './rules'
 import { adoption, contractorStatus, mappings, stateRules } from './settings'
 
-export async function retention(env: Bindings, actor: Actor) {
+export async function retention(env: Bindings, actor: Actor, asOf = actor.today) {
+  insist(isDate(asOf), 'invalid_asOf')
   insist(actor.owner || can(actor, 'people.manage'), 'forbidden', 403)
   const open = (await requests(env)).map(row => ({ id: row.id, person: { id: row.person_id, name: row.name }, source: row.source, receivedOn: row.received_on, status: row.status, receipt: row.receipt_id }))
   if (!actor.owner) return { requests: open }
@@ -27,7 +30,7 @@ export async function retention(env: Bindings, actor: Actor) {
       customFields: (await all<{ id: string; key: string }>(env, 'SELECT id, key FROM wl_custom_fields ORDER BY key')).map(row => ({ ...row, class: label('custom_field', row.id) })),
       recordTables: (await all<{ id: string; key: string }>(env, 'SELECT id, key FROM wl_record_tables WHERE built_in = 0 ORDER BY key')).map(row => ({ ...row, class: label('record_table', row.id) })),
     },
-    requests: open, former: people,
+    requests: open, former: people, expiring: await expiringSoon(env, asOf),
   }
 }
 

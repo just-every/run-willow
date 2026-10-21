@@ -53,7 +53,9 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
   if (plan.view.blockers.length) throw new WillowError('erasure_blocked', 409, plan.view.blockers)
   const { subject, person, view } = plan
   const label = `Former person ${hex(4)}`, stubPerson = newId(), stubMember = newId(), erasureId = newId(), at = now()
-  const rowTargets = targets(plan).filter(target => ['erased', 'retained', 'held'].includes(target.item.disposition))
+  // Recipient lists are shared with other people's schedules and alerts: the person leaves the list, the record stays.
+  const recipientStores = new Map([['report_recipients', 'wl_report_schedules'], ['alert_recipients', 'wl_date_alerts']])
+  const rowTargets = targets(plan).filter(target => ['erased', 'retained', 'held'].includes(target.item.disposition) && !recipientStores.has(target.id))
   const ids = new Map<string, string[]>()
   const blobs = new Map<string, number>()
   const erasedShas = new Map<string, number>()
@@ -94,6 +96,7 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
     stmt(env, "INSERT INTO wl_people (id, legal_name, origin, revision, created_at, updated_at) VALUES (?, ?, 'native', ?, ?, ?)", stubPerson, label, newId(), at, at),
     stmt(env, "INSERT INTO wl_members (id, email, name, person_id, status, created_at) VALUES (?, ?, ?, ?, 'ended', ?)", stubMember, `erased-${hex(8)}@erased.invalid`, label, stubPerson, at),
   ]
+  for (const [store, table] of recipientStores) if (subject.memberId) statements.push(stmt(env, `UPDATE ${table} SET recipients_json = (SELECT COALESCE(json_group_array(value), '[]') FROM json_each(recipients_json) WHERE value NOT IN (?1, 'member:' || ?1, ?2, ?3)) WHERE ?1 <> '' AND instr(recipients_json, ?1) > 0`, subject.memberId, subject.workEmail, subject.memberEmail))
   for (const target of rowTargets) {
     const list = ids.get(target.id) ?? []
     if (!list.length) continue

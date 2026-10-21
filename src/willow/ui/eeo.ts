@@ -2,6 +2,7 @@ import type { Actor } from '../actor'
 import { CC305, DISABILITY, DISCLOSURES, HISPANIC, RACES, VETERAN_CHOICES, VETERAN_CLASSES, VETERAN_INVITATION } from '../eeo/forms'
 import { RACE_ETHNICITY, SEX, type DiversityCell, type DiversityReport, type EeoPerson, type EeoRevision, type EeoSelf } from '../eeo'
 import { FILING_RACE_ETHNICITY, FILING_SEX } from '../eeo/rule'
+import { excludesText } from '../retention/excluded'
 import { checks, field, form, h, hidden, page, select, table } from './html'
 
 const SELF_PATH = '/app/eeo/self'
@@ -80,7 +81,7 @@ export function diversityReportPage(actor: Actor, report: DiversityReport, url?:
 <h1>Diversity report</h1><p>Voluntary self-identification across the complete active employer population.</p>
 <form method="get" action="${REPORT_PATH}">${field('As of', 'asOf', { type: 'date', value: report.asOf })}<button type="submit">View report</button></form>
 <section class="card"><h2>Population and privacy</h2><p>${report.calculation}</p>
-<p>Total people: <strong>${report.suppressed ? 'Suppressed' : report.total}</strong></p>
+<p>Total people: <strong>${report.suppressed ? 'Suppressed' : report.total}</strong> ${excludesText(report.excludesErased)}</p>
 ${report.suppressed ? h`<p role="status">Small groups are present. Counts in both tables and the total are suppressed together to prevent reconstruction.</p>` : ''}
 </section><section class="card"><h2>Race / ethnicity</h2>${categoryTable(report.raceEthnicity)}</section>
 <section class="card"><h2>Sex</h2>${categoryTable(report.sex)}</section>`, { current: '/app/reports', url })

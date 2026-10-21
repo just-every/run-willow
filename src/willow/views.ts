@@ -81,7 +81,7 @@ export const views: Record<string, View> = {
   eeoSelf: (env,actor,_request,_id,url) => { if([...url.searchParams.keys()].length) throw new WillowError('eeo_filters_not_allowed');return eeoSelf(env,actor) },
   eeoReport: (env,actor,_request,_id,url) => diversityReport(env,actor,Object.fromEntries(url.searchParams.size?url.searchParams:[['asOf',actor.today]]) as {asOf:string}),
   retained: (env,actor) => retainedRecords(env,actor), erasureReceipt: (env,actor,_request,id) => erasureReceipt(env,actor,id),
-  retention, erasurePreview: (env,actor,_request,_id,url) => erasurePreview(env,actor,url),
+  retention: (env,actor,_request,_id,url) => retention(env,actor,url.searchParams.get('asOf') ?? undefined), erasurePreview: (env,actor,_request,_id,url) => erasurePreview(env,actor,url),
   selfChanges,
   selfChange: (env,actor,_request,id) => selfChange(env,actor,id),
   selfExceptions,

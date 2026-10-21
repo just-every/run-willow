@@ -2,6 +2,7 @@ import type { Bindings } from '../../auth.server'
 import { requirePermission, type Actor } from '../actor'
 import { all, auditRead, insist } from '../core'
 import { isDate } from '../dates'
+import { erasedExcluded } from '../retention/excluded'
 import { RACE_ETHNICITY, SEX, type DiversityCell, type DiversityReport } from './types'
 
 const MINIMUM_CELL_SIZE = 5
@@ -46,7 +47,8 @@ export async function diversityReport(env: Bindings, actor: Actor, options: { as
   // suppression does not reveal which categories are populated.
   const protect = (values: DiversityCell[]) => suppressed ? values.map(cell => ({ ...cell, count: null, suppressed: true })) : values
   await auditRead(env, actor.id, 'eeo.report.read', 'employer', { asOf })
-  return { scope: 'employer', asOf, total: suppressed ? null : total, suppressed,
+  const excludesErased = await erasedExcluded(env, asOf)
+  return { scope: 'employer', asOf, excludesErased, total: suppressed ? null : total, suppressed,
     minimumCellSize: MINIMUM_CELL_SIZE,
     calculation: 'Distinct people with an employment period active on the as-of date, including its start and end dates. Uses each person’s latest voluntary submission recorded on or before that employer-local date. Unanswered fields are unknown. The complete employer population is used without filters or drilldown. If any positive category count is below 5, every category in both dimensions and the total are suppressed to prevent reconstruction.',
     raceEthnicity: protect(raceEthnicity), sex: protect(sex) }
