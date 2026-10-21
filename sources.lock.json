@@ -3517,6 +3517,10 @@
       "sha256": "ef2c8b64d00ff8d9683a6cbcf0af5cb19eb86d6d676d4d5155ecbcb0e0236952",
       "executable": false
     },
+    "tests/willow/open-area-fixtures.mjs": {
+      "sha256": "713c2dcb4b860ae99c94a4c1ae0b76836be6f450991586f7035482becd23c3c9",
+      "executable": false
+    },
     "tests/willow/open-billing.mjs": {
       "sha256": "184ac99f9097756395c88f7633fdc2a3e655b78c5410551813b1352b4b7ccd45",
       "executable": false
