@@ -13,7 +13,7 @@ import { openProtected, recordProtectedAbsence, reverseProtectedAbsence, certify
 import { decideOverride } from './protected-leave/overrides'
 import { saveReport } from './reporting/definitions'
 import { scheduleReport } from './reporting/schedule'
-import { writeEeoSelf } from './eeo'
+import { writeEeoSelf, recordEeoCategory, grantEeo } from './eeo'
 import { adoptTable, recordState, recordMapping, recordContractor } from './retention/settings'
 import { placeHold, releaseHold, reviewHold } from './retention/holds'
 import { openRequest, withdrawRequest, confirmErasure } from './retention/erasure'
@@ -76,8 +76,8 @@ export const actions: Record<string, Handler> = {
   'leave.override.decide': decideOverride,
   'report.save': saveReport,
   'report.schedule': scheduleReport,
-  'eeo.self.write': writeEeoSelf,
-  'retention.adopt': adoptTable, 'retention.state': recordState, 'retention.map': recordMapping, 'retention.contractor': recordContractor,
+  'eeo.self.write': writeEeoSelf, 'eeo.record': recordEeoCategory, 'eeo.grant': grantEeo,
+  'retention.adopt': adoptTable, 'retention.state': recordState, 'retention.map': recordMapping, 'contractor.set': recordContractor,
   'hold.place': placeHold, 'hold.release': releaseHold, 'hold.review': reviewHold,
   'erasure.request': openRequest, 'erasure.withdraw': withdrawRequest, 'erasure.confirm': confirmErasure,
   'self.request': proposeSelfChange,

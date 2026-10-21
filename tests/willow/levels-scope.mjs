@@ -95,7 +95,7 @@ export async function scopeProof(h, owner, fx) {
  const caseIds = [...insiders, ...outside].map(who => who.case)
  const accounts = [inside, b0, b1, b3].map(who => who.account)
  const memberIds = (await api('members')).map(member => member.id)
- const values = { person: personIds, context: personIds, case: caseIds, leave: Object.values(requests), request: Object.values(requests), performanceCycle: [cycle.id], performanceFile: [cycle.id] }
+ const values = { eeoPerson: personIds, person: personIds, context: personIds, case: caseIds, leave: Object.values(requests), request: Object.values(requests), performanceCycle: [cycle.id], performanceFile: [cycle.id] }
  const fill = (pattern, name) => {
   const base = pattern.replace(/^\^|\$$/g, '').replace(/\\\./g, '.')
   if (name === 'employeeBundle') return ['self', 'team', 'organization'].map(scopeName => `${base}?scope=${scopeName}&fields=name,phone,payAmount,payrollId&history=employment,leave,lifecycle,documents`)

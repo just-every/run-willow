@@ -10,7 +10,7 @@ import { WillowError, all, insist, newId, now, one, stmt } from './core'
 import { today } from './dates'
 import { CURRENT_TERMS } from './employment'
 
-export const PERMISSIONS = ['people.manage', 'people.private', 'pay.read', 'leave.manage', 'payroll.handoff', 'documents.private', 'reports.read', 'eeo.read', 'it.tasks', 'audit.read'] as const
+export const PERMISSIONS = ['people.manage', 'people.private', 'pay.read', 'leave.manage', 'payroll.handoff', 'documents.private', 'reports.read', 'eeo.read', 'eeo.individual', 'it.tasks', 'audit.read'] as const
 export type Permission = typeof PERMISSIONS[number]
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
@@ -22,6 +22,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'documents.private': 'Read every private document category',
   'reports.read': 'Read organization-wide summaries',
   'eeo.read': 'Read protected aggregate diversity reports (also requires reports access)',
+  'eeo.individual': 'EEO compliance: read and record individual EEO answers (never implied by ownership or any other right)',
   'it.tasks': 'Receive IT lifecycle tasks',
   'audit.read': 'Read the audit trail',
 }
@@ -72,7 +73,8 @@ export async function actorFor(env: Bindings, member: { id: string; email: strin
     LEFT JOIN oa_operators o ON lower(o.email) = m.email WHERE m.id = ?`, member.id)
   insist(admission?.status === 'active' && admission.sign_in === 'active', 'access_ended', 403)
   const permissions = new Set((await all<{ permission: Permission }>(env, 'SELECT permission FROM wl_effective_permissions WHERE member_id = ?', member.id)).map(row => row.permission))
-  if (member.owner) PERMISSIONS.forEach(permission => permissions.add(permission))
+  // Ownership implies every right except EEO compliance, which the owner assigns explicitly.
+  if (member.owner) PERMISSIONS.filter(permission => permission !== 'eeo.individual').forEach(permission => permissions.add(permission))
   const date = today(await employerZone(env))
   const reports = new Set(member.personId ? (await all<{ person_id: string }>(env, `${CURRENT_TERMS} AND t.manager_person_id = ?`, date, member.personId)).map(row => row.person_id) : [])
   return { ...member, permissions, reports, today: date, followOwnChanges: await followsOwnChanges(env,member), scoped: member.owner ? [] : await scopedGrants(env, member.id, member.personId, date) }
@@ -84,15 +86,15 @@ export async function ensureMember(env: Bindings, email: string, name: string) {
 }
 
 /** Employer-wide: direct grants, unscoped levels and the owner. A scoped level never satisfies this. */
-export const can = (actor: Actor, permission: Permission) => actor.owner || actor.permissions.has(permission)
+export const can = (actor: Actor, permission: Permission) => (actor.owner && permission !== 'eeo.individual') || actor.permissions.has(permission)
 
 /** About one person: the employer-wide right, or a scoped level whose scope reaches them today. */
 export const canAbout = (actor: Actor, permission: Permission, personId: string) => can(actor, permission) || actor.scoped.some(grant => grant.permissions.has(permission) && grant.people.has(personId))
 
 /** Every right held about one person: the union of employer-wide rights and each reaching level's own rights. */
 export function permissionsAbout(actor: Actor, personId: string): Set<Permission> {
-  if (actor.owner) return new Set(PERMISSIONS)
   const rights = new Set(actor.permissions)
+  if (actor.owner) PERMISSIONS.filter(permission => permission !== 'eeo.individual').forEach(permission => rights.add(permission))
   for (const grant of actor.scoped) if (grant.people.has(personId)) grant.permissions.forEach(permission => rights.add(permission))
   return rights
 }

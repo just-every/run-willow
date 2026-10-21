@@ -117,6 +117,13 @@ try {
   const leave = await api('leave.request', s.employee.cookie, { account: s.employee.account, startDate: day(3), endDate: day(3), reason: 'RESTORE-CONFIDENTIAL' })
   await api('leave.decide', owner, { request: leave.id, decision: 'approve' })
   await api('access.end', owner, { person: s.ended.person })
+  // EEO-001: answers, an HR-recorded category, the compliance grant and the contractor setting travel in the owner archive.
+  await api('eeo.grant', owner, { member: s.hr.member, enabled: true })
+  await api('eeo.self.write', s.employee.cookie, { hispanic: 'no', races: ['white', 'asian'], sex: 'female' })
+  await api('eeo.self.write', s.payroll.cookie, { hispanic: 'declined', sex: 'declined' })
+  await api('eeo.record', s.hr.cookie, { person: s.payroll.person, dimension: 'race_ethnicity', category: 'white', employmentRecord: 'synthetic-willow-restore', ruleVersion: 'eeo1-component1-2024' })
+  await api('contractor.set', owner, { contractor: true, covered: true })
+  const eeoBefore = [await api(`eeo/person/${s.employee.person}`, s.hr.cookie), await api(`eeo/person/${s.payroll.person}`, s.hr.cookie)]
   // DATA-001: restored authority must pause even when provider bindings are available.
   await api('connections.notices', owner, { enabled: true })
   await api('connections.model', owner, { model: 'restore-proof-model' })
@@ -140,6 +147,7 @@ try {
   const header = records[0]
   assert.ok(!header.tables.some(t => /^oa_/.test(t.name)), 'auth credentials, sessions and tokens excluded')
   const items = records.filter(r => r.kind === 'part').flatMap(r => r.items)
+  for (const table of ['wl_eeo_answers', 'wl_eeo_recorded', 'wl_contractor_status']) assert.ok(items.some(item => item.table === table), `EEO-001: ${table} is in the owner archive`)
   // ROLE-001: portable authority is the exact union of direct and assigned grants.
   for (const member of members.filter(member => !member.owner)) {
     const assigned = items.filter(item => item.table === 'wl_member_levels' && item.row.member_id === member.id).map(item => item.row.level_id)
@@ -229,6 +237,10 @@ try {
     assert.deepEqual((await after(path, newOwner)).customFields, snapshot, 'DATA-001: archive restores custom metadata and dated values through the owner profile')
     assert.deepEqual((await after(path, cookies.employee)).customFields, snapshot, 'DATA-001: restored employee retains original definitions, corrections, clears and retirement')
   }
+  assert.deepEqual([await after(`eeo/person/${s.employee.person}`, cookies.hr), await after(`eeo/person/${s.payroll.person}`, cookies.hr)], eeoBefore, 'EEO-001: restored answers, sources, HR-recorded categories and the compliance grant read exactly as before')
+  assert.equal((await after('eeo/self', cookies.employee)).form.contractor, true, 'EEO-001: the contractor setting is restored')
+  await after(`eeo/person/${s.employee.person}`, newOwner, undefined, 403)
+  for (const who of ['hr', 'payroll', 'employee']) assert.ok(!/asian|white|hispanic|declined|female/i.test(await (await request(restored, '/app/exports/employees.csv?scope=organization&fields=name,workEmail,jobTitle', cookies[who])).text()), 'EEO-001: no employee export carries an EEO value')
   assert.deepEqual(self.private, before.private)
   assert.deepEqual(self.employment, before.employment.map(({ payrollId, ...period }) => period))
   assert.deepEqual(self.leave.accounts[0].ledger, before.leave.accounts[0].ledger)

@@ -233,3 +233,5 @@ await import('./surveys.mjs')
 await import('./levels.mjs')
 
 await import('./retention.mjs')
+
+await import('./eeo-self-id.mjs')
