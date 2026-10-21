@@ -100,7 +100,7 @@ export const STORES: Store[] = [
   s('review_appeals', 'wl_review_appeals', 'Review appeals by the member', 'erase', 't.member_id = ?2', { ms: 't.created_at' }),
   s('review_recipients', 'wl_review_recipients', 'Review release recipients', 'erase', 't.member_id = ?2', { ms: 't.created_at' }),
   s('hiring_team', 'wl_hiring_team', 'Hiring-team memberships', 'access', 't.member_id = ?2'),
-  s('notices', 'wl_notices', 'Email notice log entries to the person', 'erase', 'lower(t.recipient) IN (?3, ?5)', { ms: 't.created_at' }),
+  s('notices', 'wl_notices', 'Email notice log entries to the person', 'erase', 't.recipient IN (?2, ?3, ?5)', { ms: 't.created_at' }),
   s('report_deliveries', 'wl_report_deliveries', 'Scheduled-report deliveries to the member', 'erase', 't.recipient IN (?2, ?3, ?5)', { ms: 't.created_at' }),
   s('work_deliveries', 'wl_work_deliveries', 'Work-reminder deliveries to the member', 'erase', 't.recipient IN (?2, ?3, ?5)', { ms: 't.created_at' }),
   s('report_recipients', 'wl_report_schedules', 'Report-recipient entries', 'access', "?2 <> '' AND instr(t.recipients_json, ?2) > 0"),
@@ -146,7 +146,7 @@ export const AUTHORED: [string, string][] = [
   ['wl_model_drafts', 'proposed_by'], ['wl_workflow_reviews', 'actor'], ['wl_level_reviews', 'actor'], ['wl_change_chains', 'recorded_by'],
   ['wl_date_alerts', 'recorded_by'], ['wl_company_announcement_versions', 'recorded_by'], ['wl_company_file_versions', 'recorded_by'],
   ['wl_company_folder_versions', 'recorded_by'], ['wl_work_schedule', 'updated_by'], ['wl_retention_adoptions', 'adopted_by'], ['wl_retention_states', 'recorded_by'],
-  ['wl_retention_mappings', 'recorded_by'], ['wl_contractor_status', 'recorded_by'], ['wl_eeo_title_map', 'recorded_by'], ['wl_eeo_establishments', 'recorded_by'], ['wl_eeo_runs', 'created_by'], ['wl_eeo_recorded', 'recorded_by'], ['wl_holds', 'placed_by'], ['wl_hold_reviews', 'reviewed_by'], ['wl_erasure_requests', 'requested_by'],
+  ['wl_retention_mappings', 'recorded_by'], ['wl_contractor_status', 'recorded_by'], ['wl_eeo_title_map', 'recorded_by'], ['wl_eeo_establishments', 'recorded_by'], ['wl_eeo_runs', 'created_by'], ['wl_eeo_recorded', 'recorded_by'], ['wl_holds', 'placed_by'], ['wl_hold_reviews', 'reviewed_by'], ['wl_erasure_requests', 'requested_by'], ['wl_provider_requests', 'recorded_by'], ['wl_provider_requests', 'assignee'],
 ]
 export const AUTHORED_STORES: Store[] = AUTHORED.map(([table, column]) => MEMBER_ROWS(table, column))
 
@@ -158,6 +158,9 @@ const NONE = (reason: string, ...tables: string[]): [string, string][] => tables
 export const OUT_OF_SCOPE = new Map<string, string>([
   ...NONE('employer configuration', 'wl_employer', 'wl_connections', 'wl_import_door', 'wl_payroll_layout', 'wl_work_policy', 'wl_locations', 'wl_departments', 'wl_divisions', 'wl_legal_entities', 'wl_schedules', 'wl_doc_categories'),
   ...NONE('policy and template definitions', 'wl_policy_versions', 'wl_leave_policies', 'wl_leave_policy_rules', 'wl_template_tasks', 'wl_levels', 'wl_level_permissions', 'wl_level_scope_values', 'wl_level_self_fields', 'wl_hiring_openings', 'wl_review_cycles', 'wl_company_announcements', 'wl_company_folders', 'wl_company_files'),
+  ...NONE('the erasure window: one row inside the journaled erasure batch, never committed', 'wl_erasure_window'),
+  ...NONE('restricted custody of records already removed from every live table: owner-read only, purged by rule', 'wl_retained_records'),
+  ...NONE('value-free erasure receipts and the post-commit blob work list: counts, labels and content digests only', 'wl_erasure_receipts', 'wl_erasure_blobs'),
   ...NONE('in-batch precondition scratch rows, emptied by every commit', 'wl_guard'),
   ...NONE('identity-provider and installation state with no person data', 'oa_auth_settings', 'oa_bootstrap', 'oa_domain_rules', 'oa_first_run', 'oa_identity_provider_health', 'oa_identity_providers', 'oa_limits', 'oa_logout_events', 'oa_oidc_limits', 'oa_oidc_transactions', 'wl_identity_token_health', 'oc_idp_grants', 'oc_owner_claims', 'rer_dependency_codes', 'rer_dependency_installation', 'rer_dependency_keys', 'rer_dependency_link', 'rer_dependency_pending', 'rer_mail_development_outbox'),
   ...NONE('archive journal and portability state: counts, epochs and digests only', 'rer_portability_epochs', 'rer_portability_guard', 'rer_portability_jobs', 'rer_portability_journal', 'rer_portability_owned', 'rer_portability_parts', 'rer_portability_segments', 'rer_portability_state'),

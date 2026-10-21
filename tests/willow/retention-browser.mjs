@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 
-export async function browserEvidence(h, cookies, person) {
+export async function browserEvidence(h, cookie, pages) {
   if (process.env.WILLOW_RETENTION_BROWSER !== '1') return
   const destination = process.env.WILLOW_EVIDENCE_DIR
   assert.ok(destination, 'WILLOW_EVIDENCE_DIR is required for browser evidence')
@@ -13,9 +13,9 @@ export async function browserEvidence(h, cookies, person) {
   const browser = await chromium.launch({ headless: true, args: ['--use-mock-keychain', '--password-store=basic'] })
   try {
     const context = await browser.newContext({ ignoreHTTPSErrors: true })
-    await context.addCookies(cookies.owner.split('; ').map(item => ({ name: item.slice(0, item.indexOf('=')), value: item.slice(item.indexOf('=') + 1), url: h.origin })))
+    await context.addCookies(cookie.split('; ').map(item => ({ name: item.slice(0, item.indexOf('=')), value: item.slice(item.indexOf('=') + 1), url: h.origin })))
     const page = await context.newPage()
-    for (const [name, path] of [['census', '/app/retention'], ['preview', `/app/retention/erasure?person=${person}`]]) {
+    for (const [name, path] of pages) {
       for (const width of [1440, 390]) {
         await page.setViewportSize({ width, height: 1000 })
         assert.equal((await page.goto(h.origin + path)).status(), 200)

@@ -37,6 +37,8 @@
     "test:regressions": "node tests/willow/regressions.mjs",
     "test:restore-access": "node tests/willow/restore-access.mjs",
     "test:phase2": "node tests/willow/phase2.mjs",
+    "test:retention-eeo": "node tests/willow/retention.mjs && node tests/willow/eeo-self-id.mjs && node tests/willow/eeo-snapshot.mjs",
+    "test:restore-erasure": "node tests/willow/restore-erasure.mjs",
     "test:phase2-browser": "WILLOW_PHASE2_BROWSER=1 node tests/willow/phase2.mjs",
     "test:site": "rer build --site && node tests/willow/site.mjs",
     "test:open-source": "node tests/willow/open-public-start.mjs"

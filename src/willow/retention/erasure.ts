@@ -3,7 +3,7 @@
 // its audit row. The owner confirms that digest; a changed preview is refused as stale.
 import type { Bindings } from '../../auth.server'
 import { can, employerZone, requireOwner, type Actor } from '../actor'
-import { all, auditRead, commit, guard, insist, newId, now, one, sha256Hex, stmt, WillowError } from '../core'
+import { all, auditRead, commit, guard, insist, newId, now, one, sha256Hex, stmt } from '../core'
 import { isDate, today as dayOf } from '../dates'
 import type { Input } from '../input'
 import { holds, type Hold } from './holds'
@@ -39,8 +39,8 @@ export async function withdrawRequest(env: Bindings, actor: Actor, input: Input)
 }
 
 export async function requests(env: Bindings) {
-  return await all<{ id: string; person_id: string; name: string; source: string; received_on: string; status: string; requested_at: number }>(env,
-    `SELECT r.id, r.person_id, p.legal_name AS name, r.source, r.received_on, r.status, r.requested_at FROM wl_erasure_requests r JOIN wl_people p ON p.id = r.person_id ORDER BY r.requested_at DESC`)
+  return await all<{ id: string; person_id: string; name: string; source: string; received_on: string; status: string; requested_at: number; receipt_id: string | null }>(env,
+    `SELECT r.id, r.person_id, p.legal_name AS name, r.source, r.received_on, r.status, r.requested_at, r.receipt_id FROM wl_erasure_requests r JOIN wl_people p ON p.id = r.person_id ORDER BY r.requested_at DESC`)
 }
 
 export interface Item { id: string; table: string; label: string; disposition: 'erased' | 'anonymized' | 'redacted' | 'retained' | 'held'; class: ClassKey | null; rule: string | null; expiry: string | null; hold: string | null; rows: number; blobs: number; bytes: number }
@@ -55,7 +55,7 @@ async function inventoryCoverage(env: Bindings) {
   return tables.length
 }
 
-interface Subject { personId: string; memberId: string; workEmail: string; employeeNumber: string; memberEmail: string }
+export interface Subject { personId: string; memberId: string; workEmail: string; employeeNumber: string; memberEmail: string }
 const bindFor = (sql: string, subject: Subject) => {
   const max = Math.max(...[...sql.matchAll(/\?(\d)/g)].map(match => Number(match[1])))
   return [subject.personId, subject.memberId, subject.workEmail, subject.employeeNumber, subject.memberEmail].slice(0, max)
@@ -68,7 +68,7 @@ async function measure(env: Bindings, store: Pick<Store, 'from' | 'ms' | 'date' 
   return { rows: row.n, bytes: row.bytes, blobs: store.blob ? row.n : 0, record: day }
 }
 
-interface Context { today: string; hire: string; end: string; contractor: Contractor; holds: Hold[]; periods: { start: string; end: string | null }[]; personId: string; extra: (cls: ClassKey) => number }
+export interface Context { today: string; hire: string; end: string; contractor: Contractor; holds: Hold[]; periods: { start: string; end: string | null }[]; personId: string; extra: (cls: ClassKey) => number }
 
 function heldBy(context: Context, cls: ClassKey | null, category: string | null) {
   return context.holds.find(hold => {
@@ -106,9 +106,12 @@ const OPEN_WORK: [string, string, string, string][] = [
   ['payroll_exception', 'wl_payroll_batches', "status IN ('draft', 'exported') AND instr(exceptions, ?1) > 0", 'An unresolved payroll exception'],
 ]
 
-export async function previewErasure(env: Bindings, actor: Actor, personId: string) {
+export interface Plan { view: Awaited<ReturnType<typeof previewErasure>>; subject: Subject; person: { id: string; legal_name: string; preferred_name: string | null; work_email: string | null; employee_number: string | null }; member: { id: string; email: string } | null; context: Context }
+
+/** Classifies every store for one person without writing; the preview and the execution share it. */
+export async function planErasure(env: Bindings, actor: Actor, personId: string) {
   requireOwner(actor)
-  const person = await one<{ id: string; legal_name: string; work_email: string | null; employee_number: string | null; created_at: number }>(env, 'SELECT id, legal_name, work_email, employee_number, created_at FROM wl_people WHERE id = ?', personId)
+  const person = await one<{ id: string; legal_name: string; preferred_name: string | null; work_email: string | null; employee_number: string | null; created_at: number }>(env, 'SELECT id, legal_name, preferred_name, work_email, employee_number, created_at FROM wl_people WHERE id = ?', personId)
   insist(person, 'not_found', 404)
   const examined = await inventoryCoverage(env), zone = await employerZone(env)
   const member = await one<{ id: string; email: string; status: string }>(env, 'SELECT id, email, status FROM wl_members WHERE person_id = ?', personId)
@@ -171,41 +174,32 @@ export async function previewErasure(env: Bindings, actor: Actor, personId: stri
   items.sort((a, b) => a.id.localeCompare(b.id))
   const copies = await declaredCopies(env, subject, person.created_at)
   const request = await one<{ id: string; status: string; source: string; received_on: string }>(env, "SELECT id, status, source, received_on FROM wl_erasure_requests WHERE person_id = ? AND status IN ('open', 'confirmed')", personId)
+  for (const item of items) if (item.id.startsWith('import_')) blockers.push({ kind: 'import_custody_unredacted', ref: item.id, reason: 'Import custody still holds the person and Base\'s custody redaction is not yet wired into erasure' })
   blockers.sort((a, b) => (a.kind + a.ref).localeCompare(b.kind + b.ref))
   const digest = await sha256Hex(JSON.stringify({ version: TABLE_VERSION, adopted: adopted?.id ?? null, rules: rules.map(rule => rule.id), holds: activeHolds.map(hold => [hold.id, hold.review_date]), contractor, mapped: [...mapped].sort(),
     items: items.map(item => [item.id, item.id.endsWith('audit') || item.id === 'work_history' ? 1 : item.rows, item.blobs, item.bytes, item.disposition, item.class, item.expiry, item.hold]), blockers: blockers.map(blocker => [blocker.kind, blocker.ref]), copies, personId }))
-  await auditRead(env, actor.id, 'erasure.preview', personId, { digest, blockers: blockers.length })
   const total = (disposition: Item['disposition']) => items.filter(item => item.disposition === disposition).reduce((sum, item) => sum + item.rows, 0)
-  return {
+  const view = {
     person: { id: personId, name: person.legal_name }, asOf: actor.today, tableVersion: TABLE_VERSION, adopted: adopted ? { version: adopted.table_version, at: adopted.adopted_at } : null, states: [...states].sort(),
     eligible: !blockers.some(blocker => ['current_employment', 'owner_account'].includes(blocker.kind)), confirmable: blockers.length === 0, blockers, request, examined,
     summary: { rows: items.reduce((sum, item) => sum + item.rows, 0), blobs: items.reduce((sum, item) => sum + item.blobs, 0), bytes: items.reduce((sum, item) => sum + item.bytes, 0), erased: total('erased'), anonymized: total('anonymized'), redacted: total('redacted'), retained: total('retained'), held: total('held') },
     items, copies, digest,
   }
+  return { view, subject, person, member: member ?? null, context }
+}
+
+export async function previewErasure(env: Bindings, actor: Actor, personId: string) {
+  const { view } = await planErasure(env, actor, personId)
+  await auditRead(env, actor.id, 'erasure.preview', personId, { digest: view.digest, blockers: view.blockers.length })
+  return view
 }
 
 /** Outside copies are declared, never claimed removed: exports carry no per-person record, so every earlier export may include the person. */
 async function declaredCopies(env: Bindings, subject: Subject, createdAt: number) {
   const exports = (await one<{ n: number; first: number | null }>(env, "SELECT COUNT(*) AS n, MIN(at) AS first FROM wl_audit WHERE (action LIKE '%export%' OR action LIKE '%bundle%') AND at >= ?", createdAt))!
-  const notices = (await one<{ n: number }>(env, "SELECT COUNT(*) AS n FROM wl_notices WHERE ?1 <> '' AND lower(recipient) IN (?1, ?2) AND status IN ('accepted', 'development')", subject.workEmail || subject.memberEmail, subject.memberEmail))!.n
+  const notices = subject.memberId ? (await one<{ n: number }>(env, "SELECT COUNT(*) AS n FROM wl_notices WHERE recipient = ? AND status IN ('accepted', 'development')", subject.memberId))!.n : 0
   const payroll = (await one<{ n: number }>(env, "SELECT COUNT(*) AS n FROM wl_payroll_batches WHERE status IN ('exported', 'acknowledged') AND instr(lines, ?1) > 0", subject.personId))!.n
   const sso = subject.memberEmail ? (await one<{ n: number }>(env, 'SELECT COUNT(*) AS n FROM oa_external_identities WHERE operator_id IN (SELECT id FROM oa_operators WHERE lower(email) = ?)', subject.memberEmail))!.n : 0
   return { exports: { count: exports.n, since: exports.first ? new Date(exports.first).toISOString().slice(0, 10) : null, statement: 'Exports and archives made while this person\'s records existed may include them; Willow does not record which people each contained.' },
     providers: [{ provider: 'Email notice provider', copies: notices }, { provider: 'Payroll provider (exported handoff files)', copies: payroll }, { provider: 'Single sign-on provider (identity link)', copies: sso }].filter(provider => provider.copies > 0) }
-}
-
-export async function confirmErasure(env: Bindings, actor: Actor, input: Input) {
-  requireOwner(actor)
-  input.only(['person', 'digest', 'returnTo'])
-  const personId = input.text('person', { max: 64 }), digest = input.text('digest', { max: 64 })
-  const request = await one<{ id: string }>(env, "SELECT id FROM wl_erasure_requests WHERE person_id = ? AND status = 'open'", personId)
-  insist(request, 'erasure_request_required', 409)
-  const preview = await previewErasure(env, actor, personId)
-  insist(preview.digest === digest, 'preview_stale', 409)
-  if (preview.blockers.length) throw new WillowError('erasure_blocked', 409, preview.blockers)
-  await commit(env, [
-    guard(env, 'stale', "EXISTS (SELECT 1 FROM wl_erasure_requests WHERE id = ? AND status = 'open')", request.id),
-    stmt(env, "UPDATE wl_erasure_requests SET status = 'confirmed', confirmed_digest = ?, confirmed_by = ?, confirmed_at = ? WHERE id = ? AND status = 'open'", digest, actor.id, now(), request.id),
-  ], { actor: actor.id, action: 'erasure.confirm', subject: request.id, detail: { digest, person: personId } })
-  return { id: request.id, status: 'confirmed', digest }
 }

@@ -8,7 +8,7 @@ import { harness, file } from './harness.mjs'
 import { fixture, today, day } from './regression-fixture.mjs'
 import { balancesCsv, documentsZip, employeesCsv } from './fixtures.mjs'
 import { imports } from './import-transport.mjs'
-import { rowCounts } from './retention-counts.mjs'
+import { findText, rowCounts } from './retention-counts.mjs'
 import { browserEvidence } from './retention-browser.mjs'
 
 const directory = await mkdtemp(join(tmpdir(), 'willow-retention-'))
@@ -38,14 +38,17 @@ try {
   await h.api('eeo.self.write', quinnCookie, { raceEthnicity: 'asian', sex: 'female' })
   const offers = (await api('category.create', { name: 'Offer letters' })).id, forms = (await api('category.create', { name: 'Payroll forms' })).id
   const text = value => ({ filename: 'a.txt', base64: Buffer.from(value).toString('base64') })
-  await api('document.add', { person: q, category: offers, title: 'Offer', file: text('synthetic-willow-1') })
-  await api('document.add', { person: q, category: forms, title: 'Withholding form', file: text('synthetic-willow-2') })
+  const offerVersion = (await api('document.add', { person: q, category: offers, title: 'Offer', file: text('synthetic-willow-1') })).version
+  const formVersion = (await api('document.add', { person: q, category: forms, title: 'Withholding form', file: text('synthetic-willow-2') })).version
   const badge = await as('hr', 'customField.define', { definition: { key: 'badge', classification: 'hr', type: 'text', validation: { maxLength: 40 }, effectiveFrom: day(-60), label: 'Badge', required: false, employeeRead: false, managerRead: false, retired: false } })
   await as('hr', 'customField.write', { person: q, effectiveFrom: day(-1), values: { badge: 'synthetic-willow-3' } })
   await as('hr', 'recordRow.write', { person: q, table: 'certifications', effectiveFrom: day(-1), values: { name: 'Forklift', issuer: 'Board', number: 'FL-9', issued_on: day(-300), expires_on: day(40) } })
-  await f.account(quinn.period)
+  const quinnAccount = await f.account(quinn.period)
   const oakland = await api('location.create', { name: 'Oakland', timezone: 'UTC', workState: 'CA' })
   await api('mover.schedule', { period: quinn.period, effectiveFrom: day(-50), locationId: oakland.id, reason: 'Moved' })
+  await api('connections.notices', { enabled: true })
+  const leave = await h.api('leave.request', quinnCookie, { account: quinnAccount, startDate: day(3), endDate: day(3), reason: 'synthetic-willow-5' })
+  await api('leave.decide', { request: leave.id, decision: 'approve' })
   const leaver = await api('leaver.start', { period: quinn.period, template: f.templates.leaver, endDate: day(-1), reason: 'Resigned' })
 
   // Before any decision: every blocker is named and nothing can be confirmed.
@@ -67,6 +70,7 @@ try {
   for (const who of ['managera', 'employee']) await as(who, 'erasure.request', { person: s.invited.person, source: 'counsel', receivedOn: today }, 403)
   assert.equal((await as('hr', 'erasure.request', { person: q, source: 'bogus', receivedOn: today }, 400)).error, 'invalid_source')
   assert.equal((await get('hr', 'retention')).requests[0].id, request.id)
+  assert.equal((await as('hr', 'erasure.withdraw', { request: request.id }, 403)).error, 'owner_required')
   assert.equal((await as('hr', 'erasure.confirm', { person: q, digest: first.digest }, 403)).error, 'owner_required')
   assert.equal((await api('erasure.confirm', { person: q, digest: first.digest }, 409)).error, 'erasure_blocked')
   assert.ok((await as('hr', 'work')).items.every(item => item.kind !== 'erasure-request') && (await get('owner', 'work')).items.some(item => item.kind === 'erasure-request'), 'the open request is the owner\'s work')
@@ -119,18 +123,6 @@ try {
   const audit = await api('audit')
   assert.ok(audit.some(event => event.action === 'erasure.preview' && event.subject === q && !event.detail.includes('Quinn')))
 
-  // A stale digest is refused; a release changes the preview and its digest; then confirmation records.
-  await api('hold.release', { hold: hold.id })
-  const released = await preview('owner', q)
-  assert.notEqual(released.digest, clean.digest)
-  assert.equal(Object.fromEntries(released.items.map(row => [row.id, row]))[`documents:${forms}`].disposition, 'retained')
-  assert.equal((await api('erasure.confirm', { person: q, digest: clean.digest }, 409)).error, 'preview_stale')
-  const confirmed = await api('erasure.confirm', { person: q, digest: released.digest })
-  assert.equal(confirmed.status, 'confirmed')
-  assert.equal((await get('owner', 'retention')).requests[0].status, 'confirmed')
-  assert.equal((await api('erasure.confirm', { person: q, digest: released.digest }, 409)).error, 'erasure_request_required')
-  assert.equal((await as('hr', 'erasure.withdraw', { request: request.id }, 403)).error, 'owner_required')
-
   // A hold's review date is its owner's FLOW-002 work and moves to the owner when they lose access.
   const second = await api('hold.place', { scope: 'person', ref: s.invited.person, reason: 'Investigation', holdOwner: s.hr.member, reviewDate: day(10) })
   assert.ok((await as('hr', 'work')).items.some(row => row.kind === 'hold-review'))
@@ -154,6 +146,90 @@ try {
   assert.ok(page.includes('Retention table') && page.includes('Legal holds') && page.includes('Erasure requests'))
   const erasure = await (await h.raw(`/app/retention/erasure?person=${q}`, { cookie: owner })).text()
   assert.ok(erasure.includes('Erasure preview') && erasure.includes('Every record, item by item'))
-  await browserEvidence(h, { owner, hr: s.managera.cookie ? s.managera : s.hr }, q)
+  await browserEvidence(h, owner, [['census', '/app/retention'], ['preview', `/app/retention/erasure?person=${q}`]])
+
+  // The digest binds the preview: a changed state is refused as stale; HR cannot withdraw; the second hold changes the preview and is released.
+  const watch = await api('hold.place', { scope: 'record_class', ref: 'eeo', reason: 'Audit of EEO records', reviewDate: day(30) })
+  const changed = await preview('owner', q)
+  assert.notEqual(changed.digest, clean.digest)
+  assert.equal(Object.fromEntries(changed.items.map(row => [row.id, row]))['eeo'].disposition, 'held')
+  assert.equal((await api('erasure.confirm', { person: q, digest: clean.digest }, 409)).error, 'preview_stale')
+  await api('hold.release', { hold: watch.id })
+  const final = await preview('owner', q)
+  assert.notEqual(final.digest, changed.digest, 'releasing the hold changes the digest again')
+
+  // Erasure: one journaled batch. Retained and held records move to restricted custody; nothing else names the person.
+  const members = await api('members')
+  const quinnMember = members.find(member => member.person === q).id
+  const sourceBefore = await rowCounts(directory)
+  const erased = await api('erasure.confirm', { person: q, digest: final.digest })
+  assert.equal(erased.status, 'confirmed')
+  assert.match(erased.label, /^Former person [0-9a-f]{8}$/)
+  assert.equal((await api('erasure.confirm', { person: q, digest: final.digest }, 409)).error, 'erasure_request_required')
+  await preview('owner', q, 404)
+  await api(`people/${q}`, undefined, 404)
+  assert.ok(!(await api('people')).some(person => person.id === q), 'the directory no longer lists the person')
+  assert.equal((await h.raw('/api/willow/me', { cookie: quinnCookie })).status, 401, 'their session ended')
+  await assert.rejects(h.signIn('quinn@example.com'), /no sign-in message/)
+  const afterCounts = await rowCounts(directory)
+  assert.ok(afterCounts.tables.rer_portability_journal > sourceBefore.tables.rer_portability_journal, 'portability fence advanced in the same batch')
+  const strings = [q, quinnMember, 'quinn@example.com', 'synthetic-willow-3']
+  const found = await findText(directory, strings)
+  assert.deepEqual(Object.keys(found), ['wl_retained_records'], `only restricted custody holds the person: ${JSON.stringify(found)}`)
+  const auditAfter = JSON.stringify(await api('audit'))
+  for (const value of [q, quinnMember, 'quinn@example.com']) assert.ok(!auditAfter.includes(value), 'audit and history no longer name the person')
+  assert.ok(auditAfter.includes(erased.label.split(' ')[2]) === false, 'the label is stored as a stub identity, not as text')
+  const receipt = await api(`erasure/receipts/${erased.receipt}`)
+  assert.equal(receipt.label, erased.label)
+  for (const [kind, expected] of [['erased', final.summary.erased], ['retained', final.summary.retained], ['held', final.summary.held]]) assert.equal(receipt.totals[kind], expected, `receipt ${kind} count matches the preview`)
+  assert.ok(receipt.totals.anonymized >= final.summary.anonymized, 'audit rows written by the preview itself are anonymized too')
+  assert.ok(!JSON.stringify(receipt).match(new RegExp([q, quinnMember, 'quinn', 'Quinn'].join('|'))), 'the receipt holds no identifier')
+  await browserEvidence(h, owner, [['receipt', `/app/retention/receipts/${erased.receipt}`], ['retained', '/app/retention/retained']])
+  assert.equal(receipt.source, 'own_request')
+  assert.deepEqual(receipt.providerRequests.map(r => [r.provider, r.status, r.open]), [['Email notice provider', 'open', true]], 'the provider that received a notice gets a tracked deletion request')
+  const providerWork = (await get('owner', 'work')).items.find(item => item.kind === 'provider-deletion')
+  assert.ok(providerWork, 'the request is the owner\'s FLOW-002 work')
+  const requestId = receipt.providerRequests[0].id
+  await as('managera', 'erasure.provider', { request: requestId, outcome: 'deleted', evidence: 'x' }, 403)
+  await api('erasure.provider', { request: requestId, outcome: 'failed' }, 400)
+  await api('erasure.provider', { request: requestId, outcome: 'failed', evidence: 'provider API returned 503' })
+  assert.equal((await api(`erasure/receipts/${erased.receipt}`)).providerRequests[0].open, true, 'a failed provider deletion remains open')
+  assert.ok((await get('owner', 'work')).items.some(item => item.kind === 'provider-deletion'), 'and stays work')
+  await api('erasure.provider', { request: requestId, outcome: 'retained', evidence: 'provider reply 12', reason: 'legal hold at the provider', expiry: day(90) })
+  assert.equal((await api(`erasure/receipts/${erased.receipt}`)).providerRequests[0].open, false)
+  await api('erasure.provider', { request: requestId, outcome: 'deleted', evidence: 'x' }, 409)
+  await as('managera', `erasure/receipts/${erased.receipt}`, undefined, 403)
+  const custodyRecords = (await api('retained')).records
+  const kept = Object.fromEntries(custodyRecords.map(record => [record.store, record]))
+  assert.equal(kept[`documents:${forms}`].hold, hold.id, 'the held document class is in custody under its hold')
+  assert.equal(kept.terms.class, 'payroll')
+  assert.equal(kept.eeo.values, null, 'EEO values in custody need eeo.individual even for the owner')
+  assert.ok(kept.people.values.legal_name, 'the owner reads the retained identity')
+  await as('managera', 'retained', undefined, 403)
+  for (const version of [offerVersion, formVersion]) for (const who of ['managera', 'employee']) assert.equal((await h.raw(`/app/files/document/${version}`, { cookie: s[who].cookie })).status, 404, 'documents are no longer served')
+  assert.equal(afterCounts.blobs, sourceBefore.blobs, 'retained and held bytes stay in custody')
+
+  // A class whose period has run out is erased with its bytes: an I-9-class document of someone who left years ago.
+  const rae = await f.join('rae', { startDate: '2019-01-01' })
+  const identity = (await api('category.create', { name: 'Identity checks' })).id
+  const raeVersion = (await api('document.add', { person: rae.person, category: identity, title: 'Identity', file: text('synthetic-willow-4') })).version
+  await api('retention.map', { kind: 'document_category', ref: identity, class: 'i9' })
+  const raeLeaver = await api('leaver.start', { period: rae.period, template: f.templates.leaver, endDate: '2020-06-30', reason: 'Left' })
+  for (const open of (await api(`people/${rae.person}`)).cases.filter(item => item.status === 'open')) {
+    for (const task of (await api(`cases/${open.id}`)).tasks) await api('task.complete', { task: task.id, evidence: 'Done' })
+    await api('case.complete', { case: open.id })
+  }
+  assert.ok(raeLeaver.case)
+  await api('erasure.request', { person: rae.person, source: 'retention_expiry', receivedOn: today })
+  const raePlan = await preview('owner', rae.person)
+  assert.deepEqual(raePlan.blockers, [])
+  const raeDocument = raePlan.items.find(row => row.id === `documents:${identity}`)
+  assert.deepEqual([raeDocument.disposition, raeDocument.class, raeDocument.blobs], ['erased', 'i9', 1])
+  const blobsBefore = (await rowCounts(directory)).blobs
+  const raeErased = await api('erasure.confirm', { person: rae.person, digest: raePlan.digest })
+  const raeReceipt = await api(`erasure/receipts/${raeErased.receipt}`)
+  assert.deepEqual([raeReceipt.blobs.total, raeReceipt.blobs.deleted], [1, 1], 'the bytes are deleted after the commit and the receipt says so')
+  assert.equal((await rowCounts(directory)).blobs, blobsBefore - 1)
+  assert.equal((await h.raw(`/app/files/document/${raeVersion}`, { cookie: owner })).status, 404)
   console.log('DATA-002 retention census: passed')
 } finally { await h.close(); await rm(directory, { recursive: true, force: true }) }

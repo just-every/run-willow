@@ -16,6 +16,7 @@ import { CERTIFICATIONS, readsTable, recordTables } from './record-tables/schema
 import { mayApprove, mayRead, type ResolvedStep } from './change-requests/chain'
 import { answersTask } from './date-alerts/alerts'
 import { holds } from './retention/holds'
+import { providerRequests } from './retention/providers'
 
 export interface WorkSource {
  key: string; kind: string; title: string; path: string; due: string; preferred?: string | null
@@ -106,6 +107,11 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  for (const hold of await holds(env,{active:true})) {
   const active = !!await one(env,"SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active'",hold.owner_member)
   add('hold-review',hold,'Review legal hold','/app/retention',hold.review_date,a=>a.owner||a.id===hold.owner_member,a=>active?a.id===hold.owner_member||a.owner:a.owner,active?hold.owner_member:null,active?'Awaiting the hold owner':'Hold owner lost access; the owner reviews')
+ }
+ // DATA-002: each provider deletion request is its assignee's work (the owner's if they lose access) until the provider's outcome is recorded with evidence.
+ for (const req of (await providerRequests(env)).filter(r => r.open)) {
+  const active = !!await one(env,"SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active'",req.assignee)
+  add('provider-deletion',req,`Record ${req.provider} deletion outcome`,'/app/retention',req.dueDate,a=>a.owner||a.id===req.assignee,a=>active?a.id===req.assignee||a.owner:a.owner,active?req.assignee:null,req.status==='failed'?'Deletion failed; the request stays open':'Awaiting the provider\'s answer')
  }
  for (const r of await all(env,"SELECT id,person_id,requested_at FROM wl_erasure_requests WHERE status='open'")) add('erasure-request',r,'Decide erasure request',`/app/retention/erasure?person=${r.person_id}`,deadline(r.requested_at),a=>a.owner)
  return [...result,...await surveyWork(env),...await performanceWork(env)]

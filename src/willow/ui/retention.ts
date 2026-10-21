@@ -7,7 +7,7 @@ import { formatDate } from '../dates'
 import { SCOPES } from '../retention/holds'
 import { SOURCES, previewErasure } from '../retention/erasure'
 import { CLASS_KEYS } from '../retention/rules'
-import { retention } from '../retention/view'
+import { erasureReceipt, retainedRecords, retention } from '../retention/view'
 import { field, form, h, hidden, page, select, table, tag } from './html'
 
 const PATH = '/app/retention'
@@ -22,7 +22,7 @@ function requestForm(people: { id: string; name: string }[], today: string) {
 export async function retentionPage(env: Bindings, actor: Actor, url: URL) {
   const data = await retention(env, actor) as any
   const requests = (owner: boolean) => data.requests.length ? table(['Person', 'Source', 'Received', 'Status', ''], data.requests.map((r: any) => [r.person.name, SOURCE_LABELS[r.source], formatDate(r.receivedOn), tag(r.status),
-    owner && r.status !== 'withdrawn' ? h`<a href="${PATH}/erasure?person=${r.person.id}">Preview</a> ${form('erasure.withdraw', PATH, hidden('request', r.id), 'Withdraw', { secondary: true })}` : ''])) : h`<p>No erasure requests.</p>`
+    owner && r.receipt ? h`<a href="${PATH}/receipts/${r.receipt}">Receipt</a>` : owner && r.status !== 'withdrawn' ? h`<a href="${PATH}/erasure?person=${r.person.id}">Preview</a> ${form('erasure.withdraw', PATH, hidden('request', r.id), 'Withdraw', { secondary: true })}` : ''])) : h`<p>No erasure requests.</p>`
   if (!actor.owner) {
     const people = await all<{ id: string; name: string }>(env, 'SELECT id, legal_name AS name FROM wl_people ORDER BY legal_name')
     return page('Erasure requests', actor, h`<h1>Erasure requests</h1><p>HR opens a request and records where it came from. The owner alone decides.</p>
@@ -51,6 +51,7 @@ ${mappingRefs.length ? h`<form method="post" action="/app/do/retention.map"><inp
   hold.released_at ? '' : h`${form('hold.release', PATH, hidden('hold', hold.id), 'Release', { secondary: true })}`])) : h`<p>No holds.</p>`}
 ${form('hold.place', PATH, [select('Scope', 'scope', SCOPES.map(value => ({ value, label: SCOPE_LABELS[value] }))), field('Reference (person, category id or class)', 'ref', { required: false }), field('From (date range only)', 'from', { type: 'date', required: false }), field('To (date range only)', 'to', { type: 'date', required: false }),
   field('Reason', 'reason'), select('Hold owner', 'holdOwner', members.map(m => ({ value: m.id, label: m.name }))), field('Review date', 'reviewDate', { type: 'date' })], 'Place hold')}</section>
+<p><a href="${PATH}/retained">Retained records in restricted custody</a></p>
 <section class="card"><h2>Erasure requests</h2>${requests(true)}${requestForm(data.former, actor.today)}${data.former.length ? '' : h`<p class="muted">No former worker is eligible yet: erasure covers people with no current or future employment.</p>`}</section>`, { current: PATH, url })
 }
 
@@ -64,5 +65,21 @@ ${preview.blockers.length ? h`<section class="card"><h2>Blocked</h2>${table(['Wh
 <section class="card"><h2>Summary</h2><dl><dt>Rows examined</dt><dd>${preview.summary.rows}</dd><dt>Erased now</dt><dd>${preview.summary.erased}</dd><dt>Anonymized</dt><dd>${preview.summary.anonymized}</dd><dt>Redacted from custody</dt><dd>${preview.summary.redacted}</dd><dt>Retained</dt><dd>${preview.summary.retained}</dd><dt>Held</dt><dd>${preview.summary.held}</dd><dt>Files</dt><dd>${preview.summary.blobs} (${preview.summary.bytes} bytes)</dd></dl></section>
 <section class="card"><h2>Every record, item by item</h2>${table(['Record', 'Rows', 'Files', 'Result', 'Class', 'Until'], preview.items.map(item => [item.label, item.rows, item.blobs, tag(DISPOSITIONS[item.disposition]), item.class ?? '—', item.hold ? 'Hold' : item.expiry ? formatDate(item.expiry) : '—']))}</section>
 <section class="card"><h2>Copies outside Willow</h2><p>${preview.copies.exports.statement}</p>${preview.copies.providers.length ? table(['Destination', 'Copies'], preview.copies.providers.map(p => [p.provider, p.copies])) : ''}</section>
-<section class="card"><h2>Decision</h2><p>Digest <code>${preview.digest.slice(0, 16)}</code>.</p>${preview.request ? preview.request.status === 'confirmed' ? h`<p>${tag('confirmed')} Confirmed by the owner. Erasure runs in a later release.</p>` : preview.confirmable ? form('erasure.confirm', `${PATH}/erasure?person=${preview.person.id}`, [hidden('person', preview.person.id), hidden('digest', preview.digest)], 'Confirm this preview') : h`<p>Resolve the blocked items first.</p>` : h`<p>Open an erasure request for this person first.</p>`}</section>`, { current: PATH, url })
+<section class="card"><h2>Decision</h2><p>Digest <code>${preview.digest.slice(0, 16)}</code>.</p>${preview.request ? preview.request.status === 'confirmed' ? h`<p>${tag('confirmed')} Confirmed by the owner.</p>` : preview.confirmable ? form('erasure.confirm', PATH, [hidden('person', preview.person.id), hidden('digest', preview.digest)], 'Confirm this preview and erase') : h`<p>Resolve the blocked items first.</p>` : h`<p>Open an erasure request for this person first.</p>`}</section>`, { current: PATH, url })
+}
+
+export function receiptPage(actor: Actor, data: Awaited<ReturnType<typeof erasureReceipt>>, url?: URL) {
+  return page('Erasure receipt', actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Erasure receipt: ${data.label}</h1>
+<p>The receipt holds counts and labels only: no name, email, tax identifier, birth date or employee number.</p>
+<section class="card"><dl><dt>Request source</dt><dd>${SOURCE_LABELS[data.source]}</dd><dt>Received</dt><dd>${formatDate(data.receivedOn)}</dd><dt>Approved by</dt><dd>${data.approvedBy ?? '—'}</dd><dt>Preview digest</dt><dd><code>${data.digest.slice(0, 16)}</code></dd>
+<dt>Erased</dt><dd>${data.totals.erased}</dd><dt>Anonymized</dt><dd>${data.totals.anonymized}</dd><dt>Retained</dt><dd>${data.totals.retained}</dd><dt>Held</dt><dd>${data.totals.held}</dd><dt>Files deleted</dt><dd>${data.blobs.deleted} of ${data.blobs.total} (${data.blobs.bytes} bytes)</dd></dl></section>
+<section class="card"><h2>Every record</h2>${table(['Record', 'Rows', 'Result', 'Class', 'Until'], data.counts.map(c => [c.table, c.rows, tag(DISPOSITIONS[c.disposition]), c.class ?? '—', c.hold ? 'Hold' : c.expiry ? formatDate(c.expiry) : '—']))}</section>
+<section class="card"><h2>Copies outside Willow</h2><p>${(data.copies as any).exports?.statement ?? ''}</p></section>
+<section class="card"><h2>Provider deletion requests</h2><p>Willow never claims a provider deleted the data without evidence. A failed or unanswered request stays open.</p>${data.providerRequests.length ? table(['Provider', 'Copies', 'Status', 'Due', 'Outcome'], data.providerRequests.map(r => [r.provider, r.copies, tag(r.status), formatDate(r.dueDate), r.open ? form('erasure.provider', `${PATH}/receipts/${data.id}`, [hidden('request', r.id), select('Outcome', 'outcome', [{ value: 'deleted', label: 'Deleted' }, { value: 'retained', label: 'Retained by the provider' }, { value: 'failed', label: 'Failed' }]), field('Evidence', 'evidence'), field('Provider reason (retained)', 'reason', { required: false }), field('Provider expiry (retained)', 'expiry', { type: 'date', required: false })], 'Record outcome') : [r.evidence, r.reason].filter(Boolean).join('; ')])) : h`<p>No provider was handed this person's data.</p>`}</section>`, { current: PATH, url })
+}
+
+export function retainedPage(actor: Actor, data: Awaited<ReturnType<typeof retainedRecords>>, url?: URL) {
+  return page('Retained records', actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Retained records</h1>
+<p>Records kept for a retention rule or a hold, in restricted custody: absent from the directory, profiles, search, reports and exports. Only the owner reads them; EEO values also need EEO compliance.</p>
+<section class="card">${data.records.length ? table(['Person', 'Record', 'Class', 'Until', 'Values'], data.records.map(r => [r.person, r.table, r.class ?? '—', r.hold ? 'Hold' : r.expiry ? formatDate(r.expiry) : '—', r.values ? JSON.stringify(r.values).slice(0, 160) : r.restricted])) : h`<p>No retained records.</p>`}</section>`, { current: PATH, url })
 }

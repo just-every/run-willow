@@ -14,7 +14,8 @@ import { customReportsPage, customReportPage } from './ui/custom-reports'
 import { customReportFile } from './reporting/files'
 import { eeoSelf, diversityReport, eeoPerson, eeoPeople, mappingsView, runs, eeoRunReport, runPeople, runAggregate } from './eeo'
 import { eeoSelfPage, diversityReportPage, eeoPersonPage, eeoPeoplePage } from './ui/eeo'
-import { retentionPage, erasurePage } from './ui/retention'
+import { retentionPage, erasurePage, receiptPage, retainedPage } from './ui/retention'
+import { erasureReceipt, retainedRecords } from './retention/view'
 import { eeoAggregatePage, eeoMappingsPage, eeoRunPage, eeoRunPeoplePage, eeoRunsPage } from './ui/eeo-report'
 import { selfChangesPage, selfChangePage } from './ui/self-service'
 import { importForm } from './movein/forms'
@@ -171,6 +172,8 @@ const pages: Record<string, Page> = {
   eeoReport: async (env,actor,_request,url) => diversityReportPage(actor,await diversityReport(env,actor,Object.fromEntries([...url.searchParams].filter(([k])=>!['notice','error'].includes(k)).length?url.searchParams:[['asOf',actor.today]]) as {asOf:string}),url),
   retention: (env,actor,_request,url) => retentionPage(env,actor,url),
   erasure: (env,actor,_request,url) => erasurePage(env,actor,url),
+  erasureReceipt: async (env,actor,_request,url,id) => receiptPage(actor,await erasureReceipt(env,actor,id),url),
+  retained: async (env,actor,_request,url) => retainedPage(actor,await retainedRecords(env,actor),url),
   selfChanges: (env,actor,_request,url) => selfChangesPage(env,actor,url),
   selfChange: (env,actor,_request,url,id) => selfChangePage(env,actor,id,url),
   customFields: (env, actor, _request, url) => customFieldsPage(env, actor, url),

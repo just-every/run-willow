@@ -15,3 +15,20 @@ export async function rowCounts(directory) {
   }
   return { tables, blobs: files.filter(p => p.includes('/r2/') && !p.endsWith('.sqlite') && !p.endsWith('-wal') && !p.endsWith('-shm')).length }
 }
+
+/** Every table that holds any of the strings in a text or blob column, with its match count. */
+export async function findText(directory, needles) {
+  const found = {}
+  for (const path of walk(join(directory, 'v3')).filter(p => p.includes('/d1/') && p.endsWith('.sqlite'))) {
+    const db = new DatabaseSync(path, { readOnly: true })
+    for (const { name } of db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").all()) {
+      const columns = db.prepare(`SELECT name FROM pragma_table_info('${name}')`).all().map(column => column.name)
+      const test = columns.map(column => needles.map(() => `instr(CAST("${column}" AS TEXT), ?) > 0`).join(' OR ')).join(' OR ')
+      const params = columns.flatMap(() => needles)
+      const n = db.prepare(`SELECT COUNT(*) AS n FROM "${name}" WHERE ${test}`).get(...params).n
+      if (n) found[name] = n
+    }
+    db.close()
+  }
+  return found
+}
