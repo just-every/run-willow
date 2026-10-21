@@ -217,7 +217,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "8f47530672ed01eb85423d102f0b2ae70ae2224869b334eb0d3770970475908c",
+      "sha256": "cf408924302334c26955790dfb6d67726a5c54aeb15f1456a7b9a25005002738",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -225,7 +225,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "94a421ab0f0c25197f8a069c97162f016610bca6e9f4a78d97e0c2e30881486c",
+      "sha256": "4bd597d0983c1c21889bf01ef5740959dccffe8154b38f12e7059f68a2f0802c",
       "executable": false
     },
     "base-copies.json": {
@@ -241,7 +241,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "38befcfaa83f5e25f874441c578124c99dd602104813165b051bc66a7f238b86",
+      "sha256": "125ea3ec2c4eb8bb726d9c28b6931075a33c31417b9f60e6be1f2a9e7d9150c7",
       "executable": false
     },
     "DEMO.md": {
@@ -2969,7 +2969,7 @@
       "executable": false
     },
     "src/willow/levels/actions.ts": {
-      "sha256": "42acf8cc72856df3f34b003547f79af2a69c26184ac27603c3a6c8c124460c79",
+      "sha256": "9250355ed4ddbd41679dddceeb9308ba1c673d0afda4482b4c8817cdc05fefa1",
       "executable": false
     },
     "src/willow/levels/personal.ts": {
@@ -3257,7 +3257,7 @@
       "executable": false
     },
     "src/willow/ui/levels.ts": {
-      "sha256": "b3ef428f2559d767768699108b4ae0f84dda87fe5ec11c01a381e9343006cdce",
+      "sha256": "8899392b12e64a9bf445471833689ac54520700e99a4b3e9e45d39ed7ead1e74",
       "executable": false
     },
     "src/willow/ui/model-drafts.ts": {
@@ -3465,7 +3465,15 @@
       "executable": false
     },
     "tests/willow/levels-browser.mjs": {
-      "sha256": "7720d6d69ab759437d12901bd90a30d63b2c50137c7dffc2ccbff9c4201451e7",
+      "sha256": "8e44228a34318b8079e615af647829e86d19bd8587e26c687df3a3c8657dbb74",
+      "executable": false
+    },
+    "tests/willow/levels-bulk-browser.mjs": {
+      "sha256": "b911ac3f83ac6fb783e135fc5f66a16edc921dd54f7170b46024cec0eafac6fc",
+      "executable": false
+    },
+    "tests/willow/levels-bulk.mjs": {
+      "sha256": "376aec73fa8046fe99e5dbbeeee29c51469b77c206902e089c645a008d16f4b0",
       "executable": false
     },
     "tests/willow/levels-personal-browser.mjs": {
@@ -3477,7 +3485,7 @@
       "executable": false
     },
     "tests/willow/levels.mjs": {
-      "sha256": "d174f0f01f85aab25b9a4557a34d74a91b3d7e71d5e90c73775ea94ca2ab4151",
+      "sha256": "ef2c8b64d00ff8d9683a6cbcf0af5cb19eb86d6d676d4d5155ecbcb0e0236952",
       "executable": false
     },
     "tests/willow/open-billing.mjs": {
