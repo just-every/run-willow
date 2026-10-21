@@ -1,3 +1,4 @@
+import { followsOwnChanges } from './levels/follow'
 import { initializeProvisionedDoor } from './movein/authority'
 // The signed-in person as Willow sees them: an operator-auth session joined to a
 // Willow member, that member's explicit permissions, the person they are, and
@@ -42,6 +43,7 @@ export interface Actor {
   personId: string | null
   /** People whose current (or first upcoming) terms name this actor's person as manager. */
   reports: Set<string>
+  followOwnChanges: boolean
   today: string
 }
 
@@ -70,7 +72,7 @@ export async function actorFor(env: Bindings, member: { id: string; email: strin
   if (member.owner) PERMISSIONS.forEach(permission => permissions.add(permission))
   const date = today(await employerZone(env))
   const reports = new Set(member.personId ? (await all<{ person_id: string }>(env, `${CURRENT_TERMS} AND t.manager_person_id = ?`, date, member.personId)).map(row => row.person_id) : [])
-  return { ...member, permissions, reports, today: date }
+  return { ...member, permissions, reports, today: date, followOwnChanges: await followsOwnChanges(env,member) }
 }
 
 export async function ensureMember(env: Bindings, email: string, name: string) {
