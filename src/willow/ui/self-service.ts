@@ -1,16 +1,16 @@
 // SELF-001: personal updates that need HR approval, with immutable proposals.
 import type { Bindings } from '../../auth.server'
-import { can, employerZone, type Actor } from '../actor'
+import { can, canAbout, employerZone, hasScopedGrant, type Actor } from '../actor'
 import { formatDate } from '../dates'
 import { personNames, PRIVATE_LABELS } from '../people'
 import { SELF_FIELDS, selfWriteModes, type SelfField } from '../levels/personal'
 import { personView } from '../profile'
 import type { PersonRecordTables } from '../record-tables/rows'
-import { selfChange, selfChanges, selfExceptions, handlesSelfExceptions } from '../self-service/view'
+import { selfChange, selfChanges, selfExceptions } from '../self-service/view'
 import { area, field, form, h, hidden, page, select, table, tag, when, type Html } from './html'
 
 const route = '/app/self-changes'
-const hr = (actor: Actor) => can(actor, 'people.manage') && can(actor, 'people.private')
+const hr = (actor: Actor, personId = '') => canAbout(actor, 'people.manage', personId) && canAbout(actor, 'people.private', personId)
 const title = (kind: string) => kind === 'legalName' ? 'Legal name change' : kind === 'dependent' ? 'Dependent change' : 'Personal detail change'
 const PERSONAL_LABELS: Record<SelfField, string> = { preferredName: 'Preferred name', ...PRIVATE_LABELS }
 const LABELS: Record<string, string> = { ...PERSONAL_LABELS, legalName: 'Legal name', name: 'Name', relationship: 'Relationship', row: 'Dependent row', values: 'Details', removed: 'Removed' }
@@ -44,10 +44,11 @@ ${dependents?.rows.map(row => h`<details><summary>Change ${row.values!.name}</su
 
 export async function selfChangesPage(env: Bindings, actor: Actor, url: URL) {
   const [changes, names, view, modes] = await Promise.all([selfChanges(env, actor), personNames(env), actor.personId ? personView(env, actor, actor.personId) : null, selfWriteModes(env, actor)])
-  const exceptions = handlesSelfExceptions(actor) ? await selfExceptions(env,actor) : []
+  const mayHandle = hr(actor) || hasScopedGrant(actor, 'people.manage') || (can(actor, 'payroll.handoff') && can(actor, 'pay.read'))
+  const exceptions = mayHandle ? await selfExceptions(env,actor) : []
   const body = h`<h1>Personal change requests</h1><p>Legal names and dependent details change after HR approval. Your access determines which other personal details need approval and which you can save directly on <a href="${actor.personId ? `/app/people/${actor.personId}` : '/app/people'}">your record</a>.</p>
-<section class="card"><h2>${hr(actor) ? 'Requests in your scope' : 'Your requests'}</h2>${changes.length ? table(['Person', 'Request', 'Status', 'Due', 'Owner', 'Reconciliation'], changes.map(change => [h`<a href="/app/people/${change.personId}">${names.get(change.personId) ?? change.personId}</a>`, h`<a href="${route}/${change.id}">${title(change.kind)}</a>`, tag(change.status), formatDate(change.dueDate), change.owner, change.reconciliation ? tag(change.reconciliation.status) : '—'])) : h`<p class="muted">No personal change requests.</p>`}</section>
-${handlesSelfExceptions(actor) ? h`<section class="card"><h2>Approved revisions to reconcile</h2><p>Private values remain with HR. Record the downstream handoff; no provider confirmation is implied.</p>${exceptions.length ? table(['Person','Change','Due','Reconciliation'],exceptions.map(r=>[names.get(r.personId)??r.personId,title(r.kind),formatDate(r.dueDate),r.status==='resolved'?h`${tag('resolved')} ${r.reference}`:form('self.reconcile',route,[hidden('change',r.id),field('Handoff reference','reference')],'Record handoff',{secondary:true})])) : h`<p class="muted">No approved revisions.</p>`}</section>` : ''}
+<section class="card"><h2>${hr(actor) || hasScopedGrant(actor, 'people.private') ? 'Requests in your scope' : 'Your requests'}</h2>${changes.length ? table(['Person', 'Request', 'Status', 'Due', 'Owner', 'Reconciliation'], changes.map(change => [h`<a href="/app/people/${change.personId}">${names.get(change.personId) ?? change.personId}</a>`, h`<a href="${route}/${change.id}">${title(change.kind)}</a>`, tag(change.status), formatDate(change.dueDate), change.owner, change.reconciliation ? tag(change.reconciliation.status) : '—'])) : h`<p class="muted">No personal change requests.</p>`}</section>
+${mayHandle ? h`<section class="card"><h2>Approved revisions to reconcile</h2><p>Private values remain with HR. Record the downstream handoff; no provider confirmation is implied.</p>${exceptions.length ? table(['Person','Change','Due','Reconciliation'],exceptions.map(r=>[names.get(r.personId)??r.personId,title(r.kind),formatDate(r.dueDate),r.status==='resolved'?h`${tag('resolved')} ${r.reference}`:form('self.reconcile',route,[hidden('change',r.id),field('Handoff reference','reference')],'Record handoff',{secondary:true})])) : h`<p class="muted">No approved revisions.</p>`}</section>` : ''}
 ${view ? requestForms(view, modes) : ''}`
   return page('Personal change requests', actor, body, { current: route, url })
 }
@@ -58,9 +59,9 @@ export async function selfChangePage(env: Bindings, actor: Actor, id: string, ur
   const body = h`<p class="back"><a href="${route}">← Personal change requests</a></p><div class="title-row"><h1>${title(change.kind)}</h1><p>${tag(change.status)}</p></div>
 <section class="card"><h2>Request details</h2><dl class="facts"><dt>Person</dt><dd><a href="/app/people/${change.personId}">${names.get(change.personId) ?? change.personId}</a></dd><dt>Requested by</dt><dd>${change.requestedBy}</dd><dt>Requested at</dt><dd>${when(change.requestedAt, zone)}</dd><dt>Due</dt><dd>${formatDate(change.dueDate)}</dd><dt>Owner</dt><dd>${change.owner}</dd><dt>Status</dt><dd>${tag(change.status)}</dd></dl><p>The saved before and after values remain as the record of this request.</p><h3>Before</h3>${snapshot(change.before)}<h3>After</h3>${change.after === null ? h`<dl class="facts"><dt>Dependent</dt><dd>Removed</dd></dl>` : snapshot(change.after)}</section>
 ${change.decision ? h`<section class="card"><h2>HR decision</h2><dl class="facts"><dt>Decision</dt><dd>${tag(change.status)}</dd><dt>Recorded by</dt><dd>${change.decision.by}</dd><dt>Recorded at</dt><dd>${when(change.decision.at, zone)}</dd><dt>Comment</dt><dd>${change.decision.comment || '—'}</dd></dl></section>` : ''}
-${hr(actor) && actor.personId !== change.personId && actor.id !== change.requestedBy && change.status === 'pending' ? h`<section class="card"><h2>HR review</h2>${form('self.decide', back, [hidden('change', change.id), select('Decision', 'decision', [{ value: 'approve', label: 'Approve' }, { value: 'reject', label: 'Reject' }]), area('Comment', 'comment')], 'Record decision')}</section>` : ''}
+${hr(actor, change.personId) && actor.personId !== change.personId && actor.id !== change.requestedBy && change.status === 'pending' ? h`<section class="card"><h2>HR review</h2>${form('self.decide', back, [hidden('change', change.id), select('Decision', 'decision', [{ value: 'approve', label: 'Approve' }, { value: 'reject', label: 'Reject' }]), area('Comment', 'comment')], 'Record decision')}</section>` : ''}
 ${change.reconciliation ? h`<section class="card"><h2>Reconciliation</h2><dl class="facts"><dt>Status</dt><dd>${tag(change.reconciliation.status)}</dd><dt>Reference</dt><dd>${change.reconciliation.reference || '—'}</dd><dt>Recorded by</dt><dd>${change.reconciliation.by || '—'}</dd><dt>Recorded at</dt><dd>${when(change.reconciliation.at, zone)}</dd></dl>
-${hr(actor) && change.status === 'approved' && change.reconciliation.status === 'open' ? form('self.reconcile', back, [hidden('change', change.id), field('Reconciliation reference', 'reference', { hint: 'Record the evidence or reference for the completed follow-up.' })], 'Record reconciliation') : ''}</section>` : ''}`
+${hr(actor, change.personId) && change.status === 'approved' && change.reconciliation.status === 'open' ? form('self.reconcile', back, [hidden('change', change.id), field('Reconciliation reference', 'reference', { hint: 'Record the evidence or reference for the completed follow-up.' })], 'Record reconciliation') : ''}</section>` : ''}`
   return page('Personal change request', actor, body, { current: route, url })
 }
 

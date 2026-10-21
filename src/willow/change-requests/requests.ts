@@ -7,7 +7,8 @@
 // version bound to the approved values, opens the chain's mover case, and the
 // pay/terms change enters the payroll handoff queue (WIL-11) like any other.
 import type { Bindings } from '../../auth.server'
-import { can, type Actor } from '../actor'
+import { can, canAbout, type Actor } from '../actor'
+import { scopeFence } from '../levels/scope'
 import { commit, guard, insist, json, newId, now, one, stmt, type Row } from '../core'
 import { CURRENT_TERMS } from '../employment'
 import { bandPosition, guardBandSnapshot } from '../compensation/bands'
@@ -32,7 +33,7 @@ const raised = (cents: number, percent: string) => Math.round(cents * (10_000 + 
 
 async function readRequest(env: Bindings, actor: Actor, personId: string, input: Input) {
   insist(personId !== actor.personId, 'own_terms', 403)
-  insist(can(actor, 'people.manage') || actor.reports.has(personId), 'forbidden', 403)
+  insist(canAbout(actor, 'people.manage', personId) || actor.reports.has(personId), 'forbidden', 403)
   const current = await one(env, `${CURRENT_TERMS} AND p.person_id = ?`, actor.today, personId)
   insist(current, 'period_not_found', 404)
   const period = (await one(env, 'SELECT * FROM wl_periods WHERE id = ?', current.period_id))!
@@ -103,6 +104,7 @@ export async function requestChange(env: Bindings, actor: Actor, input: Input) {
   const read = await readRequest(env, actor, personId, input)
   const id = newId(), at = now()
   await commit(env, [
+    ...await scopeAuthority(env, actor, personId, actor.reports.has(personId)),
     ...(read.band ? [guardBandSnapshot(env, read.band.source)] : []),
     stmt(env, "INSERT INTO wl_change_requests (id, person_id, period_id, request_type, requested_by, requested_at, status, revision, chain_id, steps_json, step, plan_json, base_json, attachments_json, state, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'pending', 1, ?, ?, 0, ?, ?, ?, ?, ?)",
       id, personId, read.period.id, read.type, actor.id, at, read.chain.id, JSON.stringify(read.steps), JSON.stringify(read.plan), JSON.stringify(read.base), JSON.stringify(await attachment(env, actor, input, 1)), newId(), at),
@@ -119,6 +121,9 @@ async function loadOpen(env: Bindings, input: Input) {
   return row
 }
 
+/** A scoped HR requester or approver is rechecked against fresh terms inside the write (ROLE-002). */
+const scopeAuthority = async (env: Bindings, actor: Actor, personId: string, viaOther: boolean) => viaOther || can(actor, 'people.manage') ? [] : await scopeFence(env, actor, personId, 'people.manage')
+
 const fence = (env: Bindings, row: Row) => guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_change_requests WHERE id = ? AND state = ?)', row.id, row.state)
 
 /** The requester edits a pending or returned request: a new revision whose chain restarts at its first step. */
@@ -130,6 +135,7 @@ export async function editChange(env: Bindings, actor: Actor, input: Input) {
   const attachments = [...json<Attachment[]>(row.attachments_json, []), ...await attachment(env, actor, input, revision)]
   await commit(env, [
     fence(env, row),
+    ...await scopeAuthority(env, actor, row.person_id, actor.reports.has(row.person_id)),
     ...(read.band ? [guardBandSnapshot(env, read.band.source)] : []),
     stmt(env, "UPDATE wl_change_requests SET status = 'pending', revision = ?, request_type = ?, chain_id = ?, steps_json = ?, step = 0, plan_json = ?, base_json = ?, attachments_json = ?, state = ?, updated_at = ? WHERE id = ?",
       revision, read.type, read.chain.id, JSON.stringify(read.steps), JSON.stringify(read.plan), JSON.stringify(read.base), JSON.stringify(attachments), newId(), at, row.id),
@@ -147,15 +153,16 @@ export async function decideChange(env: Bindings, actor: Actor, input: Input) {
   const decision = input.text('decision', { max: 10 }), comment = input.text('comment', { optional: true, max: 1000 }) || null, at = now()
   insist(['approve', 'decline', 'return'].includes(decision), 'invalid_decision')
   const audit = { actor: actor.id, subject: row.id, detail: { revision: row.revision, step: row.step, role: steps[row.step].role } }
+  const authority = await scopeAuthority(env, actor, row.person_id, steps[row.step].role === 'payroll' || actor.id === steps[row.step].member)
   if (decision !== 'approve') {
     insist(decision === 'decline' || comment, 'missing_comment')
     const status = decision === 'decline' ? 'declined' : 'returned'
-    await commit(env, [fence(env, row), stmt(env, 'UPDATE wl_change_requests SET status = ?, state = ?, updated_at = ? WHERE id = ?', status, newId(), at, row.id), event(env, row.id, row.revision, row.step, status, actor.id, comment, at)],
+    await commit(env, [fence(env, row), ...authority, stmt(env, 'UPDATE wl_change_requests SET status = ?, state = ?, updated_at = ? WHERE id = ?', status, newId(), at, row.id), event(env, row.id, row.revision, row.step, status, actor.id, comment, at)],
       { ...audit, action: `change.${decision}` })
     return { id: row.id, status }
   }
   if (row.step + 1 < steps.length) {
-    await commit(env, [fence(env, row), stmt(env, 'UPDATE wl_change_requests SET step = ?, state = ?, updated_at = ? WHERE id = ?', row.step + 1, newId(), at, row.id), event(env, row.id, row.revision, row.step, 'approved', actor.id, comment, at)],
+    await commit(env, [fence(env, row), ...authority, stmt(env, 'UPDATE wl_change_requests SET step = ?, state = ?, updated_at = ? WHERE id = ?', row.step + 1, newId(), at, row.id), event(env, row.id, row.revision, row.step, 'approved', actor.id, comment, at)],
       { ...audit, action: 'change.approve' })
     return { id: row.id, status: 'pending', step: row.step + 1 }
   }
@@ -175,6 +182,7 @@ export async function decideChange(env: Bindings, actor: Actor, input: Input) {
   const prepared = await execute(env, actor, row.period_id, plan, base, chain.template_id)
   await commit(env, [
     fence(env, row),
+    ...authority,
     ...(bandSource === null ? [] : [guardBandSnapshot(env, bandSource)]),
     guard(env, 'change_request_stale', 'EXISTS(SELECT 1 FROM wl_periods WHERE id = ? AND revision = ?)', row.period_id, base.periodRevision),
     stmt(env, "UPDATE wl_change_requests SET status = 'approved', result_json = ?, state = ?, updated_at = ? WHERE id = ?", JSON.stringify(prepared.result), newId(), at, row.id),

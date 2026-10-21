@@ -37,7 +37,7 @@ const NAV: NavItem[][] = [[
   { href: '/app/performance', label: 'Performance', icon: 'chart', show: () => true },
   { href: '/app/surveys', label: 'Surveys', icon: 'chart', show: () => true },
   { href: '/app/dates', label: 'Upcoming dates', icon: 'calendar', show: () => true },
-  { href: '/app/changes', label: 'Change requests', icon: 'checklist', show: actor => actor.followOwnChanges || can(actor, 'people.manage') || can(actor, 'payroll.handoff') || actor.reports.size > 0 },
+  { href: '/app/changes', label: 'Change requests', icon: 'checklist', show: actor => actor.followOwnChanges || can(actor, 'people.manage') || hasScopedGrant(actor, 'people.manage') || can(actor, 'payroll.handoff') || actor.reports.size > 0 },
 ], [
   { href: '/app/import', label: 'Move in', icon: 'upload', show: actor => can(actor, 'people.manage') },
   { href: '/app/access', label: 'Access', icon: 'shield', show: actor => can(actor, 'people.manage') },

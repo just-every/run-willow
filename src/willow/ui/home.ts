@@ -2,7 +2,7 @@ import { companyPanels } from './company'
 import { selfChangesPanel } from './self-service'
 // Home (my tasks, approvals, my leave), the task inbox and a lifecycle case.
 import type { Bindings } from '../../auth.server'
-import { can, type Actor } from '../actor'
+import { can, canAbout, type Actor } from '../actor'
 import { formatDate, formatDay, hours } from '../dates'
 import { employer } from '../employer'
 import { one } from '../core'
@@ -49,6 +49,6 @@ ${item.missing.length ? h`<section class="card"><h2>Information still needed</h2
     task.status === 'open' && task.mine && !task.blockedBy.length ? form('task.complete', `/app/cases/${id}`, [hidden('task', task.id), ...(task.action === 'asset_return' ? [field('Returned on', 'returnedOn', { type: 'date', value: actor.today }), select('Condition on return', 'condition', ASSET_CONDITIONS)] : []), area(task.evidenceRequired ? 'Evidence (required)' : 'Note', 'evidence', '', task.evidenceRequired)], task.action === 'end_access' ? 'End access and mark done' : task.action === 'asset_return' ? 'Record return and mark done' : 'Mark done', { secondary: true }) : '', task.status === 'open' && task.mine ? h`<details><summary>Record failed work</summary>${form('task.fail', `/app/cases/${id}`, [hidden('task', task.id), area('Failure and next action', 'failure')], 'Keep task open', { secondary: true })}</details>` : '']))}</section>
 ${upgrades.length ? h`<section class="card"><h2>Upgrade this case</h2>${form('case.upgrade.preview', `/app/cases/${id}?review={id}`, [hidden('case', id), select('Published version', 'template', upgrades.map(t => ({ value: t.id, label: `${t.name} v${t.version}` })))], 'Review case upgrade')}</section>` : ''}
 ${item.upgrades.length ? h`<section class="card"><h2>Upgrade history</h2><ul>${item.upgrades.map(u => h`<li>${new Date(u.at).toISOString()} — completed work and superseded tasks retained</li>`)}</ul></section>` : ''}
-${item.status === 'open' && can(actor, 'people.manage') ? h`<section class="card">${form('case.complete', `/app/cases/${id}`, [hidden('case', id)], 'Complete case')}<p class="muted">A case completes only when every task is done.</p></section>` : ''}`
+${item.status === 'open' && canAbout(actor, 'people.manage', item.person.id) ? h`<section class="card">${form('case.complete', `/app/cases/${id}`, [hidden('case', id)], 'Complete case')}<p class="muted">A case completes only when every task is done.</p></section>` : ''}`
   return page('Case', actor, body, { current: '/app/people', url })
 }

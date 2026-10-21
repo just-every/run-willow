@@ -4,7 +4,7 @@
 // with pay.read: without it, a requester sees the percentage they entered and
 // any other approver sees that pay changes, with the values withheld.
 import type { Bindings } from '../../auth.server'
-import { can, type Actor } from '../actor'
+import { can, canAbout, scopedPeople, type Actor } from '../actor'
 import { all, insist, json, one, type Row } from '../core'
 import { serve } from '../files'
 import { addDays } from '../dates'
@@ -42,7 +42,8 @@ export async function changeRequests(env: Bindings, actor: Actor) {
       yourTurn: row.status === 'pending' && await mayApprove(env, actor, row as { requested_by: string; person_id: string }, steps[row.step]) })
   }
   const manage = can(actor, 'people.manage')
-  const scope = manage ? await all(env, "SELECT id, legal_name, preferred_name FROM wl_people ORDER BY legal_name") : actor.reports.size ? await all(env, `SELECT id, legal_name, preferred_name FROM wl_people WHERE id IN (${[...actor.reports].map(() => '?').join(', ')}) ORDER BY legal_name`, ...actor.reports) : []
+  const reach = [...new Set([...actor.reports, ...scopedPeople(actor, 'people.manage')])]
+  const scope = manage ? await all(env, "SELECT id, legal_name, preferred_name FROM wl_people ORDER BY legal_name") : reach.length ? await all(env, `SELECT id, legal_name, preferred_name FROM wl_people WHERE id IN (${reach.map(() => '?').join(', ')}) ORDER BY legal_name`, ...reach) : []
   return {
     requests: items,
     mayRequestFor: scope.filter(p => p.id !== actor.personId).map(p => ({ id: p.id, name: displayName(p) })),
@@ -66,7 +67,7 @@ export async function changeRequest(env: Bindings, actor: Actor, id: string) {
     if ((terms[COLUMNS[key]] ?? null) !== (value ?? null)) changes.push({ field: label, from: await name(env, table, terms[COLUMNS[key]] ?? null), to: await name(env, table, value ?? null) })
   }
   if (plan.employmentType) changes.push({ field: 'Employment type', from: base.periodType.replace('_', ' '), to: plan.employmentType.replace('_', ' '), note: `On approval the current employment period ends on ${addDays(plan.effectiveFrom, -1)} and a new ${plan.employmentType.replace('_', ' ')} period starts on ${plan.effectiveFrom} with these terms; leave accounts stay with the ended period.` })
-  const pays = can(actor, 'pay.read')
+  const pays = canAbout(actor, 'pay.read', row.person_id)
   if (plan.pay) changes.push(pays
     ? { field: 'Pay', from: formatPay(base.payBasis as never, base.payCents, base.currency), to: formatPay(base.newPayBasis as never, base.newPayCents, base.currency), ...(plan.pay.mode === 'percent' ? { percent: plan.pay.percent } : {}) }
     : actor.id === row.requested_by && plan.pay.mode === 'percent' ? { field: 'Pay', from: WITHHELD, to: `${plan.pay.percent}% change`, percent: plan.pay.percent } : { field: 'Pay', from: WITHHELD, to: WITHHELD, withheld: true })

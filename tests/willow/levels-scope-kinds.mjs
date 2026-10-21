@@ -6,6 +6,9 @@ export async function scopeKindsProof(h, owner, fx) {
  const { join } = fx
  const api = (path, body, status) => h.api(path, owner, body, status)
  const apply = async plan => api('level.apply', { review: (await api('level.preview', plan)).id })
+ let invites = 0
+ // Each invitation comes from its own client address so the per-address invitation limit never throttles the fixture.
+ const invite = async person => { const response = await h.raw('/api/willow/access.give', { cookie: owner, body: { person }, ip: `10.6.9.${++invites}` }); assert.equal(response.status, 200, await response.clone().text()); return response.json() }
  const place = async name => (await api('location.create', { name, timezone: 'UTC' })).id
  const dept = async name => (await api('department.create', { name })).id
  const [A, B, C] = [await place('Kinds A'), await place('Kinds B'), await place('Kinds C')]
@@ -26,7 +29,7 @@ export async function scopeKindsProof(h, owner, fx) {
  let readers = 0
  const reader = async key => {
   const person = await join(`kr${key}`, { locationId: C, departmentId: D3, employmentType: 'full_time', jobTitle: 'Kinds reader', phone: `PRIVATE-kr${key}` })
-  const member = await api('access.give', { person: person.person })
+  const member = await invite(person.person)
   return { ...person, member: member.id, cookie: await h.signIn(`kr${key}@example.com`, { requested: true, ip: `10.3.0.${++readers}` }) }
  }
  const everyone = Object.keys(people)
@@ -48,7 +51,7 @@ export async function scopeKindsProof(h, owner, fx) {
  }
  const group = dimensions => ({ kind: 'group', dimensions })
  // Direct and indirect reports follow the in-force manager chain, self excluded.
- const boss = { ...people.boss, member: (await api('access.give', { person: people.boss.person })).id }
+ const boss = { ...people.boss, member: (await invite(people.boss.person)).id }
  boss.cookie = await h.signIn('kdboss@example.com', { requested: true, ip: '10.3.1.1' })
  const direct = await give(boss, { kind: 'direct' }, 'Kinds direct reports')
  await reads(boss, ['m1', 'm2'], 'direct reports')

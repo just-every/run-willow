@@ -14,6 +14,9 @@ export async function scopeProof(h, owner, fx) {
  const api = (path, body, status) => h.api(path, owner, body, status)
  const preview = body => api('level.preview', body), apply = review => api('level.apply', { review: review.id })
  const setZone = timezone => api('employer.configure', { name: 'Recovery example', timezone, country: 'AU', currency: 'AUD' })
+ let invites = 0
+ // Each invitation comes from its own client address so the per-address invitation limit never throttles the fixture.
+ const invite = async person => { const response = await h.raw('/api/willow/access.give', { cookie: owner, body: { person }, ip: `10.5.9.${++invites}` }); assert.equal(response.status, 200, await response.clone().text()); return response.json() }
  const harbour = (await api('location.create', { name: 'Scope Harbour', timezone: 'UTC' })).id
  const hills = (await api('location.create', { name: 'Scope Hills', timezone: 'UTC' })).id
  const category = (await api('category.create', { name: 'Scope files', subjectReads: true })).id
@@ -22,7 +25,7 @@ export async function scopeProof(h, owner, fx) {
   const cents = 6100000 + ++count * 137 + 19
   const person = await join(`sc${key}`, { locationId: location, jobTitle: 'Scope role', phone: `PRIVATE-sc${key}`, payAmount: (cents / 100).toFixed(2), payrollId: `SCPAY-${key}`, employeeNumber: `EMPNO-${key}`, ...extra })
   const record = { key, cents, ...person, secrets: [`PRIVATE-sc${key}`, `SCPAY-${key}`, `EMPNO-${key}`, ...payForms(cents)] }
-  if (member) { record.member = (await api('access.give', { person: person.person })).id; record.cookie = await h.signIn(`sc${key}@example.com`, { requested: true, ip: `10.2.0.${count}` }) }
+  if (member) { record.member = (await invite(person.person)).id; record.cookie = await h.signIn(`sc${key}@example.com`, { requested: true, ip: `10.2.0.${count}` }) }
   return record
  }
  const note = async (who, kind, text) => { const title = `SECRET-${kind}-${who.key}`; who.secrets.push(title); return title }

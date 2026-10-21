@@ -4,7 +4,8 @@
 // responsible person records evidence. A case cannot complete while any task
 // is open.
 import type { Bindings } from '../auth.server'
-import { can, requirePermission, type Actor, type Permission } from './actor'
+import { can, canAbout, requirePermission, type Actor, type Permission } from './actor'
+import { scopeFence } from './levels/scope'
 import { sees } from './access'
 import { all, commit, guard, insist, json, newId, now, one, stmt, type Row } from './core'
 import { addDays, requireDate, today } from './dates'
@@ -170,8 +171,9 @@ export async function startLeaver(env: Bindings, actor: Actor, input: Input) {
 export function answersFor(actor: Actor, task: Row, caseRow: Row): boolean {
   if (task.assignee === 'employee') return actor.personId === caseRow.person_id
   // The manager in force on the case's date answers; without one, HR does.
-  if (task.assignee === 'manager') return task.assignee_person_id ? task.assignee_person_id === actor.personId : can(actor, 'people.manage')
-  return can(actor, ASSIGNEE_PERMISSION[task.assignee as Assignee]!)
+  if (task.assignee === 'manager') return task.assignee_person_id ? task.assignee_person_id === actor.personId : canAbout(actor, 'people.manage', caseRow.person_id)
+  const permission = ASSIGNEE_PERMISSION[task.assignee as Assignee]!
+  return permission === 'people.manage' ? canAbout(actor, permission, caseRow.person_id) : can(actor, permission)
 }
 
 export async function completeTask(env: Bindings, actor: Actor, input: Input, request: Request) {
@@ -179,11 +181,14 @@ export async function completeTask(env: Bindings, actor: Actor, input: Input, re
   insist(task, 'task_not_found', 404)
   const caseRow = (await one(env, 'SELECT * FROM wl_cases WHERE id = ?', task.case_id))!
   insist(answersFor(actor, task, caseRow), 'not_your_task', 403)
+  // HR work reached only through a scoped level is rechecked against fresh terms inside the write (ROLE-002).
+  const scopeAuthority = (task.assignee === 'hr' || (task.assignee === 'manager' && !task.assignee_person_id)) && !can(actor, 'people.manage') ? await scopeFence(env, actor, caseRow.person_id, 'people.manage') : []
   insist(task.status === 'open' && !task.superseded_at, 'task_already_done', 409)
   insist(!(await blockedBy(env, task)).length, 'dependencies_open', 409)
   const evidence = input.text('evidence', { optional: true, max: 2000 })
   insist(!task.evidence_required || evidence, 'evidence_required')
   const statements: D1PreparedStatement[] = [
+    ...scopeAuthority,
     guard(env, 'dependencies_open', "NOT EXISTS(SELECT 1 FROM wl_case_tasks d JOIN json_each(?) j ON d.id=j.value WHERE d.status<>'done' AND d.superseded_at IS NULL)", task.dependencies),
     guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_case_tasks WHERE id=? AND status='open' AND superseded_at IS NULL)", task.id),
     stmt(env, "UPDATE wl_case_tasks SET status = 'done', failure = NULL, evidence = ?, completed_by = ?, completed_at = ? WHERE id = ? AND status = 'open'", evidence || null, actor.id, now(), task.id),
@@ -205,9 +210,10 @@ export async function missingFields(env: Bindings, caseRow: Row, template: Row):
 }
 
 export async function completeCase(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
   const caseRow = await one(env, 'SELECT * FROM wl_cases WHERE id = ?', input.text('case', { max: 100 }))
   insist(caseRow, 'case_not_found', 404)
+  insist(canAbout(actor, 'people.manage', caseRow.person_id), 'forbidden', 403)
+  const scopeAuthority = can(actor, 'people.manage') ? [] : await scopeFence(env, actor, caseRow.person_id, 'people.manage')
   insist(caseRow.status === 'open', 'case_already_completed', 409)
   const open = await all(env, "SELECT title FROM wl_case_tasks WHERE case_id = ? AND status <> 'done' AND superseded_at IS NULL ORDER BY position", caseRow.id)
   insist(!open.length, 'tasks_open', 409, { open: open.map(task => task.title) })
@@ -215,6 +221,7 @@ export async function completeCase(env: Bindings, actor: Actor, input: Input) {
   const missing = await missingFields(env, caseRow, template)
   insist(!missing.length, 'required_information_missing', 409, { missing })
   await commit(env, [
+    ...scopeAuthority,
     guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_cases WHERE id=? AND revision=? AND status='open')", caseRow.id, caseRow.revision),
     guard(env, 'tasks_open', "NOT EXISTS(SELECT 1 FROM wl_case_tasks WHERE case_id = ? AND status <> 'done' AND superseded_at IS NULL)", caseRow.id),
     stmt(env, "UPDATE wl_cases SET status = 'completed', completed_by = ?, completed_at = ?, revision = ? WHERE id = ? AND status = 'open'", actor.id, now(), newId(), caseRow.id),

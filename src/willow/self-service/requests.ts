@@ -1,6 +1,7 @@
 // SELF-001: proposed bytes never change. HR approval commits the native revision and outcome together.
 import type { Bindings } from '../../auth.server'
-import type { Actor } from '../actor'
+import { can, type Actor } from '../actor'
+import { scopeFence } from '../levels/scope'
 import { commit, guard, insist, newId, now, one, stmt } from '../core'
 import { addDays } from '../dates'
 import { Input } from '../input'
@@ -48,13 +49,14 @@ export async function proposeSelfChange(env: Bindings, actor: Actor, input: Inpu
 }
 
 export async function decideSelfChange(env: Bindings, actor: Actor, input: Input) {
- insist(reviewsSelfChanges(actor),'forbidden',403)
  const id=input.text('change'), decision=input.text('decision'), comment=input.text('comment',{max:1000})
  insist(['approve','reject'].includes(decision),'invalid_decision')
  const row=await one(env,'SELECT * FROM wl_self_changes WHERE id=?',id)
  insist(row,'not_found',404)
+ insist(reviewsSelfChanges(actor,row.person_id),'forbidden',403)
  insist(actor.id!==row.requested_by && actor.personId!==row.person_id,'self_approval',403)
- const statements=[guard(env,'already_decided','NOT EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=?)',id)]
+ // A scoped reviewer is rechecked against fresh terms inside the write (ROLE-002).
+ const statements=[...await scopeFence(env,actor,row.person_id,'people.manage','people.private'),guard(env,'already_decided','NOT EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=?)',id)]
  if(decision==='approve') {
   if(row.kind==='legalName') {
    statements.push(guard(env,'stale','EXISTS(SELECT 1 FROM wl_people WHERE id=? AND revision=?)',row.person_id,row.source_revision),
@@ -74,8 +76,10 @@ export async function decideSelfChange(env: Bindings, actor: Actor, input: Input
 }
 
 export async function reconcileSelfChange(env: Bindings, actor: Actor, input: Input) {
- insist(handlesSelfExceptions(actor),'forbidden',403)
  const id=input.text('change'),reference=input.text('reference',{max:300})
- await commit(env,[guard(env,'not_open',"EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=? AND outcome='approved') AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation WHERE change_id=?)",id,id),stmt(env,'INSERT INTO wl_self_reconciliation VALUES (?,?,?,?)',id,reference,actor.id,now())],{actor:actor.id,action:'selfChange.reconcile',subject:id})
+ const change=await one(env,'SELECT person_id FROM wl_self_changes WHERE id=?',id)
+ insist(change,'not_found',404)
+ insist(handlesSelfExceptions(actor,change.person_id),'forbidden',403)
+ await commit(env,[...(can(actor,'payroll.handoff')&&can(actor,'pay.read') ? [] : await scopeFence(env,actor,change.person_id,'people.manage','people.private')),guard(env,'not_open',"EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=? AND outcome='approved') AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation WHERE change_id=?)",id,id),stmt(env,'INSERT INTO wl_self_reconciliation VALUES (?,?,?,?)',id,reference,actor.id,now())],{actor:actor.id,action:'selfChange.reconcile',subject:id})
  return {id,status:'resolved'}
 }

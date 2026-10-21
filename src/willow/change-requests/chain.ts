@@ -6,7 +6,7 @@
 // may apply only at or above a pay increase percentage (inclusive) or only
 // when the person's location or effective-dated band position matches.
 import type { Bindings } from '../../auth.server'
-import { can, requirePermission, type Actor } from '../actor'
+import { can, canAbout, requirePermission, type Actor } from '../actor'
 import { all, commit, insist, json, newId, now, one, stmt } from '../core'
 import { CURRENT_TERMS } from '../employment'
 import type { Input } from '../input'
@@ -86,18 +86,18 @@ export async function resolveSteps(env: Bindings, steps: ChainStep[], subject: {
 /** Holds the step's role. Never the requester or the person whose terms change. */
 export async function mayApprove(env: Bindings, actor: Actor, request: { requested_by: string; person_id: string }, step: ResolvedStep | undefined) {
   if (!step || actor.id === request.requested_by || actor.personId === request.person_id) return false
-  if (step.role === 'hr') return can(actor, 'people.manage')
+  if (step.role === 'hr') return canAbout(actor, 'people.manage', request.person_id)
   if (step.role === 'payroll') return can(actor, 'payroll.handoff') && can(actor, 'pay.read')
   if (actor.id === step.member) return true
   // FLOW-002 availability: while the named manager's manager has no active access, is not employed or is on approved leave today, HR acts for them.
-  if (!can(actor, 'people.manage')) return false
+  if (!canAbout(actor, 'people.manage', request.person_id)) return false
   const member = await one(env, 'SELECT id, person_id, status FROM wl_members WHERE id = ?', step.member)
   return !member || member.status !== 'active' || await memberUnavailable(env, { ...actor, id: member.id, personId: member.person_id }, actor.today)
 }
 
 /** Requester, HR, owner, or anyone who holds a role in one of the request's resolved steps. */
 export function mayRead(actor: Actor, request: { requested_by: string; person_id: string }, steps: ResolvedStep[]) {
-  if (actor.id === request.requested_by || can(actor, 'people.manage')) return true
+  if (actor.id === request.requested_by || canAbout(actor, 'people.manage', request.person_id)) return true
   if (actor.personId === request.person_id) return false
   return steps.some(step => step.role === 'payroll' ? can(actor, 'payroll.handoff') && can(actor, 'pay.read') : step.member === actor.id)
 }

@@ -37,8 +37,8 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  const deadline = (instant: number) => addDays(today(zone, instant), defaultDays)
  const hr = (a: Actor) => can(a,'people.manage'), payroll = (a: Actor) => can(a,'payroll.handoff') && can(a,'pay.read')
  const add = (kind: string, row: Row, title: string, path: string, due: string, visible: WorkSource['visible'], responsible = visible, preferred?: string | null, progress = 'Awaiting action') => result.push({ key: `${kind}:${row.id}`, kind, title, path, due, visible, responsible, preferred, progress, personId: row.person_id??null, next: title })
- for (const r of await all(env,"SELECT c.*,d.outcome FROM wl_self_changes c LEFT JOIN wl_self_decisions d ON d.change_id=c.id WHERE d.change_id IS NULL")) add('self-change',r,'Review private profile change',`/app/self-changes/${r.id}`,r.due_date,a=>a.personId===r.person_id||can(a,'people.private'),a=>reviewsSelfChanges(a)&&a.id!==r.requested_by&&a.personId!==r.person_id)
- for (const r of await all(env,"SELECT c.* FROM wl_self_changes c JOIN wl_self_decisions d ON d.change_id=c.id WHERE d.outcome='approved' AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation r WHERE r.change_id=c.id)")) add('self-exception',r,'Reconcile approved profile revision','/app/self-changes',r.due_date,a=>a.personId===r.person_id||handlesSelfExceptions(a),handlesSelfExceptions,null,'Approved revision awaits a recorded downstream handoff; no provider confirmation')
+ for (const r of await all(env,"SELECT c.*,d.outcome FROM wl_self_changes c LEFT JOIN wl_self_decisions d ON d.change_id=c.id WHERE d.change_id IS NULL")) add('self-change',r,'Review private profile change',`/app/self-changes/${r.id}`,r.due_date,a=>a.personId===r.person_id||canAbout(a,'people.private',r.person_id),a=>reviewsSelfChanges(a,r.person_id)&&a.id!==r.requested_by&&a.personId!==r.person_id)
+ for (const r of await all(env,"SELECT c.* FROM wl_self_changes c JOIN wl_self_decisions d ON d.change_id=c.id WHERE d.outcome='approved' AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation r WHERE r.change_id=c.id)")) add('self-exception',r,'Reconcile approved profile revision','/app/self-changes',r.due_date,a=>a.personId===r.person_id||handlesSelfExceptions(a,r.person_id),a=>handlesSelfExceptions(a,r.person_id),null,'Approved revision awaits a recorded downstream handoff; no provider confirmation')
  // SELF-002 read acknowledgments are owned work; completion remains the target member's.
  const companyPublications=(await latestAnnouncements(env)).filter(p=>!p.retired&&p.ack_required&&p.starts_on<=today(zone)&&(!p.ends_on||p.ends_on>=today(zone)))
  if(companyPublications.length){
@@ -52,7 +52,7 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
   }
  }
 
- for (const r of await all(env,"SELECT o.*,p.person_id FROM wl_leave_overrides o JOIN wl_leave_accounts a ON a.id=o.account_id JOIN wl_periods p ON p.id=a.period_id WHERE NOT EXISTS(SELECT 1 FROM wl_leave_override_decisions d WHERE d.override_id=o.id)")) add('leave-override',r,'Review leave balance override','/app/leave#overrides',deadline(r.requested_at),a=>can(a,'leave.manage'),a=>a.owner)
+ for (const r of await all(env,"SELECT o.*,p.person_id FROM wl_leave_overrides o JOIN wl_leave_accounts a ON a.id=o.account_id JOIN wl_periods p ON p.id=a.period_id WHERE NOT EXISTS(SELECT 1 FROM wl_leave_override_decisions d WHERE d.override_id=o.id)")) add('leave-override',r,'Review leave balance override','/app/leave#overrides',deadline(r.requested_at),a=>canAbout(a,'leave.manage',r.person_id),a=>a.owner)
  const tasks = await all(env, `SELECT t.*,c.person_id FROM wl_case_tasks t JOIN wl_cases c ON c.id=t.case_id WHERE t.status='open' AND t.superseded_at IS NULL AND c.status='open'`)
  for (const t of tasks) {
  const blocked = await blockedBy(env,t)
@@ -61,7 +61,7 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  const cases = await all(env, `SELECT c.*,t.required_fields FROM wl_cases c JOIN wl_templates t ON t.id=c.template_id WHERE c.status='open'`)
  for (const c of cases) {
   const missing = await missingFields(env,c,c)
-  if (missing.length) add('information',c,'Complete required information',`/app/cases/${c.id}`,c.anchor_date,hr,hr,null,`${missing.length} required field(s) missing`)
+  if (missing.length) add('information',c,'Complete required information',`/app/cases/${c.id}`,c.anchor_date,a=>canAbout(a,'people.manage',c.person_id),a=>canAbout(a,'people.manage',c.person_id),null,`${missing.length} required field(s) missing`)
  }
  for (const r of await all(env,"SELECT * FROM wl_leave_requests WHERE status='pending'")) {
   const decide = (a: Actor) => a.id!==r.requested_by && a.personId!==r.person_id && (a.id===r.approver_member_id || canAbout(a,'leave.manage',r.person_id))
@@ -82,7 +82,7 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
   else add('change-request',r,'Revise returned change request',`/app/changes/${r.id}`,deadline(r.updated_at),a=>a.id===r.requested_by,a=>a.id===r.requested_by,r.requested_by,'Sent back with comments')
  }
  for (const r of await all(env,"SELECT id,written_at FROM wl_policy_versions WHERE status='draft'")) add('policy',r,'Review leave policy','/app/settings',deadline(r.written_at),a=>a.owner)
- for (const r of await all(env,"SELECT a.id,a.created_at,p.person_id FROM wl_leave_accounts a JOIN wl_periods p ON p.id=a.period_id WHERE a.opening_status='proposed'")) add('opening',r,'Review opening balance',`/app/people/${r.person_id}`,deadline(r.created_at),a=>can(a,'leave.manage'))
+ for (const r of await all(env,"SELECT a.id,a.created_at,p.person_id FROM wl_leave_accounts a JOIN wl_periods p ON p.id=a.period_id WHERE a.opening_status='proposed'")) add('opening',r,'Review opening balance',`/app/people/${r.person_id}`,deadline(r.created_at),a=>canAbout(a,'leave.manage',r.person_id))
  for (const r of await all(env,"SELECT id,proposed_at,status FROM wl_model_drafts WHERE status='pending'")) add('model',r,r.status==='failed'?'Resolve failed model draft':'Review model draft',`/app/proposals?draft=${r.id}`,deadline(r.proposed_at),hr,hr,null,r.status==='failed'?'Provider draft failed; no work executed':'Awaiting review')
  const receipts = await all(env, `SELECT v.id,v.uploaded_at,d.person_id,d.category_id,c.subject_reads,c.manager_reads FROM wl_document_versions v JOIN wl_documents d ON d.id=v.document_id JOIN wl_doc_categories c ON c.id=d.category_id WHERE c.acknowledgement=1 AND v.number=(SELECT MAX(v2.number) FROM wl_document_versions v2 WHERE v2.document_id=d.id) AND NOT EXISTS(SELECT 1 FROM wl_acknowledgements a WHERE a.version_id=v.id AND a.person_id=d.person_id)`)
  for (const r of receipts) add('receipt',r,'Acknowledge document receipt',`/app/people/${r.person_id}`,deadline(r.uploaded_at),a=>sees(a,r.person_id,'documents') && readsCategory(a,r.person_id,r),a=>a.personId===r.person_id && !!r.subject_reads,null,'Receipt pending; not a signature')

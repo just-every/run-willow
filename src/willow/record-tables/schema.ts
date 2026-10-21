@@ -76,8 +76,8 @@ export function readsTable(actor: Actor, personId: string, table: RecordTable): 
 }
 
 export function writesTable(actor: Actor, personId: string, table: RecordTable): boolean {
-  if (table.id === DEPENDENTS) return actor.personId !== personId && can(actor, 'people.manage') && can(actor, 'people.private')
-  if (table.classification === 'contact') return actor.personId === personId || (can(actor, 'people.manage') && can(actor, 'people.private'))
+  if (table.id === DEPENDENTS) return actor.personId !== personId && canAbout(actor, 'people.manage', personId) && canAbout(actor, 'people.private', personId)
+  if (table.classification === 'contact') return actor.personId === personId || (canAbout(actor, 'people.manage', personId) && canAbout(actor, 'people.private', personId))
   return writesCustomField(actor, { classification: table.classification })
 }
 

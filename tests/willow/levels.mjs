@@ -7,6 +7,7 @@ import { fixture } from './regression-fixture.mjs'
 import { browserEvidence } from './levels-browser.mjs'
 import { scopeProof, transferProof } from './levels-scope.mjs'
 import { scopeKindsProof } from './levels-scope-kinds.mjs'
+import { decisionProof } from './levels-scope-decisions.mjs'
 const h=await harness()
 try {
  assert.equal((await h.raw('/auth/bootstrap',{body:{token:h.vars.SETUP_TOKEN,displayName:'Olive Owner'}})).status,303)
@@ -92,6 +93,7 @@ try {
  const bulk=await bulkLevelProof(h,owner,s,join)
  const scoped=await scopeProof(h,owner,fx)
  await transferProof(h,scoped)
+ await decisionProof(h,owner,scoped)
  await scopeKindsProof(h,owner,fx)
  console.log('ROLE-002 scopes: PASS — everyone, direct, direct and indirect, location, department, employment type, custom field and combined group scopes reach exactly their people through every registered door, control members, dated transfers on each side of the effective date, scoped writes rechecked, invalid scopes refused and batch revert (division and legal-entity scopes need person attributes that do not exist yet)')
  await browserEvidence(h,owner,s,bulk,scoped)
