@@ -33,7 +33,7 @@ try {
 
   // A populated former worker: native records of every shape, a work state and a recorded departure.
   const quinn = await f.join('quinn'), q = quinn.person
-  await api('access.give', { person: q })
+  const quinnMemberId = (await api('access.give', { person: q })).id
   const quinnCookie = await h.signIn('quinn@example.com', { requested: true })
   await h.api('eeo.self.write', quinnCookie, { raceEthnicity: 'asian', sex: 'female' })
   const offers = (await api('category.create', { name: 'Offer letters' })).id, forms = (await api('category.create', { name: 'Payroll forms' })).id
@@ -46,6 +46,8 @@ try {
   const quinnAccount = await f.account(quinn.period)
   const oakland = await api('location.create', { name: 'Oakland', timezone: 'UTC', workState: 'CA' })
   await api('mover.schedule', { period: quinn.period, effectiveFrom: day(-50), locationId: oakland.id, reason: 'Moved' })
+  await h.api('goal.create', quinnCookie, { person: q, title: 'synthetic-willow-6', milestones: ['Start'], dueDate: day(60), development: true, owner: quinnMemberId })
+  await as('hr', 'protected.open', { person: q, title: 'synthetic-willow-7', startDate: day(-2), endDate: day(5), entitlementHours: '24', reviewNote: 'Employer reviewed policy', certification: file('medical.txt', 'synthetic-willow-8') })
   await api('connections.notices', { enabled: true })
   const leave = await h.api('leave.request', quinnCookie, { account: quinnAccount, startDate: day(3), endDate: day(3), reason: 'synthetic-willow-5' })
   await api('leave.decide', { request: leave.id, decision: 'approve' })
@@ -173,7 +175,7 @@ try {
   await assert.rejects(h.signIn('quinn@example.com'), /no sign-in message/)
   const afterCounts = await rowCounts(directory)
   assert.ok(afterCounts.tables.rer_portability_journal > sourceBefore.tables.rer_portability_journal, 'portability fence advanced in the same batch')
-  const strings = [q, quinnMember, 'quinn@example.com', 'synthetic-willow-3']
+  const strings = [q, quinnMember, 'quinn@example.com', 'synthetic-willow-3', 'synthetic-willow-6', 'synthetic-willow-7']
   const found = await findText(directory, strings)
   assert.deepEqual(Object.keys(found), ['wl_retained_records'], `only restricted custody holds the person: ${JSON.stringify(found)}`)
   const auditAfter = JSON.stringify(await api('audit'))
