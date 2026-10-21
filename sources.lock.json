@@ -2892,6 +2892,10 @@
       "sha256": "f3e90243f73690092160d99314b793c68f46c3dd76d27a43f38e6ecee8b8b358",
       "executable": false
     },
+    "src/willow/export-module-history.ts": {
+      "sha256": "580a11a4ef4f42f93c88992aaef6023b21682a382fb29519b238643e80d042df",
+      "executable": false
+    },
     "src/willow/export-zip-stream.ts": {
       "sha256": "1d6aaab099d251b30efd8d3d45ea01da3f310d7a7e8ad92b02990e16d5472be0",
       "executable": false
@@ -3406,6 +3410,10 @@
     },
     "tests/willow/date-alerts.mjs": {
       "sha256": "e628eaae79f6b3b64dad3ee31152a0b83f6557f77b1dfe7a552ac9641a96c61a",
+      "executable": false
+    },
+    "tests/willow/employee-bundle-browser.mjs": {
+      "sha256": "b9c13d768217c90876e27ad574cddca4caeb04ca616d27f1526b2677f3b799d2",
       "executable": false
     },
     "tests/willow/employee-bundle.mjs": {
