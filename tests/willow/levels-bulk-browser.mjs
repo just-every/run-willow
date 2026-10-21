@@ -23,7 +23,7 @@ export async function bulkBrowserProof(page,h,owner,{members,level}) {
   await capture(section,'selection')
   await submit(section,'Review bulk assignment')
   const review=page.locator('section.card').filter({has:page.getByRole('heading',{name:'Review access change',exact:true})}).last()
-  for(const member of members) await review.getByRole('cell',{name:member.name,exact:true}).waitFor()
+  for(const member of members) await review.getByText(member.name,{exact:true}).waitFor()
   await capture(review,'preview')
   await submit(page.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
   const result=(await h.api('levels',owner)).levels.find(l=>l.id===level)
