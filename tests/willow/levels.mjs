@@ -95,7 +95,7 @@ try {
  await transferProof(h,scoped)
  await decisionProof(h,owner,scoped)
  await scopeKindsProof(h,owner,fx)
- console.log('ROLE-002 scopes: PASS — everyone, direct, direct and indirect, location, department, employment type, custom field and combined group scopes reach exactly their people through every registered door, control members, dated transfers on each side of the effective date, scoped writes rechecked, invalid scopes refused and batch revert (division and legal-entity scopes need person attributes that do not exist yet)')
+ console.log('ROLE-002 scopes: PASS — everyone, direct, direct and indirect, location, department, employment type, custom field and combined group scopes reach exactly their people through every registered door, control members, dated transfers on each side of the effective date, scoped writes rechecked, invalid scopes refused and batch revert')
  await browserEvidence(h,owner,s,bulk,scoped)
  console.log('ROLE-001: PASS — exact union, owner-only reviewed changes, stale/replay refusal, same-session revocation and ended-access clearing (personal self-write modes and immutable HR routing proved; other field/section rights remain partial)')
 } finally { await h.close() }

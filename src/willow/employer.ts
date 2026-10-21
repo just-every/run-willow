@@ -31,10 +31,10 @@ export async function configureEmployer(env: Bindings, actor: Actor, input: Inpu
   return { name, timezone, country, currency }
 }
 
-async function createNamed(env: Bindings, actor: Actor, table: 'wl_locations' | 'wl_departments', name: string, extra: Record<string, unknown> = {}) {
+async function createNamed(env: Bindings, actor: Actor, table: 'wl_locations' | 'wl_departments' | 'wl_divisions' | 'wl_legal_entities', name: string, extra: Record<string, unknown> = {}) {
   insist(!await one(env, `SELECT 1 FROM ${table} WHERE name = ?`, name), 'name_taken', 409)
   const id = newId(), columns = ['id', 'name', ...Object.keys(extra), 'created_at']
-  await commit(env, [stmt(env, `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`, id, name, ...Object.values(extra), now())], { actor: actor.id, action: `${table.slice(3, -1)}.create`, subject: id, detail: { name, ...extra } })
+  await commit(env, [stmt(env, `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`, id, name, ...Object.values(extra), now())], { actor: actor.id, action: `${({ wl_locations: 'location', wl_departments: 'department', wl_divisions: 'division', wl_legal_entities: 'entity' })[table]}.create`, subject: id, detail: { name, ...extra } })
   return { id, name, ...extra }
 }
 
@@ -50,6 +50,36 @@ export async function createLocation(env: Bindings, actor: Actor, input: Input) 
 export async function createDepartment(env: Bindings, actor: Actor, input: Input) {
   requirePermission(actor, 'people.manage')
   return await createNamed(env, actor, 'wl_departments', input.text('name', { max: 80 }))
+}
+
+export async function createDivision(env: Bindings, actor: Actor, input: Input) {
+  requirePermission(actor, 'people.manage')
+  return await createNamed(env, actor, 'wl_divisions', input.text('name', { max: 80 }))
+}
+
+/** A department belongs to at most one division; a person's division follows their department in force. */
+export async function setDepartmentDivision(env: Bindings, actor: Actor, input: Input) {
+  requirePermission(actor, 'people.manage')
+  const department = input.text('department', { max: 100 }), division = input.text('division', { optional: true, max: 100 })
+  insist(await one(env, 'SELECT 1 FROM wl_departments WHERE id = ?', department), 'department_not_found', 404)
+  insist(!division || await one(env, 'SELECT 1 FROM wl_divisions WHERE id = ?', division), 'division_not_found', 404)
+  await commit(env, [stmt(env, 'UPDATE wl_departments SET division_id = ? WHERE id = ?', division || null, department)], { actor: actor.id, action: 'department.division', subject: department, detail: { division: division || null } })
+  return { id: department, division: division || null }
+}
+
+export async function createLegalEntity(env: Bindings, actor: Actor, input: Input) {
+  requirePermission(actor, 'people.manage')
+  return await createNamed(env, actor, 'wl_legal_entities', input.text('name', { max: 120 }))
+}
+
+/** One legal entity per employment period; the choice applies to the whole period and is audited. */
+export async function setPeriodEntity(env: Bindings, actor: Actor, input: Input) {
+  requirePermission(actor, 'people.manage')
+  const period = input.text('period', { max: 100 }), entity = input.text('entity', { optional: true, max: 100 })
+  insist(await one(env, 'SELECT 1 FROM wl_periods WHERE id = ?', period), 'period_not_found', 404)
+  insist(!entity || await one(env, 'SELECT 1 FROM wl_legal_entities WHERE id = ?', entity), 'entity_not_found', 404)
+  await commit(env, [stmt(env, 'DELETE FROM wl_period_entities WHERE period_id = ?', period), ...(entity ? [stmt(env, 'INSERT INTO wl_period_entities (period_id, entity_id, set_by, set_at) VALUES (?, ?, ?, ?)', period, entity, actor.id, now())] : [])], { actor: actor.id, action: 'period.entity', subject: period, detail: { entity: entity || null } })
+  return { id: period, entity: entity || null }
 }
 
 export const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
@@ -84,7 +114,9 @@ export async function settings(env: Bindings) {
   return {
     employer: await employer(env),
     locations: await all(env, 'SELECT id, name, timezone, work_state AS workState FROM wl_locations ORDER BY name'),
-    departments: await all(env, 'SELECT id, name FROM wl_departments ORDER BY name'),
+    departments: await all(env, 'SELECT id, name, division_id AS divisionId FROM wl_departments ORDER BY name'),
+    divisions: await all(env, 'SELECT id, name FROM wl_divisions ORDER BY name'),
+    legalEntities: await all(env, 'SELECT id, name FROM wl_legal_entities ORDER BY name'),
     schedules: (await all(env, 'SELECT * FROM wl_schedules ORDER BY name')).map(row => ({ id: row.id, name: row.name, minutes: Object.fromEntries(WEEKDAYS.map(day => [day, row[day]])), weeklyMinutes: WEEKDAYS.reduce((sum, day) => sum + row[day], 0) })),
     categories: (await all(env, 'SELECT * FROM wl_doc_categories ORDER BY name')).map(row => ({ id: row.id, name: row.name, subjectReads: !!row.subject_reads, managerReads: !!row.manager_reads, acknowledgement: !!row.acknowledgement })),
   }

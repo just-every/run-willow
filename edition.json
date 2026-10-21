@@ -54,7 +54,8 @@
           "migrations/core/0038_hiring_pipeline.sql",
           "migrations/core/0039_follow_own_changes.sql",
           "migrations/core/0040_hiring_resumes.sql",
-          "migrations/core/0041_level_scopes.sql"
+          "migrations/core/0041_level_scopes.sql",
+          "migrations/core/0042_divisions_entities.sql"
         ]
       }
     },

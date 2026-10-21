@@ -9,7 +9,7 @@ import { can, canAbout, type Actor } from '../actor'
 import { effectiveField, fieldSchemas, writesCustomField } from '../custom-fields/store'
 import { customPersonSection, customValueInputs } from './custom-fields'
 import { recordTablesSection } from './record-tables'
-import { one } from '../core'
+import { all, one } from '../core'
 import { formatDate, hours, requireDate } from '../dates'
 import { settings } from '../employer'
 import { policies } from '../leave'
@@ -81,12 +81,13 @@ export async function personPage(env: Bindings, actor: Actor, id: string, url: U
   // A scoped level's HR rights reach this person's directory and private details only (ROLE-002).
   const manageHere = !dated && canAbout(actor, 'people.manage', id)
   const selfModes = self ? await selfWriteModes(env,actor) : null
-  const [projection, options, allTemplates, member, policyList] = await Promise.all([
+  const [projection, options, allTemplates, member, policyList, entities] = await Promise.all([
     personView(env, actor, id, { asOf }),
     manage ? choices(env, actor) : null,
     manage ? templates(env) : [],
     manage ? one(env, 'SELECT status FROM wl_members WHERE person_id = ?', id) : null,
     can(actor, 'leave.manage') ? policies(env) : [],
+    manage ? all<{ id: string; name: string }>(env, 'SELECT id, name FROM wl_legal_entities ORDER BY name') : [],
   ])
   const view = projection as Record<string, any>
   const ofKind = (kind: string) => allTemplates.filter(template => template.kind === kind && template.status === 'active').map(template => ({ value: template.id, label: `${template.name} (v${template.version})` }))
@@ -102,11 +103,11 @@ ${!dated && (self || (manageHere && canAbout(actor, 'people.private', id))) ? h`
   if (view.customFields) sections.push(customPersonSection(view.customFields, dated ? undefined : actor, id))
   if (view.recordTables) sections.push(recordTablesSection(view.recordTables, dated ? undefined : actor, id))
   if (view.employment) sections.push(h`<section class="card facet-employment"><h2>Employment</h2>${periods.map(period => h`<h3 class="period"><span>${formatDate(period.startDate)} – ${period.endDate ? formatDate(period.endDate) : 'ongoing'}</span> ${tag(TYPE_LABELS[period.employmentType])} ${tag(period.status)}</h3>
-${period.payrollId !== undefined ? h`<p>Payroll identifier: ${period.payrollId ?? h`<strong>not set</strong>`}</p>` : ''}${period.endReason !== undefined && period.endReason ? h`<p class="private">End reason: ${period.endReason}</p>` : ''}
+${h`<p>Legal entity: ${period.legalEntity?.name ?? h`<strong>not set</strong>`}</p>`}${period.payrollId !== undefined ? h`<p>Payroll identifier: ${period.payrollId ?? h`<strong>not set</strong>`}</p>` : ''}${period.endReason !== undefined && period.endReason ? h`<p class="private">End reason: ${period.endReason}</p>` : ''}
 ${table(['From', 'Role', 'Department', 'Location', 'Manager', 'Schedule', ...(view.pay ? ['Pay'] : []), 'Reason', 'Status', ''], period.terms.map((terms: any) => [h`<span id="terms-${terms.id}">${formatDate(terms.effectiveFrom)}</span>`, terms.jobTitle, terms.department?.name ?? '—', terms.location?.name ?? '—', terms.manager?.name ?? '—', terms.schedule?.name ?? '—', ...(view.pay ? [money(terms.pay)] : []), terms.reason,
     tag(terms.status === 'cancelled' ? 'cancelled' : terms.inForce ? (terms.effectiveFrom > actor.today ? 'scheduled · selected' : 'in force') : terms.effectiveFrom > actor.today ? 'scheduled' : 'past'),
     manage && terms.status === 'active' && terms.effectiveFrom !== period.startDate ? form('terms.cancel', `/app/people/${id}`, [hidden('terms', terms.id), field('Why', 'reason', { required: false })], 'Cancel this version', { secondary: true }) : '']))}
-${manage || can(actor, 'payroll.handoff') ? h`<details><summary>Set payroll identifier</summary>${form('period.payroll', `/app/people/${id}`, [hidden('period', period.id), field('Payroll identifier', 'payrollId', { value: period.payrollId ?? '' })], 'Save', { secondary: true })}</details>` : ''}`)}
+${manage || can(actor, 'payroll.handoff') ? h`<details><summary>Set payroll identifier</summary>${form('period.payroll', `/app/people/${id}`, [hidden('period', period.id), field('Payroll identifier', 'payrollId', { value: period.payrollId ?? '' })], 'Save', { secondary: true })}</details>` : ''}${manage && entities.length ? h`<details><summary>Set legal entity</summary>${form('period.entity', `/app/people/${id}`, [hidden('period', period.id), select('Legal entity', 'entity', entities.map(row => ({ value: row.id, label: row.name })), period.legalEntity?.id ?? '', { required: false, blank: 'No legal entity' })], 'Save', { secondary: true })}</details>` : ''}`)}
 ${manage && live ? h`<details><summary>Schedule a change (mover)</summary>${form('mover.schedule', `/app/people/${id}`, [hidden('period', live.id), field('Effective from', 'effectiveFrom', { type: 'date' }), field('Reason', 'reason'), ...termsFields(options!, false, actor).map(item => item), select('Mover template', 'template', ofKind('mover'), '', { required: false, blank: 'No case' })], 'Schedule change')}</details>
 <details><summary>Record a leaver</summary>${ofKind('leaver').length ? form('leaver.start', `/app/people/${id}`, [hidden('period', live.id), field('Last day of employment', 'endDate', { type: 'date' }), field('Reason (private)', 'reason'), select('Leaver template', 'template', ofKind('leaver'))], 'Start leaver') : h`<p class="muted">Create a leaver template in Settings first.</p>`}</details>` : ''}
 ${manage && !live && periods.length ? h`<details><summary>Rehire</summary>${ofKind('joiner').length ? form('joiner.start', '/app/cases/{id}', [hidden('person', id), select('Joiner template', 'template', ofKind('joiner')), field('Start date', 'startDate', { type: 'date' }), select('Employment type', 'employmentType', EMPLOYMENT_TYPES.map(value => ({ value, label: TYPE_LABELS[value] }))), field('Payroll identifier', 'payrollId', { required: false }), ...termsFields(options!, true, actor), customValueInputs(view.customFields.fields.filter((item: any) => writesCustomField(actor, item.currentDefinition)).map((item: any) => item.currentDefinition), Object.fromEntries(view.customFields.fields.map((item: any) => [item.key, item.value])))], 'Start rehire') : ''}<p class="muted">A rehire is a new employment period. Earlier periods stay as they were, and Willow access is not restored automatically.</p></details>` : ''}</section>`)

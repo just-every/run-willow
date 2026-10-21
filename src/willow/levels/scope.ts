@@ -14,8 +14,8 @@ export const SCOPE_LABELS: Record<ScopeKind, string> = { everyone: 'Everyone', d
 export type Scope = { kind: 'everyone' | 'direct' | 'indirect' } | { kind: 'group'; dimensions: Record<string, string[]> }
 /** Permissions a scoped level may carry: each is enforced per person at every door. The rest are employer-wide. */
 export const SCOPEABLE: readonly Permission[] = ['people.manage', 'people.private', 'pay.read', 'documents.private', 'leave.manage', 'reports.read']
-export const SCOPE_INPUTS = ['scope', 'scopeKind', 'scopeLocation', 'scopeDepartment', 'scopeEmploymentType', 'scopeField', 'scopeFieldValue']
-const FORM_DIMENSIONS: [string, string][] = [['scopeLocation', 'location'], ['scopeDepartment', 'department'], ['scopeEmploymentType', 'employment_type']]
+export const SCOPE_INPUTS = ['scope', 'scopeKind', 'scopeLocation', 'scopeDepartment', 'scopeDivision', 'scopeEmploymentType', 'scopeLegalEntity', 'scopeField', 'scopeFieldValue']
+const FORM_DIMENSIONS: [string, string][] = [['scopeLocation', 'location'], ['scopeDepartment', 'department'], ['scopeDivision', 'division'], ['scopeEmploymentType', 'employment_type'], ['scopeLegalEntity', 'legal_entity']]
 export const EVERYONE: Scope = { kind: 'everyone' }
 
 /** JSON door: `scope: {kind, dimensions}`. Form door: scopeKind plus the dimension checkboxes. */
@@ -52,8 +52,8 @@ export async function validateScope(env: Bindings, scope: Scope, permissions: st
  const known = new Map<string, Set<string>>()
  const ids = async (table: string) => new Set((await all<{ id: string }>(env, `SELECT id FROM ${table}`)).map(row => row.id))
  for (const [dimension, values] of dimensions) {
-  if (dimension === 'location' || dimension === 'department') {
-   if (!known.has(dimension)) known.set(dimension, await ids(dimension === 'location' ? 'wl_locations' : 'wl_departments'))
+  if (dimension === 'location' || dimension === 'department' || dimension === 'division' || dimension === 'legal_entity') {
+   if (!known.has(dimension)) known.set(dimension, await ids({ location: 'wl_locations', department: 'wl_departments', division: 'wl_divisions', legal_entity: 'wl_legal_entities' }[dimension]!))
    insist(values.every(value => known.get(dimension)!.has(value)), `unknown_scope_${dimension}`, 400)
   } else if (dimension === 'employment_type') insist(values.every(value => (EMPLOYMENT_TYPES as readonly string[]).includes(value)), 'unknown_scope_employment_type', 400)
   else if (dimension.startsWith('field:')) {
@@ -64,15 +64,16 @@ export async function validateScope(env: Bindings, scope: Scope, permissions: st
  }
 }
 
-interface PersonState { person: string; phase: number; location: string | null; department: string | null; employmentType: string; manager: string | null }
+interface PersonState { person: string; phase: number; location: string | null; department: string | null; division: string | null; legalEntity: string | null; employmentType: string; manager: string | null }
 
 /** One row per person: the selected period and the terms in force on `date` (the period's last day when former). */
 export async function personStates(env: Bindings, date: string): Promise<PersonState[]> {
- const rows = await all(env, `WITH selected AS (${SELECTED_PERIODS}) SELECT s.person_id, s.phase, s.employment_type, t.location_id, t.department_id, t.manager_person_id
-  FROM selected s LEFT JOIN wl_terms t ON t.period_id = s.id AND t.status = 'active' AND t.effective_from = (
+ const rows = await all(env, `WITH selected AS (${SELECTED_PERIODS}) SELECT s.person_id, s.phase, s.employment_type, t.location_id, t.department_id, d.division_id, e.entity_id, t.manager_person_id
+  FROM selected s LEFT JOIN wl_period_entities e ON e.period_id = s.id LEFT JOIN wl_terms t ON t.period_id = s.id AND t.status = 'active' AND t.effective_from = (
    SELECT MAX(t2.effective_from) FROM wl_terms t2 WHERE t2.period_id = s.id AND t2.status = 'active'
-   AND t2.effective_from <= CASE s.phase WHEN 0 THEN ?1 WHEN 1 THEN s.start_date ELSE COALESCE(s.end_date, ?1) END)`, date)
- return rows.map(row => ({ person: row.person_id, phase: row.phase, location: row.location_id, department: row.department_id, employmentType: row.employment_type, manager: row.phase < 2 ? row.manager_person_id : null }))
+   AND t2.effective_from <= CASE s.phase WHEN 0 THEN ?1 WHEN 1 THEN s.start_date ELSE COALESCE(s.end_date, ?1) END)
+  LEFT JOIN wl_departments d ON d.id = t.department_id`, date)
+ return rows.map(row => ({ person: row.person_id, phase: row.phase, location: row.location_id, department: row.department_id, division: row.division_id, legalEntity: row.entity_id, employmentType: row.employment_type, manager: row.phase < 2 ? row.manager_person_id : null }))
 }
 
 /** Values of general custom fields in force on `date` (latest effective revision, as personCustomFields reads it). */
@@ -97,7 +98,7 @@ async function members(env: Bindings, date: string, scope: Scope, owner: string 
  } else if (scope.kind === 'group') {
   const fields = Object.keys(scope.dimensions).filter(dimension => dimension.startsWith('field:')).map(dimension => dimension.slice(6))
   const values = await fieldValues(env, date, fields)
-  const read: Record<string, (state: PersonState) => string | null> = { location: s => s.location, department: s => s.department, employment_type: s => s.employmentType }
+  const read: Record<string, (state: PersonState) => string | null> = { location: s => s.location, department: s => s.department, division: s => s.division, legal_entity: s => s.legalEntity, employment_type: s => s.employmentType }
   for (const state of states) {
    if (Object.entries(scope.dimensions).every(([dimension, allowed]) => {
     const value = dimension.startsWith('field:') ? values.get(`${state.person}:${dimension.slice(6)}`) ?? null : read[dimension]?.(state) ?? null
@@ -135,11 +136,12 @@ export async function scopedGrants(env: Bindings, memberId: string, personId: st
  return grants
 }
 
-export function describeScope(scope: Scope, names: { locations: Map<string, string>; departments: Map<string, string>; fields: Map<string, string> }) {
+export function describeScope(scope: Scope, names: { locations: Map<string, string>; departments: Map<string, string>; divisions: Map<string, string>; entities: Map<string, string>; fields: Map<string, string> }) {
  if (scope.kind !== 'group') return SCOPE_LABELS[scope.kind]
  return Object.entries(scope.dimensions).map(([dimension, values]) => {
-  const label = dimension === 'location' ? 'Location' : dimension === 'department' ? 'Department' : dimension === 'employment_type' ? 'Employment type' : names.fields.get(dimension.slice(6)) ?? dimension
-  const text = dimension === 'location' ? values.map(v => names.locations.get(v) ?? v) : dimension === 'department' ? values.map(v => names.departments.get(v) ?? v) : values
+  const label = { location: 'Location', department: 'Department', division: 'Division', legal_entity: 'Legal entity', employment_type: 'Employment type' }[dimension] ?? names.fields.get(dimension.slice(6)) ?? dimension
+  const lookup = { location: names.locations, department: names.departments, division: names.divisions, legal_entity: names.entities }[dimension]
+  const text = lookup ? values.map(v => lookup.get(v) ?? v) : values
   return `${label}: ${text.join(' or ')}`
  }).join(' and ')
 }

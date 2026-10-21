@@ -32,11 +32,12 @@ export interface ViewOptions {
 }
 
 async function lookups(env: Bindings) {
-  const [departments, locations, schedules, names] = await Promise.all([
+  const [departments, locations, schedules, names, divisions] = await Promise.all([
     all(env, 'SELECT id, name FROM wl_departments'), all(env, 'SELECT id, name FROM wl_locations'), all(env, 'SELECT * FROM wl_schedules'), personNames(env),
+    all(env, 'SELECT d.id AS department, v.id, v.name FROM wl_departments d JOIN wl_divisions v ON v.id = d.division_id'),
   ])
   const name = (rows: Row[]) => new Map(rows.map(row => [row.id, row.name as string]))
-  return { departments: name(departments), locations: name(locations), schedules: new Map(schedules.map(row => [row.id, { name: row.name, weeklyMinutes: row.mon + row.tue + row.wed + row.thu + row.fri + row.sat + row.sun }])), people: names }
+  return { divisions: new Map(divisions.map(row => [row.department as string, { id: row.id as string, name: row.name as string }])), departments: name(departments), locations: name(locations), schedules: new Map(schedules.map(row => [row.id, { name: row.name, weeklyMinutes: row.mon + row.tue + row.wed + row.thu + row.fri + row.sat + row.sun }])), people: names }
 }
 
 type Lookups = Awaited<ReturnType<typeof lookups>>
@@ -52,15 +53,16 @@ function termsSummary(terms: Row | undefined, look: Lookups) {
 }
 
 async function employmentView(env: Bindings, periods: Row[], current: Row | undefined, look: Lookups, visible: Set<Facet>, date: string) {
+  const entities = new Map((periods.length ? await all(env, `SELECT e.period_id, l.id, l.name FROM wl_period_entities e JOIN wl_legal_entities l ON l.id = e.entity_id WHERE e.period_id IN (${periods.map(() => '?').join(', ')})`, ...periods.map(period => period.id)) : []).map(row => [row.period_id, { id: row.id, name: row.name }]))
   const terms = periods.length ? await all(env, `SELECT * FROM wl_terms WHERE period_id IN (${periods.map(() => '?').join(', ')}) ORDER BY effective_from DESC, recorded_at DESC`, ...periods.map(period => period.id)) : []
   const pay = visible.has('pay') && terms.length ? new Map((await all(env, `SELECT * FROM wl_term_pay WHERE term_id IN (${terms.map(() => '?').join(', ')})`, ...terms.map(row => row.id))).map(row => [row.term_id, row])) : null
   const employment = periods.map(period => ({
-    id: period.id, startDate: period.start_date, endDate: period.end_date, employmentType: period.employment_type, status: statusOf(period, date),
+    id: period.id, startDate: period.start_date, endDate: period.end_date, employmentType: period.employment_type, status: statusOf(period, date), legalEntity: entities.get(period.id) ?? null,
     ...(visible.has('payroll') ? { payrollId: period.payroll_id } : {}),
     ...(visible.has('private') ? { endReason: period.end_reason } : {}),
     terms: terms.filter(row => row.period_id === period.id).map(row => ({
       id: row.id, effectiveFrom: row.effective_from, status: row.status, reason: row.reason, inForce: row.id === current?.id,
-      ...termsSummary(row, look), schedule: row.schedule_id ? { id: row.schedule_id, ...look.schedules.get(row.schedule_id) } : null, recordedAt: row.recorded_at,
+      ...termsSummary(row, look), division: row.department_id ? look.divisions.get(row.department_id) ?? null : null, schedule: row.schedule_id ? { id: row.schedule_id, ...look.schedules.get(row.schedule_id) } : null, recordedAt: row.recorded_at,
       ...(pay ? { pay: pay.get(row.id) ? { basis: pay.get(row.id)!.pay_basis, amountCents: pay.get(row.id)!.amount_cents, currency: pay.get(row.id)!.currency } : null } : {}),
     })),
   }))

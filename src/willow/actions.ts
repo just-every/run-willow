@@ -27,7 +27,7 @@ import { decideChange, editChange, requestChange } from './change-requests/reque
 import type { Bindings } from '../auth.server'
 import type { Actor } from './actor'
 import { acknowledge, addDocument } from './documents'
-import { configureEmployer, createCategory, createDepartment, createLocation, createSchedule } from './employer'
+import { configureEmployer, createCategory, createDepartment, createDivision, createLegalEntity, createLocation, createSchedule, setDepartmentDivision, setPeriodEntity } from './employer'
 import type { Input } from './input'
 import { accrue, adjust, approveOpening, approvePolicy, cancelLeave, correctLeave, createPolicy, decideLeave, openAccount, requestLeave, withdrawLeave } from './leave'
 import { completeCase, completeTask, createTemplate, scheduleMover, startJoiner, startLeaver } from './lifecycle'
@@ -102,6 +102,10 @@ export const actions: Record<string, Handler> = {
   'employer.configure': (env, actor, input) => configureEmployer(env, actor, input),
   'location.create': (env, actor, input) => createLocation(env, actor, input),
   'department.create': (env, actor, input) => createDepartment(env, actor, input),
+  'division.create': (env, actor, input) => createDivision(env, actor, input),
+  'department.division': (env, actor, input) => setDepartmentDivision(env, actor, input),
+  'entity.create': (env, actor, input) => createLegalEntity(env, actor, input),
+  'period.entity': (env, actor, input) => setPeriodEntity(env, actor, input),
   'schedule.create': (env, actor, input) => createSchedule(env, actor, input),
   'category.create': (env, actor, input) => createCategory(env, actor, input),
   'member.permissions': (env, actor, input, request) => setPermissions(env, actor, input, request),

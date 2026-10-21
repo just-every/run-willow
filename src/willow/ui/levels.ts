@@ -13,18 +13,20 @@ export async function levelPanel(env: Bindings, actor: Actor, url: URL) {
  const data=await levels(env,actor)
  const reviewId=url.searchParams.get('levelReview')
  const review=reviewId ? await levelReview(env,actor,reviewId) : null
- const [locations,departments,fieldRows]=await Promise.all([all<{id:string;name:string}>(env,'SELECT id,name FROM wl_locations ORDER BY name'),all<{id:string;name:string}>(env,'SELECT id,name FROM wl_departments ORDER BY name'),effectiveFieldDefinitions(env,actor.today)])
+ const [locations,departments,divisions,entities,fieldRows]=await Promise.all([all<{id:string;name:string}>(env,'SELECT id,name FROM wl_locations ORDER BY name'),all<{id:string;name:string}>(env,'SELECT id,name FROM wl_departments ORDER BY name'),all<{id:string;name:string}>(env,'SELECT id,name FROM wl_divisions ORDER BY name'),all<{id:string;name:string}>(env,'SELECT id,name FROM wl_legal_entities ORDER BY name'),effectiveFieldDefinitions(env,actor.today)])
  const fields=fieldRows.filter(f=>f.classification==='general'&&!f.retired)
- const names={locations:new Map(locations.map(l=>[l.id,l.name])),departments:new Map(departments.map(d=>[d.id,d.name])),fields:new Map(fieldRows.map(f=>[f.id,f.label]))}
+ const names={locations:new Map(locations.map(l=>[l.id,l.name])),departments:new Map(departments.map(d=>[d.id,d.name])),divisions:new Map(divisions.map(d=>[d.id,d.name])),entities:new Map(entities.map(e=>[e.id,e.name])),fields:new Map(fieldRows.map(f=>[f.id,f.label]))}
  const dim=(level?: Record<string,any>)=>(level?.scope?.dimensions??{}) as Record<string,string[]>
  const scopeText=(scope: Scope)=>describeScope(scope,names)
  const rights=(selected: string[]=[])=>checks('Permissions in this level','permissions',PERMISSIONS.map(value=>({value,label:PERMISSION_LABELS[value]})),selected)
  const edit=(level?: Record<string,any>)=>form('level.preview','/app/access?levelReview={id}',[
   hidden('kind','level'),...(level?[hidden('level',level.id)]:[]),field('Level name','name',{value:level?.name ?? ''}),rights(level?.permissions),
-  h`<h4>Who these rights reach</h4><p>The level's rights about other people apply to everyone, direct reports, direct and indirect reports, or a group. A group matches any chosen value within a kind and every chosen kind, using each person's terms in force today. Scoped levels may hold only: ${SCOPEABLE.map(p=>PERMISSION_LABELS[p]).join('; ')}. Employer-wide settings need scope Everyone.</p>`,
+  h`<h4>Who these rights reach</h4><p>The level's rights about other people apply to everyone, direct reports, direct and indirect reports, or a group. A group matches any chosen value within a kind and every chosen kind, using each person's terms in force today (a division is the division of their department; a legal entity belongs to their employment period). Scoped levels may hold only: ${SCOPEABLE.map(p=>PERMISSION_LABELS[p]).join('; ')}. Employer-wide settings need scope Everyone.</p>`,
   select('Scope','scopeKind',SCOPE_KINDS.map(kind=>({value:kind,label:SCOPE_LABELS[kind]})),level?.scope?.kind??'everyone'),
   checks('Group: locations','scopeLocation',locations.map(l=>({value:l.id,label:l.name})),dim(level).location??[]),
   checks('Group: departments','scopeDepartment',departments.map(d=>({value:d.id,label:d.name})),dim(level).department??[]),
+  checks('Group: divisions','scopeDivision',divisions.map(d=>({value:d.id,label:d.name})),dim(level).division??[]),
+  checks('Group: legal entities','scopeLegalEntity',entities.map(e=>({value:e.id,label:e.name})),dim(level).legal_entity??[]),
   checks('Group: employment types','scopeEmploymentType',EMPLOYMENT_TYPES.map(value=>({value,label:value.replace('_',' ')})),dim(level).employment_type??[]),
   select('Group: custom field (general fields only)','scopeField',fields.map(f=>({value:f.id,label:f.label})),Object.keys(dim(level)).find(k=>k.startsWith('field:'))?.slice(6)??'',{required:false,blank:'No custom field'}),
   field('Group: custom field value','scopeFieldValue',{value:Object.entries(dim(level)).find(([k])=>k.startsWith('field:'))?.[1]?.[0]??'',required:false}),
