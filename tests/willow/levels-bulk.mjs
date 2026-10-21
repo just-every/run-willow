@@ -7,7 +7,7 @@ export async function bulkLevelProof(h, owner, staff, join) {
  const apply=review=>api('level.apply',{review:review.id})
  const level=await apply(await preview({kind:'level',name:'Workforce reporting batch',permissions:['reports.read'],selfFields:{phone:'view'}}))
  const location='Batch reporting office'
- const locationId=(await api('location.create',{name:location})).id
+ const locationId=(await api('location.create',{name:location,timezone:'UTC'})).id
  const department='Batch reporting team'
  const departmentId=(await api('department.create',{name:department})).id
  const members=[]

@@ -54,5 +54,8 @@ export async function bulkBrowserProof(page,h,owner,{members,level,location,prio
   assert.deepEqual(assigned(await h.api('levels',owner)),priorAssignments,'The owner form restores every prior assigned level')
   assert.deepEqual((await h.api('me',members[0].cookie)).permissions,['it.tasks'],'Direct grants survive the owner revert form')
   await capture(page,'reverted')
+  const row=page.locator('tr').filter({has:page.getByText(batch,{exact:true})})
+  await row.getByText('Reverted',{exact:true}).waitFor()
+  await capture(row,'reverted-batch')
  }
 }
