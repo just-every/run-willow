@@ -30,9 +30,17 @@ export async function hiringBrowser(h, s) {
    const name=`Customer support specialist ${width}`
    await hp.goto(h.origin+'/app/hiring')
    await hp.getByLabel('Opening name',{exact:true}).fill(name)
+   // An empty team is rejected by the action and must return to a usable form.
+   const [invalidTeam] = await Promise.all([hp.waitForNavigation(),hp.getByRole('button',{name:'Create review',exact:true}).click()])
+   assert.equal(invalidTeam.status(),200,'Rejected opening stays on a real page')
+   assert.ok(new URL(hp.url()).searchParams.has('error'))
+   assert.equal((await h.api('hiring',s.hr.cookie)).filter(o=>o.name===name).length,0)
+   await capture(hp,'opening-validation')
+   await hp.getByLabel('Opening name',{exact:true}).fill(name)
    await hp.locator(`input[name="members"][value="${s.managera.member}"]`).check()
    await capture(hp,'create-review')
    await save(hp,'Create review')
+   await hp.getByRole('link',{name,exact:true}).click()
    const openingPath=new URL(hp.url()).pathname
    const job=(await h.api('hiring',s.hr.cookie)).find(o=>o.name===name)
    assert.ok(job)
@@ -47,7 +55,20 @@ export async function hiringBrowser(h, s) {
     await mp.getByLabel('Candidate name',{exact:true}).fill(candidate)
     await mp.getByLabel('Contact email',{exact:true}).fill(`${candidate.split(' ')[0].toLowerCase()}@example.test`)
     await mp.getByLabel('Source',{exact:true}).fill('Employee referral')
+    if(!applications.length) {
+     await mp.getByLabel('Contact email',{exact:true}).fill('marisol@example')
+     const [invalidEmail]=await Promise.all([mp.waitForNavigation(),mp.getByRole('button',{name:'Add candidate',exact:true}).click()])
+     assert.equal(invalidEmail.status(),200,'Rejected candidate stays on the opening')
+     assert.equal(new URL(mp.url()).pathname,openingPath)
+     assert.ok(new URL(mp.url()).searchParams.has('error'))
+     assert.equal((await h.api(`hiring/openings/${job.id}`,s.hr.cookie)).candidates.length,0)
+     await capture(mp,'candidate-validation')
+     await mp.getByLabel('Candidate name',{exact:true}).fill(candidate)
+     await mp.getByLabel('Contact email',{exact:true}).fill('marisol@example.test')
+     await mp.getByLabel('Source',{exact:true}).fill('Employee referral')
+    }
     await save(mp,'Add candidate')
+    await mp.getByRole('link',{name:candidate,exact:true}).click()
     applications.push(new URL(mp.url()).pathname)
     await mp.getByLabel('Next stage',{exact:true}).selectOption('Interview')
     await save(mp,'Move candidate')

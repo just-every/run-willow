@@ -13,7 +13,7 @@ export async function hiringPage(env: Bindings, actor: Actor, request: Request, 
  const options = can(actor, 'people.manage') ? await teamOptions(env, actor, request) : null
  return page('Hiring', actor, h`<h1>Hiring</h1><p>Internal manual reviews. Openings here are not published job postings. People decide every stage change.</p>
  ${openings.length ? table(['Opening', 'Stages'], openings.map(o => [h`<a href="${root}/openings/${o.id}">${o.name}</a>`, o.stages.join(' → ')])) : h`<p>No hiring reviews are available to you.</p>`}
- ${options ? h`<section class="card"><h2>Create an internal review</h2>${form('hiring.opening', `${root}/openings/{id}`, [field('Opening name', 'name'),
+ ${options ? h`<section class="card"><h2>Create an internal review</h2>${form('hiring.opening', root, [field('Opening name', 'name'),
  h`<fieldset><legend>Stages in order</legend>${Array.from({length:6}, (_, i) => field(`Stage ${i + 1}`, 'stages', {value:['New','Screen','Interview','Offer','Hired','Rejected'][i],required:i<2}))}</fieldset>`,
  checks('Hiring team', 'members', options)], 'Create review')}</section>` : ''}`, {current:root, url})
 }
@@ -26,7 +26,7 @@ export async function hiringOpeningPage(env: Bindings, actor: Actor, request: Re
  <p>Internal review · ${opening.stages.join(' → ')}</p>
  ${table(['Candidate', 'Stage', 'Source'], opening.candidates.map(c => [h`<a href="${root}/applications/${c.id}">${c.name}</a>`, tag(c.stage), c.source]))}
  <section class="card"><h2>Add a candidate</h2><p>A contact email is not verified identity. Applications stay separate, including repeat email addresses.</p>
- ${form('hiring.candidate', `${root}/applications/{id}`, [hidden('opening', id),field('Candidate name','name'),field('Contact email','contactEmail',{type:'email'}),field('Source','source')], 'Add candidate')}</section>
+ ${form('hiring.candidate', here, [hidden('opening', id),field('Candidate name','name'),field('Contact email','contactEmail',{type:'email'}),field('Source','source')], 'Add candidate')}</section>
  ${options ? h`<section class="card"><h2>Hiring team</h2><p>Only HR and this opening’s current team may read its candidates and interviewer evidence.</p>
  ${form('hiring.team', here, [hidden('opening', id),hidden('revision', opening.revision),checks('Team members','members',options, opening.team.map(m=>String(m.member_id)))], 'Save team')}</section>` : ''}`, {current:root,url})
 }
