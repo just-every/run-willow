@@ -31,7 +31,7 @@ export async function retentionPage(env: Bindings, actor: Actor, url: URL) {
   const classOptions = CLASS_KEYS.map(key => ({ value: key, label: data.classes.find((c: any) => c.key === key).label }))
   const members = await all<{ id: string; name: string }>(env, "SELECT id, name FROM wl_members WHERE status = 'active' ORDER BY name")
   const adopted = data.adopted?.table_version === data.tableVersion
-  const mapRows = (kind: string, rows: any[], name: string) => rows.map(row => [name, row[kind === 'document_category' ? 'name' : 'key'], row.class ? tag(data.classes.find((c: any) => c.key === row.class).label) : tag('unmapped')])
+  const mapRows = (kind: string, rows: any[], name: string) => rows.map(row => [name, row[kind === 'document_category' ? 'name' : 'key'], row.class ? data.classes.find((c: any) => c.key === row.class).label : tag('unmapped')])
   const mappingRefs = [...data.mappings.documentCategories.map((r: any) => ({ value: `document_category:${r.id}`, label: `Document category: ${r.name}` })), ...data.mappings.customFields.map((r: any) => ({ value: `custom_field:${r.id}`, label: `Custom field: ${r.key}` })), ...data.mappings.recordTables.map((r: any) => ({ value: `record_table:${r.id}`, label: `Record table: ${r.key}` }))]
   return page('Retention and erasure', actor, h`<p class="back"><a href="/app/settings">← Settings</a></p><h1>Retention and erasure</h1>
 <p>The owner alone adopts the retention table, confirms each work state, places holds and decides erasures. Nothing here deletes anything.</p>
