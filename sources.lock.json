@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "people/willow",
-  "manifest": "71d7b65821e7839ac16cc1be4acaeacfe3db71faee4bcb8174413d8bffee5526",
+  "manifest": "7c49ee284acb4c5775d7ddcf65cc5e2959ba4bedc50866389a5aee0d1a167aa2",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -52,7 +52,8 @@
           "migrations/core/0036_access_levels.sql",
           "migrations/core/0037_personal_field_rights.sql",
           "migrations/core/0038_hiring_pipeline.sql",
-          "migrations/core/0039_follow_own_changes.sql"
+          "migrations/core/0039_follow_own_changes.sql",
+          "migrations/core/0040_hiring_resumes.sql"
         ]
       },
       "baseline": null
@@ -218,7 +219,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "31388d7e45808d50d9cd86d4e48b98b3a156f03b3119fb75300c29134612474a",
+      "sha256": "6304194a13611b828305585f092f81c6cb81b51984744d6fadc0b46a3d12ba9d",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -226,7 +227,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "59f192eed6f28edbb6086adbb654c0ee7df61f5293daeab389103e31fb9fe04b",
+      "sha256": "b3893c44ac7ff850974e1accdac2ff3ad3deb84ec9d3ec9e0564490535d6f33d",
       "executable": false
     },
     "base-copies.json": {
@@ -242,7 +243,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "f4348c09e0b2125d706693ea17f558bc8d2fdc3763eb6db5d1eb679790403e8e",
+      "sha256": "09f3f44146bbfabea419934cf2675711645822aee97df589be4d0f98e51ecdf9",
       "executable": false
     },
     "DEMO.md": {
@@ -298,7 +299,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "71d7b65821e7839ac16cc1be4acaeacfe3db71faee4bcb8174413d8bffee5526",
+      "sha256": "7c49ee284acb4c5775d7ddcf65cc5e2959ba4bedc50866389a5aee0d1a167aa2",
       "executable": false
     },
     "EXPORTING.md": {
@@ -483,6 +484,10 @@
     },
     "migrations/core/0039_follow_own_changes.sql": {
       "sha256": "2d684e290dd127411d4646a95ff4eabb84da903fe06c60932c1788b9390eac22",
+      "executable": false
+    },
+    "migrations/core/0040_hiring_resumes.sql": {
+      "sha256": "2875937a05d2e07a0e3d420c9beeb1ae758f46e63802e1760cc2e074f55b9440",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -2734,7 +2739,7 @@
       "executable": false
     },
     "src/willow/actions.ts": {
-      "sha256": "96c724eff2fc4a8e4813deaf55adad49d0ab718913643881be7369718ab2a02f",
+      "sha256": "f1a22d4e717fcef095ca86890d370a308b1139882b2fa6061d9de89d3af25b0e",
       "executable": false
     },
     "src/willow/actor.ts": {
@@ -2926,7 +2931,7 @@
       "executable": false
     },
     "src/willow/hiring.ts": {
-      "sha256": "57f4f1e5f16a2280eb3f6f9a4d020f38a20ac155bd1cec59703ec58f55956fc9",
+      "sha256": "6077435e3f5ea183bd58126fe9b3e2c314bd60fccac06036cb5a18a6e8c5d024",
       "executable": false
     },
     "src/willow/http.ts": {
@@ -3262,7 +3267,7 @@
       "executable": false
     },
     "src/willow/ui/hiring.ts": {
-      "sha256": "b44f8c40c0b9ef1a86c29a0cee1ece57fb6a61c8be4229277cc4b05f0809336d",
+      "sha256": "6483d6ebbf43008174f0ec495624207328c6edece73f626dbcb35aee28f930a5",
       "executable": false
     },
     "src/willow/ui/home.ts": {
@@ -3478,7 +3483,7 @@
       "executable": false
     },
     "tests/willow/hiring-browser.mjs": {
-      "sha256": "a7c1dcd30d467bb9d85bdb5f3a3ff4b9a7f44ee7786ddd362bca36b978ed2676",
+      "sha256": "e1e60cf8418cd022724144eb44954291df9ad4001a699eb3bb550d8484374ac2",
       "executable": false
     },
     "tests/willow/import-door.mjs": {
@@ -3566,7 +3571,7 @@
       "executable": false
     },
     "tests/willow/phase2.mjs": {
-      "sha256": "7015d00e7a32646cfc5b7bf5341aa0dfd5e003f6fbb95e96021ca549c814be2e",
+      "sha256": "ff9355165dae544e2333eec50c1208562f891ef6c96789e6f86311b3d16f06d7",
       "executable": false
     },
     "tests/willow/publish-template.mjs": {

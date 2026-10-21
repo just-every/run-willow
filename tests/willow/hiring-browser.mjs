@@ -1,5 +1,6 @@
 // HIRING-003: real forms for the current manual pipeline; no provider simulation.
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 import { evidenceDirectory } from './evidence.mjs'
 export async function hiringBrowser(h, s) {
@@ -77,6 +78,19 @@ export async function hiringBrowser(h, s) {
    }
    const candidatePath=applications[0],id=candidatePath.split('/').pop()
    await mp.goto(h.origin+candidatePath)
+   const resumeBytes=Buffer.from(`%PDF-1.7\nMarisol resume ${width}`)
+   await mp.getByLabel('Resume file',{exact:true}).setInputFiles({name:'marisol-resume.pdf',mimeType:'application/pdf',buffer:resumeBytes})
+   await save(mp,'Upload resume')
+   const resumeLink=mp.getByRole('link',{name:'marisol-resume.pdf',exact:true})
+   const resumeUrl=await resumeLink.getAttribute('href')
+   const [resumeDownload]=await Promise.all([mp.waitForEvent('download'),resumeLink.click()])
+   assert.deepEqual(await readFile(await resumeDownload.path()),resumeBytes)
+   assert.equal(resumeDownload.suggestedFilename(),'marisol-resume.pdf')
+   await mp.getByLabel('Resume file',{exact:true}).setInputFiles({name:'marisol-corrected.txt',mimeType:'text/plain',buffer:Buffer.from('Corrected experience')})
+   await save(mp,'Upload resume')
+   assert.equal((await h.api(`hiring/applications/${id}`,s.managera.cookie)).resumes.length,2)
+   await capture(mp,'resume-history')
+   assert.equal((await op.goto(h.origin+resumeUrl)).status(),404)
    await mp.getByLabel('Observed evidence',{exact:true}).fill('Explained a billing escalation clearly; follow-up scenario discussed.')
    await save(mp,'Record evidence')
    await mp.getByLabel('Observed evidence',{exact:true}).fill('Correction: explained the escalation and checked consent before follow-up.')
@@ -98,6 +112,7 @@ export async function hiringBrowser(h, s) {
    await hp.locator(`input[name="members"][value="${s.hr.member}"]`).check()
    await save(hp,'Save team')
    assert.equal((await mp.goto(h.origin+candidatePath)).status(),404)
+   assert.equal((await h.raw(resumeUrl,{cookie:s.managera.cookie})).status,404)
    await capture(mp,'revoked')
    await mp.goto(h.origin+'/app/hiring')
    assert.equal(await mp.getByRole('link',{name,exact:true}).count(),0)

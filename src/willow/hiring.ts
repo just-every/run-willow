@@ -3,6 +3,7 @@ import type { Bindings } from '../auth.server'
 import { can, requirePermission, type Actor } from './actor'
 import { all, auditRead, commit, guard, insist, json, newId, now, one, stmt } from './core'
 import type { Input } from './input'
+import { store, serve } from './files'
 
 interface Opening { id: string; name: string; stages: string; revision: number; created_at: number }
 interface Application { id: string; opening_id: string; name: string; contact_email: string; source: string; stage: string; revision: number; created_at: number }
@@ -93,6 +94,31 @@ export async function scoreHiringCandidate(env: Bindings, actor: Actor, input: I
  { actor: actor.id, action: 'hiring.scorecard.record', subject: row.id, detail: { version: version + 1 } })
  return { id, version: version + 1 }
 }
+// Resume corrections append a version. Current opening authority is shared
+// with candidate reads; there is no employee-document or identity-link grant.
+export async function addHiringResume(env: Bindings, actor: Actor, input: Input) {
+ const { row, opening: job } = await application(env, actor, input.text('application'))
+ const version = input.integer('version', { min: 0 })!
+ const current = (await one<{ version: number }>(env, 'SELECT COALESCE(MAX(version),0) AS version FROM wl_hiring_resumes WHERE application_id=?', row.id))!.version
+ insist(current === version, 'stale', 409)
+ const file = (await input.file('file', { maxBytes: 10_000_000 }))!
+ const stored = await store(env, file), id = newId()
+ await commit(env, [accessGuard(env, actor, job),
+ guard(env, 'stale', '(SELECT COALESCE(MAX(version),0) FROM wl_hiring_resumes WHERE application_id=?)=?', row.id, version),
+ stmt(env, 'INSERT INTO wl_hiring_resumes(id,application_id,version,filename,media_type,size,sha256,uploaded_by,uploaded_at) VALUES (?,?,?,?,?,?,?,?,?)',
+ id, row.id, version + 1, stored.filename, stored.mediaType, stored.size, stored.sha256, actor.id, now())],
+ { actor: actor.id, action: 'hiring.resume.add', subject: row.id, detail: { version: version + 1 } })
+ return { id, version: version + 1 }
+}
+
+export async function hiringResume(env: Bindings, actor: Actor, applicationId: string, resumeId: string) {
+ await application(env, actor, applicationId)
+ const resume = await one(env, 'SELECT * FROM wl_hiring_resumes WHERE id=? AND application_id=?', resumeId, applicationId)
+ insist(resume, 'not_found', 404)
+ await auditRead(env, actor.id, 'hiring.resume.download', applicationId, { resume: resume.id })
+ return serve(env, { filename: resume.filename, mediaType: resume.media_type, size: resume.size, sha256: resume.sha256 }, { download: true })
+}
+
 export async function hiringOpenings(env: Bindings, actor: Actor) {
  const rows = await all<Opening>(env, `SELECT o.* FROM wl_hiring_openings o WHERE ?=1 OR EXISTS(SELECT 1 FROM wl_hiring_team t WHERE t.opening_id=o.id AND t.member_id=?) ORDER BY o.created_at,o.id`, hr(actor) ? 1 : 0, actor.id)
  return rows.map(row => ({ ...row, stages: json<string[]>(row.stages, []) }))
@@ -109,5 +135,6 @@ export async function hiringApplication(env: Bindings, actor: Actor, id: string)
  const timeline = await all(env, 'SELECT e.seq,e.actor,m.name AS actorName,e.kind,e.from_stage,e.to_stage,e.at FROM wl_hiring_events e JOIN wl_members m ON m.id=e.actor WHERE e.application_id=? ORDER BY e.seq', id)
  const scorecards = await all(env, 'SELECT s.id,s.author,m.name AS authorName,s.version,s.evidence,s.created_at FROM wl_hiring_scorecards s JOIN wl_members m ON m.id=s.author WHERE s.application_id=? ORDER BY s.created_at,s.id', id)
  await auditRead(env, actor.id, 'hiring.candidate.read', id)
- return { ...row, timeline, scorecards }
+ const resumes = await all(env, 'SELECT id,version,filename,media_type,size,sha256,uploaded_by,uploaded_at FROM wl_hiring_resumes WHERE application_id=? ORDER BY version DESC', id)
+ return { ...row, timeline, scorecards, resumes }
 }

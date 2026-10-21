@@ -1,9 +1,9 @@
 // HIRING-003: native forms reuse the existing guarded manual pipeline actions.
 import type { Bindings } from '../../auth.server'
 import { can, employerZone, type Actor } from '../actor'
-import { hiringOpenings, hiringOpening, hiringApplication } from '../hiring'
+import { hiringOpenings, hiringOpening, hiringApplication, hiringResume } from '../hiring'
 import { members } from '../members'
-import { h, page, form, field, hidden, select, area, checks, table, when, tag } from './html'
+import { h, page, form, field, hidden, select, area, checks, table, when, tag, fileField } from './html'
 const root = '/app/hiring'
 const teamOptions = async (env: Bindings, actor: Actor, request: Request) =>
  (await members(env, actor, request)).filter(m => m.status === 'active' && m.signIn === 'active').map(m => ({ value: m.id, label: m.name }))
@@ -32,6 +32,7 @@ export async function hiringOpeningPage(env: Bindings, actor: Actor, request: Re
 }
 
 export async function hiringApplicationPage(env: Bindings, actor: Actor, url: URL, id: string) {
+ if (url.searchParams.has('resume')) return hiringResume(env, actor, id, url.searchParams.get('resume')!)
  const candidate = await hiringApplication(env, actor, id)
  const zone = await employerZone(env)
  const opening = await hiringOpening(env, actor, candidate.opening_id)
@@ -39,6 +40,9 @@ export async function hiringApplicationPage(env: Bindings, actor: Actor, url: UR
  const own = candidate.scorecards.filter(s => s.author === actor.id).sort((a,b) => Number(b.version)-Number(a.version))[0]
  return page(candidate.name, actor, h`<p class="back"><a href="${root}/openings/${opening.id}">← ${opening.name}</a></p><h1>${candidate.name}</h1>
  <dl><dt>Contact email</dt><dd>${candidate.contact_email}</dd><dt>Source</dt><dd>${candidate.source}</dd><dt>Stage</dt><dd>${tag(candidate.stage)}</dd></dl>
+ <section class="card"><h2>Resumes</h2><p>Only HR and this opening’s current team can open these files. Uploading a correction keeps earlier versions.</p>
+ ${candidate.resumes.length ? table(['Version','File','Size','Uploaded'], candidate.resumes.map(r=>[r.version,h`<a href="${here}?resume=${r.id}">${r.filename}</a>`,`${r.size} bytes`,when(r.uploaded_at,zone)])) : h`<p>No resume has been uploaded.</p>`}
+ ${form('hiring.resume',here,[hidden('application',id),hidden('version',candidate.resumes[0]?.version??0),fileField('Resume file','file',{required:true})], 'Upload resume', {multipart:true})}<p class="hint">Up to 10 MB. Files download as attachments.</p></section>
  <section class="card"><h2>Move candidate</h2>${form('hiring.move',here,[hidden('application',id),hidden('revision',candidate.revision),select('Next stage','stage',opening.stages.filter(s=>s!==candidate.stage).map(value=>({value,label:value})))], 'Move candidate')}</section>
  <section class="card"><h2>Your interviewer evidence</h2><p>Saving a correction keeps earlier versions. Evidence never advances, ranks or rejects a candidate.</p>${form('hiring.scorecard',here,[hidden('application',id),hidden('version',own?.version??0),area('Observed evidence','evidence',String(own?.evidence??''))], own?'Save correction':'Record evidence')}</section>
  <section class="card"><h2>Interviewer history</h2>${table(['Interviewer','Version','Evidence','Recorded'],candidate.scorecards.map(s=>[s.authorName,s.version,s.evidence,when(s.created_at,zone)]))}</section>

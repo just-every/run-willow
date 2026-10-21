@@ -1,10 +1,11 @@
 // Four public-door integration flows against the built Worker, D1 and R2.
 // Network fakes are confined to the mail, Models and identity provider edges.
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { hiringBrowser } from './hiring-browser.mjs'
 import { publishTemplate } from './publish-template.mjs'
 import { evidenceDirectory } from './evidence.mjs'
-import { harness } from './harness.mjs'
+import { harness, file } from './harness.mjs'
 import { fixture, today, day } from './regression-fixture.mjs'
 import { genericColumns, providerFixture, oidcProviders } from './phase2-fixtures.mjs'
 
@@ -60,6 +61,41 @@ try {
     assert.deepEqual(await as(s.employee.cookie,'hiring'),[])
     for(const path of ['hiring',`hiring/openings/${job.id}`,`hiring/applications/${alice.id}`]) assert.equal((await h.raw(`/api/willow/${path}`)).status,401)
     await as(s.managera.cookie,'hiring.team',{opening:job.id,revision:1,members:[s.managera.member,s.managerb.member]},403)
+    const resumeBytes = '%PDF-1.7\nHIRING-PRIVATE-Resume <script>candidate</script>'
+    const uploadResume = (version,content=resumeBytes,cookie=s.managera.cookie,status=200) =>
+      as(cookie,'hiring.resume',{application:alice.id,version,file:file('HIRING-PRIVATE-resume.pdf',content,'text/html')},status)
+    const resume = await uploadResume(0)
+    const resumePath = `/app/hiring/applications/${alice.id}?resume=${resume.id}`
+    const download = async (cookie=s.managera.cookie,path=resumePath,status=200) => {
+      const response = await h.raw(path,{cookie});assert.equal(response.status,status);return response
+    }
+    const bytes = await download()
+    assert.equal(await bytes.text(),resumeBytes)
+    assert.match(bytes.headers.get('content-disposition'),/^attachment;/)
+    assert.equal(bytes.headers.get('content-type'),'application/octet-stream')
+    assert.equal(bytes.headers.get('cache-control'),'private, no-store')
+    assert.equal(bytes.headers.get('x-content-type-options'),'nosniff')
+    assert.equal((await view()).resumes[0].sha256,createHash('sha256').update(resumeBytes).digest('hex'))
+    assert.equal((await view()).resumes[0].media_type,'application/pdf','Stored type follows bytes, not the supplied MIME type')
+    for(const cookie of [s.employee.cookie,s.managerb.cookie]) {
+      await download(cookie,resumePath,404);await uploadResume(1,'Unauthorized',cookie,404)
+    }
+    assert.equal((await h.raw(resumePath)).status,303)
+    await download(s.managerb.cookie,`/app/hiring/applications/${repeat.id}?resume=${resume.id}`,404)
+    await download(s.managera.cookie,`/app/hiring/applications/${bob.id}?resume=${resume.id}`,404)
+    await uploadResume(0,'Stale correction',s.managera.cookie,409)
+    // Competing corrections retain one new version and preserve the original.
+    const corrections = ['Corrected resume A','Corrected resume B']
+    const resumed = await Promise.all(corrections.map(content=>h.raw('/api/willow/hiring.resume',{cookie:s.managera.cookie,
+      body:{application:alice.id,version:1,file:file('correction.txt',content)}})))
+    assert.deepEqual(resumed.map(r=>r.status).sort(),[200,409])
+    const versions = (await view()).resumes
+    assert.deepEqual(versions.map(r=>r.version),[2,1])
+    assert.equal(await (await download()).text(),resumeBytes,'Original bytes remain after correction')
+    const correction = await download(s.hr.cookie,`/app/hiring/applications/${alice.id}?resume=${versions[0].id}`)
+    assert.ok(corrections.includes(await correction.text()))
+    await as(s.managera.cookie,'hiring.resume',{application:alice.id,version:2,file:file('oversize.txt',Buffer.alloc(10_000_001))},400)
+    assert.equal((await view()).resumes.length,2,'Rejected upload changes no resume history')
     const before = await view()
     await as(s.managera.cookie,'hiring.move',{application:alice.id,revision:1,stage:'Unknown'},400)
     assert.deepEqual((await view()).timeline,before.timeline,'Invalid moves add no timeline record')
@@ -86,15 +122,20 @@ try {
     const audit = await api('audit')
     for(const entry of audit.filter(e=>e.action.startsWith('hiring.'))) assert.ok(!JSON.stringify(entry).includes('HIRING-PRIVATE'),'The global audit retains actions/IDs without candidate values')
     assert.equal(audit.filter(e=>e.action==='hiring.candidate.move' && e.subject===alice.id).length,1)
+    assert.equal(audit.filter(e=>e.action==='hiring.resume.add' && e.subject===alice.id).length,2)
+    assert.ok(audit.some(e=>e.action==='hiring.resume.download' && e.subject===alice.id))
     // Current HR/team authority governs every read and write, including the same session.
     const removed = await hr('hiring.team',{opening:job.id,revision:job.revision,members:[s.payroll.member]})
     await hr('hiring.team',{opening:job.id,revision:job.revision,members:[s.managera.member]},409)
     await view(alice.id,s.managera.cookie,404);await opening(job.id,s.managera.cookie,404)
+    await download(s.managera.cookie,resumePath,404);await uploadResume(2,'After removal',s.managera.cookie,404)
     assert.deepEqual(await as(s.managera.cookie,'hiring'),[])
     await as(s.managera.cookie,'hiring.move',{application:alice.id,revision:2,stage:'Rejected'},404)
     await as(s.managera.cookie,'hiring.scorecard',{application:alice.id,version:2,evidence:'After removal'},404)
     await api('member.permissions',{member:s.hr.member,permissions:[]})
     await view(alice.id,s.hr.cookie,401);await opening(job.id,s.hr.cookie,401)
+    const revokedHr = await download(s.hr.cookie,resumePath,303)
+    assert.equal(new URL(revokedHr.headers.get('location')).pathname,'/signin')
     await as(s.hr.cookie,'hiring.opening',jobInput,401)
     await api('member.permissions',{member:s.hr.member,permissions:['people.manage','people.private','documents.private','leave.manage']})
     s.hr.cookie = await h.signIn('hr@example.com')
@@ -112,9 +153,12 @@ try {
     await view(alice.id,reviewerCookie)
     await api('access.end',{person:reviewer.person})
     await view(alice.id,reviewerCookie,401)
+    const endedResume = await download(reviewerCookie,resumePath,303)
+    assert.equal(new URL(endedResume.headers.get('location')).pathname,'/signin')
     await api('access.give',{person:reviewer.person})
     reviewerCookie = await h.signIn('hiring-reviewer@example.com')
     await view(alice.id,reviewerCookie,404)
+    await download(reviewerCookie,resumePath,404)
     assert.deepEqual(await as(reviewerCookie,'hiring'),[],'Reactivated access restores no former hiring-team grant')
     for (const path of [`/app/hiring/openings/${job.id}`, `/app/hiring/applications/${alice.id}`]) {
       assert.equal((await h.raw(path,{cookie:s.managerb.cookie})).status,404)
