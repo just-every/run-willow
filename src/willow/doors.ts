@@ -24,6 +24,7 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/hiring$', 'hiring'], ['^/app/hiring/openings/([\\w-]+)$', 'hiringOpening'], ['^/app/hiring/applications/([\\w-]+)$', 'hiringApplication'],
   ['^/app/performance$', 'performance'], ['^/app/performance/([\\w-]+)\\.json$', 'performanceFile'], ['^/app/performance/([\\w-]+)$', 'performanceCycle'], ['^/app/goals$', 'goals'],
   ['^/app/survey-plans/([\\w-]+)$', 'surveyPlan'],
   ['^/app/surveys/([\\w-]+)\\.csv$', 'surveyCsv'], ['^/app/surveys$', 'surveys'], ['^/app/surveys/([\\w-]+)/results$', 'surveyResults'], ['^/app/surveys/([\\w-]+)$', 'survey'],

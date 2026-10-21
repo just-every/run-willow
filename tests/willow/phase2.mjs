@@ -1,6 +1,7 @@
 // Four public-door integration flows against the built Worker, D1 and R2.
 // Network fakes are confined to the mail, Models and identity provider edges.
 import assert from 'node:assert/strict'
+import { hiringBrowser } from './hiring-browser.mjs'
 import { publishTemplate } from './publish-template.mjs'
 import { evidenceDirectory } from './evidence.mjs'
 import { harness } from './harness.mjs'
@@ -113,9 +114,18 @@ try {
     reviewerCookie = await h.signIn('hiring-reviewer@example.com')
     await view(alice.id,reviewerCookie,404)
     assert.deepEqual(await as(reviewerCookie,'hiring'),[],'Reactivated access restores no former hiring-team grant')
+    for (const path of [`/app/hiring/openings/${job.id}`, `/app/hiring/applications/${alice.id}`]) {
+      assert.equal((await h.raw(path,{cookie:s.managerb.cookie})).status,404)
+      assert.equal((await h.raw(path,{cookie:s.employee.cookie})).status,404)
+      const response=await h.raw(path,{cookie:s.managera.cookie})
+      assert.equal(response.status,200)
+      assert.ok((await response.text()).includes('HIRING-PRIVATE-Alice'))
+    }
+    await hiringBrowser(h,s)
     // Generic employee projections and bundles do not gain hiring records.
     for(const path of [`people/${s.managera.person}`,`context/${s.managera.person}`]) assert.ok(!JSON.stringify(await api(path)).includes('HIRING-PRIVATE'))
   })
+  if (process.env.WILLOW_HIRING_ONLY === '1') { console.log('HIRING-003 targeted journey complete'); } else {
   await screenshot(owner,'/app/connections','connections-off')
   await check('WIL-18 safe notices and independent manual completion',async()=>{
     assert.equal((await api('connections')).notices,false)
@@ -364,4 +374,5 @@ try {
   })
   for(const path of ['/api/willow/connections','/api/willow/model-drafts','/api/willow/payroll-layout','/app/connections']) {const response=await h.raw(path);assert.ok([401,303].includes(response.status))}
   console.log('Phase 2 public Worker flows passed; no live providers called.')
+  }
 } finally {await browser?.close();await h.close()}

@@ -1,3 +1,4 @@
+import { hiringPage, hiringOpeningPage, hiringApplicationPage } from './ui/hiring'
 import { reconcileRecipients } from './performance/store'
 import { performancePage, reviewPage, goalsPage } from './ui/performance'
 import { performanceFile } from './performance/views'
@@ -134,6 +135,9 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  hiring: (env,actor,request,url)=>hiringPage(env,actor,request,url),
+  hiringOpening: (env,actor,request,url,id)=>hiringOpeningPage(env,actor,request,url,id),
+  hiringApplication: (env,actor,_request,url,id)=>hiringApplicationPage(env,actor,url,id),
   performance: (env,actor,_request,url)=>performancePage(env,actor,url),
   performanceCycle: (env,actor,_request,url,id)=>reviewPage(env,actor,id,url),
   performanceFile: (env,actor,_request,_url,id)=>performanceFile(env,actor,id),
