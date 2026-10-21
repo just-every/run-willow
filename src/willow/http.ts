@@ -12,9 +12,10 @@ import { protectedListPage, protectedDetailPage } from './ui/protected-leave'
 import { protectedCertification } from './protected-leave/records'
 import { customReportsPage, customReportPage } from './ui/custom-reports'
 import { customReportFile } from './reporting/files'
-import { eeoSelf, diversityReport, eeoPerson, eeoPeople } from './eeo'
+import { eeoSelf, diversityReport, eeoPerson, eeoPeople, mappingsView, runs, eeoRunReport, runPeople, runAggregate } from './eeo'
 import { eeoSelfPage, diversityReportPage, eeoPersonPage, eeoPeoplePage } from './ui/eeo'
 import { retentionPage, erasurePage } from './ui/retention'
+import { eeoAggregatePage, eeoMappingsPage, eeoRunPage, eeoRunPeoplePage, eeoRunsPage } from './ui/eeo-report'
 import { selfChangesPage, selfChangePage } from './ui/self-service'
 import { importForm } from './movein/forms'
 // Willow's public doors: /app pages, /app/do/ACTION form posts, /api/willow
@@ -162,6 +163,11 @@ const pages: Record<string, Page> = {
   eeoSelf: async (env,actor,_request,url) => {if(url.searchParams.has('person')) throw new WillowError('eeo_filters_not_allowed');return eeoSelfPage(actor,await eeoSelf(env,actor),url)},
   eeoPerson: async (env,actor,_request,url,id) => eeoPersonPage(actor,await eeoPerson(env,actor,id),url),
   eeoPeople: async (env,actor,_request,url) => eeoPeoplePage(actor,await eeoPeople(env,actor),url),
+  eeoMappings: async (env,actor,_request,url) => eeoMappingsPage(actor,await mappingsView(env,actor),url),
+  eeoRuns: async (env,actor,_request,url) => eeoRunsPage(actor,await runs(env,actor),url),
+  eeoRun: async (env,actor,_request,url,id) => eeoRunPage(actor,await eeoRunReport(env,actor,id),url),
+  eeoRunPeople: async (env,actor,_request,url,id) => eeoRunPeoplePage(actor,await runPeople(env,actor,id,url.searchParams),url),
+  eeoRunAggregate: async (env,actor,_request,url,id) => eeoAggregatePage(actor,await runAggregate(env,actor,id),url),
   eeoReport: async (env,actor,_request,url) => diversityReportPage(actor,await diversityReport(env,actor,Object.fromEntries([...url.searchParams].filter(([k])=>!['notice','error'].includes(k)).length?url.searchParams:[['asOf',actor.today]]) as {asOf:string}),url),
   retention: (env,actor,_request,url) => retentionPage(env,actor,url),
   erasure: (env,actor,_request,url) => erasurePage(env,actor,url),

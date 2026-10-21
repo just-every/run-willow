@@ -16,7 +16,7 @@ import { leaveOverrides } from './protected-leave/overrides'
 import { savedReports, savedReport } from './reporting/definitions'
 import { runReport } from './reporting/execute'
 import { scheduleStatus } from './reporting/schedule'
-import { eeoSelf, diversityReport, eeoPerson, eeoPeople } from './eeo'
+import { eeoSelf, diversityReport, eeoPerson, eeoPeople, mappingsView, runs, eeoRunReport, runPeople, runAggregate } from './eeo'
 import { retention, erasurePreview } from './retention/view'
 import { selfChanges, selfChange, selfExceptions } from './self-service/view'
 import { listFieldDefinitions } from './custom-fields/store'
@@ -76,6 +76,8 @@ export const views: Record<string, View> = {
   customReports: savedReports,
   customReport: async (env,actor,_request,id) => {const report=await savedReport(env,actor,id);return {report,result:await runReport(env,actor,report.definition),schedule:await scheduleStatus(env,actor,id)}},
   eeoPerson: (env,actor,_request,id,url) => { if([...url.searchParams.keys()].length) throw new WillowError('eeo_filters_not_allowed');return eeoPerson(env,actor,id) }, eeoPeople: (env,actor) => eeoPeople(env,actor),
+  eeoMappings: (env,actor) => mappingsView(env,actor), eeoRuns: (env,actor) => runs(env,actor), eeoRun: (env,actor,_request,id) => eeoRunReport(env,actor,id),
+  eeoRunPeople: (env,actor,_request,id,url) => runPeople(env,actor,id,url.searchParams), eeoRunAggregate: (env,actor,_request,id) => runAggregate(env,actor,id),
   eeoSelf: (env,actor,_request,_id,url) => { if([...url.searchParams.keys()].length) throw new WillowError('eeo_filters_not_allowed');return eeoSelf(env,actor) },
   eeoReport: (env,actor,_request,_id,url) => diversityReport(env,actor,Object.fromEntries(url.searchParams.size?url.searchParams:[['asOf',actor.today]]) as {asOf:string}),
   retention, erasurePreview: (env,actor,_request,_id,url) => erasurePreview(env,actor,url),

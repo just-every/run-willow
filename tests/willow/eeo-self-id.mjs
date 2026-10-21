@@ -155,6 +155,8 @@ try {
   }
   for (const who of ['hr', 'owner', 'payroll', 'managera']) assert.ok(!(await (await h.raw('/app/exports/employees.csv?scope=organization&fields=name,workEmail,jobTitle', { cookie: actors[who === 'managera' ? 'manager' : who] })).text()).match(/hispanic|asian|female|declined/i), 'the standard CSV carries no EEO value')
 
+  await as('owner', 'eeo.grant', { member: s.hr.member, enabled: true })
+  await as('owner', 'contractor.set', { contractor: true })
   await browserEvidence(h, { employee: s.employee.cookie, hr: s.hr.cookie, owner }, person)
   console.log('EEO-001 self-identification: passed')
 } finally { await h.close() }

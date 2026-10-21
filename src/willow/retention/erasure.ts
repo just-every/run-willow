@@ -80,12 +80,13 @@ function heldBy(context: Context, cls: ClassKey | null, category: string | null)
   })?.id ?? null
 }
 
-function classify(context: Context, store: { id: string; table: string; label: string }, kind: Store['kind'], cls: ClassKey | null, measured: { rows: number; bytes: number; blobs: number; record: string | null }, category: string | null = null): Item {
+function classify(context: Context, store: { id: string; table: string; label: string; awaiting?: boolean }, kind: Store['kind'], cls: ClassKey | null, measured: { rows: number; bytes: number; blobs: number; record: string | null }, category: string | null = null): Item {
   const base = { id: store.id, table: store.table, label: store.label, rows: measured.rows, blobs: measured.blobs, bytes: measured.bytes, class: cls, rule: cls ? CLASSES[cls].citation : null, expiry: null as string | null, hold: null as string | null }
   if (typeof kind === 'object' || cls) {
     const key = cls ?? (kind as { class: ClassKey }).class
     const hold = heldBy(context, key, category)
     if (hold) return { ...base, class: key, rule: CLASSES[key].citation, disposition: 'held', hold }
+    if (store.awaiting) return { ...base, class: key, rule: 'Until the run\'s submission confirmation or abandonment', disposition: 'retained' }
     const expiry = classExpiry(key, { hire: context.hire, end: context.end, record: measured.record }, context.contractor, context.extra(key))
     return { ...base, class: key, rule: CLASSES[key].citation, expiry, disposition: expiry > context.today ? 'retained' : 'erased' }
   }
@@ -162,7 +163,7 @@ export async function previewErasure(env: Bindings, actor: Actor, personId: stri
   for (const item of items) {
     if (!['people', 'private'].includes(item.id)) continue
     const hold = needing.find(other => other.disposition === 'held')
-    const last = needing.filter(other => other.expiry).map(other => other.expiry!).sort().at(-1) ?? null
+    const last = needing.some(other => !other.expiry) ? null : needing.map(other => other.expiry!).sort().at(-1) ?? null
     if (hold) Object.assign(item, { disposition: 'held', hold: hold.hold, expiry: null })
     else if (needing.length) Object.assign(item, { disposition: 'retained', expiry: last, rule: 'longest retained rule' })
     else Object.assign(item, { disposition: 'erased', expiry: null })

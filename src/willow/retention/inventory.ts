@@ -16,6 +16,8 @@ export interface Store {
   /** Epoch-millisecond or ISO-date expression naming when a row was recorded. */
   ms?: string
   date?: string
+  /** Frozen EEO-1 run rows are kept until a submission confirmation or abandonment, which EEO-004 records; until then they carry no expiry. */
+  awaiting?: boolean
   /** Expression for each row's blob size; the row owns one blob in the FILES bucket. */
   blob?: string
 }
@@ -80,6 +82,9 @@ export const STORES: Store[] = [
   s('protected_absences', 'wl_protected_absences', 'Protected-leave absences', cls('protected_leave'), `t.case_id IN ${PCASES}`, { ms: 't.recorded_at' }),
   s('protected_certs', 'wl_protected_certifications', 'Protected-leave certifications', cls('protected_leave'), `t.case_id IN ${PCASES}`, { ms: 't.uploaded_at', blob: 't.size' }),
   s('eeo', 'wl_eeo_answers', 'EEO self-identification answers', cls('eeo'), 't.person_id = ?1', { ms: 't.recorded_at' }),
+  s('eeo_recorded', 'wl_eeo_recorded', 'HR-recorded EEO categories', cls('eeo'), 't.person_id = ?1', { ms: 't.recorded_at' }),
+  s('eeo_run_rows', 'wl_eeo_run_rows', 'Frozen EEO-1 snapshot rows', cls('eeo'), 't.person_id = ?1', { awaiting: true }),
+  s('eeo_run_excluded', 'wl_eeo_run_excluded', 'EEO-1 snapshot exclusions', cls('eeo'), 't.person_id = ?1', { awaiting: true }),
   s('self_changes', 'wl_self_changes', 'Personal-detail change requests', 'erase', 't.person_id = ?1', { ms: 't.requested_at' }),
   s('self_decisions', 'wl_self_decisions', 'Personal-detail change decisions', 'erase', `t.change_id IN ${SELFC}`, { ms: 't.decided_at' }),
   s('self_reconciliation', 'wl_self_reconciliation', 'Personal-detail reconciliation', 'erase', `t.change_id IN ${SELFC}`, { ms: 't.recorded_at' }),
@@ -141,7 +146,7 @@ export const AUTHORED: [string, string][] = [
   ['wl_model_drafts', 'proposed_by'], ['wl_workflow_reviews', 'actor'], ['wl_level_reviews', 'actor'], ['wl_change_chains', 'recorded_by'],
   ['wl_date_alerts', 'recorded_by'], ['wl_company_announcement_versions', 'recorded_by'], ['wl_company_file_versions', 'recorded_by'],
   ['wl_company_folder_versions', 'recorded_by'], ['wl_work_schedule', 'updated_by'], ['wl_retention_adoptions', 'adopted_by'], ['wl_retention_states', 'recorded_by'],
-  ['wl_retention_mappings', 'recorded_by'], ['wl_contractor_status', 'recorded_by'], ['wl_holds', 'placed_by'], ['wl_hold_reviews', 'reviewed_by'], ['wl_erasure_requests', 'requested_by'],
+  ['wl_retention_mappings', 'recorded_by'], ['wl_contractor_status', 'recorded_by'], ['wl_eeo_title_map', 'recorded_by'], ['wl_eeo_establishments', 'recorded_by'], ['wl_eeo_runs', 'created_by'], ['wl_eeo_recorded', 'recorded_by'], ['wl_holds', 'placed_by'], ['wl_hold_reviews', 'reviewed_by'], ['wl_erasure_requests', 'requested_by'],
 ]
 export const AUTHORED_STORES: Store[] = AUTHORED.map(([table, column]) => MEMBER_ROWS(table, column))
 
