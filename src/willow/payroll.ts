@@ -118,6 +118,7 @@ export async function batchDetail(env: Bindings, actor: Actor, id: string) {
     previewStatus: await payrollPreviewStatus(env, row, actor),
     previewRevision: row.file_preview ? row.revision : null,
     filePreview: row.file_preview, layoutFormat: row.layout_format,
+    erasureReceipt: json<{ erasureReceipt?: string }>(row.lines, {}).erasureReceipt ?? null,
     createdAt: row.created_at, exportedAt: row.exported_at, acknowledgedAt: row.acknowledged_at,
     lines: data.lines,
     exceptions: exceptions.map(exception => ({ ...exception, resolved: claimed.has(exception.key) })),
@@ -127,6 +128,7 @@ export async function batchDetail(env: Bindings, actor: Actor, id: string) {
 export async function batchFile(env: Bindings, actor: Actor, id: string) {
   const detail = await batchDetail(env, actor, id)
   insist(detail.status !== 'draft', 'batch_not_exported', 409)
+  insist(!detail.erasureReceipt, 'payroll_file_withdrawn_by_erasure', 409)
   // Phase-one exports are identified by their absent layout, and keep that exact format.
   const bytes = detail.layoutFormat === null ? batchCsv(detail.lines) : detail.filePreview
   insist(typeof bytes === 'string' && await sha256Hex(bytes) === detail.sha256, 'payroll_file_corrupt', 409)

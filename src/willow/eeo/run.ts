@@ -12,6 +12,7 @@ import { RULE_VERSION } from './forms'
 import { filing } from './individual'
 import { hasFilingRace, hasFilingSex } from './rule'
 import { ANSWER_COLUMNS, projection, type AnswerRow } from './self'
+import { snapshotExcluded, snapshotPeople, snapshotRows, type SnapshotRow } from './snapshot'
 import { RACE_ETHNICITY, SEX } from './types'
 
 export const UNVERIFIED = 'Employee classification not yet verified (US-002): contractors and employees are not yet separated, and no filing file is offered.'
@@ -98,10 +99,10 @@ async function names(env: Bindings) {
 export async function eeoRunReport(env: Bindings, actor: Actor, id: string) {
   requirePermission(actor, 'eeo.individual')
   const run = await loadRun(env, id)
-  const rows = await all<Row>(env, 'SELECT * FROM wl_eeo_run_rows WHERE run_id = ?', id)
-  const excluded = await all<{ person_id: string; name: string; reason: string }>(env, 'SELECT e.person_id, p.legal_name AS name, e.reason FROM wl_eeo_run_excluded e JOIN wl_people p ON p.id = e.person_id WHERE e.run_id = ? ORDER BY p.legal_name', id)
+  const rows = await snapshotRows(env, id)
+  const excluded = await snapshotExcluded(env, id)
   const locations = await names(env)
-  const cell = (row: Row) => ({ establishment: row.location_id ?? 'none', category: row.category ?? 'unmapped', sex: row.sex_value ?? NO_FILING, race: row.race_value ?? NO_FILING })
+  const cell = (row: SnapshotRow) => ({ establishment: row.location_id ?? 'none', category: row.category ?? 'unmapped', sex: row.sex_value ?? NO_FILING, race: row.race_value ?? NO_FILING })
   const grid = new Map<string, { establishment: string; category: string; sex: string; race: string; count: number }>()
   for (const row of rows) { const c = cell(row), key = JSON.stringify(c); grid.set(key, { ...c, count: (grid.get(key)?.count ?? 0) + 1 }) }
   const flagCounts = new Map<string, number>()
@@ -125,7 +126,7 @@ export async function runPeople(env: Bindings, actor: Actor, id: string, filters
   await loadRun(env, id)
   const allowed = new Set(['establishment', 'category', 'sex', 'race', 'flag', 'notice', 'error'])
   insist([...filters.keys()].every(key => allowed.has(key)), 'invalid_filter')
-  const rows = (await all<Row & { name: string }>(env, 'SELECT r.*, p.legal_name AS name FROM wl_eeo_run_rows r JOIN wl_people p ON p.id = r.person_id WHERE r.run_id = ? ORDER BY p.legal_name', id))
+  const rows = (await snapshotPeople(env, id))
     .filter(row => (!filters.has('establishment') || (row.location_id ?? 'none') === filters.get('establishment')) && (!filters.has('category') || (row.category ?? 'unmapped') === filters.get('category'))
       && (!filters.has('sex') || (row.sex_value ?? NO_FILING) === filters.get('sex')) && (!filters.has('race') || (row.race_value ?? NO_FILING) === filters.get('race')) && (!filters.has('flag') || json<string[]>(row.flags_json, []).includes(filters.get('flag')!)))
   await auditRead(env, actor.id, 'eeo.run.drill', id)
@@ -137,7 +138,7 @@ export async function runPeople(env: Bindings, actor: Actor, id: string, filters
 export async function runAggregate(env: Bindings, actor: Actor, id: string) {
   requirePermission(actor, 'eeo.read', 'reports.read')
   const run = await loadRun(env, id)
-  const rows = await all<Row>(env, 'SELECT category, location_id, race_value, sex_value FROM wl_eeo_run_rows WHERE run_id = ?', id) as Row[]
+  const rows = await snapshotRows(env, id)
   const locations = await names(env)
   const tables = ['company', ...new Set(rows.map(row => row.location_id ?? 'none'))].map(scope => {
     const own = scope === 'company' ? rows : rows.filter(row => (row.location_id ?? 'none') === scope)

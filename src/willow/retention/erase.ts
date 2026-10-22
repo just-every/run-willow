@@ -7,11 +7,13 @@ import { erasureStatements, invalidateTransfersStatements, redactionStatements }
 import type { Bindings } from '../../auth.server'
 import { requireOwner, type Actor } from '../actor'
 import { addDays } from '../dates'
-import { all, commit as commitBatch, insist, newId, now, one, stmt, WillowError } from '../core'
+import { all, commit as commitBatch, guard, insist, newId, now, one, stmt, WillowError } from '../core'
 import type { Input } from '../input'
 import { confirmApplicant } from './applicant'
+import { redactPayroll } from './payroll'
+import { captureErasureSql, retireImportCustody } from './import-custody'
 import { AUTHORED, AUTHORED_STORES, STORES, type Store } from './inventory'
-import { planErasure, type Item, type Plan } from './erasure'
+import { BUSINESS_SEQUENCE, planErasure, type Item, type Plan } from './erasure'
 
 const quote = (value: string) => `'${value.replace(/'/g, "''")}'`
 const hex = (bytes: number) => Array.from(crypto.getRandomValues(new Uint8Array(bytes)), byte => byte.toString(16).padStart(2, '0')).join('')
@@ -90,6 +92,8 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
   requireOwner(actor)
   input.only(['person', 'application', 'digest', 'returnTo'])
   if (input.provided('application')) return await confirmApplicant(env, actor, input)
+  const captured = captureErasureSql(env)
+  env = captured.env
   const personId = input.text('person', { max: 64 }), digest = input.text('digest', { max: 64 })
   const request = await one<{ id: string; source: string; received_on: string }>(env, "SELECT id, source, received_on FROM wl_erasure_requests WHERE person_id = ? AND status = 'open'", personId)
   insist(request, 'erasure_request_required', 409)
@@ -100,7 +104,7 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
   const label = `Former person ${hex(4)}`, stubPerson = newId(), stubMember = newId(), erasureId = newId(), at = now()
   // Recipient lists are shared with other people's schedules and alerts: the person leaves the list, the record stays.
   const recipientStores = new Map([['report_recipients', 'wl_report_schedules'], ['alert_recipients', 'wl_date_alerts']])
-  const rowTargets = targets(plan).filter(target => ['erased', 'retained', 'held'].includes(target.item.disposition) && !recipientStores.has(target.id))
+  const rowTargets = targets(plan).filter(target => ['erased', 'retained', 'held'].includes(target.item.disposition) && !recipientStores.has(target.id) && target.id !== 'payroll_batches')
   const { ids, blobs } = await readTargets(env, rowTargets, [subject.personId, subject.memberId, subject.workEmail, subject.employeeNumber, subject.memberEmail])
 
   const textColumns = [['wl_audit', 'detail'], ['wl_work_history', 'detail']] as const
@@ -114,13 +118,14 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
     for (const row of await all<{ table: string; from: string }>(env, `PRAGMA foreign_key_list(${name})`)) if (row.table === 'wl_members' || row.table === 'wl_people') fk.push({ tbl: name, col: row.from, parent: row.table })
   }
   const statements: D1PreparedStatement[] = [
+    guard(env, 'preview_stale', `${BUSINESS_SEQUENCE} = ?`, plan.sequence),
     stmt(env, 'INSERT INTO wl_erasure_window (token) VALUES (?)', erasureId),
     stmt(env, 'PRAGMA defer_foreign_keys = on'),
     stmt(env, "INSERT INTO wl_people (id, legal_name, origin, revision, created_at, updated_at) VALUES (?, ?, 'native', ?, ?, ?)", stubPerson, label, newId(), at, at),
     stmt(env, "INSERT INTO wl_members (id, email, name, person_id, status, created_at) VALUES (?, ?, ?, ?, 'ended', ?)", stubMember, `erased-${hex(8)}@erased.invalid`, label, stubPerson, at),
   ]
   for (const [store, table] of recipientStores) if (subject.memberId) statements.push(stmt(env, `UPDATE ${table} SET recipients_json = (SELECT COALESCE(json_group_array(value), '[]') FROM json_each(recipients_json) WHERE value NOT IN (?1, 'member:' || ?1, ?2, ?3)) WHERE ?1 <> '' AND instr(recipients_json, ?1) > 0`, subject.memberId, subject.workEmail, subject.memberEmail))
-  statements.push(...await moveRows(env, rowTargets, ids, erasureId, at))
+  statements.push(...await moveRows(env, rowTargets, ids, erasureId, at), ...await redactPayroll(env, subject, view.items.find(item => item.id === 'payroll_batches'), erasureId, at))
   for (const { tbl, col, parent } of fk) {
     if (tbl === 'wl_members' && col === 'person_id') continue
     const [real, stub] = parent === 'wl_members' ? [subject.memberId, stubMember] : [subject.personId, stubPerson]
@@ -142,7 +147,8 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
     ...await erasureStatements(env.DB, 'wl_people', { id: subject.personId }), ...await redactionStatements(env.DB), ...await invalidateTransfersStatements(env.DB),
     stmt(env, 'DELETE FROM wl_erasure_window'),
   )
-  await commitBatch(env, statements, { actor: actor.id, action: 'erasure.execute', subject: erasureId, detail: { digest, rows: view.summary.rows } })
+  statements.push(stmt(env, 'DELETE FROM wl_guard'), stmt(env, 'INSERT INTO wl_audit (at, actor, action, subject, detail) VALUES (?, ?, ?, ?, ?)', at, actor.id, 'erasure.execute', erasureId, JSON.stringify({ digest, rows: view.summary.rows })))
+  await retireImportCustody(env, actor, { ...subject, legalName: person.legal_name }, captured.sql(statements), captured.sql(await redactionStatements(env.DB)), erasureId)
   // The erasure is committed; a failed object delete stays on the durable list and the scheduler retries it.
   await finishBlobs(env, erasureId).catch(() => 0)
   return { id: request.id, status: 'confirmed', receipt: erasureId, label, digest }

@@ -7,6 +7,7 @@ import { all, auditRead, commit, guard, insist, newId, now, one, sha256Hex, stmt
 import { isDate, today as dayOf } from '../dates'
 import type { Input } from '../input'
 import { holds, type Hold } from './holds'
+import { selectImportErasure } from './import-custody'
 import { AUTHORED_STORES, DYNAMIC, OUT_OF_SCOPE, STORES, type Store } from './inventory'
 import { CLASSES, TABLE_VERSION, classExpiry, type ClassKey, type Contractor } from './rules'
 import { adoption, contractorStatus, mappings, stateRules } from './settings'
@@ -62,7 +63,7 @@ async function inventoryCoverage(env: Bindings) {
 
 export interface Subject { personId: string; memberId: string; workEmail: string; employeeNumber: string; memberEmail: string }
 const bindFor = (sql: string, subject: Subject) => {
-  const max = Math.max(...[...sql.matchAll(/\?(\d)/g)].map(match => Number(match[1])))
+  const max = Math.max(0, ...[...sql.matchAll(/\?(\d)/g)].map(match => Number(match[1])))
   return [subject.personId, subject.memberId, subject.workEmail, subject.employeeNumber, subject.memberEmail].slice(0, max)
 }
 
@@ -111,13 +112,16 @@ const OPEN_WORK: [string, string, string, string][] = [
   ['payroll_exception', 'wl_payroll_batches', "status IN ('draft', 'exported') AND instr(exceptions, ?1) > 0", 'An unresolved payroll exception'],
 ]
 
-export interface Plan { view: Awaited<ReturnType<typeof previewErasure>>; subject: Subject; person: { id: string; legal_name: string; preferred_name: string | null; work_email: string | null; employee_number: string | null }; member: { id: string; email: string } | null; context: Context }
+export const BUSINESS_SEQUENCE = "COALESCE((SELECT MAX(seq) FROM wl_audit WHERE action NOT LIKE '%.read' AND action <> 'erasure.preview'), 0)"
+
+export interface Plan { sequence: number; view: Awaited<ReturnType<typeof previewErasure>>; subject: Subject; person: { id: string; legal_name: string; preferred_name: string | null; work_email: string | null; employee_number: string | null }; member: { id: string; email: string } | null; context: Context }
 
 /** Classifies every store for one person without writing; the preview and the execution share it. */
 export async function planErasure(env: Bindings, actor: Actor, personId: string) {
   requireOwner(actor)
   const person = await one<{ id: string; legal_name: string; preferred_name: string | null; work_email: string | null; employee_number: string | null; created_at: number }>(env, 'SELECT id, legal_name, preferred_name, work_email, employee_number, created_at FROM wl_people WHERE id = ?', personId)
   insist(person, 'not_found', 404)
+  const sequence = (await one<{ value: number }>(env, `SELECT ${BUSINESS_SEQUENCE} AS value`))!.value
   const examined = await inventoryCoverage(env), zone = await employerZone(env)
   const member = await one<{ id: string; email: string; status: string }>(env, 'SELECT id, email, status FROM wl_members WHERE person_id = ?', personId)
   const subject: Subject = { personId, memberId: member?.id ?? '', workEmail: (person.work_email ?? '').toLowerCase(), employeeNumber: person.employee_number ?? '', memberEmail: (member?.email ?? '').toLowerCase() }
@@ -188,10 +192,9 @@ export async function planErasure(env: Bindings, actor: Actor, personId: string)
   items.sort((a, b) => a.id.localeCompare(b.id))
   const copies = await declaredCopies(env, subject, person.created_at)
   const request = await one<{ id: string; status: string; source: string; received_on: string }>(env, "SELECT id, status, source, received_on FROM wl_erasure_requests WHERE person_id = ? AND status IN ('open', 'confirmed')", personId)
-  for (const item of items) if (item.id === 'payroll_batches') blockers.push({ kind: 'shared_record_unredacted', ref: item.id, reason: 'A payroll handoff batch names the person among others and line-level redaction is not yet available' })
-  for (const item of items) if (item.id.startsWith('import_')) blockers.push({ kind: 'import_custody_unredacted', ref: item.id, reason: 'Import custody still holds the person and Base\'s custody redaction is not yet wired into erasure' })
   blockers.sort((a, b) => (a.kind + a.ref).localeCompare(b.kind + b.ref))
-  const digest = await sha256Hex(JSON.stringify({ version: TABLE_VERSION, adopted: adopted?.id ?? null, rules: rules.map(rule => rule.id), holds: activeHolds.map(hold => [hold.id, hold.review_date]), contractor, mapped: [...mapped].sort(),
+  const custody = await selectImportErasure(env, { ...subject, legalName: person.legal_name })
+  const digest = await sha256Hex(JSON.stringify({ sequence, custody: custody.snapshot, version: TABLE_VERSION, adopted: adopted?.id ?? null, rules: rules.map(rule => rule.id), holds: activeHolds.map(hold => [hold.id, hold.review_date]), contractor, mapped: [...mapped].sort(),
     items: items.map(item => [item.id, item.id.endsWith('audit') || item.id === 'work_history' ? 1 : item.rows, item.blobs, item.bytes, item.disposition, item.class, item.expiry, item.hold]), blockers: blockers.map(blocker => [blocker.kind, blocker.ref]), copies, personId }))
   const total = (disposition: Item['disposition']) => items.filter(item => item.disposition === disposition).reduce((sum, item) => sum + item.rows, 0)
   const view = {
@@ -200,7 +203,7 @@ export async function planErasure(env: Bindings, actor: Actor, personId: string)
     summary: { rows: items.reduce((sum, item) => sum + item.rows, 0), blobs: items.reduce((sum, item) => sum + item.blobs, 0), bytes: items.reduce((sum, item) => sum + item.bytes, 0), erased: total('erased'), anonymized: total('anonymized'), redacted: total('redacted'), retained: total('retained'), held: total('held') },
     items, copies, digest,
   }
-  return { view, subject, person, member: member ?? null, context }
+  return { sequence, view, subject, person, member: member ?? null, context }
 }
 
 export async function previewErasure(env: Bindings, actor: Actor, personId: string) {

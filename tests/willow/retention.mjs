@@ -10,6 +10,7 @@ import { balancesCsv, documentsZip, employeesCsv } from './fixtures.mjs'
 import { imports } from './import-transport.mjs'
 import { findText, rowCounts, stubIdentities } from './retention-counts.mjs'
 import { browserEvidence } from './retention-browser.mjs'
+import { payrollErasure } from './retention-payroll.mjs'
 
 const directory = await mkdtemp(join(tmpdir(), 'willow-retention-'))
 const h = await harness({ persistTo: directory, scheduled: true })
@@ -291,6 +292,8 @@ try {
   assert.deepEqual(Object.keys(applicantFound), ['wl_retained_records'], `only custody holds the applicant: ${JSON.stringify(applicantFound)}`)
   assert.ok(!JSON.stringify(await api('audit')).includes('priya.applicant@example.com'))
   assert.equal((await api(`erasure/receipts/${applicantErased.receipt}`)).totals.retained, applicantPlan.summary.retained)
+
+  await payrollErasure(h, owner, f)
 
   // The purge: records warn 30 days ahead and go when their last rule has expired; held and longer-lived ones stay.
   const tick = async date => assert.equal((await h.raw(`/cdn-cgi/local/scheduled?time=${Date.parse(`${date}T09:00:00Z`)}&cron=${encodeURIComponent('*/15 * * * *')}&format=json`)).status, 200)

@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 import { harness } from './harness.mjs'
 import { fixture } from './regression-fixture.mjs'
 import { browserEvidence } from './eeo-snapshot-browser.mjs'
+import { erasedSnapshotEvidence } from './eeo-snapshot-erasure.mjs'
 
 const h = await harness()
 const FROM = '2025-10-01', TO = '2025-12-31'
@@ -123,6 +124,8 @@ try {
   const audit = await api('audit')
   for (const action of ['eeo.run.create', 'eeo.run.read', 'eeo.run.drill', 'eeo.run.aggregate.read', 'eeo.title.map', 'eeo.establishment.map']) assert.ok(audit.some(e => e.action === action), action)
   assert.ok(audit.filter(e => e.action.startsWith('eeo.run')).every(e => !/asian|white|female|male/.test(e.detail)), 'audit rows carry no values')
+
+  await erasedSnapshotEvidence(h, { f, owner, staff, reports: [report, rerun], aggregate })
 
   const pages = await (await h.raw(`/app/eeo/runs/${first.id}`, { cookie: s.hr.cookie })).text()
   assert.ok(pages.includes('Reconciliation') && pages.includes('Pre-filing check'))

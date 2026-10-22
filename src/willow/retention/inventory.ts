@@ -58,7 +58,7 @@ export const STORES: Store[] = [
   s('comp_proposals', 'wl_comp_proposals', 'Compensation decisions', cls('payroll'), 't.person_id = ?1', { ms: 't.requested_at' }),
   s('comp_bonuses', 'wl_comp_bonuses', 'Bonuses', cls('payroll'), 't.person_id = ?1', { ms: 't.recorded_at' }),
   s('payroll_items', 'wl_payroll_items', 'Payroll handoff items', cls('payroll'), `t.source_id IN ${REQ}`),
-  s('payroll_batches', 'wl_payroll_batches', 'Payroll handoff lines naming the person', cls('payroll'), 'instr(t.lines, ?1) > 0', { ms: 't.created_at' }),
+  s('payroll_batches', 'wl_payroll_batches', 'Payroll handoff lines naming the person', cls('payroll'), 'instr(t.lines, ?1) > 0 OR instr(t.exceptions, ?1) > 0', { ms: 't.created_at' }),
   s('cases', 'wl_cases', 'Joiner, mover and leaver cases', cls('personnel'), 't.person_id = ?1', { ms: 't.opened_at' }),
   s('case_tasks', 'wl_case_tasks', 'Case tasks and evidence', cls('personnel'), `t.case_id IN ${CASES}`, { ms: 't.created_at' }),
   s('case_upgrades', 'wl_workflow_upgrades', 'Case workflow upgrades', cls('personnel'), `t.case_id IN ${CASES}`, { ms: 't.at' }),
@@ -124,6 +124,8 @@ export const STORES: Store[] = [
   s('audit', 'wl_audit', 'Audit rows naming the person or member', 'history', 't.actor = ?2 OR t.subject IN (?1, ?2)', { ms: 't.at' }),
   s('auth_audit', 'oa_auth_audit', 'Sign-in audit rows', 'history', `t.actor_id IN ${OP}`, { ms: 't.created_at' }),
   s('work_history', 'wl_work_history', 'Work-follow-up history by the member', 'history', 't.actor = ?2', { ms: 't.at' }),
+  s('import_door_originals', 'ik_door_chunks', 'Shared import upload bytes (withdrawn whole)', 'custody', '1 = 1', { blob: 't.size' }),
+  s('import_door_plans', 'ik_door_plan_chunks', 'Shared import door plans (withdrawn whole)', 'custody', '1 = 1'),
   // Import custody: scanned by the person's exact identifiers; Base's erasure engine redacts it.
   s('import_provenance', 'ik_provenance', 'Import provenance for the person\'s records', 'custody', `t.target_id = ?1 OR t.target_id IN ${PER} OR t.target_id IN ${TERMS} OR (?3 <> '' AND instr(lower(t.record_json), ?3) > 0) OR (?4 <> '' AND instr(t.record_json, ?4) > 0)`),
   s('import_history', 'ik_d1_history', 'Import history of the person\'s records', 'custody', `t.target_id = ?1 OR t.target_id IN ${PER} OR t.target_id IN ${TERMS} OR (?3 <> '' AND instr(lower(t.record_json), ?3) > 0) OR (?4 <> '' AND instr(t.record_json, ?4) > 0)`),
@@ -165,6 +167,7 @@ export const DYNAMIC = ['wl_documents', 'wl_document_versions', 'wl_custom_field
 /** Tables that hold no person's data, each with its reason. The preview refuses when a table is in neither list. */
 const NONE = (reason: string, ...tables: string[]): [string, string][] => tables.map(table => [table, reason])
 export const OUT_OF_SCOPE = new Map<string, string>([
+  ...NONE('Private erasure HMAC key and value-free source tombstones; installation archives preserve the fence', 'wl_retention_import_secret', 'wl_erased_import_keys'),
   ...NONE('employer configuration', 'wl_employer', 'wl_connections', 'wl_import_door', 'wl_payroll_layout', 'wl_work_policy', 'wl_locations', 'wl_departments', 'wl_divisions', 'wl_legal_entities', 'wl_schedules', 'wl_doc_categories'),
   ...NONE('policy and template definitions', 'wl_policy_versions', 'wl_leave_policies', 'wl_leave_policy_rules', 'wl_template_tasks', 'wl_levels', 'wl_level_permissions', 'wl_level_scope_values', 'wl_level_self_fields', 'wl_hiring_openings', 'wl_review_cycles', 'wl_company_announcements', 'wl_company_folders', 'wl_company_files'),
   ...NONE('the erasure window: one row inside the journaled erasure batch, never committed', 'wl_erasure_window'),

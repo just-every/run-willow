@@ -1,3 +1,4 @@
+import { quarantinedImportSources } from '../retention/import-custody'
 import { DoorError } from '../../modules/import-kit/src/door/protocol'
 // The only native import pipeline: both signed-in forms and external grants use Base's door.
 import { Buffer } from 'node:buffer'
@@ -33,6 +34,13 @@ async function uploadedSource(env: Bindings, key: string, uploadId: unknown) {
   const input = JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(bytes))
   insist(input && typeof input === 'object' && !Array.isArray(input), 'invalid_source')
   const prepared = await prepareBamboohr(env, Input.of(input))
+  const quarantined = await quarantinedImportSources(env, prepared.records)
+  if (quarantined.length) {
+    // An uploaded original is opaque shared custody. Withdraw it whole rather
+    // than leaving newly supplied erased data in a refused plan's originals.
+    await env.DB.batch([env.DB.prepare('DELETE FROM ik_door_chunks WHERE upload_id=?').bind(uploadId), env.DB.prepare('DELETE FROM ik_door_uploads WHERE id=?').bind(uploadId)])
+    throw new WillowError('erased_import_source', 409, { receipts: [...new Set(quarantined.map(row => row.receiptId))] })
+  }
   // Private content-addressed upload custody; no native people/document records yet.
   for (const [name, value] of prepared.files) {
     const hash=prepared.hashes.get(name)!
@@ -84,7 +92,7 @@ export async function importDoorResponse(request: Request, env: Bindings): Promi
       }
       if (path.endsWith('/plan')) {
         try { prepared = await uploadedSource(env,key,(await body()).uploadId) }
-        catch(error) { if(error instanceof WillowError) throw new DoorError(error.code,error.status); throw error }
+        catch(error) { if(error instanceof WillowError) throw new DoorError(error.code,error.status,error.detail as Record<string, unknown> | undefined); throw error }
       }
       return prepared ?? { mapping: emptyMapping, parse() { throw new Error('source_not_prepared') } }
     }
