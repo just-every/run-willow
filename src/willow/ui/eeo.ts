@@ -15,34 +15,40 @@ function answerLabel(value: string | null, choices: readonly { value: string; la
 const raceNames = (races: string[] | null) => races?.length ? races.map(race => answerLabel(race, RACES)).join(', ') : 'Not recorded'
 const instant = (value: number) => new Date(value).toISOString()
 
-function summary(version: EeoRevision) {
-  return [version.sequence, instant(version.recordedAt), `Form version ${version.formVersion}`,
+export function eeoHistoryRow(version: EeoRevision) {
+  return [version.sequence, instant(version.recordedAt), `Form version ${version.formVersion} · ${version.source === 'preboarding/self-identified' ? 'preboarding self-identification' : version.source === 'applicant self-identification' ? `applicant self-identification · ${'phase' in version ? version.phase : ''}` : 'employee self-identification'}`,
     version.formVersion === 2 ? `${answerLabel(version.hispanic, HISPANIC)}; ${raceNames(version.races)}` : answerLabel(version.raceEthnicity, RACE_ETHNICITY),
     answerLabel(version.sex, SEX), version.veteran ? answerLabel(version.veteran, VETERAN_CHOICES) + (version.veteranClasses?.length ? ` (${version.veteranClasses.map(value => answerLabel(value, VETERAN_CLASSES)).join(', ')})` : '') : '—', version.disability ? answerLabel(version.disability, DISABILITY) : '—']
 }
-const HISTORY_HEADERS = ['Version', 'Recorded', 'Form', 'Ethnicity and race', 'Sex', 'Protected veteran', 'Disability']
+export const HISTORY_HEADERS = ['Version', 'Recorded', 'Form', 'Ethnicity and race', 'Sex', 'Protected veteran', 'Disability']
 
-function contractorForms(current: EeoRevision | null) {
+export function contractorForms(current: EeoRevision | null, phase: 'pre-offer' | 'post-offer' = 'post-offer') {
   const veteran = VETERAN_INVITATION
-  return h`<section class="card"><h2>${veteran.title}</h2><p class="muted">${veteran.source.url} (read ${veteran.source.read})</p>
-${veteran.intro.map(text => h`<p>${text}</p>`)}<ul>${veteran.definitions.map(text => h`<li>${text}</li>`)}</ul><p>${veteran.userra}</p><p>${veteran.ask}</p>
+  return h`<section class="card"><h2>${phase === 'pre-offer' ? 'Pre-offer protected veteran invitation to self-identify' : veteran.title}</h2><p class="muted">${veteran.source.url} (read ${veteran.source.read})</p>
+${veteran.intro.map(text => h`<p>${text}</p>`)}<ul>${veteran.definitions.map(text => h`<li>${text}</li>`)}</ul>
+${phase === 'post-offer' ? h`<p>${veteran.userra}</p>` : ''}
+<p>${phase === 'pre-offer' ? 'If you believe you belong to any of these protected veteran categories, please identify yourself below. You do not need to identify a particular classification before an offer.' : veteran.ask}</p>
 ${select('Protected veteran status', 'veteran', [...VETERAN_CHOICES], current?.veteran ?? '', { required: false, blank: 'Not recorded' })}
-${checks(veteran.classesHeading, 'veteranClasses', [...VETERAN_CLASSES], current?.veteranClasses ?? [])}
-<p>${veteran.accommodation}</p><p>${veteran.voluntary}</p><p>${veteran.confidential}</p></section>
+${phase === 'post-offer' ? checks(veteran.classesHeading, 'veteranClasses', [...VETERAN_CLASSES], current?.veteranClasses ?? []) : ''}
+${phase === 'post-offer' ? h`<p>${veteran.accommodation}</p>` : ''}<p>${veteran.voluntary}</p>${phase === 'post-offer' ? h`<p>${veteran.confidential}</p>` : h`<p>Your answers are confidential and never shown to the hiring team.</p>`}</section>
 <section class="card"><h2>${CC305.title}</h2><p class="muted">${CC305.formNumber} · ${CC305.omb} · ${CC305.expires}</p>${CC305.why.map(text => h`<p>${text}</p>`)}
 <h3>${CC305.howTitle}</h3><p>${CC305.how}</p><ul>${CC305.examples.map(text => h`<li>${text}</li>`)}</ul><p>${CC305.choose}</p>
 ${select('Disability', 'disability', [...DISABILITY], current?.disability ?? '', { required: false, blank: 'Not recorded' })}<p class="muted">${CC305.burden}</p></section>`
 }
 
-/** Render only the explicit self-ID projection, never a general person profile. */
-export function eeoSelfPage(actor: Actor, data: EeoSelf, url?: URL): Response {
-  const current = data.current
-  const fields = [
+export function eeoFields(current: EeoRevision | null, contractor: boolean, phase: 'pre-offer' | 'post-offer' = 'post-offer') {
+  return [
     select('Are you Hispanic or Latino?', 'hispanic', [...HISPANIC], current?.formVersion === 2 ? current.hispanic ?? '' : '', { required: false, blank: 'Not recorded' }),
     checks('Race (choose one or more)', 'races', [...RACES], current?.formVersion === 2 ? current.races ?? [] : []),
     select('Sex', 'sex', [...SEX], current?.sex ?? '', { required: false, blank: 'Not recorded' }),
-    ...(data.form.contractor ? [contractorForms(current)] : []),
+    ...(contractor ? [contractorForms(current, phase)] : []),
   ]
+}
+
+/** Render only the explicit self-ID projection, never a general person profile. */
+export function eeoSelfPage(actor: Actor, data: EeoSelf, url?: URL): Response {
+  const current = data.current
+  const fields = eeoFields(current, data.form.contractor)
   return page('Voluntary self-identification', actor, h`<p class="back"><a href="/app">← Home</a></p>
 <h1>Voluntary self-identification</h1>
 <ul>${DISCLOSURES.map(text => h`<li>${text}</li>`)}</ul>
@@ -50,13 +56,13 @@ export function eeoSelfPage(actor: Actor, data: EeoSelf, url?: URL): Response {
 <p>Each save records a new version. Clearing an answer makes it unrecorded in the new version; your earlier submissions remain in your history. Only you can submit your answers.</p>
 ${form('eeo.self.write', SELF_PATH, fields, 'Save my answers')}
 </section>
-<section class="card"><h2>Your submission history</h2>${data.history.length ? table(HISTORY_HEADERS, data.history.map(summary)) : h`<p>You have not submitted any answers.</p>`}</section>
+<section class="card"><h2>Your submission history</h2>${data.history.length ? table(HISTORY_HEADERS, data.history.map(eeoHistoryRow)) : h`<p>You have not submitted any answers.</p>`}</section>
 ${data.recorded.length ? h`<section class="card"><h2>Recorded from employment records</h2><p>These are not your answers. They are labeled with their source and used only for EEO-1 reporting.</p>${table(['Recorded', 'Question', 'Category', 'Source'], data.recorded.map(row => [row.recordedOn, row.dimension === 'sex' ? 'Sex' : 'Ethnicity and race', answerLabel(row.category, [...RACE_ETHNICITY, ...SEX]), row.label]))}</section>` : ''}`, { current: SELF_PATH, url })
 }
 
 export function eeoPeoplePage(actor: Actor, people: { id: string; name: string }[], url?: URL): Response {
   return page('EEO compliance', actor, h`<h1>EEO compliance</h1><p>Open one person's EEO record at a time. Every read is audited with who read whose record and when, never the values.</p>
-<section class="card"><h2>People</h2><ul>${people.map(person => h`<li><a href="${PERSON_PATH}/${person.id}">${person.name}</a></li>`)}</ul></section>`, { current: PERSON_PATH, url })
+<p><a href="/app/eeo/applicants">Closed application EEO records</a></p><section class="card"><h2>People</h2><ul>${people.map(person => h`<li><a href="${PERSON_PATH}/${person.id}">${person.name}</a></li>`)}</ul></section>`, { current: PERSON_PATH, url })
 }
 
 export function eeoPersonPage(actor: Actor, data: EeoPerson, url?: URL): Response {
@@ -66,7 +72,7 @@ export function eeoPersonPage(actor: Actor, data: EeoPerson, url?: URL): Respons
   return page('EEO record', actor, h`<p class="back"><a href="${PERSON_PATH}">← EEO compliance</a></p><h1>EEO record: ${data.person.name}</h1>
 <p>This read is audited. Rule version ${data.ruleVersion}.</p>
 <section class="card"><h2>Filing values and their source</h2>${table(['Question', 'Value', 'Source'], [filingRow('Ethnicity and race', data.filing.raceEthnicity), filingRow('Sex', data.filing.sex)])}</section>
-<section class="card"><h2>Self-identified answers</h2>${data.history.length ? table(HISTORY_HEADERS, data.history.map(summary)) : h`<p>No self-identified answers.</p>`}</section>
+<section class="card"><h2>Self-identified answers</h2>${data.history.length ? table(HISTORY_HEADERS, data.history.map(eeoHistoryRow)) : h`<p>No self-identified answers.</p>`}</section>
 <section class="card"><h2>Recorded from employment records</h2>${data.recorded.length ? table(['Version', 'Question', 'Category', 'Record relied on', 'Recorded by', 'Date', 'Rule version', 'Source'], data.recorded.map(row => [row.sequence, row.dimension === 'sex' ? 'Sex' : 'Ethnicity and race', answerLabel(row.category, [...RACE_ETHNICITY, ...SEX]), row.employmentRecord, row.recordedBy ?? '—', row.recordedOn, row.ruleVersion, row.label])) : h`<p>Nothing recorded.</p>`}
 <h3>Ethnicity and race</h3>${record('race_ethnicity', FILING_RACE_ETHNICITY, RACE_ETHNICITY, data.mayRecord.raceEthnicity)}<h3>Sex</h3>${record('sex', FILING_SEX, SEX, data.mayRecord.sex)}</section>`, { current: PERSON_PATH, url })
 }

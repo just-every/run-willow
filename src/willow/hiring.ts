@@ -71,11 +71,13 @@ export async function addHiringCandidate(env: Bindings, actor: Actor, input: Inp
 }
 export async function moveHiringCandidate(env: Bindings, actor: Actor, input: Input) {
  const { row, opening: job } = await application(env, actor, input.text('application'))
+ insist(!await one(env,'SELECT 1 FROM wl_hiring_closures WHERE application_id=?',row.id),'application_closed',409)
  const revision = input.integer('revision', { min: 1 }), stage = input.text('stage', { max: 80 })
  insist(row.revision === revision, 'stale', 409)
  insist(json<string[]>(job.stages, []).includes(stage) && stage !== row.stage, 'invalid_stage')
  await commit(env, [accessGuard(env, actor, job),
  guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_hiring_applications WHERE id=? AND revision=?)', row.id, revision),
+ guard(env,'application_closed','NOT EXISTS(SELECT 1 FROM wl_hiring_closures WHERE application_id=?)',row.id),
  stmt(env, 'UPDATE wl_hiring_applications SET stage=?,revision=revision+1 WHERE id=?', stage, row.id),
  stmt(env, `INSERT INTO wl_hiring_events(application_id,actor,kind,from_stage,to_stage,at) VALUES (?,?,'stage',?,?,?)`, row.id, actor.id, row.stage, stage, now())],
  { actor: actor.id, action: 'hiring.candidate.move', subject: row.id, detail: { revision: row.revision + 1 } })
@@ -136,5 +138,6 @@ export async function hiringApplication(env: Bindings, actor: Actor, id: string)
  const scorecards = await all(env, 'SELECT s.id,s.author,m.name AS authorName,s.version,s.evidence,s.created_at FROM wl_hiring_scorecards s JOIN wl_members m ON m.id=s.author WHERE s.application_id=? ORDER BY s.created_at,s.id', id)
  await auditRead(env, actor.id, 'hiring.candidate.read', id)
  const resumes = await all(env, 'SELECT id,version,filename,media_type,size,sha256,uploaded_by,uploaded_at FROM wl_hiring_resumes WHERE application_id=? ORDER BY version DESC', id)
- return { ...row, timeline, scorecards, resumes }
+ const closure = await one<{outcome:string;closed_at:number}>(env,'SELECT outcome,closed_at FROM wl_hiring_closures WHERE application_id=?',id)
+ return { ...row, timeline, scorecards, resumes, closure }
 }

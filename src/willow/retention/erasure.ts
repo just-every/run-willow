@@ -17,21 +17,23 @@ export const SOURCES = ['own_request', 'retention_expiry', 'counsel', 'other'] a
 
 export async function openRequest(env: Bindings, actor: Actor, input: Input) {
   insist(can(actor, 'people.manage'), 'forbidden', 403)
-  input.only(['person', 'application', 'source', 'receivedOn', 'returnTo'])
+  input.only(['person', 'application', 'preboarding', 'source', 'receivedOn', 'returnTo'])
   const source = input.text('source', { max: 24 }), receivedOn = input.text('receivedOn', { max: 10 })
   const person = input.text('person', { optional: true, max: 64 }) || null, application = input.text('application', { optional: true, max: 64 }) || null
-  insist((person === null) !== (application === null), 'subject_required')
+  const preboarding = input.text('preboarding',{optional:true,max:64}) || null
+  insist([person,application,preboarding].filter(Boolean).length===1, 'subject_required')
   insist((SOURCES as readonly string[]).includes(source), 'invalid_source')
   insist(isDate(receivedOn) && receivedOn <= actor.today, 'invalid_receivedOn')
   if (person) insist(await one(env, 'SELECT 1 FROM wl_people WHERE id = ?', person), 'not_found', 404)
+  else if(preboarding) insist(await one(env,'SELECT 1 FROM wl_preboard_packets WHERE id=?',preboarding),'not_found',404)
   else insist(await one(env, 'SELECT 1 FROM wl_hiring_applications WHERE id = ?', application), 'not_found', 404)
-  const column = person ? 'person_id' : 'application_id', subject = (person ?? application)!
+  const column = person ? 'person_id' : preboarding ? 'preboarding_id' : 'application_id', subject = (person ?? application ?? preboarding)!
   insist(!await one(env, `SELECT 1 FROM wl_erasure_requests WHERE ${column} = ? AND status IN ('open', 'confirmed')`, subject), 'request_exists', 409)
   const id = newId()
   await commit(env, [
     guard(env, 'request_exists', `NOT EXISTS (SELECT 1 FROM wl_erasure_requests WHERE ${column} = ? AND status IN ('open', 'confirmed'))`, subject),
     stmt(env, `INSERT INTO wl_erasure_requests (id, ${column}, source, received_on, requested_by, requested_at) VALUES (?, ?, ?, ?, ?, ?)`, id, subject, source, receivedOn, actor.id, now()),
-  ], { actor: actor.id, action: 'erasure.request', subject: id, detail: { [person ? 'person' : 'application']: subject, source, receivedOn } })
+  ], { actor: actor.id, action: 'erasure.request', subject: id, detail: { [person ? 'person' : preboarding ? 'preboarding' : 'application']: subject, source, receivedOn } })
   return { id }
 }
 
@@ -45,9 +47,9 @@ export async function withdrawRequest(env: Bindings, actor: Actor, input: Input)
 }
 
 export async function requests(env: Bindings) {
-  return await all<{ id: string; person_id: string | null; application_id: string | null; name: string; source: string; received_on: string; status: string; requested_at: number; receipt_id: string | null }>(env,
-    `SELECT r.id, r.person_id, r.application_id, COALESCE(p.legal_name, a.name) AS name, r.source, r.received_on, r.status, r.requested_at, r.receipt_id FROM wl_erasure_requests r
-     LEFT JOIN wl_people p ON p.id = r.person_id LEFT JOIN wl_hiring_applications a ON a.id = r.application_id ORDER BY r.requested_at DESC`)
+  return await all<{ id: string; person_id: string | null; application_id: string | null; preboarding_id: string | null; name: string; source: string; received_on: string; status: string; requested_at: number; receipt_id: string | null }>(env,
+    `SELECT r.id, r.person_id, r.application_id, r.preboarding_id, COALESCE(p.legal_name, a.name, i.name, rc.label) AS name, r.source, r.received_on, r.status, r.requested_at, r.receipt_id FROM wl_erasure_requests r
+     LEFT JOIN wl_people p ON p.id = r.person_id LEFT JOIN wl_hiring_applications a ON a.id = r.application_id LEFT JOIN wl_preboard_packets pb ON pb.id = r.preboarding_id LEFT JOIN wl_preboard_identities i ON i.id=pb.identity_id LEFT JOIN wl_erasure_receipts rc ON rc.id=r.receipt_id ORDER BY r.requested_at DESC`)
 }
 
 export interface Item { id: string; table: string; label: string; disposition: 'erased' | 'anonymized' | 'redacted' | 'retained' | 'held'; class: ClassKey | null; rule: string | null; expiry: string | null; hold: string | null; rows: number; blobs: number; bytes: number }

@@ -115,7 +115,11 @@ jobs:
     env:
       CI: 'true'
       WRANGLER_SEND_METRICS: 'false'
+      WILLOW_EEO_INVITATIONS_BROWSER: '1'
+      WILLOW_EEO_BROWSER: '1'
     steps:
+      - name: Set external evidence directory
+        run: printf 'WILLOW_EVIDENCE_DIR=%s/willow-evidence\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -127,7 +131,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
       - run: pnpm exec vite build
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm run test:retention-eeo
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: willow-eeo-pages
+          path: ${{ runner.temp }}/willow-evidence/*.png
 
   restore-erasure:
     runs-on: ubuntu-latest

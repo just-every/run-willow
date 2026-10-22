@@ -1,3 +1,5 @@
+import { createPacket, withdrawPacket } from './preboarding'
+import { inviteApplicant, revokeApplicantInvitation, closeApplication } from './eeo-applicants'
 import { createHiringOpening, setHiringTeam, addHiringCandidate, moveHiringCandidate, scoreHiringCandidate, addHiringResume } from './hiring'
 import { previewLevel, applyLevel } from './levels/actions'
 import { createReviewCycle, assignReview, respondReview, closeReviewCycle } from './performance/cycles'
@@ -55,6 +57,8 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'preboarding.send': createPacket, 'preboarding.withdraw': withdrawPacket,
+  'hiring.selfId.invite': inviteApplicant, 'hiring.selfId.withdraw': revokeApplicantInvitation, 'hiring.close': closeApplication,
   'hiring.opening': createHiringOpening, 'hiring.team': setHiringTeam, 'hiring.candidate': addHiringCandidate, 'hiring.move': moveHiringCandidate, 'hiring.scorecard': scoreHiringCandidate, 'hiring.resume': addHiringResume,
   'level.preview': previewLevel, 'level.apply': applyLevel,
   'survey.create': createSurvey, 'survey.close': closeSurvey, 'survey.respond': respondSurvey,

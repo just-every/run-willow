@@ -1,3 +1,8 @@
+import { invitationResponse } from './invitation-http'
+import { preboardingPage, applicantRecordsPage } from './ui/preboarding'
+import { packetRecord } from './preboarding'
+import { applicantRecord } from './eeo-applicants'
+import { invitationRecordPage } from './ui/eeo-invitations'
 import { hiringPage, hiringOpeningPage, hiringApplicationPage } from './ui/hiring'
 import { reconcileRecipients } from './performance/store'
 import { performancePage, reviewPage, goalsPage } from './ui/performance'
@@ -67,6 +72,8 @@ export async function willowResponse(request: Request, original: Bindings): Prom
   const env = runtimeBindings(original)
   const url = new URL(request.url)
   const api = url.pathname.startsWith('/api/willow/')
+  const invitation = await invitationResponse(env,request,url)
+  if (invitation) return invitation
   if (!api && url.pathname !== '/app' && !url.pathname.startsWith('/app/')) return null
   if (request.method === 'POST' && request.headers.get('origin') !== env.AUTH_ORIGIN) return api ? json({ error: 'invalid_origin' }, 403) : new Response('Forbidden', { status: 403 })
   if (!['GET', 'HEAD', 'POST'].includes(request.method)) return new Response(null, { status: 405, headers: { allow: 'GET, HEAD, POST' } })
@@ -139,6 +146,10 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  preboarding: (env,actor,_request,url)=>preboardingPage(env,actor,url),
+  eeoPreboarding: async (env,actor,_request,url,id)=>{const data=await packetRecord(env,actor,id);return invitationRecordPage(actor,`Preboarding EEO record: ${data.packet.name}`,data,url)},
+  eeoApplicants: (env,actor,_request,url)=>applicantRecordsPage(env,actor,url),
+  eeoApplicant: async (env,actor,_request,url,id)=>{const data=await applicantRecord(env,actor,id);return invitationRecordPage(actor,`Applicant EEO record: ${data.application.name}`,data,url)},
   hiring: (env,actor,request,url)=>hiringPage(env,actor,request,url),
   hiringOpening: (env,actor,request,url,id)=>hiringOpeningPage(env,actor,request,url,id),
   hiringApplication: (env,actor,_request,url,id)=>hiringApplicationPage(env,actor,url,id),

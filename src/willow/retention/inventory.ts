@@ -81,6 +81,12 @@ export const STORES: Store[] = [
   s('protected_cases', 'wl_protected_cases', 'Protected-leave cases', cls('protected_leave'), 't.person_id = ?1', { ms: 't.created_at' }),
   s('protected_absences', 'wl_protected_absences', 'Protected-leave absences', cls('protected_leave'), `t.case_id IN ${PCASES}`, { ms: 't.recorded_at' }),
   s('protected_certs', 'wl_protected_certifications', 'Protected-leave certifications', cls('protected_leave'), `t.case_id IN ${PCASES}`, { ms: 't.uploaded_at', blob: 't.size' }),
+  s('preboard_eeo', 'wl_preboard_eeo_answers', 'Preboarding self-identification answers', cls('eeo'), 't.packet_id IN (SELECT id FROM wl_preboard_packets WHERE linked_person_id = ?1)', {ms:'t.recorded_at'}),
+  s('preboard_packets', 'wl_preboard_packets', 'Preboarding invitations', 'erase', 't.linked_person_id = ?1', {ms:'t.created_at'}),
+  s('preboard_identities', 'wl_preboard_identities', 'Preboarding contact identity', 'erase', 't.id IN (SELECT identity_id FROM wl_preboard_packets WHERE linked_person_id = ?1)', {ms:'t.created_at'}),
+  s('applicant_eeo', 'wl_applicant_eeo_answers', 'Application self-identification answers', cls('eeo'), `t.application_id IN ${APPS}`, {ms:'t.recorded_at'}),
+  s('applicant_eeo_invites', 'wl_applicant_eeo_invitations', 'Application self-identification invitations', 'erase', `t.application_id IN ${APPS}`, {ms:'t.invited_at'}),
+  s('application_closures', 'wl_hiring_closures', 'Application closure decisions', cls('personnel'), `t.application_id IN ${APPS}`, {ms:'t.closed_at'}),
   s('eeo', 'wl_eeo_answers', 'EEO self-identification answers', cls('eeo'), 't.person_id = ?1', { ms: 't.recorded_at' }),
   s('eeo_recorded', 'wl_eeo_recorded', 'HR-recorded EEO categories', cls('eeo'), 't.person_id = ?1', { ms: 't.recorded_at' }),
   s('eeo_run_rows', 'wl_eeo_run_rows', 'Frozen EEO-1 snapshot rows', cls('eeo'), 't.person_id = ?1', { awaiting: true }),
@@ -140,6 +146,7 @@ export const STORES: Store[] = [
 
 // Rows another person's records keep: the person's attribution is replaced by the erasure label.
 export const AUTHORED: [string, string][] = [
+  ['wl_preboard_packets','created_by'], ['wl_applicant_eeo_invitations','invited_by'], ['wl_applicant_eeo_invitations','revoked_by'], ['wl_hiring_closures','closed_by'],
   ['wl_documents', 'created_by'], ['wl_document_versions', 'uploaded_by'], ['wl_comp_bands', 'recorded_by'], ['wl_comp_cycles', 'created_by'],
   ['wl_custom_field_values', 'recorded_by'], ['wl_custom_field_versions', 'recorded_by'], ['wl_custom_fields', 'recorded_by'],
   ['wl_record_row_versions', 'recorded_by'], ['wl_record_table_versions', 'recorded_by'], ['wl_record_tables', 'recorded_by'],

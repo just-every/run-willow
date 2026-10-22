@@ -29,7 +29,7 @@ export async function placeHold(env: Bindings, actor: Actor, input: Input) {
   insist(isDate(reviewDate) && reviewDate >= actor.today, 'invalid_reviewDate')
   const owner = input.text('holdOwner', { optional: true, max: 64 }) || actor.id
   insist(await one(env, "SELECT 1 FROM wl_members WHERE id = ? AND status = 'active'", owner), 'invalid_holdOwner')
-  if (scope === 'person') insist(ref && await one(env, 'SELECT 1 FROM wl_people WHERE id = ?', ref), 'invalid_ref', 404)
+  if (scope === 'person') insist(ref && await one(env, 'SELECT 1 FROM wl_people WHERE id = ?1 UNION ALL SELECT 1 FROM wl_hiring_applications WHERE id=?1 UNION ALL SELECT 1 FROM wl_preboard_packets WHERE id=?1', ref), 'invalid_ref', 404)
   if (scope === 'document_category') insist(ref && await one(env, 'SELECT 1 FROM wl_doc_categories WHERE id = ?', ref), 'invalid_ref', 404)
   if (scope === 'record_class') insist(ref && isClass(ref), 'invalid_ref')
   if (scope === 'date_range') insist(from && to && isDate(from) && isDate(to) && from <= to, 'invalid_range')

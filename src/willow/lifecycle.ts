@@ -1,3 +1,4 @@
+import { promotePacketStatements } from './preboarding'
 // Flows 4, 6, 11 and 12: versioned lifecycle templates and joiner, mover and
 // leaver cases. Tasks go to HR, the manager, IT, payroll or the employee with
 // due dates; external account and device work stays open until the
@@ -104,11 +105,13 @@ export async function prepareJoiner(env: Bindings, actor: Actor, input: Input) {
     personId = created.id
     statements = created.statements
   }
+  const packetId = input.text('preboardingPacket', {optional:true,max:100})
+  const preboarding = packetId ? await promotePacketStatements(env,actor,packetId,personId) : []
   const period = await startPeriodStatements(env, actor, input, personId, employer.currency)
   const custom = await customValueStatements(env, actor, personId, customValuesInput(input), period.start, { requireAll: true })
   const opened = await caseStatements(env, actor, template, personId, period.periodId, period.start, period.terms.managerPersonId, await workflowContext(env, period.terms, period.type))
   return {
-    statements: [...custom.guards, ...statements, ...period.statements, ...custom.statements, ...opened.statements, guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_templates WHERE id = ? AND status = 'active')", template.id)],
+    statements: [...custom.guards, ...statements, ...period.statements, ...preboarding, ...custom.statements, ...opened.statements, guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_templates WHERE id = ? AND status = 'active')", template.id)],
     audit: { actor: actor.id, action: existing ? 'joiner.rehire' : 'joiner.start', subject: personId, detail: { period: period.periodId, case: opened.caseId, template: template.id } },
     result: { id: opened.caseId, person: personId, period: period.periodId, case: opened.caseId },
   }

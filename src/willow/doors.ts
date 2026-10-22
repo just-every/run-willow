@@ -3,6 +3,8 @@
 // entry, so a new door cannot be added without being crawled.
 // Patterns are relative to /api/willow/ (API) or absolute (pages).
 export const API_DOORS: [string, string][] = [
+  ['^preboarding$', 'preboarding'], ['^eeo/preboarding/([\\w-]+)$', 'eeoPreboarding'],
+  ['^eeo/applicants$', 'eeoApplicants'], ['^eeo/applicants/([\\w-]+)$', 'eeoApplicant'],
   ['^hiring$', 'hiring'], ['^hiring/openings/([\\w-]+)$', 'hiringOpening'], ['^hiring/applications/([\\w-]+)$', 'hiringApplication'],
   ['^levels$', 'levels'], ['^level-reviews/([\\w-]+)$', 'levelReview'],
   ['^performance$', 'performance'], ['^performance/([\\w-]+)$', 'performanceCycle'], ['^goals$', 'goals'],
@@ -26,6 +28,8 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/preboarding$', 'preboarding'], ['^/app/eeo/preboarding/([\\w-]+)$', 'eeoPreboarding'],
+  ['^/app/eeo/applicants$', 'eeoApplicants'], ['^/app/eeo/applicants/([\\w-]+)$', 'eeoApplicant'],
   ['^/app/hiring$', 'hiring'], ['^/app/hiring/openings/([\\w-]+)$', 'hiringOpening'], ['^/app/hiring/applications/([\\w-]+)$', 'hiringApplication'],
   ['^/app/performance$', 'performance'], ['^/app/performance/([\\w-]+)\\.json$', 'performanceFile'], ['^/app/performance/([\\w-]+)$', 'performanceCycle'], ['^/app/goals$', 'goals'],
   ['^/app/survey-plans/([\\w-]+)$', 'surveyPlan'],
@@ -55,3 +59,9 @@ export function match(doors: [string, string][], path: string): { name: string; 
   }
   return null
 }
+
+/** Bearer invitations are independent of employee admission and expose one EEO record only. */
+export const INVITATION_DOORS: [string,string][] = [
+ ['^/preboarding/([A-Za-z0-9_-]+)$','preboarding'],
+ ['^/applicant-self-id/([A-Za-z0-9_-]+)$','applicant'],
+]

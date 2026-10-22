@@ -16,7 +16,7 @@ const label = (choices: readonly { value: string; label: string }[], value: stri
 export function filing(history: EeoRevision[], recorded: { dimension: string; category: string; recordedOn: string }[]): EeoPerson['filing'] {
   const latest = history[0]
   const pick = (dimension: 'race_ethnicity' | 'sex', own: string | null | undefined, has: (value: string | null) => boolean, choices: readonly { value: string; label: string }[]): FilingValue | null => {
-    if (latest && has(own ?? null)) return { value: own!, label: label(choices, own!), source: `self-identified (form version ${latest.formVersion}, ${latest.recordedOn})` }
+    if (latest && has(own ?? null)) return { value: own!, label: label(choices, own!), source: `${latest.source === 'preboarding/self-identified' ? 'preboarding ' : ''}self-identified (form version ${latest.formVersion}, ${latest.recordedOn})` }
     const hr = recorded.find(row => row.dimension === dimension)
     return hr ? { value: hr.category, label: label(choices, hr.category), source: `HR-recorded from employment records (${hr.recordedOn})` } : null
   }

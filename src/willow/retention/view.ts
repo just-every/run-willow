@@ -1,3 +1,4 @@
+import { previewPreboarding } from './preboarding'
 // The retention doors' read models. The owner reads everything; HR reads only erasure
 // requests (it may open them). No one else reads this.
 import type { Bindings } from '../../auth.server'
@@ -15,7 +16,7 @@ import { adoption, contractorStatus, mappings, stateRules } from './settings'
 export async function retention(env: Bindings, actor: Actor, asOf = actor.today) {
   insist(isDate(asOf), 'invalid_asOf')
   insist(actor.owner || can(actor, 'people.manage'), 'forbidden', 403)
-  const open = (await requests(env)).map(row => ({ id: row.id, person: { id: row.person_id ?? row.application_id, name: row.name }, applicant: !!row.application_id, source: row.source, receivedOn: row.received_on, status: row.status, receipt: row.receipt_id }))
+  const open = (await requests(env)).map(row => ({ id: row.id, person: { id: row.person_id ?? row.application_id ?? row.preboarding_id, name: row.name }, applicant: !!row.application_id, preboarding: !!row.preboarding_id, source: row.source, receivedOn: row.received_on, status: row.status, receipt: row.receipt_id }))
   if (!actor.owner) return { requests: open }
   const mapped = await mappings(env)
   const label = (kind: string, ref: string) => mapped.get(`${kind}:${ref}`) ?? null
@@ -37,6 +38,7 @@ export async function retention(env: Bindings, actor: Actor, asOf = actor.today)
 
 export async function erasurePreview(env: Bindings, actor: Actor, url: URL) {
   requireOwner(actor)
+  if (url.searchParams.has('preboarding')) return await previewPreboarding(env,actor,url.searchParams.get('preboarding') ?? '')
   if (url.searchParams.has('application')) return await previewApplicant(env, actor, url.searchParams.get('application') ?? '')
   return await previewErasure(env, actor, url.searchParams.get('person') ?? '')
 }

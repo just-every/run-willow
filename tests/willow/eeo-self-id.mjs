@@ -3,12 +3,21 @@
 // reads, HR-recorded categories from employment records, the contractor forms, REPORT-001 parity and
 // the privacy matrix across every registered door and the standard export.
 import assert from 'node:assert/strict'
+import { invitationJourneys } from './eeo-invitations.mjs'
 import { API_DOORS, PAGE_DOORS } from '../../src/willow/doors.ts'
 import { harness } from './harness.mjs'
 import { fixture, today, day } from './regression-fixture.mjs'
 import { browserEvidence } from './eeo-browser.mjs'
 
-const h = await harness()
+const invitationLinks = new Map()
+const h = await harness({provider:async request=>{
+ const message=await request.json()
+ for(const content of message.content ?? []) {
+  const link=content.value.match(/https?:[^\s"<>]+\/(?:preboarding|applicant-self-id)\/[^\s"<>]+/)?.[0]
+  if(link) for(const recipient of message.personalizations.flatMap(row=>row.to)) invitationLinks.set(recipient.email,link.replaceAll('&amp;','&'))
+ }
+ return new Response(null,{status:202})
+}})
 const MARKER = 'synthetic-willow-eeo-record'
 try {
   assert.equal((await h.raw('/auth/bootstrap', { body: { token: h.vars.SETUP_TOKEN, displayName: 'Olive Owner' } })).status, 303)
@@ -158,5 +167,6 @@ try {
   await as('owner', 'eeo.grant', { member: s.hr.member, enabled: true })
   await as('owner', 'contractor.set', { contractor: true })
   await browserEvidence(h, { employee: s.employee.cookie, hr: s.hr.cookie, owner }, person)
+  await invitationJourneys(h,owner,f,invitationLinks)
   console.log('EEO-001 self-identification: passed')
 } finally { await h.close() }

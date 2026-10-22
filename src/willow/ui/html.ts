@@ -31,6 +31,7 @@ const NAV: NavItem[][] = [[
   { href: '/app/people?view=organization', label: 'Organization chart', icon: 'org', show: () => true },
   { href: '/app/payroll', label: 'Payroll', icon: 'wallet', show: actor => can(actor, 'payroll.handoff') && can(actor, 'pay.read') },
   { href: '/app/reports', label: 'Reports', icon: 'chart', show: actor => can(actor, 'reports.read') || hasScopedGrant(actor, 'reports.read') || actor.reports.size > 0 },
+  { href: '/app/preboarding', label: 'Preboarding', icon: 'checklist', show: actor => can(actor,'people.manage') },
   { href: '/app/proposals', label: 'Proposals', icon: 'sparkle', show: actor => can(actor, 'people.manage') },
   { href: '/app/eeo/self', label: 'Voluntary self-ID', icon: 'people', show: actor => !!actor.personId },
   { href: '/app/eeo/person', label: 'EEO compliance', icon: 'shield', show: actor => actor.permissions.has('eeo.individual') || actor.scoped.some(grant => grant.permissions.has('eeo.individual')) },

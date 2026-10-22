@@ -1,3 +1,4 @@
+import { confirmPreboarding } from './preboarding'
 // DATA-002 execution: the owner confirms a preview's digest and one journaled D1 batch removes the
 // person. Retained and held records move to restricted custody, erasable rows are deleted, the person's
 // identity in other people's records and in audit and history becomes one random "Former person"
@@ -78,7 +79,7 @@ export async function moveRows(env: Bindings, rowTargets: RowTarget[], ids: Map<
     const meta = target as RowTarget & { rowid: boolean; pk: string[] }
     const where = meta.rowid ? 'rowid IN (SELECT value FROM json_each(?1))' : `json_array(${meta.pk.join(', ')}) IN (SELECT value FROM json_each(?1))`
     if (target.item.disposition === 'retained' || target.item.disposition === 'held') {
-      const columns = (await all<{ name: string }>(env, `PRAGMA table_info(${target.table})`)).map(row => row.name)
+      const columns = (await all<{ name: string }>(env, `PRAGMA table_info(${target.table})`)).map(row => row.name).filter(name=>name!=='token_hash')
       statements.push(stmt(env, `INSERT INTO wl_retained_records (erasure_id, store, table_name, class, rule, expiry, hold_id, row_json, created_at)
         SELECT ?2, ?3, ?4, ?5, ?6, ?7, ?8, json_object(${columns.map(column => `'${column}', t.${column}`).join(', ')}), ?9 FROM ${target.table} t WHERE ${meta.rowid ? 't.rowid' : `json_array(${meta.pk.map(column => `t.${column}`).join(', ')})`} IN (SELECT value FROM json_each(?1))`,
         JSON.stringify(list), erasureId, target.id, target.table, target.item.class, target.item.rule, target.item.expiry, target.item.hold, at))
@@ -90,7 +91,8 @@ export async function moveRows(env: Bindings, rowTargets: RowTarget[], ids: Map<
 
 export async function confirmErasure(env: Bindings, actor: Actor, input: Input) {
   requireOwner(actor)
-  input.only(['person', 'application', 'digest', 'returnTo'])
+  input.only(['person', 'application', 'preboarding', 'digest', 'returnTo'])
+  if (input.provided('preboarding')) return await confirmPreboarding(env,actor,input)
   if (input.provided('application')) return await confirmApplicant(env, actor, input)
   const captured = captureErasureSql(env)
   env = captured.env

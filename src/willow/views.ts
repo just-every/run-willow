@@ -1,3 +1,5 @@
+import { packets, packetRecord } from './preboarding'
+import { applicantRecord, applicantRecordsList } from './eeo-applicants'
 import { hiringOpenings, hiringOpening, hiringApplication } from './hiring'
 import { selfWriteModes } from './levels/personal'
 import { levels } from './levels/store'
@@ -61,6 +63,8 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  preboarding: packets, eeoPreboarding: (env,actor,_request,id)=>packetRecord(env,actor,id),
+  eeoApplicants: applicantRecordsList, eeoApplicant: (env,actor,_request,id)=>applicantRecord(env,actor,id),
   hiring: hiringOpenings, hiringOpening: (env,actor,_request,id)=>hiringOpening(env,actor,id), hiringApplication: (env,actor,_request,id)=>hiringApplication(env,actor,id),
   performance: performanceHome, performanceCycle: (env,actor,_request,id)=>performanceDetail(env,actor,id), goals: goalHome,
   surveyPlan: (env,actor,_request,id)=>ownSurveyPlan(env,actor,id),

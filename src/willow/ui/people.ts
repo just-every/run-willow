@@ -1,3 +1,4 @@
+import { packets } from '../preboarding'
 import { selfWriteModes } from '../levels/personal'
 import { accrualCalculations } from './accrual-calculations'
 import { selfProfilePanel } from './self-service'
@@ -56,6 +57,8 @@ export async function directoryPage(env: Bindings, actor: Actor, url: URL) {
   const manage = can(actor, 'people.manage')
   const joinerTemplates = manage ? (await templates(env)).filter(template => template.kind === 'joiner' && template.status === 'active') : []
   const options = manage ? await choices(env, actor) : null
+  const preboarding = manage ? (await packets(env,actor)).filter(row=>row.status==='active') : []
+  const packet = preboarding.find(row=>row.id===url.searchParams.get('preboarding'))
   const joinerDate = requireDate(url.searchParams.get('joinerDate') ?? actor.today, 'invalid_startDate')
   const customSchemas = manage ? await fieldSchemas(env, joinerDate) : []
   const customDefinitions = customSchemas.flatMap(schema => { const definition = effectiveField(schema); return definition && writesCustomField(actor, definition) ? [definition] : [] })
@@ -67,7 +70,8 @@ ${organization ? organizationSection(chart, actor, url) : h`<section class="card
 ${!organization ? await employeeExportSection(env, actor, filters) : ''}
 ${manage && !organization ? h`<section class="card"><h2>Start a joiner</h2>${customSchemas.length ? h`<form method="get" action="/app/people" class="row-form">${field('Start date for custom fields', 'joinerDate', { type: 'date', value: joinerDate })}<button type="submit" class="secondary">Preview required fields</button></form>` : ''}${joinerTemplates.length ? form('joiner.start', '/app/cases/{id}', [
     select('Joiner template', 'template', joinerTemplates.map(template => ({ value: template.id, label: `${template.name} (v${template.version})` }))),
-    field('Legal name', 'legalName'), field('Preferred name', 'preferredName', { required: false }), field('Work email', 'workEmail', { type: 'email', required: false }), field('Employee number', 'employeeNumber', { required: false }),
+    select('Preboarding packet', 'preboardingPacket', preboarding.map(row=>({value:row.id,label:row.name})),packet?.id ?? '',{required:false,blank:'No packet'}),
+    field('Legal name', 'legalName', {value:packet?.name ?? ''}), field('Preferred name', 'preferredName', { required: false }), field('Work email', 'workEmail', { type: 'email', required: false }), field('Employee number', 'employeeNumber', { required: false }),
     field('Start date', 'startDate', { type: 'date', value: joinerDate }), select('Employment type', 'employmentType', EMPLOYMENT_TYPES.map(value => ({ value, label: TYPE_LABELS[value] }))), field('Payroll identifier', 'payrollId', { required: false, hint: 'The employee’s identifier in your payroll provider, if known.' }),
     ...termsFields(options!, true, actor), customValueInputs(customDefinitions),
   ], 'Start joiner', { layout: 'columns' }) : h`<p class="muted">Create a joiner template in <a href="/app/settings">Settings</a> first.</p>`}</section>` : ''}`

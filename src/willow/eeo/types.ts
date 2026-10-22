@@ -28,6 +28,10 @@ export interface EeoAnswers {
 
 export interface EeoRevision extends EeoAnswers {
   sequence: number
+  source?: 'employee/self-identified' | 'preboarding/self-identified' | 'applicant self-identification'
+  sourcePacketId?: string | null
+  sourceSequence?: number | null
+  contractorForms?: Record<string,string> | null
   recordedAt: number
   /** Employer-local calendar date on which the person submitted this version. */
   recordedOn: string
