@@ -4288,7 +4288,7 @@
       "executable": false
     },
     "tests/willow/restore-access.mjs": {
-      "sha256": "230fc17e69b2d699ad9e3fe58b376095ad084376ef6d43cefdcd88f601ab84eb",
+      "sha256": "824366fa58531ec2cdc8936bab26035641400149334fd8b278dcad2601bdba59",
       "executable": false
     },
     "tests/willow/restore-archive-fixture.mjs": {
