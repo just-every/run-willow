@@ -250,6 +250,27 @@ try {
   assert.equal((await rowCounts(directory)).blobs, blobsBefore - 1)
   assert.equal((await h.raw(`/app/files/document/${raeVersion}`, { cookie: owner })).status, 404)
 
+  // An applicant who was not hired: every linked application, resume and scorecard goes the same way.
+  const job = await api('hiring.opening', { name: 'Open role', stages: ['New', 'Rejected', 'Hired'], members: [s.managera.member] })
+  const candidate = await h.api('hiring.candidate', s.managera.cookie, { opening: job.id, name: 'Priya Applicant', contactEmail: 'priya.applicant@example.com', source: 'Referral' })
+  await h.api('hiring.resume', s.managera.cookie, { application: candidate.id, version: 0, file: file('priya.txt', 'synthetic-willow-9', 'text/plain') })
+  await h.api('hiring.scorecard', s.managera.cookie, { application: candidate.id, version: 0, evidence: 'synthetic-willow-10' })
+  await api('erasure.request', { application: candidate.id, source: 'own_request', receivedOn: today })
+  await api('erasure.request', { application: candidate.id, source: 'other', receivedOn: today }, 409)
+  assert.deepEqual((await get('owner', `erasure/preview?application=${candidate.id}`)).blockers.map(b => b.kind), ['open_application'], 'an application still in selection blocks')
+  await api('hiring.move', { application: candidate.id, revision: 1, stage: 'Rejected' })
+  const applicantPlan = await get('owner', `erasure/preview?application=${candidate.id}`)
+  assert.deepEqual(applicantPlan.blockers, [])
+  assert.deepEqual(applicantPlan.items.map(row => [row.id, row.disposition, row.class]).sort(), [['applications', 'retained', 'personnel'], ['events', 'retained', 'personnel'], ['resumes', 'retained', 'personnel'], ['scorecards', 'retained', 'personnel']])
+  await as('managera', `erasure/preview?application=${candidate.id}`, undefined, 403)
+  const applicantErased = await api('erasure.confirm', { application: candidate.id, digest: applicantPlan.digest })
+  assert.match(applicantErased.label, /^Former person [0-9a-f]{8}$/)
+  await api(`hiring/applications/${candidate.id}`, undefined, 404)
+  const applicantFound = await findText(directory, ['priya.applicant@example.com', 'Priya Applicant', candidate.id, 'synthetic-willow-10'])
+  assert.deepEqual(Object.keys(applicantFound), ['wl_retained_records'], `only custody holds the applicant: ${JSON.stringify(applicantFound)}`)
+  assert.ok(!JSON.stringify(await api('audit')).includes('priya.applicant@example.com'))
+  assert.equal((await api(`erasure/receipts/${applicantErased.receipt}`)).totals.retained, applicantPlan.summary.retained)
+
   // The purge: records warn 30 days ahead and go when their last rule has expired; held and longer-lived ones stay.
   const tick = async date => assert.equal((await h.raw(`/cdn-cgi/local/scheduled?time=${Date.parse(`${date}T09:00:00Z`)}&cron=${encodeURIComponent('*/15 * * * *')}&format=json`)).status, 200)
   const oneYear = years(today, 1)
@@ -267,6 +288,6 @@ try {
   assert.ok(!stores.has('cases') && !stores.has(`documents:${offers}`), 'one-year personnel records are purged at their expiry')
   assert.ok(stores.has('terms') && stores.has(`documents:${forms}`) && stores.has('people'), 'longer rules, holds and the identity they need remain')
   assert.ok((await api('audit')).some(event => event.action === 'retained.purge'), 'the purge is audited without values')
-  assert.equal((await rowCounts(directory)).blobs, beforePurge.blobs - 1, 'the purged offer letter\'s bytes go with its last record')
+  assert.equal((await rowCounts(directory)).blobs, beforePurge.blobs - 2, 'the purged offer letter\'s and resume\'s bytes go with their last record')
   console.log('DATA-002 retention census: passed')
 } finally { await h.close(); await rm(directory, { recursive: true, force: true }) }

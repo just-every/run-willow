@@ -9,6 +9,7 @@ import { requireOwner, type Actor } from '../actor'
 import { addDays } from '../dates'
 import { all, commit as commitBatch, insist, newId, now, one, stmt, WillowError } from '../core'
 import type { Input } from '../input'
+import { confirmApplicant } from './applicant'
 import { AUTHORED, AUTHORED_STORES, STORES, type Store } from './inventory'
 import { planErasure, type Item, type Plan } from './erasure'
 
@@ -42,9 +43,53 @@ function targets(plan: Plan): Target[] {
 
 const SOURCE_TABLES = ['wl_document_versions', 'wl_hiring_resumes', 'wl_protected_certifications', 'wl_company_file_versions']
 
+export interface RowTarget { id: string; table: string; from: string; blob?: string; item: Pick<Item, 'disposition' | 'class' | 'rule' | 'expiry' | 'hold'> }
+
+/** The keys of every row each target removes, and the bytes only erased rows own. */
+export async function readTargets(env: Bindings, rowTargets: RowTarget[], params: string[]) {
+  const ids = new Map<string, string[]>(), blobs = new Map<string, number>(), erasedShas = new Map<string, number>()
+  for (const target of rowTargets) {
+    const rowid = !(await one<{ sql: string }>(env, "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", target.table))!.sql.includes('WITHOUT ROWID')
+    const pk = (await all<{ name: string; pk: number }>(env, `PRAGMA table_info(${target.table})`)).filter(row => row.pk > 0).sort((a, b) => a.pk - b.pk).map(row => row.name)
+    const key = rowid ? 't.rowid' : `json_array(${pk.map(name => `t.${name}`).join(', ')})`
+    const sql = `SELECT ${key} AS k${target.blob ? ', t.sha256 AS sha, t.size AS size' : ''} FROM ${target.from}`
+    const max = Math.max(1, ...[...sql.matchAll(/\?(\d)/g)].map(match => Number(match[1])))
+    const rows = (await env.DB.prepare(sql).bind(...params.slice(0, max)).all<{ k: unknown; sha?: string; size?: number }>()).results
+    ids.set(target.id, rows.map(row => rowid ? row.k as string : JSON.parse(String(row.k))))
+    Object.assign(target, { rowid, pk })
+    if (target.blob && target.item.disposition === 'erased') for (const row of rows) { blobs.set(row.sha!, row.size!); erasedShas.set(row.sha!, (erasedShas.get(row.sha!) ?? 0) + 1) }
+  }
+  // Content-addressed bytes still referenced by a record that stays, here or elsewhere, are kept.
+  for (const [sha] of [...blobs]) {
+    const refs = (await one<{ n: number }>(env, `SELECT (${SOURCE_TABLES.map(table => `(SELECT COUNT(*) FROM ${table} WHERE sha256 = ?1)`).join(' + ')} + (SELECT COUNT(*) FROM wl_change_requests WHERE instr(attachments_json, ?1) > 0)) AS n`, sha))!.n
+    if (refs > (erasedShas.get(sha) ?? 0)) blobs.delete(sha)
+  }
+  return { ids, blobs }
+}
+
+/** Retained and held rows are copied whole into custody, then every target's rows are deleted. */
+export async function moveRows(env: Bindings, rowTargets: RowTarget[], ids: Map<string, string[]>, erasureId: string, at: number) {
+  const statements: D1PreparedStatement[] = []
+  for (const target of rowTargets) {
+    const list = ids.get(target.id) ?? []
+    if (!list.length) continue
+    const meta = target as RowTarget & { rowid: boolean; pk: string[] }
+    const where = meta.rowid ? 'rowid IN (SELECT value FROM json_each(?1))' : `json_array(${meta.pk.join(', ')}) IN (SELECT value FROM json_each(?1))`
+    if (target.item.disposition === 'retained' || target.item.disposition === 'held') {
+      const columns = (await all<{ name: string }>(env, `PRAGMA table_info(${target.table})`)).map(row => row.name)
+      statements.push(stmt(env, `INSERT INTO wl_retained_records (erasure_id, store, table_name, class, rule, expiry, hold_id, row_json, created_at)
+        SELECT ?2, ?3, ?4, ?5, ?6, ?7, ?8, json_object(${columns.map(column => `'${column}', t.${column}`).join(', ')}), ?9 FROM ${target.table} t WHERE ${meta.rowid ? 't.rowid' : `json_array(${meta.pk.map(column => `t.${column}`).join(', ')})`} IN (SELECT value FROM json_each(?1))`,
+        JSON.stringify(list), erasureId, target.id, target.table, target.item.class, target.item.rule, target.item.expiry, target.item.hold, at))
+    }
+    statements.push(stmt(env, `DELETE FROM ${target.table} WHERE ${where}`, JSON.stringify(list)))
+  }
+  return statements
+}
+
 export async function confirmErasure(env: Bindings, actor: Actor, input: Input) {
   requireOwner(actor)
-  input.only(['person', 'digest', 'returnTo'])
+  input.only(['person', 'application', 'digest', 'returnTo'])
+  if (input.provided('application')) return await confirmApplicant(env, actor, input)
   const personId = input.text('person', { max: 64 }), digest = input.text('digest', { max: 64 })
   const request = await one<{ id: string; source: string; received_on: string }>(env, "SELECT id, source, received_on FROM wl_erasure_requests WHERE person_id = ? AND status = 'open'", personId)
   insist(request, 'erasure_request_required', 409)
@@ -56,29 +101,7 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
   // Recipient lists are shared with other people's schedules and alerts: the person leaves the list, the record stays.
   const recipientStores = new Map([['report_recipients', 'wl_report_schedules'], ['alert_recipients', 'wl_date_alerts']])
   const rowTargets = targets(plan).filter(target => ['erased', 'retained', 'held'].includes(target.item.disposition) && !recipientStores.has(target.id))
-  const ids = new Map<string, string[]>()
-  const blobs = new Map<string, number>()
-  const erasedShas = new Map<string, number>()
-  const guards = []
-  for (const target of rowTargets) {
-    const rowid = !(await one<{ sql: string }>(env, "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", target.table))!.sql.includes('WITHOUT ROWID')
-    const pk = (await all<{ name: string; pk: number }>(env, `PRAGMA table_info(${target.table})`)).filter(row => row.pk > 0).sort((a, b) => a.pk - b.pk).map(row => `t.${row.name}`)
-    const key = rowid ? 't.rowid' : `json_array(${pk.join(', ')})`
-    const sql = `SELECT ${key} AS k${target.blob ? ', t.sha256 AS sha, t.size AS size' : ''} FROM ${target.from}`
-    const max = Math.max(1, ...[...sql.matchAll(/\?(\d)/g)].map(match => Number(match[1])))
-    const rows = (await env.DB.prepare(sql).bind(...[subject.personId, subject.memberId, subject.workEmail, subject.employeeNumber, subject.memberEmail].slice(0, max)).all<{ k: unknown; sha?: string; size?: number }>()).results
-    ids.set(target.id, rows.map(row => rowid ? row.k as string : JSON.parse(String(row.k))))
-    ;(target as Target & { rowid: boolean; pk: string[]; count: number }).rowid = rowid
-    ;(target as Target & { pk: string[] }).pk = pk.map(name => name.slice(2))
-    if (target.blob && target.item.disposition === 'erased') for (const row of rows) { blobs.set(row.sha!, row.size!); erasedShas.set(row.sha!, (erasedShas.get(row.sha!) ?? 0) + 1) }
-  }
-  // Content-addressed bytes still referenced by a record that stays, here or elsewhere, are kept.
-  const shared = new Set<string>()
-  for (const [sha] of blobs) {
-    const refs = (await one<{ n: number }>(env, `SELECT (${SOURCE_TABLES.map(table => `(SELECT COUNT(*) FROM ${table} WHERE sha256 = ?1)`).join(' + ')} + (SELECT COUNT(*) FROM wl_change_requests WHERE instr(attachments_json, ?1) > 0)) AS n`, sha))!.n
-    if (refs > (erasedShas.get(sha) ?? 0)) shared.add(sha)
-  }
-  for (const sha of shared) blobs.delete(sha)
+  const { ids, blobs } = await readTargets(env, rowTargets, [subject.personId, subject.memberId, subject.workEmail, subject.employeeNumber, subject.memberEmail])
 
   const textColumns = [['wl_audit', 'detail'], ['wl_work_history', 'detail']] as const
   const swap: [string, string][] = [[subject.personId, stubPerson], [subject.memberId, stubMember], [subject.workEmail, label], [subject.memberEmail, label], [person.legal_name, label], [person.preferred_name ?? '', label]].filter(([from]) => from.length >= 5) as [string, string][]
@@ -97,20 +120,7 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
     stmt(env, "INSERT INTO wl_members (id, email, name, person_id, status, created_at) VALUES (?, ?, ?, ?, 'ended', ?)", stubMember, `erased-${hex(8)}@erased.invalid`, label, stubPerson, at),
   ]
   for (const [store, table] of recipientStores) if (subject.memberId) statements.push(stmt(env, `UPDATE ${table} SET recipients_json = (SELECT COALESCE(json_group_array(value), '[]') FROM json_each(recipients_json) WHERE value NOT IN (?1, 'member:' || ?1, ?2, ?3)) WHERE ?1 <> '' AND instr(recipients_json, ?1) > 0`, subject.memberId, subject.workEmail, subject.memberEmail))
-  for (const target of rowTargets) {
-    const list = ids.get(target.id) ?? []
-    if (!list.length) continue
-    const meta = target as Target & { rowid: boolean; pk: string[] }
-    const where = meta.rowid ? 'rowid IN (SELECT value FROM json_each(?1))' : `json_array(${meta.pk.join(', ')}) IN (SELECT value FROM json_each(?1))`
-    const keep = target.item.disposition === 'retained' || target.item.disposition === 'held'
-    if (keep) {
-      const columns = (await all<{ name: string }>(env, `PRAGMA table_info(${target.table})`)).map(row => row.name)
-      statements.push(stmt(env, `INSERT INTO wl_retained_records (erasure_id, store, table_name, class, rule, expiry, hold_id, row_json, created_at)
-        SELECT ?2, ?3, ?4, ?5, ?6, ?7, ?8, json_object(${columns.map(column => `'${column}', t.${column}`).join(', ')}), ?9 FROM ${target.table} t WHERE ${meta.rowid ? 't.rowid' : `json_array(${meta.pk.map(column => `t.${column}`).join(', ')})`} IN (SELECT value FROM json_each(?1))`,
-        JSON.stringify(list), erasureId, target.id, target.table, target.item.class, target.item.rule, target.item.expiry, target.item.hold, at))
-    }
-    statements.push(stmt(env, `DELETE FROM ${target.table} WHERE ${where}`, JSON.stringify(list)))
-  }
+  statements.push(...await moveRows(env, rowTargets, ids, erasureId, at))
   for (const { tbl, col, parent } of fk) {
     if (tbl === 'wl_members' && col === 'person_id') continue
     const [real, stub] = parent === 'wl_members' ? [subject.memberId, stubMember] : [subject.personId, stubPerson]

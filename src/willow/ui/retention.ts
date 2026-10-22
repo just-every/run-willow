@@ -6,6 +6,7 @@ import { all } from '../core'
 import { formatDate } from '../dates'
 import { SCOPES } from '../retention/holds'
 import { SOURCES, previewErasure } from '../retention/erasure'
+import { previewApplicant } from '../retention/applicant'
 import { CLASS_KEYS } from '../retention/rules'
 import { erasureReceipt, retainedRecords, retention } from '../retention/view'
 import { field, form, h, hidden, page, select, table, tag } from './html'
@@ -19,14 +20,20 @@ function requestForm(people: { id: string; name: string }[], today: string) {
     field('Date received', 'receivedOn', { type: 'date', value: today })], 'Open erasure request')
 }
 
+function applicantForm(applicants: { id: string; name: string; email: string | null }[], today: string) {
+  return applicants.length ? form('erasure.request', PATH, [select('Applicant who was not hired', 'application', applicants.map(a => ({ value: a.id, label: `${a.name}${a.email ? ` (${a.email})` : ''}` }))), select('Request source', 'source', SOURCES.map(value => ({ value, label: SOURCE_LABELS[value] }))),
+    field('Date received', 'receivedOn', { type: 'date', value: today })], 'Open applicant erasure request') : ''
+}
+
 export async function retentionPage(env: Bindings, actor: Actor, url: URL) {
   const data = await retention(env, actor) as any
+  const applicants = await all<{ id: string; name: string; email: string | null }>(env, 'SELECT id, name, contact_email AS email FROM wl_hiring_applications ORDER BY name LIMIT 300')
   const requests = (owner: boolean) => data.requests.length ? table(['Person', 'Source', 'Received', 'Status', ''], data.requests.map((r: any) => [r.person.name, SOURCE_LABELS[r.source], formatDate(r.receivedOn), tag(r.status),
-    owner && r.receipt ? h`<a href="${PATH}/receipts/${r.receipt}">Receipt</a>` : owner && r.status !== 'withdrawn' ? h`<a href="${PATH}/erasure?person=${r.person.id}">Preview</a> ${form('erasure.withdraw', PATH, hidden('request', r.id), 'Withdraw', { secondary: true })}` : ''])) : h`<p>No erasure requests.</p>`
+    owner && r.receipt ? h`<a href="${PATH}/receipts/${r.receipt}">Receipt</a>` : owner && r.status !== 'withdrawn' ? h`<a href="${PATH}/erasure?${r.applicant ? 'application' : 'person'}=${r.person.id}">Preview</a> ${form('erasure.withdraw', PATH, hidden('request', r.id), 'Withdraw', { secondary: true })}` : ''])) : h`<p>No erasure requests.</p>`
   if (!actor.owner) {
     const people = await all<{ id: string; name: string }>(env, 'SELECT id, legal_name AS name FROM wl_people ORDER BY legal_name')
     return page('Erasure requests', actor, h`<h1>Erasure requests</h1><p>HR opens a request and records where it came from. The owner alone decides.</p>
-<section class="card"><h2>Open a request</h2>${requestForm(people, actor.today)}</section><section class="card"><h2>Requests</h2>${requests(false)}</section>`, { current: PATH, url })
+<section class="card"><h2>Open a request</h2>${requestForm(people, actor.today)}${applicantForm(applicants, actor.today)}</section><section class="card"><h2>Requests</h2>${requests(false)}</section>`, { current: PATH, url })
   }
   const classOptions = CLASS_KEYS.map(key => ({ value: key, label: data.classes.find((c: any) => c.key === key).label }))
   const members = await all<{ id: string; name: string }>(env, "SELECT id, name FROM wl_members WHERE status = 'active' ORDER BY name")
@@ -52,20 +59,21 @@ ${mappingRefs.length ? h`<form method="post" action="/app/do/retention.map"><inp
 ${form('hold.place', PATH, [select('Scope', 'scope', SCOPES.map(value => ({ value, label: SCOPE_LABELS[value] }))), field('Reference (person, category id or class)', 'ref', { required: false }), field('From (date range only)', 'from', { type: 'date', required: false }), field('To (date range only)', 'to', { type: 'date', required: false }),
   field('Reason', 'reason'), select('Hold owner', 'holdOwner', members.map(m => ({ value: m.id, label: m.name }))), field('Review date', 'reviewDate', { type: 'date' })], 'Place hold')}</section>
 <p><a href="${PATH}/retained">Retained records in restricted custody</a></p>
-<section class="card"><h2>Erasure requests</h2>${requests(true)}${requestForm(data.former, actor.today)}${data.former.length ? '' : h`<p class="muted">No former worker is eligible yet: erasure covers people with no current or future employment.</p>`}</section>`, { current: PATH, url })
+<section class="card"><h2>Erasure requests</h2>${requests(true)}${requestForm(data.former, actor.today)}${applicantForm(applicants, actor.today)}${data.former.length ? '' : h`<p class="muted">No former worker is eligible yet: erasure covers people with no current or future employment.</p>`}</section>`, { current: PATH, url })
 }
 
 const DISPOSITIONS: Record<string, string> = { erased: 'Erased now', anonymized: 'Anonymized', redacted: 'Redacted from custody', retained: 'Retained (restricted)', held: 'Held' }
 
 export async function erasurePage(env: Bindings, actor: Actor, url: URL) {
-  const preview = await previewErasure(env, actor, url.searchParams.get('person') ?? '')
+  const applicant = url.searchParams.has('application')
+  const preview = applicant ? await previewApplicant(env, actor, url.searchParams.get('application') ?? '') : await previewErasure(env, actor, url.searchParams.get('person') ?? '')
   return page('Erasure preview', actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Erasure preview</h1>
 <p>${preview.person.name}. This preview changes nothing; the owner confirms its digest to approve.</p>
 ${preview.blockers.length ? h`<section class="card"><h2>Blocked</h2>${table(['What', 'Reference'], preview.blockers.map(b => [b.reason, b.ref]))}</section>` : ''}
 <section class="card"><h2>Summary</h2><dl><dt>Rows examined</dt><dd>${preview.summary.rows}</dd><dt>Erased now</dt><dd>${preview.summary.erased}</dd><dt>Anonymized</dt><dd>${preview.summary.anonymized}</dd><dt>Redacted from custody</dt><dd>${preview.summary.redacted}</dd><dt>Retained</dt><dd>${preview.summary.retained}</dd><dt>Held</dt><dd>${preview.summary.held}</dd><dt>Files</dt><dd>${preview.summary.blobs} (${preview.summary.bytes} bytes)</dd></dl></section>
 <section class="card"><h2>Every record, item by item</h2>${table(['Record', 'Rows', 'Files', 'Result', 'Class', 'Until'], preview.items.map(item => [item.label, item.rows, item.blobs, tag(DISPOSITIONS[item.disposition]), item.class ?? '—', item.hold ? 'Hold' : item.expiry ? formatDate(item.expiry) : '—']))}</section>
 <section class="card"><h2>Copies outside Willow</h2><p>${preview.copies.exports.statement}</p>${preview.copies.providers.length ? table(['Destination', 'Copies'], preview.copies.providers.map(p => [p.provider, p.copies])) : ''}</section>
-<section class="card"><h2>Decision</h2><p>Digest <code>${preview.digest.slice(0, 16)}</code>.</p>${preview.request ? preview.request.status === 'confirmed' ? h`<p>${tag('confirmed')} Confirmed by the owner.</p>` : preview.confirmable ? form('erasure.confirm', PATH, [hidden('person', preview.person.id), hidden('digest', preview.digest)], 'Confirm this preview and erase') : h`<p>Resolve the blocked items first.</p>` : h`<p>Open an erasure request for this person first.</p>`}</section>`, { current: PATH, url })
+<section class="card"><h2>Decision</h2><p>Digest <code>${preview.digest.slice(0, 16)}</code>.</p>${preview.request ? preview.request.status === 'confirmed' ? h`<p>${tag('confirmed')} Confirmed by the owner.</p>` : preview.confirmable ? form('erasure.confirm', PATH, [hidden(applicant ? 'application' : 'person', preview.person.id), hidden('digest', preview.digest)], 'Confirm this preview and erase') : h`<p>Resolve the blocked items first.</p>` : h`<p>Open an erasure request for this person first.</p>`}</section>`, { current: PATH, url })
 }
 
 export function receiptPage(actor: Actor, data: Awaited<ReturnType<typeof erasureReceipt>>, url?: URL) {
