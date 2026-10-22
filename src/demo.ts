@@ -4,7 +4,7 @@ import { all, insist, one, stmt } from './willow/core'
 import { addDays } from './willow/dates'
 import { configureEmployer, createCategory, createDepartment, createLocation, createSchedule } from './willow/employer'
 import { Input } from './willow/input'
-import { approveOpening, approvePolicy, createPolicy, decideLeave, openAccount, requestLeave } from './willow/leave'
+import { approveOpening, approvePolicy, createPolicy, openAccount, requestLeave } from './willow/leave'
 import { completeCase, completeTask, createTemplate, scheduleMover, startJoiner, startLeaver } from './willow/lifecycle'
 import { addDocument } from './willow/documents'
 import { previewTemplate, publishTemplate } from './willow/workflow-review'
@@ -96,13 +96,11 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
   const account = (await one<{id: string}>(env, 'SELECT id FROM wl_leave_accounts WHERE period_id = ? AND policy_id = ?', record.period, policy.id)) ?? await openAccount(env, actor, input({ period: record.period, policy: policy.id, cutoverDate: addDays(date, -30), openingHours: String(84 + i * 6), note: 'Sample opening balance reviewed at the monthly cutover.' }))
   if (await one(env, "SELECT 1 FROM wl_leave_accounts WHERE id = ? AND opening_status = 'proposed'", account.id)) await approveOpening(env, actor, input({ account: account.id }))
   if (i > 0 && i < 5) await stage(`leave:${i}`, async () => {
-   const employee = await ensureMember(env, `${people[i][0].toLowerCase().replaceAll(' ', '.')}@harbor-field.example`, people[i][0])
-   await stmt(env, 'UPDATE wl_members SET person_id = ? WHERE id = ?', record.person, employee.id).run()
-   const requester: Actor = { ...actor, id: employee.id, email: `${people[i][0]}@harbor-field.example`, name: employee.name, owner: false, permissions: new Set(), personId: record.person }
+   // The signed-in owner enters this request on behalf. An invented employee
+   // has no authenticated session, and the requester cannot approve it.
    let start = addDays(date, 7 + i * 7)
    while ([0, 6].includes(new Date(start + 'T00:00:00Z').getUTCDay()) || i === 1 && new Date(start + 'T00:00:00Z').getUTCDay() === 5) start = addDays(start, 1)
-   const leave = await requestLeave(env, requester, input({ account: account.id, startDate: start, endDate: addDays(start, 1), reason: i === 1 ? 'Family weekend away' : 'A few days to recharge' }))
-   if (i > 2) await decideLeave(env, actor, input({ request: leave.id, decision: 'approve', note: 'Team coverage confirmed.' }))
+   await requestLeave(env, actor, input({ account: account.id, startDate: start, endDate: addDays(start, 1), reason: i === 1 ? 'Family weekend away' : 'A few days to recharge' }))
   })
  }
  await stage('move', async () => { await scheduleMover(env, actor, input({ person: records[7].person, period: records[7].period, effectiveFrom: addDays(date, 14), jobTitle: 'Senior Operations Coordinator', reason: 'Taking on workshop scheduling', template: mover.id })) })
