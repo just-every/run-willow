@@ -1,3 +1,4 @@
+import { insist } from './core'
 import { packets, packetRecord } from './preboarding'
 import { applicantRecord, applicantRecordsList } from './eeo-applicants'
 import { hiringOpenings, hiringOpening, hiringApplication } from './hiring'
