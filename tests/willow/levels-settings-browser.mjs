@@ -78,7 +78,7 @@ export async function settingsBrowserProof(h, owner, fx) {
    await capture(reader, 'selected-integration-status')
    await navigate('/app/custom-fields')
    const custom = reader.locator('form[action="/app/do/customField.define"]').filter({ has: reader.locator('input[name="key"]') }).filter({ hasNot: reader.locator('input[name="id"]') })
-   await custom.locator('..').locator('summary').click()
+   await custom.locator('..').locator(':scope > summary').click()
    const key = `synthetic_willow_${13202 + index}`, label = `synthetic-willow-${13202 + index}`
    await custom.getByLabel('Field key', { exact: true }).fill(key)
    await custom.getByLabel('Label', { exact: true }).fill(label)
@@ -91,7 +91,7 @@ export async function settingsBrowserProof(h, owner, fx) {
    assert.ok(created)
    await api('customField.write', { person: fx.staff.employee.person, effectiveFrom: day(0), values: { [key]: `synthetic-willow-${13204 + index}` } })
    const edit = reader.locator('form[action="/app/do/customField.define"]').filter({ has: reader.locator(`input[name="id"][value="${created.id}"]`) })
-   await edit.locator('..').locator('summary').click()
+   await edit.locator('..').locator(':scope > summary').click()
    await edit.getByLabel('Label', { exact: true }).fill(`synthetic-willow-${13206 + index}`)
    await capture(reader, 'native-custom-definition-edit')
    await submit(reader, edit, 'Save new version')

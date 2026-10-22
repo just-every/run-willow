@@ -72,6 +72,16 @@ export async function settingsSelectionProof(h, owner, fx) {
  await apply({ kind: 'assignment', member: reader.member, levels: [] })
  for (const door of ['connections', 'custom-fields']) await read(door, undefined, 403)
  await read('customField.define', { definition: settingsDefinition(13011) }, 403)
+ // A delegate selects only configuration rights currently held, and cannot edit their own source.
+ const originalHR=(await api('levels')).assignments.filter(a=>a.member_id===fx.staff.hr.member).map(a=>a.level_id)
+ const delegation=await apply({kind:'level',name:'synthetic-willow-13013',permissions:['access.admin']})
+ await apply({kind:'assignment',member:fx.staff.hr.member,levels:[...originalHR,delegation.id]})
+ const delegate=(path,body,status)=>h.api(path,fx.staff.hr.cookie,body,status)
+ await delegate('level.preview',{kind:'level',name:'synthetic-willow-13014',permissions:[],settings:['integrations'],scope:{kind:'everyone'}},403)
+ const held=await delegate('level.preview',{kind:'level',name:'synthetic-willow-13015',permissions:[],settings:['custom-fields'],scope:{kind:'everyone'}})
+ await delegate('level.apply',{review:held.id})
+ await delegate('level.preview',{kind:'level',name:'synthetic-willow-13016',permissions:[],settings:['retention'],scope:{kind:'everyone'}},403)
+ await apply({kind:'assignment',member:fx.staff.hr.member,levels:originalHR})
  // All other settings expose native definitions without granting the governed records.
  const areas = ['company','locations','schedules','document-categories','payroll-connections','sign-in','api-credentials','retention']
  const definitionsOnly = await apply({ kind:'level', name:'synthetic-willow-13012', permissions:[], settings:areas, scope:{kind:'everyone'} })

@@ -4216,11 +4216,11 @@
       "executable": false
     },
     "tests/willow/levels-settings-browser.mjs": {
-      "sha256": "177c1cb7573eeda8783ab89654ba2e60ebddb30f63c1703b990e979553455b34",
+      "sha256": "f5c81de440a5914e87032f5e86447e30b427e60d0105b80eb39065615ac6e837",
       "executable": false
     },
     "tests/willow/levels-settings.mjs": {
-      "sha256": "c243ae498ffab3903c8b3b498547ee822e9f7e73f07007074e587664c1a943c4",
+      "sha256": "a1948ac46bf3dc52a4ba9ea616fe85adfa2492ba14b793b4a0cb63fa3f23bc9a",
       "executable": false
     },
     "tests/willow/levels.mjs": {
