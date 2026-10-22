@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { publishTemplate } from './publish-template.mjs'
+import { openComplianceFixtures } from './open-compliance-fixtures.mjs'
 
 // Real records for the shipped detail pages, created through public actions.
 export async function openAreaFixtures(h, { owner, employees, today, day }) {
@@ -42,7 +43,9 @@ export async function openAreaFixtures(h, { owner, employees, today, day }) {
   const mover = await publishTemplate(h, undefined, { name: 'Role change follow-up', kind: 'mover', taskTitle: ['Confirm the new role with the team'], taskAssignee: ['hr'], taskDueDays: ['0'] })
   await api('change.chain', { requestType: 'job', template: mover.id, stepRole: ['hr'] })
   const change = await api('change.request', { person: colleague.person, effectiveFrom: day(30), reason: 'Quarterly development review', jobTitle: 'Senior Sales Specialist' })
+  const compliance = await openComplianceFixtures(api, { owner, employees, today, acceptInvitation: h.acceptInvitation })
   return {
+    ...compliance,
     compensationEquity: `/app/compensation/equity?asOf=${today}&level=Service`,
     employeeCsv: '/app/exports/employees.csv?scope=organization&fields=name,jobTitle',
     employeeXlsx: '/app/exports/employees.xlsx?scope=organization&fields=name,jobTitle',

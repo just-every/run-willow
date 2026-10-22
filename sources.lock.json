@@ -3834,15 +3834,19 @@
       "executable": false
     },
     "tests/willow/open-area-fixtures.mjs": {
-      "sha256": "713c2dcb4b860ae99c94a4c1ae0b76836be6f450991586f7035482becd23c3c9",
+      "sha256": "1b1bc24647566112bfb89861cb660c958264e1fc6bf880caf8732d3677ebbdb2",
       "executable": false
     },
     "tests/willow/open-billing.mjs": {
       "sha256": "184ac99f9097756395c88f7633fdc2a3e655b78c5410551813b1352b4b7ccd45",
       "executable": false
     },
+    "tests/willow/open-compliance-fixtures.mjs": {
+      "sha256": "9e5b6a22790ac1e24b6aed480eadf6209f6d1fab484f8279c319d6a1a06b109d",
+      "executable": false
+    },
     "tests/willow/open-public-start.mjs": {
-      "sha256": "f5387e0e130cf92ab71c16e01b5203696c2ce33accc360b44c03460f5a102fd5",
+      "sha256": "7d62c4b3c9e9a8780c5ef92807d30a0988a5ea9a79a99dcb0e451dd09c20727b",
       "executable": false
     },
     "tests/willow/open-start-process.mjs": {

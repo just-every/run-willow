@@ -79,6 +79,15 @@ async function run() {
       assert.ok(!result?.error, `Public API ${path.split('?')[0]} refused its business operation`)
       return result
     } }
+    // Accept this disposable installation's invitation through its local sign-in
+    // door in an isolated synthetic context, keeping the owner's session intact.
+    h.acceptInvitation = async email => {
+      const invitee = await browser.newContext({ storageState: await context.storageState() })
+      try {
+        const response = await invitee.request.get(`${origin}/auth/one-click?as=${encodeURIComponent(email)}`, { maxRedirects: 0 })
+        assert.equal(response.status(), 303, 'The invited interviewer accepts local access')
+      } finally { await invitee.close() }
+    }
     const api = (path, data) => h.api(path, undefined, data)
     const owner = await api('me')
     assert.ok(owner.owner, 'RER_OPEN signs in as the local owner without an author account')
@@ -143,7 +152,7 @@ async function run() {
     Object.assign(detail, areaDetails)
     // Enumerate the actual downloaded edition, including pages absent from nav.
     const doors = await readFile(join(root, 'src/willow/doors.ts'), 'utf8')
-    const registered = [...doors.matchAll(/\['(\^\/app[^']+)',\s*'([^']+)'\]/g)]
+    const registered = [...doors.matchAll(/\['(\^\/app(?:\/|\$)[^']*)',\s*'([^']+)'\]/g)]
     assert.ok(registered.length > 0, 'Discover public pages in the downloaded edition')
     for (const [, pattern, name] of registered) {
       const route = Object.hasOwn(detail, name) ? detail[name] : pattern.includes('(') ? undefined : pattern.slice(1, -1).replaceAll('\\\\', '\\').replaceAll('\\.', '.')
