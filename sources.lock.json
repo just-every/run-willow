@@ -3834,7 +3834,7 @@
       "executable": false
     },
     "src/willow/ui/settings.ts": {
-      "sha256": "0fc2b2f79d30e474c355068abf8fd13749123ce03ff103f0690b9694edae6ee0",
+      "sha256": "42186adca67d5cdf409320e43652a544059fde128428fee6d2e082b98eaedcb5",
       "executable": false
     },
     "src/willow/ui/survey-plan.ts": {
@@ -4058,7 +4058,7 @@
       "executable": false
     },
     "tests/willow/levels-builtins-browser.mjs": {
-      "sha256": "c34dcca237c7dd76d950f8fc9da8566dc643a99fb1ee1db752d49d411349202c",
+      "sha256": "01a6471c9d1745eef8aebfbdfb3dbaa995b211769d318dd38dc4cc6af903a37c",
       "executable": false
     },
     "tests/willow/levels-builtins-custody.mjs": {
