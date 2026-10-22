@@ -1,8 +1,8 @@
 // The page and both downloads share the exact selected result projection.
 import type { BuiltinResult } from './builtin-result'
 import { excludesText } from '../retention/excluded'
-const LABELS:Record<string,string>={headcount:'Headcount',fte:'FTE',unknownFte:'Unknown or withheld FTE',tenureDays:'Total tenure (days)',averageTenureDays:'Average tenure (days)',unknownTenure:'Unknown or withheld tenure',leaveHours:'Leave balance (hours)',unknownLeaveBalances:'Unknown or withheld balances',unknownLiability:'Unknown or withheld liability',openExceptions:'Open exceptions',overdueWork:'Overdue work',readableDocuments:'Readable documents',withheldPeople:'People with withheld document access',acknowledged:'Acknowledged receipts',awaitingAcknowledgement:'Awaiting acknowledgement'}
-const number=(value:unknown)=>value===null?'Unknown / withheld':typeof value==='number'?value.toLocaleString('en-US',{maximumFractionDigits:3}):String(value)
+const LABELS:Record<string,string>={total:'People in aggregate',suppressed:'Privacy suppression',headcount:'Headcount',fte:'FTE',unknownFte:'Unknown or withheld FTE',tenureDays:'Total tenure (days)',averageTenureDays:'Average tenure (days)',unknownTenure:'Unknown or withheld tenure',leaveHours:'Leave balance (hours)',unknownLeaveBalances:'Unknown or withheld balances',unknownLiability:'Unknown or withheld liability',openExceptions:'Open exceptions',overdueWork:'Overdue work',readableDocuments:'Readable documents',withheldPeople:'People with withheld document access',acknowledged:'Acknowledged receipts',awaitingAcknowledgement:'Awaiting acknowledgement'}
+const number=(value:unknown)=>value===null?'Unknown / withheld':typeof value==='boolean'?(value?'Yes':'No'):typeof value==='number'?value.toLocaleString('en-US',{maximumFractionDigits:3}):String(value)
 export function builtinMeasures(result:BuiltinResult):string[][] {
  const rows:string[][]=[]
  for(const [key,value] of Object.entries(result.totals)) {

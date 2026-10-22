@@ -57,7 +57,7 @@ export function projectBuiltinResult(actor: Actor, report: BuiltinReport, result
  if(report.id==='builtin-leave-balances') output.totals={leaveHours:sum(numeric('leaveMinutes'))/60,unknownLeaveBalances:numeric('leaveMinutes').filter(value=>value===null).length}
  if(report.id==='builtin-leave-liability') {const currencies=[...new Set(output.rows.flatMap(row=>typeof row.measures.currency==='string'?[row.measures.currency]:[]))];output.totals={liability:currencies.map(currency=>({currency,cents:sum(output.rows.filter(row=>row.measures.currency===currency).map(row=>row.measures.liabilityCents as number|null))})),unknownLiability:numeric('liabilityCents').filter(value=>value===null).length}}
  if(report.id==='builtin-open-exceptions') output.totals.openExceptions=sum(numeric('openExceptions'))
- if(report.id==='builtin-overdue-work') {output.totals.overdueWork=sum(numeric('overdueWork'));output.workCoverage={basis:result.workCoverage.basis,unknownHistoricalWork:result.workCoverage.unknownHistoricalWork}}
+ if(report.id==='builtin-overdue-work') {output.totals.overdueWork=sum(numeric('overdueWork'));output.workCoverage={basis:result.workCoverage.basis.replaceAll('FLOW-002','work'),unknownHistoricalWork:result.workCoverage.unknownHistoricalWork}}
  if(report.id==='builtin-turnover') {
   const complete=result.rows.every(row=>readsJobHistoryField(actor,row.personId,'startDate')&&readsJobHistoryField(actor,row.personId,'endDate'))
   const turnover=result.totals.turnover

@@ -3532,7 +3532,7 @@
       "executable": false
     },
     "src/willow/reporting/builtin-catalog.ts": {
-      "sha256": "e66f8b9196e337a90963f50d6315f6c2a27a728c7acd3858187135521e5b3a59",
+      "sha256": "ff609b569b78d7ebd90378d06aa910036e529537dcc687ffa8b71f6710d3b6fa",
       "executable": false
     },
     "src/willow/reporting/builtin-diversity.ts": {
@@ -3548,11 +3548,11 @@
       "executable": false
     },
     "src/willow/reporting/builtin-format.ts": {
-      "sha256": "cc3611bb9106183d8cb1f476a464265ca7389ca3e10ab95b851a6de3517f93ef",
+      "sha256": "ca979caa7ad82c6b077bf9fdf1443ae69d4d9847496a45eeb303dae3e36a7a97",
       "executable": false
     },
     "src/willow/reporting/builtin-result.ts": {
-      "sha256": "97b39d4bf31b2a61a53ddc59de7e50140c3b38b09b024d1802f5835ca7b870e6",
+      "sha256": "0af6af3ae0b11bfbd60d0e9b22db985ec55e17c2d61eb0ae928f0b210b7a097b",
       "executable": false
     },
     "src/willow/reporting/builtins.ts": {
