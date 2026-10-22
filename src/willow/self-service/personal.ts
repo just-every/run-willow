@@ -14,7 +14,7 @@ export function personalField(value: string): SelfField {
 
 export function personalValue(input: Input, field: SelfField) {
  insist(input.provided('value'),'missing_value')
- const value=input.text('value',{optional:true,max:field==='preferredName'?120:400})||null
+ const value=input.text('value',{optional:field!=='legalName',max:field==='legalName'?160:field==='preferredName'?120:400})||null
  insist(field!=='date_of_birth'||!value||isDate(value),'invalid_date_of_birth')
  return value
 }
@@ -37,7 +37,7 @@ export async function approvePersonalStatements(env: Bindings, reviewer: Actor, 
  return [...authority,
   guard(env,'stale','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',snapshot),
   guard(env,'stale','EXISTS(SELECT 1 FROM wl_people WHERE id=? AND revision=?)',row.person_id,row.source_revision),
-  ...(field==='preferredName' ? [stmt(env,'UPDATE wl_people SET preferred_name=? WHERE id=?',value,row.person_id)]
+  ...(field==='legalName' ? [stmt(env,'UPDATE wl_people SET legal_name=? WHERE id=?',value,row.person_id)] : field==='preferredName' ? [stmt(env,'UPDATE wl_people SET preferred_name=? WHERE id=?',value,row.person_id)]
    : [stmt(env,`UPDATE wl_person_private SET ${field}=? WHERE person_id=?`,value,row.person_id)]),
   stmt(env,'UPDATE wl_people SET revision=?,updated_at=? WHERE id=?',newId(),now(),row.person_id),
  ]

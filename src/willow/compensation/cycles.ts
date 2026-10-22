@@ -1,7 +1,8 @@
+import { compensationApprovalAuthority, mayApproveCompensation } from './authority'
 import type { Cycle, Proposal } from './types'
 // Owner budget approval and one atomic, reviewed publication across all proposed people.
 import type { Bindings } from '../../auth.server'
-import { can, requireOwner, requirePermission, type Actor } from '../actor'
+import { can, requirePermission, type Actor } from '../actor'
 import { all, auditRead, commit, guard, insist, json, newId, now, one, sha256Hex, stmt, type Row } from '../core'
 import { requireDate } from '../dates'
 import { Input } from '../input'
@@ -17,8 +18,9 @@ export async function createCycle(env:Bindings,actor:Actor,input:Input) {
  return {id,status:'draft'}
 }
 export async function approveBudget(env:Bindings,actor:Actor,input:Input) {
- requireOwner(actor);const id=input.text('cycle')
- await commit(env,[guard(env,'compensation_cycle_not_draft',"EXISTS(SELECT 1 FROM wl_comp_cycles WHERE id=? AND status='draft')",id),stmt(env,"UPDATE wl_comp_cycles SET status='approved',approved_by=?,approved_at=? WHERE id=?",actor.id,now(),id)],{actor:actor.id,action:'compensation.budget.approve',subject:id})
+ const authority=await compensationApprovalAuthority(env,actor);actor=authority.actor
+ const id=input.text('cycle')
+ await commit(env,[...authority.guards,guard(env,'compensation_cycle_not_draft',"EXISTS(SELECT 1 FROM wl_comp_cycles WHERE id=? AND status='draft')",id),stmt(env,"UPDATE wl_comp_cycles SET status='approved',approved_by=?,approved_at=? WHERE id=?",actor.id,now(),id)],{actor:actor.id,action:'compensation.budget.approve',subject:id})
  return {id,status:'approved'}
 }
 export async function cycleRow(env:Bindings,id:string) {
@@ -54,7 +56,7 @@ export async function reviewCycle(env:Bindings,actor:Actor,id:string):Promise<Cy
   calculation:'USD cents. Salary cost = positive annual raise; hourly cost = positive rate difference × scheduled weekly minutes / 60 × 52, each annual amount rounded half up to cents. Bonus cost is its one-time amount. Bounds inclusive; no proration. Latest immutable proposal per person. Payroll remains a handoff, not payment or provider verification.'}
 }
 export async function publishCycle(env:Bindings,actor:Actor,input:Input) {
- requireOwner(actor)
+ const authority=await compensationApprovalAuthority(env,actor);actor=authority.actor
  const id=input.text('cycle'),review=await reviewCycle(env,actor,id)
  insist(review.cycle.status==='approved','compensation_cycle_not_open',409)
  insist(review.fingerprint===input.text('review'),'compensation_review_changed',409)
@@ -64,7 +66,7 @@ export async function publishCycle(env:Bindings,actor:Actor,input:Input) {
  insist(!review.rows.some(r=>r.person_id===actor.personId||r.requested_by===actor.id),'own_compensation_proposal',403)
  const exceptions=review.rows.filter(r=>r.position!=='within'&&review.cycle.kind!=='bonus')
  const reason=input.text('exceptionReason',{optional:true,max:500});insist(!exceptions.length||reason,'compensation_band_exception_reason',409)
- const statements:D1PreparedStatement[]=[guardBandSnapshot(env,review.source),guard(env,'compensation_cycle_not_open',"EXISTS(SELECT 1 FROM wl_comp_cycles WHERE id=? AND status='approved')",id)]
+ const statements:D1PreparedStatement[]=[...authority.guards,guardBandSnapshot(env,review.source),guard(env,'compensation_cycle_not_open',"EXISTS(SELECT 1 FROM wl_comp_cycles WHERE id=? AND status='approved')",id)]
  const audits=[];const results=[];const sourceGuards:D1PreparedStatement[]=[]
  for(const p of review.rows) {
   if(review.cycle.kind==='bonus') {
@@ -84,7 +86,7 @@ export async function compensationHome(env:Bindings,actor:Actor) {
  const pay=can(actor,'pay.read'),manage=can(actor,'people.manage'),cycles=await all<Cycle>(env,'SELECT * FROM wl_comp_cycles ORDER BY created_at DESC,id DESC')
  const people=await all(env,'SELECT id,legal_name,preferred_name FROM wl_people ORDER BY legal_name')
  if(pay)await auditRead(env,actor.id,'compensation.home.read','employer')
- return {cycles:cycles.map(c=>({...c,...(!pay?{budget_cents:null,publication_json:null}:{})})),bands:pay?await bands(env,actor):[],people:people.filter(p=>p.id!==actor.personId&&(manage||actor.reports.has(p.id))),mayMaintain:manage&&pay,mayApprove:actor.owner,maySeePay:pay}
+ return {cycles:cycles.map(c=>({...c,...(!pay?{budget_cents:null,publication_json:null}:{})})),bands:pay?await bands(env,actor):[],people:people.filter(p=>p.id!==actor.personId&&(manage||actor.reports.has(p.id))),mayMaintain:manage&&pay,mayApprove:mayApproveCompensation(actor),maySeePay:pay}
 }
 export async function compensationCycle(env:Bindings,actor:Actor,id:string) {
  const cycle=await cycleRow(env,id)
@@ -95,7 +97,7 @@ export async function compensationCycle(env:Bindings,actor:Actor,id:string) {
    if(result.terms)reconciliation.push({...result,...await one(env,"SELECT b.id AS batch,b.status,b.provider_reference AS reference FROM wl_payroll_items i JOIN wl_payroll_batches b ON b.id=i.batch_id WHERE i.source_kind='terms' AND i.source_id=?",result.terms)})
    else reconciliation.push({...result,...await one(env,"SELECT b.id AS batch,b.status,b.provider_reference AS reference FROM wl_payroll_items i JOIN wl_payroll_batches b ON b.id=i.batch_id WHERE i.source_kind='bonus' AND i.source_id=?",result.bonus)})
   }
-  return {...review,reconciliation,mayApprove:actor.owner,maySeePay:true}
+  return {...review,reconciliation,mayApprove:mayApproveCompensation(actor),maySeePay:true}
  }
  insist(actor.reports.size>0,'forbidden',403)
  const own=(await currentProposals(env,id)).filter(p=>p.requested_by===actor.id&&actor.reports.has(p.person_id))

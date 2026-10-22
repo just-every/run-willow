@@ -22,7 +22,7 @@ export async function proposeSelfChange(env: Bindings, actor: Actor, input: Inpu
  insist(kind==='legalName'||kind==='dependent'||kind==='personal','invalid_change_kind')
  const guards: D1PreparedStatement[]=[]
  let before: unknown, after: unknown, source=person.revision, rowId: string|null=null, tableVersion: string|null=null
- if(kind==='legalName') { before={legalName:person.legal_name}; after={legalName:input.text('legalName',{max:160})}; insist(JSON.stringify(before)!==JSON.stringify(after),'nothing_to_change') }
+ if(kind==='legalName') { guards.push(await personalModeSnapshot(env,actor,'legalName')); before={legalName:person.legal_name}; after={legalName:input.text('legalName',{max:160})}; insist(JSON.stringify(before)!==JSON.stringify(after),'nothing_to_change') }
  else if(kind==='personal') {
   const field=personalField(input.text('field')), value=personalValue(input,field)
   const view=await personView(env,actor,personId)
@@ -61,8 +61,7 @@ export async function decideSelfChange(env: Bindings, actor: Actor, input: Input
  const statements=[...await scopeFence(env,actor,row.person_id,'people.manage','people.private'),guard(env,'already_decided','NOT EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=?)',id)]
  if(decision==='approve') {
   if(row.kind==='legalName') {
-   statements.push(guard(env,'stale','EXISTS(SELECT 1 FROM wl_people WHERE id=? AND revision=?)',row.person_id,row.source_revision),
-    stmt(env,'UPDATE wl_people SET legal_name=?,revision=?,updated_at=? WHERE id=?',JSON.parse(row.after_json).legalName,newId(),now(),row.person_id))
+   statements.push(...await approvePersonalStatements(env,actor,{...row,row_id:'legalName'}))
   } else if(row.kind==='personal') {
    statements.push(...await approvePersonalStatements(env,actor,row))
   } else {

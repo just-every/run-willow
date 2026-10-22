@@ -4,16 +4,16 @@ import type { Actor } from '../actor'
 import { all, insist } from '../core'
 import type { Input } from '../input'
 
-export const SELF_FIELDS = ['preferredName','personal_email','phone','address','date_of_birth','emergency_contact'] as const
+export const SELF_FIELDS = ['legalName','preferredName','personal_email','phone','address','date_of_birth','emergency_contact'] as const
 export type SelfField = typeof SELF_FIELDS[number]
 export type SelfMode = 'view' | 'approval' | 'edit'
 export type SelfRules = Partial<Record<SelfField, SelfMode>>
-export const SELF_LABELS: Record<SelfField,string> = {preferredName:'Preferred name',personal_email:'Personal email',phone:'Phone',address:'Home address',date_of_birth:'Date of birth',emergency_contact:'Emergency contact'}
+export const SELF_LABELS: Record<SelfField,string> = {legalName:'Legal name',preferredName:'Preferred name',personal_email:'Personal email',phone:'Phone',address:'Home address',date_of_birth:'Date of birth',emergency_contact:'Emergency contact'}
 const rank: Record<SelfMode,number> = {view:0,approval:1,edit:2}
 export function combineSelfRules(rules: SelfRules[]): Record<SelfField,SelfMode> {
  return Object.fromEntries(SELF_FIELDS.map(field=>{
   const modes=rules.map(rule=>rule[field]).filter((mode): mode is SelfMode=>!!mode)
-  return [field,modes.length ? modes.reduce((a,b)=>rank[a]>rank[b]?a:b) : 'edit']
+  return [field,modes.length ? modes.reduce((a,b)=>rank[a]>rank[b]?a:b) : field==='legalName'?'approval':'edit']
  })) as Record<SelfField,SelfMode>
 }
 export function readSelfRules(input: Input): SelfRules | undefined {

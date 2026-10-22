@@ -11,7 +11,7 @@ import { WillowError, all, insist, newId, now, one, stmt } from './core'
 import { today } from './dates'
 import { CURRENT_TERMS } from './employment'
 
-export const PERMISSIONS = ['people.manage', 'people.private', 'pay.read', 'leave.manage', 'payroll.handoff', 'documents.private', 'reports.read', 'eeo.read', 'eeo.individual', 'it.tasks', 'audit.read'] as const
+export const PERMISSIONS = ['people.manage', 'people.private', 'pay.read', 'leave.manage', 'payroll.handoff', 'documents.private', 'reports.read', 'eeo.read', 'eeo.individual', 'it.tasks', 'audit.read', 'compensation.approve'] as const
 export type Permission = typeof PERMISSIONS[number]
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
@@ -26,6 +26,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'eeo.individual': 'EEO compliance: read and record individual EEO answers (never implied by ownership or any other right)',
   'it.tasks': 'Receive IT lifecycle tasks',
   'audit.read': 'Read the audit trail',
+  'compensation.approve': 'Approve compensation budgets and publication (also requires manage people and pay access)',
 }
 
 /** Convenience bundles for granting; permissions stay explicit per member. */

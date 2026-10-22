@@ -113,8 +113,13 @@ export async function updatePerson(env: Bindings, actor: Actor, input: Input) {
   const statements: D1PreparedStatement[] = [...(self || can(actor, 'people.manage') ? [] : await scopeFence(env, actor, id, 'people.manage', ...(PRIVATE_FIELDS.some(field => input.has(field)) || input.flag('private') ? ['people.private' as const] : []))), guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_people WHERE id = ? AND revision = ?)', id, revision)]
   if(self) statements.push(guard(env,'access_changed','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',accessSnapshot))
   const next = newId(), changed: string[] = []
-  if (self && input.has('legalName')) insist(input.text('legalName') === existing.legal_name, 'hr_approval_required', 403)
-  if (manages && input.has('legalName')) {
+  if (self && input.has('legalName') && input.text('legalName') !== existing.legal_name) writable('legalName')
+  const legalOnly=self && input.has('legalName') && (!manages || ['preferredName','workEmail','employeeNumber'].every(field=>!input.provided(field)))
+  if (legalOnly) {
+    statements.push(stmt(env,'UPDATE wl_people SET legal_name=? WHERE id=?',input.text('legalName',{max:160}),id))
+    changed.push('legalName')
+  }
+  if (manages && input.has('legalName') && !legalOnly) {
     const person = readPerson(input)
     await uniqueIdentity(env, person, id)
     statements.push(stmt(env, 'UPDATE wl_people SET legal_name = ?, preferred_name = ?, work_email = ?, employee_number = ? WHERE id = ?', person.legalName, person.preferredName, person.workEmail, person.employeeNumber, id))
