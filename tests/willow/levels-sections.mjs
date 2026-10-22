@@ -8,10 +8,12 @@ import { compensationDefinitionProof } from './levels-compensation-definitions.m
 import { sectionBrowserProof } from './levels-sections-browser.mjs'
 import { compensationCustodyProof } from './levels-compensation-custody.mjs'
 import { leaveLevelProof } from './levels-leave.mjs'
+import { personalApprovalProof } from './levels-approvals-personal.mjs'
+import { approvalRoutingProof } from './levels-approvals-routing.mjs'
 
-const sections = { pay: compensationPayProof, records: compensationRecordProof, definitions: compensationDefinitionProof, leave: leaveLevelProof,custody:compensationCustodyProof,browser:sectionBrowserProof }
+const sections = { pay: compensationPayProof, records: compensationRecordProof, definitions: compensationDefinitionProof, leave: leaveLevelProof,custody:compensationCustodyProof,browser:sectionBrowserProof, approvalPersonal:personalApprovalProof, approvalRouting:approvalRoutingProof }
 const selected = process.argv.slice(2)
-assert.ok(selected.every(name => Object.hasOwn(sections, name)), 'Select pay, records, definitions or leave')
+assert.ok(selected.every(name => Object.hasOwn(sections, name)), 'Select a registered section proof')
 for (const name of selected.length ? selected : Object.keys(sections)) {
  const h = await harness()
  try {

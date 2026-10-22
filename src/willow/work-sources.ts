@@ -18,12 +18,14 @@ import { mayApprove, mayRead, type ResolvedStep } from './change-requests/chain'
 import { answersTask } from './date-alerts/alerts'
 import { holds } from './retention/holds'
 import { providerRequests } from './retention/providers'
+import { mayDecideLeave } from './leave'
 
 export interface WorkSource {
  key: string; kind: string; title: string; path: string; due: string; preferred?: string | null
  next: string; progress: string; personId: string | null
  visible: (actor: Actor) => boolean
  responsible: (actor: Actor) => boolean
+ approval?: boolean
 }
 
 export async function workMembers(env: Bindings) {
@@ -39,7 +41,7 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  const zone = await employerZone(env), result: WorkSource[] = []
  const deadline = (instant: number) => addDays(today(zone, instant), defaultDays)
  const hr = (a: Actor) => can(a,'people.manage'), payroll = (a: Actor) => can(a,'payroll.handoff') && can(a,'pay.read')
- const add = (kind: string, row: Row, title: string, path: string, due: string, visible: WorkSource['visible'], responsible = visible, preferred?: string | null, progress = 'Awaiting action') => result.push({ key: `${kind}:${row.id}`, kind, title, path, due, visible, responsible, preferred, progress, personId: row.person_id??null, next: title })
+ const add = (kind: string, row: Row, title: string, path: string, due: string, visible: WorkSource['visible'], responsible = visible, preferred?: string | null, progress = 'Awaiting action', approval = false) => result.push({ key: `${kind}:${row.id}`, kind, title, path, due, visible, responsible, preferred, progress, approval: approval || kind==='self-change' || kind==='leave', personId: row.person_id??null, next: title })
  for (const r of await all(env,`${SELF_CHANGE_SELECT} WHERE d.change_id IS NULL`)) add('self-change',r,'Review private profile change',`/app/self-changes/${r.id}`,r.due_date,a=>readsSelfChange(a,r),a=>reviewsChange(a,r)&&a.id!==r.requested_by&&a.personId!==r.person_id)
  for (const r of await all(env,`${SELF_CHANGE_SELECT} WHERE d.outcome='approved' AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation reconciled WHERE reconciled.change_id=c.id)`)) add('self-exception',r,'Reconcile approved profile revision','/app/self-changes',r.due_date,a=>r.kind==='document'?readsSelfChange(a,r):a.personId===r.person_id||handlesSelfExceptions(a,r.person_id),a=>r.kind==='document'?reviewsChange(a,r):handlesSelfExceptions(a,r.person_id),null,'Approved revision awaits a recorded downstream handoff; no provider confirmation')
  // SELF-002 read acknowledgments are owned work; completion remains the target member's.
@@ -67,7 +69,7 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
   if (missing.length) add('information',c,'Complete required information',`/app/cases/${c.id}`,c.anchor_date,a=>canAbout(a,'people.manage',c.person_id),a=>canAbout(a,'people.manage',c.person_id),null,`${missing.length} required field(s) missing`)
  }
  for (const r of await all(env,"SELECT * FROM wl_leave_requests WHERE status='pending'")) {
-  const decide = (a: Actor) => a.id!==r.requested_by && a.personId!==r.person_id && (a.id===r.approver_member_id || canAbout(a,'leave.manage',r.person_id))
+  const decide = (a: Actor) => mayDecideLeave(a,r)
   add('leave',r,'Review time-off request',`/app/leave/${r.id}`,r.start_date,a=>decide(a) || a.id===r.requested_by || a.personId===r.person_id,decide,r.approver_member_id)
  }
  for (const r of await all(env,"SELECT id,proposed_at FROM wl_proposals WHERE status='pending'")) add('proposal',r,'Review employee change',`/app/proposals/${r.id}`,deadline(r.proposed_at),hr)
@@ -78,10 +80,10 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
   add('date-alert-task',r,r.title,'/app/dates',r.date,a=>!!answer.get(a.id),a=>!!answer.get(a.id))
  }
  // FLOW-004: the current chain step is approver work; a returned request is the requester's.
- for (const r of await all<{id:string;person_id:string;requested_by:string;steps_json:string;step:number;status:string;updated_at:number}>(env,"SELECT id,person_id,requested_by,steps_json,step,status,updated_at FROM wl_change_requests WHERE status IN ('pending','returned')")) {
+ for (const r of await all<{id:string;person_id:string;requested_by:string;request_type:string;steps_json:string;step:number;status:string;updated_at:number}>(env,"SELECT id,person_id,requested_by,request_type,steps_json,step,status,updated_at FROM wl_change_requests WHERE status IN ('pending','returned')")) {
   const steps = json<ResolvedStep[]>(r.steps_json,[]), step = r.status==='pending' ? steps[r.step] : undefined, decide = new Map<string,boolean>()
   for (const a of await workMembers(env)) decide.set(a.id, await mayApprove(env,a,r,step))
-  if (step) add('change-request',r,'Approve employee change request',`/app/changes/${r.id}`,deadline(r.updated_at),a=>mayRead(a,r,steps),a=>!!decide.get(a.id),step.member,`Waiting on step ${r.step+1} of ${steps.length}`)
+  if (step) add('change-request',r,'Approve employee change request',`/app/changes/${r.id}`,deadline(r.updated_at),a=>mayRead(a,r,steps),a=>!!decide.get(a.id),step.member,`Waiting on step ${r.step+1} of ${steps.length}`,true)
   else add('change-request',r,'Revise returned change request',`/app/changes/${r.id}`,deadline(r.updated_at),a=>a.id===r.requested_by,a=>a.id===r.requested_by,r.requested_by,'Sent back with comments')
  }
  for (const r of await all(env,"SELECT id,written_at FROM wl_policy_versions WHERE status='draft'")) add('policy',r,'Review leave policy','/app/settings',deadline(r.written_at),a=>a.owner)

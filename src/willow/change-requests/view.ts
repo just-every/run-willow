@@ -13,7 +13,7 @@ import { serve } from '../files'
 import { addDays } from '../dates'
 import { formatPay } from '../money'
 import { displayName } from '../people'
-import { chainTemplates, chains, mayApprove, mayRead, ROLE_LABELS, type ResolvedStep } from './chain'
+import { chainTemplates, chains, mayApprove, mayRead, stepLabel, type ResolvedStep } from './chain'
 import { ownChangeStatus, LABELS, COLUMNS } from './status'
 import { followsOwnChanges } from '../levels/follow'
 import type { Attachment, Base, Plan } from './requests'
@@ -41,7 +41,7 @@ export async function changeRequests(env: Bindings, actor: Actor) {
     }
     const steps = json<ResolvedStep[]>(row.steps_json, [])
     items.push({ statusOnly:false as const, id: row.id, person: { id: row.person_id, name: displayName(row) }, type: row.request_type, status: row.status, revision: row.revision, requestedBy: row.requester, effectiveFrom: json<Plan>(row.plan_json, {} as Plan).effectiveFrom,
-      waitingOn: row.status === 'pending' ? ROLE_LABELS[steps[row.step].role] : row.status === 'returned' ? 'Requester' : null,
+      waitingOn: row.status === 'pending' ? stepLabel(steps[row.step]) : row.status === 'returned' ? 'Requester' : null,
       yourTurn: row.status === 'pending' && await mayApprove(env, actor, row as { requested_by: string; person_id: string }, steps[row.step]) })
   }
   const manage = can(actor, 'people.manage')
@@ -69,7 +69,7 @@ export async function changeRequest(env: Bindings, actor: Actor, id: string) {
     const [label, table] = LABELS[key]
     if ((terms[COLUMNS[key]] ?? null) !== (value ?? null)) changes.push(readsJobHistoryField(actor,row.person_id,key as JobField)?{ field: label, from: await name(env, table, terms[COLUMNS[key]] ?? null), to: await name(env, table, value ?? null) }:{field:label,from:'Withheld',to:'Withheld'})
   }
-  if (plan.employmentType) changes.push({ field: 'Employment type', from: base.periodType.replace('_', ' '), to: plan.employmentType.replace('_', ' '), note: `On approval the current employment period ends on ${addDays(plan.effectiveFrom, -1)} and a new ${plan.employmentType.replace('_', ' ')} period starts on ${plan.effectiveFrom} with these terms; leave accounts stay with the ended period.` })
+  if (plan.employmentType) changes.push(readsJobHistoryField(actor,row.person_id,'employmentType') ? { field: 'Employment type', from: base.periodType.replace('_', ' '), to: plan.employmentType.replace('_', ' '), note: `On approval the current employment period ends on ${addDays(plan.effectiveFrom, -1)} and a new ${plan.employmentType.replace('_', ' ')} period starts on ${plan.effectiveFrom} with these terms; leave accounts stay with the ended period.` } : {field:'Employment type',from:'Withheld',to:'Withheld'})
   if(plan.fte!==undefined) changes.push(readsJobHistoryField(actor,row.person_id,'fte')?{field:'FTE',from:String(terms.fte??'Unknown'),to:String(plan.fte??'Unknown')}:{field:'FTE',from:'Withheld',to:'Withheld'})
   for(const [key,value] of Object.entries(plan.dates??{})) changes.push({field:key==='startDate'?'Employment start date':'Employment end date',from:'Withheld',to:readsJobHistoryField(actor,row.person_id,key as JobField)?value??'Ongoing':'Withheld'})
   if(plan.employmentStatus) changes.push({field:'Employment status',from:'Withheld',to:readsJobHistoryField(actor,row.person_id,'employmentStatus')?plan.employmentStatus:'Withheld'})
@@ -92,7 +92,7 @@ export async function changeRequest(env: Bindings, actor: Actor, id: string) {
     statusOnly:false as const, id: row.id, person: { id: row.person_id, name: displayName(row) }, type: row.request_type, status: row.status, revision: row.revision, state: row.state,
     requestedBy: { id: row.requested_by, name: members.get(row.requested_by) }, effectiveFrom: plan.effectiveFrom, reason: typed && !typedReadable || salaryOnly && plan.pay!.mode === 'amount' && !pays ? 'Withheld' : plan.reason, changes, editCompensation,
     fields: actor.id === row.requested_by ? plan.fields : undefined, employmentType: actor.id === row.requested_by ? plan.employmentType ?? null : undefined,
-    steps: steps.map((step, index) => ({ position: index + 1, role: step.role, label: ROLE_LABELS[step.role], member: step.member ? members.get(step.member) ?? null : null, note: step.note,
+    steps: steps.map((step, index) => ({ position: index + 1, role: step.role, level: step.level ?? null, approvalKey: step.approvalKey ?? null, label: stepLabel(step), member: step.member ? members.get(step.member) ?? null : null, note: step.note,
       state: row.status === 'approved' || index < row.step ? 'approved' : row.status === 'pending' && index === row.step ? 'waiting' : row.status === 'declined' && index === row.step ? 'declined' : row.status === 'returned' && index === row.step ? 'returned' : 'not reached' })),
     history: events.map(e => ({ revision: e.revision, step: e.step === null ? null : e.step + 1, kind: e.kind, by: members.get(e.actor) ?? e.actor, comment: typed && !typedReadable || plan.pay && !pays ? null : e.comment, at: e.at })),
     attachments: json<Attachment[]>(row.attachments_json, []).map(a => ({ filename: a.filename, size: a.size, sha256: a.sha256, revision: a.revision })),

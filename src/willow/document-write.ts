@@ -5,12 +5,15 @@ import { commit, guard, insist, newId, now, one, stmt, type Row } from './core'
 import { addDays } from './dates'
 import { store } from './files'
 import type { Input } from './input'
+import { hasApproval, liveApprovalActor } from './levels/approvals'
 import { documentMode } from './levels/documents'
 import { documentNumber } from './document-publication'
 
 export const documentChangeCategory=(row:Row)=>({id:row.doc_category_id??JSON.parse(row.after_json).category,subject_reads:row.doc_subject_reads??0,manager_reads:row.doc_manager_reads??0})
-export const readsDocumentChange=(actor:Actor,row:Row)=>readsCategory(actor,row.person_id,documentChangeCategory(row)) && (actor.personId===row.person_id || actor.id===row.requested_by || canAbout(actor,'people.manage',row.person_id))
-export const reviewsDocumentChange=(actor:Actor,row:Row)=>canAbout(actor,'people.manage',row.person_id) && readsCategory(actor,row.person_id,documentChangeCategory(row))
+export const readsDocumentChange=(actor:Actor,row:Row)=>readsCategory(actor,row.person_id,documentChangeCategory(row)) && (actor.personId===row.person_id || actor.id===row.requested_by || canAbout(actor,'people.manage',row.person_id) || hasApproval(actor,`document:${documentChangeCategory(row).id}`,row.person_id))
+export const nativeReviewsDocumentChange=(actor:Actor,row:Row)=>canAbout(actor,'people.manage',row.person_id) && readsCategory(actor,row.person_id,documentChangeCategory(row))
+export const reviewsDocumentChange=(actor:Actor,row:Row)=>actor.id!==row.requested_by&&actor.personId!==row.person_id&&readsCategory(actor,row.person_id,documentChangeCategory(row))&&(canAbout(actor,'people.manage',row.person_id)||hasApproval(actor,`document:${documentChangeCategory(row).id}`,row.person_id))
+export const canDecideDocumentChange=reviewsDocumentChange
 async function fresh(env:Bindings,actor:Actor) {
  const row=await one(env,`SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?`,actor.id)
  insist(row,'forbidden',403)
@@ -53,12 +56,11 @@ export async function writeDocument(env:Bindings,actor:Actor,input:Input,approva
 }
 export const proposeDocument=(env:Bindings,actor:Actor,input:Input)=>writeDocument(env,actor,input,true)
 
-export async function documentReviewAuthority(env:Bindings,reviewer:Actor,row:Row) {
- const source=(await one<{seq:number}>(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
- const current=await fresh(env,reviewer)
+export async function documentReviewAuthority(env:Bindings,reviewer:Actor,row:Row,{nativeOnly=false}={}) {
+ const live=await liveApprovalActor(env,reviewer)
  const category=await one(env,'SELECT * FROM wl_doc_categories WHERE id=?',JSON.parse(row.after_json).category)
- insist(category&&canAbout(current,'people.manage',row.person_id)&&readsCategory(current,row.person_id,category),'forbidden',403)
- return [snapshotFence(env,source),sessionFence(env,current)]
+ insist(category&&(nativeOnly?nativeReviewsDocumentChange:reviewsDocumentChange)(live.actor,{...row,doc_category_id:category.id,doc_subject_reads:category.subject_reads,doc_manager_reads:category.manager_reads}),'forbidden',403)
+ return live.guards
 }
 export async function approveDocumentStatements(env:Bindings,reviewer:Actor,row:Row) {
  const source=(await one<{seq:number}>(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq

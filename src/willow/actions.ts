@@ -29,7 +29,7 @@ import { confirmErasure } from './retention/erase'
 import { recordProviderOutcome } from './retention/providers'
 import { confirmPurge } from './retention/review'
 import { proposeSelfChange, decideSelfChange, reconcileSelfChange } from './self-service/requests'
-import { defineField, writeFieldValues } from './custom-fields/actions'
+import { defineField, writeFieldValues, proposeCustomField } from './custom-fields/actions'
 import { configureDoor } from './movein/authority'
 import { defineTable } from './record-tables/schema'
 import { writeRow } from './record-tables/rows'
@@ -130,6 +130,7 @@ export const actions: Record<string, Handler> = {
   'member.permissions': (env, actor, input, request) => setPermissions(env, actor, input, request),
   'access.give': (env, actor, input, request) => giveAccess(env, actor, input, request),
   'access.end': (env, actor, input, request) => endAccess(env, actor, input, request),
+  'custom.propose':proposeCustomField,
   'compensation.record':writeCompensationRecord,
   'compensation.pay':editCompensationPay,
   'compensation.record.propose':proposeCompensationRecord,

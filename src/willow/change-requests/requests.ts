@@ -1,3 +1,4 @@
+import { liveApprovalActor } from '../levels/approvals'
 // FLOW-004 change requests. A manager (for a current direct report) or an HR
 // member requests new dated terms for a person other than themselves. The
 // request is checked by the same code that executes it, typed by whether pay
@@ -24,7 +25,7 @@ import { liveJobActor, requireJobRequest } from '../job-write'
 import type { JobField } from '../levels/job'
 import { requireDate } from '../dates'
 import { EMPLOYMENT_TYPES, readFte, readPay, termsOn } from '../people'
-import { currentChain, mayApprove, resolveSteps, type BandPosition, type RequestType, type ResolvedStep } from './chain'
+import { currentChain, mayApprove, selectedChangeApproval, resolveSteps, type BandPosition, type RequestType, type ResolvedStep } from './chain'
 
 const FIELDS = ['jobTitle', 'departmentId', 'locationId', 'managerPersonId', 'scheduleId'] as const
 const COLUMNS: Record<typeof FIELDS[number], string> = { jobTitle: 'job_title', departmentId: 'department_id', locationId: 'location_id', managerPersonId: 'manager_person_id', scheduleId: 'schedule_id' }
@@ -101,7 +102,7 @@ async function readRequest(env: Bindings, actor: Actor, personId: string, input:
     personId, date: effectiveFrom, jobTitle: fields.jobTitle ?? base.job_title, locationId: locationAfter,
     basis: payChanged ? newPayBasis! : basePay.pay_basis, amountCents: payChanged ? newPayCents : basePay.amount_cents,
   }) : null
-  const steps = await resolveSteps(env, chain.steps, { personId, locationAfter, increasePercent, payChanged, bandPosition: band?.position }, actor.today)
+  const steps = await resolveSteps(env, chain.steps, { personId, requestType: type, locationAfter, increasePercent, payChanged, bandPosition: band?.position }, actor.today)
   const baseRecord: Base = { periodType: period.employment_type, periodRevision: period.revision, termId: base.id, payBasis: basePay.pay_basis, payCents: basePay.amount_cents, newPayBasis: payChanged ? newPayBasis : null, newPayCents: payChanged ? newPayCents : null, currency: basePay.currency, ...(band ? { band: { id: band.band?.id ?? null, position: band.position, levelRevision: band.levelRevision } } : {}) }
   return { period, plan: { ...plan, pay: payChanged ? pay : null }, base: baseRecord, type, chain, steps, band }
 }
@@ -184,7 +185,7 @@ export async function editChange(env: Bindings, actor: Actor, input: Input) {
 }
 
 export async function decideChange(env: Bindings, actor: Actor, input: Input) {
-  const live = await liveJobActor(env, actor)
+  const live = await liveApprovalActor(env, actor)
   actor = live.actor
   const row = await loadOpen(env, input)
   insist(row.status === 'pending', 'change_request_returned', 409)
@@ -194,7 +195,7 @@ export async function decideChange(env: Bindings, actor: Actor, input: Input) {
   const decision = input.text('decision', { max: 10 }), comment = input.text('comment', { optional: true, max: 1000 }) || null, at = now()
   insist(['approve', 'decline', 'return'].includes(decision), 'invalid_decision')
   const audit = { actor: actor.id, subject: row.id, detail: { revision: row.revision, step: row.step, role: steps[row.step].role } }
-  const authority = [live.fence, ...await scopeAuthority(env, actor, row.person_id, steps[row.step].role === 'payroll' || actor.id === steps[row.step].member)]
+  const authority = [...live.guards, ...await scopeAuthority(env, actor, row.person_id, steps[row.step].role === 'payroll' || actor.id === steps[row.step].member || selectedChangeApproval(actor, row as {requested_by:string;person_id:string;request_type:string}, steps[row.step]))]
   if (decision !== 'approve') {
     insist(decision === 'decline' || comment, 'missing_comment')
     const status = decision === 'decline' ? 'declined' : 'returned'

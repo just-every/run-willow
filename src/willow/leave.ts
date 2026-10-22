@@ -18,6 +18,7 @@ import { addDays, daysBetween, hours, parseHours, requireDate, weekday } from '.
 import { WEEKDAYS } from './employer'
 import type { Input } from './input'
 import { displayName, termsOn } from './people'
+import { hasApproval } from './levels/approvals'
 
 const BALANCE = '(SELECT COALESCE(SUM(minutes), 0) FROM wl_ledger WHERE account_id = ?)'
 
@@ -225,16 +226,16 @@ async function requestRow(env: Bindings, id: string) {
 }
 
 /** The routed approver decides; a leave manager may decide any request except their own. */
-function mayDecide(actor: Actor, request: Row) {
+export function mayDecideLeave(actor: Actor, request: Row) {
   if (request.requested_by === actor.id || request.person_id === actor.personId) return false
-  return request.approver_member_id === actor.id || canAbout(actor, 'leave.manage', request.person_id)
+  return request.approver_member_id === actor.id || canAbout(actor, 'leave.manage', request.person_id) || hasApproval(actor, 'leave', request.person_id)
 }
 
 /** A leave manager whose authority comes only from a scoped level is rechecked inside the write (ROLE-002). */
 const scopeGuard = async (env: Bindings, actor: Actor, personId: string, otherAuthority: boolean) => otherAuthority || can(actor, 'leave.manage') ? [] : await scopeFence(env, actor, personId, 'leave.manage')
 
 // A route grants access to this request only, never the person's account/facets.
-const mayReadRequest = (actor: Actor, request: Row) => readsLeaveField(actor, request.person_id, 'requests') || request.approver_member_id === actor.id
+export const mayReadLeaveRequest = (actor: Actor, request: Row) => readsLeaveField(actor, request.person_id, 'requests') || request.approver_member_id === actor.id || mayDecideLeave(actor, request)
 
 const ledgerEntry = (env: Bindings, actor: Actor, request: Row, kind: string, minutes: number, note: string, reverses: string | null = null) =>
   stmt(env, 'INSERT INTO wl_ledger (id, account_id, kind, minutes, effective_date, request_id, reverses, note, recorded_by, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', newId(), request.account_id, kind, minutes, request.start_date, request.id, reverses, note, actor.id, now())
@@ -243,8 +244,8 @@ export async function decideLeave(env: Bindings, actor: Actor, input: Input) {
   const live = await liveLeaveActor(env, actor)
   actor = live.actor
   const request = await requestRow(env, input.text('request', { max: 100 }))
-  insist(mayReadRequest(actor, request), 'not_found', 404)
-  insist(mayDecide(actor, request), 'not_your_decision', 403)
+  insist(mayReadLeaveRequest(actor, request), 'not_found', 404)
+  insist(mayDecideLeave(actor, request), 'not_your_decision', 403)
   const decision = input.text('decision', { max: 10 })
   insist(decision === 'approve' || decision === 'decline', 'invalid_decision')
   const note = input.text('note', { optional: true, max: 500 }) || null
@@ -252,7 +253,7 @@ export async function decideLeave(env: Bindings, actor: Actor, input: Input) {
   if (approved) insist(canRequestLeave(await currentLeaveMember(env, request.requested_by), request.person_id), 'leave_access_changed', 403)
   await commit(env, [
     ...live.guards,
-    ...await scopeGuard(env, actor, request.person_id, request.approver_member_id === actor.id),
+    ...await scopeGuard(env, actor, request.person_id, request.approver_member_id === actor.id || hasApproval(actor, 'leave', request.person_id)),
     guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_leave_requests WHERE id = ? AND status = 'pending')", request.id),
     stmt(env, "UPDATE wl_leave_requests SET status = ?, decided_by = ?, decided_at = ?, decision_note = ? WHERE id = ? AND status = 'pending'", approved ? 'approved' : 'declined', actor.id, now(), note, request.id),
     guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_leave_requests WHERE id = ? AND status = ? AND decided_by = ?)', request.id, approved ? 'approved' : 'declined', actor.id),
@@ -291,7 +292,7 @@ export async function cancelLeave(env: Bindings, actor: Actor, input: Input) {
   const live = await liveLeaveActor(env, actor)
   actor = live.actor
   const request = await requestRow(env, input.text('request', { max: 100 }))
-  insist(mayReadRequest(actor, request), 'not_found', 404)
+  insist(mayReadLeaveRequest(actor, request), 'not_found', 404)
   const own = request.person_id === actor.personId
   insist(request.status === 'approved', 'request_not_approved', 409)
   insist(canAbout(actor, 'leave.manage', request.person_id) || request.approver_member_id === actor.id || (own && request.start_date > actor.today), 'not_your_decision', 403)
@@ -305,8 +306,8 @@ export async function correctLeave(env: Bindings, actor: Actor, input: Input) {
   const live = await liveLeaveActor(env, actor)
   actor = live.actor
   const request = await requestRow(env, input.text('request', { max: 100 }))
-  insist(mayReadRequest(actor, request), 'not_found', 404)
-  insist(canAbout(actor, 'leave.manage', request.person_id) || (request.approver_member_id === actor.id && mayDecide(actor, request)), 'not_your_decision', 403)
+  insist(mayReadLeaveRequest(actor, request), 'not_found', 404)
+  insist(canAbout(actor, 'leave.manage', request.person_id) || (request.approver_member_id === actor.id && mayDecideLeave(actor, request)), 'not_your_decision', 403)
   insist(request.status === 'approved', 'request_not_approved', 409)
   const account = await signedOff(env, request.account_id)
   const start = requireDate(input.text('startDate', { max: 10 }), 'invalid_startDate'), end = requireDate(input.text('endDate', { max: 10 }), 'invalid_endDate')
@@ -352,7 +353,7 @@ async function reasonsFor(env: Bindings, actor: Actor, rows: Row[]) {
 
 export async function leaveDetail(env: Bindings, actor: Actor, id: string) {
   const row = await one(env, `${REQUESTS} WHERE r.id = ?`, id)
-  insist(row && mayReadRequest(actor, row), 'not_found', 404)
+  insist(row && mayReadLeaveRequest(actor, row), 'not_found', 404)
   const routed = row.approver_member_id === actor.id
   const read = leaveReadFields(actor, row.person_id)
   const reasons = await reasonsFor(env, actor, [row])
@@ -368,9 +369,9 @@ export async function leaveDetail(env: Bindings, actor: Actor, id: string) {
     ...(read.balances ? { balanceMinutes: await balance(env, row.account_id) } : {}),
     coverage: read.calendar || routed ? await coverage(env, row.person_id, (await one<{ period_id: string }>(env, 'SELECT period_id FROM wl_leave_accounts WHERE id = ?', row.account_id))!.period_id, row.start_date, row.end_date) : [],
     withheld: Object.keys(read).filter(field => !read[field as LeaveField]),
-    canDecide: row.status === 'pending' && mayDecide(actor, row),
+    canDecide: row.status === 'pending' && mayDecideLeave(actor, row),
     canCancel: row.status === 'approved' && (canAbout(actor, 'leave.manage', row.person_id) || routed || (row.person_id === actor.personId && row.start_date > actor.today)),
-    canCorrect: row.status === 'approved' && (canAbout(actor, 'leave.manage', row.person_id) || (routed && mayDecide(actor, row))),
+    canCorrect: row.status === 'approved' && (canAbout(actor, 'leave.manage', row.person_id) || (routed && mayDecideLeave(actor, row))),
   }
 }
 
@@ -412,7 +413,7 @@ export async function readablePolicies(env: Bindings, actor: Actor, personId?: s
 /** Requests waiting for this member's decision. */
 export async function approvals(env: Bindings, actor: Actor) {
   const rows = await all(env, `${REQUESTS} WHERE r.status = 'pending' ORDER BY r.start_date`)
-  return rows.filter(row => mayReadRequest(actor, row) && mayDecide(actor, row))
+  return rows.filter(row => mayReadLeaveRequest(actor, row) && mayDecideLeave(actor, row))
     .map(row => ({ ...requestView(row, null, false), name: displayName(row), routedToYou: row.approver_member_id === actor.id }))
 }
 

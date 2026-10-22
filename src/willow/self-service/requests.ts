@@ -1,5 +1,7 @@
 // SELF-001: proposed bytes never change. HR approval commits the native revision and outcome together.
-import { approveDocumentStatements, documentReviewAuthority, reviewsDocumentChange } from '../document-write'
+import { approveDocumentStatements, documentReviewAuthority, nativeReviewsDocumentChange } from '../document-write'
+import { liveApprovalActor } from '../levels/approvals'
+import { approveCustomFieldStatements } from '../custom-fields/proposals'
 import { otherPersonalFence } from '../levels/other-personal'
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
@@ -52,6 +54,8 @@ export async function proposeSelfChange(env: Bindings, actor: Actor, input: Inpu
 }
 
 export async function decideSelfChange(env: Bindings, actor: Actor, input: Input) {
+ const initial=await liveApprovalActor(env,actor)
+ actor=initial.actor
  const id=input.text('change'), decision=input.text('decision'), comment=input.text('comment',{max:1000})
  insist(['approve','reject'].includes(decision),'invalid_decision')
  const row=await one(env,`${SELF_CHANGE_SELECT} WHERE c.id=?`,id)
@@ -59,9 +63,11 @@ export async function decideSelfChange(env: Bindings, actor: Actor, input: Input
  insist(reviewsChange(actor,row),'forbidden',403)
  insist(actor.id!==row.requested_by && actor.personId!==row.person_id,'self_approval',403)
  // A scoped reviewer is rechecked against fresh terms inside the write (ROLE-002).
- const statements=[...(row.kind==='document'?await documentReviewAuthority(env,actor,row):await scopeFence(env,actor,row.person_id,'people.manage','people.private')),guard(env,'already_decided','NOT EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=?)',id)]
+ const statements=[guard(env,'already_decided','NOT EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=?)',id)]
  if(decision==='approve') {
-  if(row.kind==='document') {
+  if(row.kind==='customField') {
+   statements.push(...await approveCustomFieldStatements(env,actor,row))
+  } else if(row.kind==='document') {
    statements.push(...await approveDocumentStatements(env,actor,row))
   } else if(row.kind==='legalName') {
    statements.push(...await approvePersonalStatements(env,actor,{...row,row_id:'legalName'}))
@@ -70,10 +76,14 @@ export async function decideSelfChange(env: Bindings, actor: Actor, input: Input
   } else {
    statements.push(guard(env,'stale','(SELECT COUNT(*) FROM wl_record_row_versions v JOIN wl_record_rows r ON r.id=v.row_id WHERE r.person_id=? AND r.table_id=?)=?',row.person_id,DEPENDENTS,Number(row.source_revision)),
     guard(env,'table_definition_changed','(SELECT id FROM wl_record_table_versions WHERE table_id=? ORDER BY version DESC LIMIT 1)=?',DEPENDENTS,row.table_version_id))
-   const prepared=await prepareRow(env,actor,Input.of({person:row.person_id,table:DEPENDENTS,...(row.row_id?{row:row.row_id}:{}),values:JSON.parse(row.after_json),remove:row.after_json==='null',effectiveFrom:actor.today}))
+   const prepared=await prepareRow(env,actor,Input.of({person:row.person_id,table:DEPENDENTS,...(row.row_id?{row:row.row_id}:{}),values:JSON.parse(row.after_json),remove:row.after_json==='null',effectiveFrom:actor.today}),{approved:true})
    statements.push(...prepared.statements)
   }
  }
+ const final=await liveApprovalActor(env,actor)
+ const current=await one(env,`${SELF_CHANGE_SELECT} WHERE c.id=?`,id)
+ insist(current&&reviewsChange(final.actor,current),'forbidden',403)
+ statements.unshift(...final.guards)
  statements.push(stmt(env,'INSERT INTO wl_self_decisions VALUES (?,?,?,?,?)',id,decision==='approve'?'approved':'rejected',actor.id,now(),comment))
  await commit(env,statements,{actor:actor.id,action:'selfChange.decide',subject:id,detail:{decision,person:row.person_id}})
  return {id,status:decision==='approve'?'approved':'rejected'}
@@ -83,7 +93,7 @@ export async function reconcileSelfChange(env: Bindings, actor: Actor, input: In
  const id=input.text('change'),reference=input.text('reference',{max:300})
  const change=await one(env,`${SELF_CHANGE_SELECT} WHERE c.id=?`,id)
  insist(change,'not_found',404)
- insist(change.kind==='document'?reviewsDocumentChange(actor,change):handlesSelfExceptions(actor,change.person_id),'forbidden',403)
- await commit(env,[...(change.kind==='document'?await documentReviewAuthority(env,actor,change):can(actor,'payroll.handoff')&&can(actor,'pay.read') ? [] : await scopeFence(env,actor,change.person_id,'people.manage','people.private')),guard(env,'not_open',"EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=? AND outcome='approved') AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation WHERE change_id=?)",id,id),stmt(env,'INSERT INTO wl_self_reconciliation VALUES (?,?,?,?)',id,reference,actor.id,now())],{actor:actor.id,action:'selfChange.reconcile',subject:id})
+ insist(change.kind==='document'?nativeReviewsDocumentChange(actor,change):handlesSelfExceptions(actor,change.person_id),'forbidden',403)
+ await commit(env,[...(change.kind==='document'?await documentReviewAuthority(env,actor,change,{nativeOnly:true}):can(actor,'payroll.handoff')&&can(actor,'pay.read') ? [] : await scopeFence(env,actor,change.person_id,'people.manage','people.private')),guard(env,'not_open',"EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=? AND outcome='approved') AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation WHERE change_id=?)",id,id),stmt(env,'INSERT INTO wl_self_reconciliation VALUES (?,?,?,?)',id,reference,actor.id,now())],{actor:actor.id,action:'selfChange.reconcile',subject:id})
  return {id,status:'resolved'}
 }

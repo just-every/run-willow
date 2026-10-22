@@ -7,7 +7,7 @@ import { all, auditRead, commit, guard, insist, newId, now, one, stmt } from '..
 import { addDays, isDate } from '../dates'
 import type { Input } from '../input'
 import type { FieldValue } from '../custom-fields/types'
-import { ASSETS, CERTIFICATIONS, CONTACTS, RENEWAL_LEAD_DAYS, readsTable, recordTables, validateRowValues, writesTable, type RecordTable } from './schema'
+import { ASSETS, CERTIFICATIONS, CONTACTS, DEPENDENTS, RENEWAL_LEAD_DAYS, readsTable, recordTables, validateRowValues, writesTable, type RecordTable } from './schema'
 
 export interface RowVersion { id: string; sequence: number; tableVersionId: string; effectiveFrom: string; values: Record<string, FieldValue>; removed: boolean; origin: string; recordedAt: number; recordedBy: string }
 interface VersionRow { id: string; row_id: string; sequence: number; table_version_id: string; effective_from: string; values_json: string; removed: number; origin: string; recorded_at: number; recorded_by: string; table_id: string; person_id: string }
@@ -49,13 +49,13 @@ function rowInput(input: Input, table: RecordTable): unknown {
   return Object.fromEntries(table.current.columns.map(column => [column.key, input.text(`col.${column.key}`, { optional: true, max: 10000 })]))
 }
 
-export async function prepareRow(env: Bindings, actor: Actor, input: Input) {
+export async function prepareRow(env: Bindings, actor: Actor, input: Input, { approved = false } = {}) {
   const personId = input.text('person', { max: 100 }), effectiveFrom = input.text('effectiveFrom', { optional: true, max: 10 }) || actor.today
   insist(isDate(effectiveFrom), 'invalid_effectiveFrom')
   insist(await one(env, 'SELECT 1 FROM wl_people WHERE id = ?', personId), 'not_found', 404)
   const table = (await recordTables(env)).find(item => item.id === input.text('table', { max: 100 }) || item.key === input.text('table', { max: 100 }))
   insist(table && readsTable(actor, personId, table), 'not_found', 404)
-  insist(writesTable(actor, personId, table), 'forbidden', 403)
+  insist(approved && table.id === DEPENDENTS || writesTable(actor, personId, table), 'forbidden', 403)
   insist(!table.current.retired, 'table_retired', 409)
   const rowId = input.text('row', { optional: true, max: 100 }) || null
   const history = (await versionsFor(env, personId, [table.id])).filter(row => row.row_id === rowId).map(versionOf)

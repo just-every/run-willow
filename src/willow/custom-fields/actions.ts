@@ -60,3 +60,5 @@ export async function writeFieldValues(env: Bindings, actor: Actor, input: Input
     { actor: actor.id, action: 'customField.write', subject: person, detail: { effectiveFrom, fields: Object.keys(change.values) } })
   return { id: person, effectiveFrom, values: change.values }
 }
+
+export { proposeCustomField } from './proposals'

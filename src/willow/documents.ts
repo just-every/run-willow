@@ -22,8 +22,9 @@ async function versionRow(env: Bindings, versionId: string) {
 /** Downloads a version the member may read; anything else is not found. */
 export async function documentFile(env: Bindings, actor: Actor, versionId: string, download: boolean) {
   const row = await versionRow(env, versionId)
-  insist(row && sees(actor, row.person_id, 'documents') && readsCategory(actor, row.person_id, row), 'not_found', 404)
+  insist(row && readsCategory(actor, row.person_id, row), 'not_found', 404)
   if(row.change_id && row.outcome!=='approved') insist(readsDocumentChange(actor,{...row,kind:'document',doc_category_id:row.category_id,doc_subject_reads:row.subject_reads,doc_manager_reads:row.manager_reads}),'not_found',404)
+  else insist(sees(actor,row.person_id,'documents'),'not_found',404)
   await auditRead(env, actor.id, 'document.download', versionId, { document: row.document_id, person: row.person_id })
   return await serve(env, { filename: row.filename, mediaType: row.media_type, size: row.size, sha256: row.sha256 }, { download })
 }

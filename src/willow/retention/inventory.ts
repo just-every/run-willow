@@ -116,7 +116,7 @@ export const STORES: Store[] = [
   s('members', 'wl_members', 'Signed-in member record', 'access', 't.id = ?2', { ms: 't.created_at' }),
   s('permissions', 'wl_permissions', 'Permission grants', 'access', 't.member_id = ?2', { ms: 't.granted_at' }),
   s('member_levels', 'wl_member_levels', 'Access-level assignments', 'access', 't.member_id = ?2'),
-  s('level_review_subject','wl_level_reviews','Access-review previews naming this member or person','access',"(?2 <> '' AND (instr(t.plan,?2)>0 OR instr(t.impact,?2)>0)) OR instr(t.plan,?1)>0 OR instr(t.impact,?1)>0"),
+  s('level_review_subject','wl_level_reviews','Access-review previews naming this member or person','access',"(?2 <> '' AND (instr(t.plan,?2)>0 OR instr(t.impact,?2)>0 OR instr(t.approval_impact,?2)>0)) OR instr(t.plan,?1)>0 OR instr(t.impact,?1)>0 OR instr(t.approval_impact,?1)>0"),
   s('level_migration', 'wl_level_migration', 'Access-level migration record', 'access', 't.member_id = ?2'),
   s('operators', 'oa_operators', 'Sign-in operator', 'access', `t.id IN ${OP}`, { ms: 't.created_at' }),
   s('sessions', 'oa_sessions', 'Sessions', 'access', `t.operator_id IN ${OP}`, { ms: 't.created_at' }),
@@ -179,7 +179,7 @@ const NONE = (reason: string, ...tables: string[]): [string, string][] => tables
 export const OUT_OF_SCOPE = new Map<string, string>([
   ...NONE('Private erasure HMAC key and value-free source tombstones; installation archives preserve the fence', 'wl_retention_import_secret', 'wl_erased_import_keys', 'wl_import_erasure_fences'),
   ...NONE('employer configuration', 'wl_employer', 'wl_connections', 'wl_import_door', 'wl_payroll_layout', 'wl_work_policy', 'wl_locations', 'wl_departments', 'wl_divisions', 'wl_legal_entities', 'wl_schedules', 'wl_doc_categories'),
-  ...NONE('policy and template definitions', 'wl_policy_versions', 'wl_leave_policies', 'wl_leave_policy_rules', 'wl_template_tasks', 'wl_levels', 'wl_level_permissions', 'wl_level_scope_values', 'wl_level_self_fields', 'wl_level_other_fields', 'wl_level_document_categories', 'wl_level_reports', 'wl_level_job_fields', 'wl_level_compensation_fields', 'wl_level_leave_fields', 'wl_hiring_openings', 'wl_review_cycles', 'wl_company_announcements', 'wl_company_folders', 'wl_company_files'),
+  ...NONE('policy and template definitions', 'wl_policy_versions', 'wl_leave_policies', 'wl_leave_policy_rules', 'wl_template_tasks', 'wl_levels', 'wl_level_permissions', 'wl_level_scope_values', 'wl_level_self_fields', 'wl_level_other_fields', 'wl_level_document_categories', 'wl_level_reports', 'wl_level_job_fields', 'wl_level_compensation_fields', 'wl_level_leave_fields', 'wl_level_approvals', 'wl_hiring_openings', 'wl_review_cycles', 'wl_company_announcements', 'wl_company_folders', 'wl_company_files'),
   ...NONE('the erasure window: one row inside the journaled erasure batch, never committed', 'wl_erasure_window'),
   ...NONE('restricted custody of records already removed from every live table: owner-read only, purged by rule', 'wl_retained_records'),
   ...NONE('value-free erasure receipts and the post-commit blob work list: counts, labels and content digests only', 'wl_erasure_receipts', 'wl_erasure_blobs'),

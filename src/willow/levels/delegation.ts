@@ -32,8 +32,8 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
  requireLevelAdmin(actor)
  if(actor.owner) return
  const self=await selfWriteModes(env,actor)
- const categories=await all<{id:string;subject_reads:number}>(env,'SELECT id,subject_reads FROM wl_doc_categories')
- const checkDefinition=(definition:{permissions:readonly string[];jobFields:JobRules;leaveFields:LeaveRules;compensationFields:CompensationRules;reports:string[];selfFields:Record<string,SelfMode>;otherFields:Record<string,OtherMode>;scope:Scope;followOwnChanges:boolean;documentCategories:DocumentRules})=>{
+ const [categories,customFields]=await Promise.all([all<{id:string;subject_reads:number}>(env,'SELECT id,subject_reads FROM wl_doc_categories'),all<{id:string;classification:string}>(env,'SELECT id,classification FROM wl_custom_fields')])
+ const checkDefinition=(definition:{permissions:readonly string[];approvals:string[];jobFields:JobRules;leaveFields:LeaveRules;compensationFields:CompensationRules;reports:string[];selfFields:Record<string,SelfMode>;otherFields:Record<string,OtherMode>;scope:Scope;followOwnChanges:boolean;documentCategories:DocumentRules})=>{
   insist(!definition.permissions.some(p=>p==='access.admin'||p==='eeo.individual'),'owner_only_delegation',403)
   insist(definition.permissions.every(p=>actor.permissions.has(p as Permission) || actor.scoped.some(grant=>grant.permissions.has(p as Permission)&&coversScope(grant.scope,definition.scope))),'delegation_ceiling',403)
   for(const relation of ['self','others'] as const) for(const [category,mode] of Object.entries(definition.documentCategories[relation])) if(mode!=='none') {
@@ -49,6 +49,22 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
    insist(broad || JOB_RANK[mode]<=held,'delegation_ceiling',403)
   }
   const holdsScope=(permission:Permission)=>actor.permissions.has(permission) || actor.scoped.some(grant=>grant.permissions.has(permission)&&coversScope(grant.scope,definition.scope))
+  for(const key of definition.approvals) {
+   const explicit=actor.approvalGrants.some(grant=>grant.keys.includes(key as typeof grant.keys[number])&&coversScope(grant.scope,definition.scope))
+   let native=false
+   if(key==='leave') native=holdsScope('leave.manage')
+   else if(key.startsWith('self:')) native=holdsScope('people.manage')&&holdsScope('people.private')
+   else if(key.startsWith('document:')) {
+    const category=key.slice('document:'.length)
+    native=holdsScope('people.manage')&&(holdsScope('documents.private')||actor.documentCategories.some(grant=>coversScope(grant.scope,definition.scope)&&CATEGORY_RANK[grant.rules.others[category]??'none']>0))
+   } else if(key.startsWith('custom:')) {
+    const field=customFields.find(field=>field.id===key.slice('custom:'.length))
+    native=!!field&&holdsScope('people.manage')&&(field.classification==='general'||holdsScope(field.classification==='hr'?'people.private':'pay.read'))
+   } else if(key.endsWith(':hr')) native=holdsScope('people.manage')
+   else if(key.endsWith(':payroll')) native=actor.permissions.has('payroll.handoff')&&actor.permissions.has('pay.read')
+   // A stored skip-manager assignment grants only that request, never the role everywhere.
+   insist(explicit||native,'delegation_ceiling',403)
+  }
   for(const relation of ['self','others'] as const) for(const field of LEAVE_FIELDS) {
    const mode=definition.leaveFields[relation][field]??'none'
    if(mode==='none') continue
@@ -99,7 +115,8 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
 
 export async function delegatedPayReview(env: Bindings,actor: Actor,plan: Plan,data: Awaited<ReturnType<typeof levels>>) {
  if(actor.owner) return false
- const sensitive=(definition:{permissions:readonly string[];compensationFields:CompensationRules})=>definition.permissions.some(p=>PAY_RIGHTS.includes(p)) || (['self','others'] as const).some(relation=>Object.values(definition.compensationFields[relation]).some(mode=>mode!=='none'))
+ const payrollApprovals=new Set((await all<{id:string}>(env,"SELECT id FROM wl_custom_fields WHERE classification='payroll'")).map(field=>`custom:${field.id}`))
+ const sensitive=(definition:{permissions:readonly string[];approvals:string[];compensationFields:CompensationRules})=>definition.permissions.some(p=>PAY_RIGHTS.includes(p)) || definition.approvals.some(key=>key.startsWith('change:compensation:')||key.endsWith(':payroll')||payrollApprovals.has(key)) || (['self','others'] as const).some(relation=>Object.values(definition.compensationFields[relation]).some(mode=>mode!=='none'))
  if(plan.kind==='level') return sensitive(plan)
  const assigned=plan.kind==='revert' ? plan.assignments.flatMap(a=>a.levels) : plan.levels
  return assigned.some(id=>sensitive(data.levels.find(l=>l.id===id)!))

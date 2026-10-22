@@ -59,8 +59,9 @@ export function customValuesInput(input: import('../input').Input): unknown {
 
 /** Guards are separate: callers put both arrays into the same business commit. No person lookup permits native creation earlier in that batch. */
 export async function customValueStatements(env: Bindings, actor: Actor, personId: string, rawValues: unknown,
-  effectiveFrom: string, { requireAll = true }: { requireAll?: boolean } = {}) {
-  requirePermission(actor, 'people.manage')
+  effectiveFrom: string, { requireAll = true, approvedFields }: { requireAll?: boolean; approvedFields?: ReadonlySet<string> } = {}) {
+  if (!approvedFields) requirePermission(actor, 'people.manage')
+  const writable = (field: Pick<CustomField, 'id' | 'classification'>) => approvedFields ? approvedFields.has(field.id) : writesCustomField(actor, field)
   insist(isISODate(effectiveFrom), 'invalid_field_date')
   insist(rawValues !== null && typeof rawValues === 'object' && !Array.isArray(rawValues), 'invalid_field_values')
   const schemas = await fieldSchemas(env, effectiveFrom), submitted = rawValues as Record<string, unknown>
@@ -70,13 +71,13 @@ export async function customValueStatements(env: Bindings, actor: Actor, personI
     const definition = definitions.find(field => field.key === key || field.id === key)
     insist(definition && !definition.retired, 'unknown_or_retired_field')
     insist(!supplied.has(definition.id), 'duplicate_field_value')
-    insist(writesCustomField(actor, definition), 'forbidden', 403)
+    insist(writable(definition), 'forbidden', 403)
     supplied.set(definition.id, value)
   }
   const needed = definitions.filter(field => !field.retired && (supplied.has(field.id) || (requireAll && field.required)))
-  const relevant = needed.filter(field => writesCustomField(actor, field))
+  const relevant = needed.filter(field => writable(field))
   // Required restricted fields may already be populated. Check presence without selecting their values.
-  const requiredGuards = await Promise.all(needed.filter(field => !writesCustomField(actor, field)).map(async field => {
+  const requiredGuards = await Promise.all(needed.filter(field => !writable(field)).map(async field => {
     const existing = await one<{ id: string; populated: number }>(env, `SELECT id, CASE WHEN json_type(value_json) <> 'null' AND NOT (json_type(value_json)='text' AND length(trim(json_extract(value_json,'$')))=0) THEN 1 ELSE 0 END AS populated FROM wl_custom_field_values WHERE person_id = ? AND field_id = ? AND effective_from <= ? ORDER BY effective_from DESC, sequence DESC LIMIT 1`, personId, field.id, effectiveFrom)
     insist(existing?.populated, 'required_field_value', 400, { key: field.key })
     return guard(env, 'custom_values_changed', `(SELECT id FROM wl_custom_field_values WHERE person_id = ? AND field_id = ? AND effective_from <= ? ORDER BY effective_from DESC, sequence DESC LIMIT 1) = ?`, personId, field.id, effectiveFrom, existing.id)
