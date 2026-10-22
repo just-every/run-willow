@@ -3,7 +3,7 @@ export interface BuiltinReport {
  id: string
  name: string
  description: string
- kind: 'workforce' | 'i9-documents' | 'document-receipts'
+ kind: 'workforce' | 'i9-documents' | 'document-receipts' | 'diversity'
  columns: readonly string[]
  measures: readonly string[]
  status: 'active' | 'all'
@@ -20,6 +20,7 @@ export const BUILTIN_REPORTS: readonly BuiltinReport[] = [
  workforce('payroll', 'Payroll roster', 'A roster of recorded pay in force, with restricted fields withheld.', ['name', 'employeeNumber', 'jobTitle', 'department', 'employmentType', 'payAmount'], [], 'Pay is the recorded rate and basis in force on the as-of date. This roster does not calculate tax, payments or provider processing.'),
  workforce('open-exceptions', 'Open exceptions', 'Permission-checked pending decisions and approved handoffs.', ['name', 'department', 'openExceptions'], ['openExceptions'], 'Counts reconstructable leave/profile decisions and handoffs plus separately authorized payroll exceptions, with links to those native records.', 'all'),
  workforce('overdue-work', 'Overdue work', 'Person-associated native work overdue on the selected date.', ['name', 'department', 'overdueWork'], ['overdueWork'], 'Current work uses the real reader’s FLOW-002 visibility. Historical work includes reconstructable lifecycle, leave, profile and payroll records and marks other historical sources unknown. Unassigned employer work is excluded.', 'all'),
+ { id: 'builtin-diversity', name: 'Diversity aggregate', description: 'Protected, unfiltered employer-wide voluntary self-identification aggregates. Running this report requires independent employer-wide reporting and aggregate EEO rights.', kind: 'diversity', columns: ['dimension', 'category', 'count'], measures: ['total', 'suppressed'], status: 'active', calculation: 'Uses the native diversity report across the complete active employer population, without person or organization filters. Native complementary suppression protects both dimensions and the total together. Selecting this definition supplies neither reporting nor EEO data authority.' },
  { id: 'builtin-i9-documents', name: 'I-9 document custody', description: 'Published documents in categories explicitly mapped by the owner to the I-9 retention class.', kind: 'i9-documents', columns: ['name', 'category', 'document', 'filename', 'publishedAt'], measures: ['readableDocuments', 'withheldPeople'], status: 'all', calculation: 'Lists the latest published version of each readable document in an explicitly I-9-classified category. Recorded custody is not evidence of examination, attestation, E-Verify processing or statutory completion; US-001 workflows are not implemented.' },
  { id: 'builtin-document-receipts', name: 'Document receipt acknowledgements', description: 'Recorded receipt status for readable documents that request acknowledgement.', kind: 'document-receipts', columns: ['name', 'category', 'document', 'filename', 'receipt', 'acknowledgedAt'], measures: ['acknowledged', 'awaitingAcknowledgement', 'withheldPeople'], status: 'all', calculation: 'Uses the latest published native document version and its recorded receipt acknowledgement. Acknowledgement is a receipt, not an electronic signature or verification of a legal form.' },
 ]
