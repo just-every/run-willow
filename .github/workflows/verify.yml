@@ -7,10 +7,16 @@ permissions:
   contents: read
 jobs:
   verify:
+    name: verify (${{ matrix.shard }})
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [core, records]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       CI: 'true'
+      WILLOW_VERIFY_SHARD: ${{ matrix.shard }}
       WRANGLER_SEND_METRICS: 'false'
     steps:
       - name: Set external evidence directory
@@ -33,13 +39,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
       - run: pnpm exec rer check --profile first-party
-      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm exec rer verify
-      - run: pnpm run test:site
+      - if: matrix.shard == 'core'
+        run: pnpm run test:site
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: willow-pages
+          name: willow-pages-${{ matrix.shard }}
           path: |
             ${{ runner.temp }}/willow-evidence/*.png
 
