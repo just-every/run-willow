@@ -4008,6 +4008,10 @@
       "sha256": "0124107fd6b8bb83c480935e3aadd0a7c9cb9c8d33d86d0f9356ae38f9875de7",
       "executable": false
     },
+    "tests/willow/levels-approvals-browser.mjs": {
+      "sha256": "f51b486a4a46742e1cb376dce58e87612a4d60b7309e5320050737cf584eff59",
+      "executable": false
+    },
     "tests/willow/levels-approvals-personal.mjs": {
       "sha256": "c16f0a9e217ead8bc8791f0c0cd13d458e7020314b2ec1f1189e602035771e00",
       "executable": false
@@ -4109,7 +4113,7 @@
       "executable": false
     },
     "tests/willow/levels-sections.mjs": {
-      "sha256": "5c3dbf33d37bf7f44752d907dd2906b867b08bbdf3bdd768727849d4dc038eb9",
+      "sha256": "80e966368d9cbaf9f05bd20443da3689b9423e09b9d50d946378391600ca277b",
       "executable": false
     },
     "tests/willow/levels.mjs": {
