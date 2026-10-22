@@ -41,7 +41,7 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
   insist(!definition.followOwnChanges || actor.followOwnChanges,'delegation_ceiling',403)
   for(const field of SELF_FIELDS) if(definition.selfFields[field]) insist(selfRank[definition.selfFields[field]]<=selfRank[self[field]],'delegation_ceiling',403)
   for(const field of OTHER_FIELDS) if(definition.otherFields[field]) {
-   const baseline:OtherMode=field==='preferredName' || actor.permissions.has('people.private') ? 'edit' : 'none'
+   const baseline:OtherMode=(field==='preferredName'||field==='legalName') || actor.permissions.has('people.private') ? 'edit' : 'none'
    const held=actor.otherPersonal.filter(grant=>coversScope(grant.scope,definition.scope)).reduce<OtherMode>((best,grant)=>otherRank[grant.fields[field]??'none']>otherRank[best]?grant.fields[field]!:best,baseline)
    const privateScope=actor.scoped.some(grant=>grant.permissions.has('people.private')&&coversScope(grant.scope,definition.scope))
    insist(otherRank[definition.otherFields[field]]<=(privateScope?otherRank.edit:otherRank[held]),'delegation_ceiling',403)

@@ -7,7 +7,7 @@ import type { SelfField } from './personal'
 import { EVERYONE, levelScopes, scopeMembers, type Scope } from './scope'
 import { personalField, personalValue } from '../self-service/personal'
 
-export const OTHER_FIELDS = ['preferredName','personal_email','phone','address','date_of_birth','emergency_contact'] as const
+export const OTHER_FIELDS = ['legalName','preferredName','personal_email','phone','address','date_of_birth','emergency_contact'] as const
 export type OtherMode = 'none' | 'view' | 'approval' | 'edit'
 export type OtherRules = Partial<Record<SelfField, OtherMode>>
 export interface OtherGrant { level: string; scope: Scope; fields: OtherRules; people: Set<string> | null }
@@ -37,7 +37,6 @@ export function otherPersonalMode(actor: Actor, person: string, field: SelfField
  if(actor.personId===person) return 'none'
  // Direct grants and other levels remain independent sources (ROLE-002 precedence).
  const baseline=canAbout(actor,'people.manage',person) && ((field==='preferredName'||field==='legalName') || canAbout(actor,'people.private',person)) ? 'edit' : ((field==='preferredName'||field==='legalName') || canAbout(actor,'people.private',person) ? 'view' : 'none')
- if(field==='legalName') return baseline
  const explicit=unionOtherRules(actor.otherPersonal.filter(grant=>!grant.people || grant.people.has(person)).map(grant=>grant.fields))[field]
  return rank[baseline] > rank[explicit] ? baseline : explicit
 }

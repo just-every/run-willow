@@ -28,7 +28,7 @@ export async function proposeSelfChange(env: Bindings, actor: Actor, input: Inpu
   const field=personalField(input.text('field')), value=personalValue(input,field)
   const view=await personView(env,actor,personId)
   guards.push(personId===actor.personId ? await personalModeSnapshot(env,actor,field) : await otherPersonalFence(env,actor,personId,field,'approval'),guard(env,'stale','EXISTS(SELECT 1 FROM wl_people WHERE id=? AND revision=?)',personId,source))
-  before={[field]:field==='preferredName'?view.preferredName:(view.private as Record<string,unknown>)[field]}
+  before={[field]:field==='legalName'?view.legalName:field==='preferredName'?view.preferredName:(view.private as Record<string,unknown>)[field]}
   after={[field]:value}
   rowId=field
   insist(JSON.stringify(before)!==JSON.stringify(after),'nothing_to_change')

@@ -193,6 +193,30 @@ export async function otherPersonalProof(h,owner,s) {
   await reader('person.field',{person:s.managerb.person,field,value:immediate,revision:(await reader(`people/${s.managerb.person}`)).revision},403)
   await reader('person.field',{person:s.employee.person,field,value:immediate,revision:before.revision},409)
  }
+ // Legal name keeps directory visibility while explicit modes add bounded writes only.
+ const legalPlan={...plan,level:level.id,otherFields:{legalName:'view'}}
+ await apply(legalPlan)
+ const legalSource=await read()
+ await reader('person.field',{person:s.employee.person,field:'legalName',value:'synthetic-willow-legal-denied',revision:legalSource.revision},403)
+ await apply({...legalPlan,otherFields:{legalName:'approval'}})
+ const legal=await reader('self.request',{kind:'personal',person:s.employee.person,field:'legalName',value:'synthetic-willow-legal-approved'})
+ assert.deepEqual((await reader(`self-changes/${legal.id}`)).before,{legalName:legalSource.legalName})
+ assert.equal((await read()).legalName,legalSource.legalName)
+ await reader('self.decide',{change:legal.id,decision:'approve',comment:'Cannot approve own request'},403)
+ await hr('self.decide',{change:legal.id,decision:'approve',comment:'Reviewed the exact legal name'})
+ assert.equal((await read()).legalName,'synthetic-willow-legal-approved')
+ const legalPending=await reader('self.request',{kind:'personal',person:s.employee.person,field:'legalName',value:'synthetic-willow-legal-revoked'})
+ await apply({...legalPlan,otherFields:{legalName:'none'}})
+ await hr('self.decide',{change:legalPending.id,decision:'approve',comment:'Mode was revoked'},403)
+ await hr('self.decide',{change:legalPending.id,decision:'reject',comment:'Authority revoked'})
+ await reader('person.field',{person:s.employee.person,field:'legalName',value:'synthetic-willow-legal-denied',revision:(await read()).revision},403)
+ await apply({...legalPlan,otherFields:{legalName:'edit'}})
+ const beforeName=await read()
+ await reader('person.field',{person:s.employee.person,field:'legalName',value:'synthetic-willow-legal-immediate',revision:beforeName.revision})
+ assert.equal((await read()).legalName,'synthetic-willow-legal-immediate')
+ assert.equal((await read()).preferredName,beforeName.preferredName,'Changing legal name preserves the other directory values')
+ await reader('person.field',{person:s.employee.person,field:'legalName',value:'synthetic-willow-legal-stale',revision:beforeName.revision},409)
+ await reader('person.field',{person:s.hr.person,field:'legalName',value:'synthetic-willow-legal-outside',revision:(await api(`people/${s.hr.person}`)).revision},403)
  // A record version, changed mode, ended requester and scope transfer cannot authorize old pending bytes.
  const phonePlan={...plan,level:level.id,otherFields:{phone:'approval'}}
  await apply(phonePlan)

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "people/willow",
-  "manifest": "53d0a08f919fa73804d5f31ec89cd7ddbfbcec4e9905f67ae2e566227f5683d3",
+  "manifest": "2545cce58d5f1b0d3618661be666db5c7bae1a06acbbb2879182149d0873f329",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -70,7 +70,8 @@
           "migrations/core/0054_legal_name_mode.sql",
           "migrations/core/0055_access_delegation.sql",
           "migrations/core/0056_document_category_rights.sql",
-          "migrations/core/0057_document_approval_modes.sql"
+          "migrations/core/0057_document_approval_modes.sql",
+          "migrations/core/0058_other_legal_name.sql"
         ]
       },
       "baseline": null
@@ -236,7 +237,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "4c143f76a5c7036a35ac5269053d07d354a4cc78448c02e999f08b1e2c9a5673",
+      "sha256": "22f5d20c3e8182ed6cbf3a06315a274605b1359b946cdf91c75eeca1067b90c2",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -244,7 +245,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "e1823fc51e6e451f4f1f56d14488eb0ea8458b1e7ad18a96df95bf2540892816",
+      "sha256": "ae875d1d8daba52fad9d94e8ea8f1ad97e7e5c1033555622b6340c3ad248c42e",
       "executable": false
     },
     "base-copies.json": {
@@ -260,7 +261,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "05bb9d8f1a22ec80c86e23d9719d2d223910cc660321550ff55dd02e1098c3f6",
+      "sha256": "b79e6c0ebd4117d782da618f586b56d87ffa95d75da1df03bf20605f6a3c900f",
       "executable": false
     },
     "DEMO.md": {
@@ -316,7 +317,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "b7e9681a7ea0507b9dad5c9b51f45801188e165d4c75cec3ba0d8801fc87de45",
+      "sha256": "51c7eb7037fd08efb49e6ad259798113ee11ef59576737f4fab84a6f72528a15",
       "executable": false
     },
     "EXPORTING.md": {
@@ -573,6 +574,10 @@
     },
     "migrations/core/0057_document_approval_modes.sql": {
       "sha256": "e565b7a7b815e20a38f02420a1894857e2772e6d66aac8c7ae4dd12e2e8f408d",
+      "executable": false
+    },
+    "migrations/core/0058_other_legal_name.sql": {
+      "sha256": "792923ad8bdaf94fff6711da9b1bb579cd6450cdcb2175f28e95dbbd457c6501",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -3160,7 +3165,7 @@
       "executable": false
     },
     "src/willow/levels/delegation.ts": {
-      "sha256": "bbb282241a7d053c295585c090515891505cf09393f9a94873127ff2ca456bd5",
+      "sha256": "24574a3fd76034321d2b8409c0eb3ed5bcad2ae026b79b56cf6db1d6e0e49f38",
       "executable": false
     },
     "src/willow/levels/documents.ts": {
@@ -3172,7 +3177,7 @@
       "executable": false
     },
     "src/willow/levels/other-personal.ts": {
-      "sha256": "d70fec5d1ca55fb15daa55bb788b2223a7f52579d8788110fc50198b7a01d7b7",
+      "sha256": "ba789e82c51c3e3a129884d73ab7d8868939910a12bf68247e6cad8fa5af992a",
       "executable": false
     },
     "src/willow/levels/personal.ts": {
@@ -3472,7 +3477,7 @@
       "executable": false
     },
     "src/willow/self-service/requests.ts": {
-      "sha256": "4a3328724cadb0ebad88947565095b63d427326067299006a6dfc951f307261a",
+      "sha256": "c0e6b001cdda4980a56b4983968c6e0f6dc6bc3241ffdad6a697ad15c6f80412",
       "executable": false
     },
     "src/willow/self-service/view.ts": {
@@ -3604,7 +3609,7 @@
       "executable": false
     },
     "src/willow/ui/people.ts": {
-      "sha256": "d9c460567d9d5b267d7b73c7c0d32e9a4b57b9f8730abb46a265ea4fe98d9776",
+      "sha256": "88009c3f309c25f8d575058dfa847d68e1981ffedadd24adbc378138cd76b119",
       "executable": false
     },
     "src/willow/ui/performance.ts": {
@@ -3860,11 +3865,11 @@
       "executable": false
     },
     "tests/willow/levels-personal-browser.mjs": {
-      "sha256": "f9bfd72a464d7c2abae6f12c9f33a610a7cf7babd90d3481cf0a1c2f3a9462a0",
+      "sha256": "1761a6ce2fc37db24a1b3d83d1c6aa2fcc21af3c52ec168450e7bb85ac527cc6",
       "executable": false
     },
     "tests/willow/levels-personal.mjs": {
-      "sha256": "5655e1db26bb6911bfb21d34ea03f9d9a8ef55afe860a2acf3ed14da879abe43",
+      "sha256": "525e3c4d32651183393ad09b42ce2da797f9e6031ae77b6246ad585ce6e4fb19",
       "executable": false
     },
     "tests/willow/levels-scope-browser.mjs": {
