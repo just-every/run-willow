@@ -9,4 +9,4 @@ run('pnpm',['run','typecheck'])
 if(!shard||shard==='core')for(const script of ['test:email-link','test:flows','test:phase2'])run('pnpm',['run',script])
 if(!shard||shard==='records')run('pnpm',['run','test:regressions'])
 // CI's browser-journeys job already exercises the entire access suite with browsers.
-if(!shard)run('node',['tests/willow/levels.mjs'])
+if(!shard)for(const path of ['tests/willow/levels.mjs','tests/willow/levels-sections.mjs'])run('node',[path])
