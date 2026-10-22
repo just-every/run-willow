@@ -1,3 +1,4 @@
+import { editJobField } from './job-write'
 import { proposeDocument } from './document-write'
 import { editOtherPersonal } from './levels/other-personal'
 import { createPacket, withdrawPacket } from './preboarding'
@@ -126,6 +127,7 @@ export const actions: Record<string, Handler> = {
   'member.permissions': (env, actor, input, request) => setPermissions(env, actor, input, request),
   'access.give': (env, actor, input, request) => giveAccess(env, actor, input, request),
   'access.end': (env, actor, input, request) => endAccess(env, actor, input, request),
+  'job.field': editJobField,
   'person.field': editOtherPersonal,
   'person.update': (env, actor, input) => updatePerson(env, actor, input),
   'period.payroll': (env, actor, input) => setPayrollId(env, actor, input),

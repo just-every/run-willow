@@ -1,3 +1,4 @@
+import { JOB_FIELDS, JOB_LABELS, readsJobHistoryField } from './levels/job'
 // Flow 1 (access): Willow members, their explicit permissions, giving and
 // ending a person's access, and previewing exactly what a member can see.
 // Sign-in accounts are Base operator-auth operators: HR holders are admins
@@ -106,13 +107,14 @@ export async function visibilityPreview(env: Bindings, actor: Actor, memberId: s
   const target = await actorFor(env, { id: member.id, email: member.email, name: member.name, owner, personId: member.person_id, sessionId: '' })
   const theirs = facets(target, personId), mine = facets(actor, personId)
   const both = new Set([...theirs].filter(facet => mine.has(facet)))
-  const view = await personView(env, actor, personId, { admissionActor: target, facets: both, personalFields: field => readsPersonalField(target,personId,field) && readsPersonalField(actor,personId,field), categories: category => readsCategory(target, personId, category) && readsCategory(actor, personId, category), customFields: definition => readsCustomField(target, personId, definition), recordTables: table => readsTable(target, personId, table) })
+  const view = await personView(env, actor, personId, { admissionActor: target, facets: both, jobFields: field=>readsJobHistoryField(target,personId,field)&&readsJobHistoryField(actor,personId,field), personalFields: field => readsPersonalField(target,personId,field) && readsPersonalField(actor,personId,field), categories: category => readsCategory(target, personId, category) && readsCategory(actor, personId, category), customFields: definition => readsCustomField(target, personId, definition), recordTables: table => readsTable(target, personId, table) })
   const customDefinitions = await effectiveFieldDefinitions(env, actor.today)
   const readableReports=new Map((await reportChoices(env,actor)).map(report=>[report.id,report.name]))
   const reportSelections=[...new Set(target.reportGrants.flatMap(grant=>grant.reports))].sort().map(id=>({id,name:readableReports.get(id)??null,withheldFromYou:!readableReports.has(id),reachesThisPerson:target.reportGrants.some(grant=>grant.reports.includes(id)&&grant.people.has(personId))}))
   return {
     member: { id: member.id, name: member.name, status: member.status, permissions: [...target.permissions] as Permission[], scoped: target.scoped.map(grant => ({ level: grant.level, permissions: [...grant.permissions].sort(), reachesThisPerson: grant.people.has(personId) })), managesThisPerson: target.reports.has(personId), isThisPerson: target.personId === personId },
     reportSelections,
+    jobFields:JOB_FIELDS.map(field=>({field,label:JOB_LABELS[field],visible:readsJobHistoryField(target,personId,field),withheldFromYou:readsJobHistoryField(target,personId,field)&&!readsJobHistoryField(actor,personId,field)})),
     personalFields: SELF_FIELDS.map(field=>({field,label:SELF_LABELS[field],visible:readsPersonalField(target,personId,field),withheldFromYou:readsPersonalField(target,personId,field)&&!readsPersonalField(actor,personId,field)})),
     customFields: customDefinitions.map(definition => ({ id: definition.id, key: definition.key, label: definition.label, visible: readsCustomField(target, personId, definition), withheldFromYou: readsCustomField(target, personId, definition) && !readsCustomField(actor, personId, definition) })),
     facets: (Object.keys(FACET_LABELS) as Facet[]).map(facet => ({ facet, label: FACET_LABELS[facet], visible: theirs.has(facet), withheldFromYou: theirs.has(facet) && !mine.has(facet) })),

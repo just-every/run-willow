@@ -6,12 +6,12 @@
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
 import { guard, insist, newId, one, stmt } from '../core'
-import { addDays } from '../dates'
+import { addDays, requireDate } from '../dates'
 import { Input } from '../input'
 import { activeTemplate, caseStatements } from '../lifecycle'
-import { managerChangeGuard } from '../organization'
 import { startPeriodStatements, termsOn } from '../people'
 import { workflowContext } from '../workflow-plan'
+import { prepareJobDates } from '../job-values'
 
 export async function prepareTypeChange(env: Bindings, actor: Actor, periodId: string, execution: Record<string, string>, employmentType: string, templateId: string) {
   const period = await one(env, 'SELECT * FROM wl_periods WHERE id = ?', periodId)
@@ -22,23 +22,26 @@ export async function prepareTypeChange(env: Bindings, actor: Actor, periodId: s
   const end = addDays(effective, -1)
   const base = (await termsOn(env, period.id, effective))!
   const basePay = (await one(env, 'SELECT pay_basis, amount_cents, currency FROM wl_term_pay WHERE term_id = ?', base.id))!
-  const carried = (key: string, column: string) => key in execution ? execution[key] : base[column] ?? ''
+  const carried = (key: string, column: string) => key in execution ? execution[key] : String(base[column] ?? '')
   const input = Input.of({
     startDate: effective, employmentType, payrollId: period.payroll_id ?? '', reason: execution.reason,
     jobTitle: carried('jobTitle', 'job_title'), departmentId: carried('departmentId', 'department_id'), locationId: carried('locationId', 'location_id'),
-    managerPersonId: carried('managerPersonId', 'manager_person_id'), scheduleId: carried('scheduleId', 'schedule_id'),
+    managerPersonId: carried('managerPersonId', 'manager_person_id'), scheduleId: carried('scheduleId', 'schedule_id'), fte: carried('fte', 'fte'),
     payBasis: execution.payBasis ?? basePay.pay_basis, payAmount: execution.payAmount ?? (basePay.amount_cents === null ? '' : (basePay.amount_cents / 100).toFixed(2)),
   })
-  const started = await startPeriodStatements(env, actor, input, period.person_id, basePay.currency, { approved: true })
+  const corrected = await prepareJobDates(env, actor, period, { ...(execution.startDate ? { startDate: execution.startDate } : {}), endDate: end })
+  const nextEnd = 'endDate' in execution && execution.endDate ? requireDate(execution.endDate, 'invalid_endDate') : null
+  const started = await startPeriodStatements(env, actor, input, period.person_id, basePay.currency, { approved: true, endDate: nextEnd })
   const opened = templateId ? await caseStatements(env, actor, await activeTemplate(env, templateId, 'mover'), period.person_id, started.periodId, effective, started.terms.managerPersonId, await workflowContext(env, started.terms, employmentType)) : null
   // Both organization snapshot guards must precede every write; startPeriodStatements returns its guard first.
   const [startGuard, ...startWrites] = started.statements
   return {
     statements: [
-      await managerChangeGuard(env, { period: { id: period.id, personId: period.person_id, startDate: period.start_date, endDate: end } }),
+      ...corrected.guards,
       startGuard,
       guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_periods WHERE id = ? AND revision = ? AND end_date IS NULL)', period.id, period.revision),
       guard(env, 'future_terms_exist', "NOT EXISTS(SELECT 1 FROM wl_terms WHERE period_id = ? AND status = 'active' AND effective_from > ?)", period.id, end),
+      ...corrected.statements,
       stmt(env, 'UPDATE wl_periods SET end_date = ?, end_reason = ?, revision = ? WHERE id = ?', end, 'Employment type change', newId(), period.id),
       ...startWrites,
       ...(opened?.statements ?? []),

@@ -125,8 +125,8 @@ export async function startJoiner(env: Bindings, actor: Actor, input: Input) {
 
 /** Mover: a new terms version from a date, plus an optional mover case anchored on it, in one batch. */
 /** `approved` is set only by FLOW-004 execution, whose approval chain is the authority. */
-export async function prepareMover(env: Bindings, actor: Actor, input: Input, { approved = false } = {}) {
-  const prepared = await prepareTerms(env, actor, input, { approved })
+export async function prepareMover(env: Bindings, actor: Actor, input: Input, { approved = false, exactFields = false } = {}) {
+  const prepared = await prepareTerms(env, actor, input, { approved, exactFields })
   const templateId = input.text('template', { optional: true, max: 100 })
   const opened = templateId ? await caseStatements(env, actor, await activeTemplate(env, templateId, 'mover'), prepared.period.person_id, prepared.period.id, prepared.effective, prepared.terms.managerPersonId, await workflowContext(env, prepared.terms, prepared.period.employment_type)) : null
   return {

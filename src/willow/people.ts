@@ -19,7 +19,7 @@ export type PrivateField = typeof PRIVATE_FIELDS[number]
 export const PRIVATE_LABELS: Record<PrivateField, string> = { personal_email: 'Personal email', phone: 'Phone', address: 'Home address', date_of_birth: 'Date of birth', emergency_contact: 'Emergency contact' }
 
 export interface PersonInput { legalName: string; preferredName: string | null; workEmail: string | null; employeeNumber: string | null; private: Record<PrivateField, string | null> }
-export interface TermsInput { effectiveFrom: string; jobTitle: string; departmentId: string | null; locationId: string | null; managerPersonId: string | null; scheduleId: string | null; reason: string }
+export interface TermsInput { effectiveFrom: string; jobTitle: string; departmentId: string | null; locationId: string | null; managerPersonId: string | null; scheduleId: string | null; fte: number | null; reason: string }
 export interface PayInput { basis: 'salary' | 'hourly' | 'unknown'; amountCents: number | null }
 
 export function readPerson(input: Input): PersonInput {
@@ -42,8 +42,8 @@ export function readPrivate(input: Input): Record<PrivateField, string | null> {
   return values
 }
 
-export async function readTerms(env: Bindings, input: Input, base: Row | null, effectiveFrom: string, defaultReason = ''): Promise<TermsInput> {
-  const pick = (name: string, column: string) => input.has(name) ? input.text(name, { max: 100 }) || null : (base?.[column] ?? null)
+export async function readTerms(env: Bindings, input: Input, base: Row | null, effectiveFrom: string, defaultReason = '', { exactFields = false } = {}): Promise<TermsInput> {
+  const pick = (name: string, column: string) => (exactFields ? input.provided(name) : input.has(name)) ? input.text(name, { max: 100, optional: true }) || null : (base?.[column] ?? null)
   const terms: TermsInput = {
     effectiveFrom,
     jobTitle: input.has('jobTitle') ? input.text('jobTitle', { max: 120 }) : base?.job_title,
@@ -51,6 +51,7 @@ export async function readTerms(env: Bindings, input: Input, base: Row | null, e
     locationId: pick('locationId', 'location_id'),
     managerPersonId: pick('managerPersonId', 'manager_person_id'),
     scheduleId: pick('scheduleId', 'schedule_id'),
+    fte: input.provided('fte') ? readFte(input) : base?.fte ?? null,
     reason: input.text('reason', { max: 300, optional: !!defaultReason }) || defaultReason,
   }
   insist(terms.jobTitle, 'missing_jobTitle')
@@ -59,6 +60,13 @@ export async function readTerms(env: Bindings, input: Input, base: Row | null, e
   if (terms.scheduleId) insist(await one(env, 'SELECT 1 FROM wl_schedules WHERE id = ?', terms.scheduleId), 'schedule_not_found', 404)
   if (terms.managerPersonId) insist(await one(env, 'SELECT 1 FROM wl_people WHERE id = ?', terms.managerPersonId), 'manager_not_found', 404)
   return terms
+}
+
+/** Fraction of full-time employment; a blank value explicitly records unknown. */
+export function readFte(input: Input): number | null {
+  const value = input.text('fte', { optional: true, max: 12 })
+  insist(!value || /^(0(?:\.\d{1,4})?|1(?:\.0{1,4})?)$/.test(value), 'invalid_fte')
+  return value ? Number(value) : null
 }
 
 /** Pay is read only when the request supplies it; setting pay needs pay.read. */
@@ -82,7 +90,7 @@ export function personStatements(env: Bindings, id: string, person: PersonInput,
 
 export function termsStatements(env: Bindings, termId: string, periodId: string, terms: TermsInput, pay: PayInput, currency: string, recordedBy: string, origin: 'native' | 'import' = 'native') {
   return [
-    stmt(env, 'INSERT INTO wl_terms (id, period_id, effective_from, job_title, department_id, location_id, manager_person_id, schedule_id, reason, origin, recorded_by, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', termId, periodId, terms.effectiveFrom, terms.jobTitle, terms.departmentId, terms.locationId, terms.managerPersonId, terms.scheduleId, terms.reason, origin, recordedBy, now()),
+    stmt(env, 'INSERT INTO wl_terms (id, period_id, effective_from, job_title, department_id, location_id, manager_person_id, schedule_id, fte, reason, origin, recorded_by, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', termId, periodId, terms.effectiveFrom, terms.jobTitle, terms.departmentId, terms.locationId, terms.managerPersonId, terms.scheduleId, terms.fte, terms.reason, origin, recordedBy, now()),
     stmt(env, 'INSERT INTO wl_term_pay (term_id, pay_basis, amount_cents, currency) VALUES (?, ?, ?, ?)', termId, pay.basis, pay.amountCents, currency),
   ]
 }
@@ -153,7 +161,7 @@ export async function updatePerson(env: Bindings, actor: Actor, input: Input) {
   return { id, revision: next }
 }
 
-export async function startPeriodStatements(env: Bindings, actor: Actor, input: Input, personId: string, currency: string, { approved = false } = {}) {
+export async function startPeriodStatements(env: Bindings, actor: Actor, input: Input, personId: string, currency: string, { approved = false, endDate = null }: { approved?: boolean; endDate?: string | null } = {}) {
   const start = requireDate(input.text('startDate', { max: 10 }), 'invalid_startDate')
   const type = input.text('employmentType', { max: 20 })
   insist((EMPLOYMENT_TYPES as readonly string[]).includes(type), 'invalid_employmentType')
@@ -161,14 +169,15 @@ export async function startPeriodStatements(env: Bindings, actor: Actor, input: 
   const terms = await readTerms(env, input, null, start, 'Start of employment')
   const pay = readPay(actor, input, { approved }) ?? { basis: 'unknown' as const, amountCents: null }
   const periodId = newId(), termId = newId()
-  const organizationGuard = await managerChangeGuard(env, { period: { id: periodId, personId, startDate: start, endDate: null }, term: { id: termId, effectiveFrom: start, managerPersonId: terms.managerPersonId } })
+  insist(!endDate || endDate >= start, 'end_before_start')
+  const organizationGuard = await managerChangeGuard(env, { period: { id: periodId, personId, startDate: start, endDate }, term: { id: termId, effectiveFrom: start, managerPersonId: terms.managerPersonId } })
   return {
     periodId, termId, start, type, terms, pay,
     statements: [
       organizationGuard,
       // Periods never overlap: a rehire starts only after the previous period has ended.
-      guard(env, 'period_overlap', 'NOT EXISTS(SELECT 1 FROM wl_periods WHERE person_id = ? AND (end_date IS NULL OR end_date >= ?))', personId, start),
-      stmt(env, 'INSERT INTO wl_periods (id, person_id, start_date, employment_type, payroll_id, revision, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', periodId, personId, start, type, payrollId, newId(), now()),
+      guard(env, 'period_overlap', 'NOT EXISTS(SELECT 1 FROM wl_periods WHERE person_id = ? AND (end_date IS NULL OR end_date >= ?) AND (? IS NULL OR start_date <= ?))', personId, start, endDate, endDate),
+      stmt(env, 'INSERT INTO wl_periods (id, person_id, start_date, end_date, employment_type, payroll_id, revision, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', periodId, personId, start, endDate, type, payrollId, newId(), now()),
       ...termsStatements(env, termId, periodId, terms, pay, currency, actor.id),
     ],
   }
@@ -180,16 +189,17 @@ export async function termsOn(env: Bindings, periodId: string, date: string) {
 }
 
 /** Prepares a new terms version effective from a date; fields not supplied carry over from the version in force then. */
-export async function prepareTerms(env: Bindings, actor: Actor, input: Input, { approved = false } = {}) {
+export async function prepareTerms(env: Bindings, actor: Actor, input: Input, { approved = false, exactFields = false } = {}) {
   if (!approved) requirePermission(actor, 'people.manage')
   const periodId = input.text('period', { max: 100 })
   const period = await one(env, 'SELECT * FROM wl_periods WHERE id = ?', periodId)
   insist(period, 'period_not_found', 404)
+  insist(actor.personId !== period.person_id, 'own_terms', 403)
   const effective = requireDate(input.text('effectiveFrom', { max: 10 }), 'invalid_effectiveFrom')
   insist(effective > period.start_date, 'effective_before_start')
   insist(!period.end_date || effective <= period.end_date, 'effective_after_end')
   const base = (await termsOn(env, periodId, effective))!
-  const terms = await readTerms(env, input, base, effective)
+  const terms = await readTerms(env, input, base, effective, '', { exactFields })
   const pay = readPay(actor, input, { approved })
   const previousPay = (await one<{ pay_basis: PayInput['basis']; amount_cents: number | null; currency: string }>(env, 'SELECT pay_basis, amount_cents, currency FROM wl_term_pay WHERE term_id = ?', base.id))!
   const currency = pay ? (await one<{ currency: string }>(env, 'SELECT currency FROM wl_employer'))!.currency : previousPay.currency

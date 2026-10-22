@@ -28,7 +28,8 @@ export async function runReport(env:Bindings,actor:Actor,definition:ReportDefini
  for(const person of scoped) {
   if(definition.status==='active'&&person.status!=='active')continue
   const view=await personView(env,actor,person.id,{asOf,audit:false,admissionActor:admission}) as Record<string,any>,period=view.employment?.find((p:any)=>p.id===view.selectedPeriod),term=period?.terms.find((t:any)=>t.inForce),active=person.status==='active',weekly=term?.schedule?.weeklyMinutes??null
-  const tenure=period?Math.max(0,daysBetween(period.startDate,period.endDate&&period.endDate<asOf?period.endDate:asOf)):null
+  const tenure=period?.startDate&&view.jobFields?.endDate?Math.max(0,daysBetween(period.startDate,period.endDate&&period.endDate<asOf?period.endDate:asOf)):null
+  const fte=view.jobFields?.fte ? term?.fte??null : null
   const leave=view.leave?sum(view.leave.accounts.map((a:any)=>a.balanceMinutes)):null,pay=term?.pay
   let liability:number|null=null
   if(leave!==null&&pay?.amountCents!==null&&pay?.amountCents!==undefined) {
@@ -37,15 +38,16 @@ export async function runReport(env:Bindings,actor:Actor,definition:ReportDefini
   }
   const work=exceptions.get(person.id)??{exceptions:0,overdue:0,tasks:[],sources:[]}
   const overdueSources=currentWork?.filter(w=>w.personId===person.id&&w.due<asOf).map(w=>({kind:w.kind,path:w.path,dueDate:w.due}))??[...work.tasks.filter(w=>w.dueDate<asOf).map(w=>({kind:'Lifecycle task',path:`/app/cases/${w.caseId}`,dueDate:w.dueDate})),...work.sources.filter(w=>w.dueDate<asOf)]
-  const values:Record<string,string|null>={name:view.name,employeeNumber:view.employeeNumber??null,jobTitle:view.current?.jobTitle??null,department:view.current?.department?.name??null,location:view.current?.location?.name??null,employmentType:period?.employmentType??null,fte:weekly===null?null:(weekly/2400).toFixed(3),tenureDays:tenure===null?null:String(tenure),leaveHours:leave===null?null:(leave/60).toFixed(2),leaveLiability:liability===null?null:`${pay.currency} ${(liability/100).toFixed(2)}`,payAmount:pay?.amountCents===null||pay?.amountCents===undefined?null:`${pay.currency} ${(pay.amountCents/100).toFixed(2)} ${pay.basis}`,phone:view.private?.phone??null,personal_email:view.private?.personal_email??null,openExceptions:String(work.exceptions),overdueWork:String(overdueSources.length)}
+  const values:Record<string,string|null>={name:view.name,employeeNumber:view.employeeNumber??null,jobTitle:view.current?.jobTitle??null,department:view.current?.department?.name??null,location:view.current?.location?.name??null,employmentType:period?.employmentType??null,fte:fte===null?null:fte.toFixed(3),tenureDays:tenure===null?null:String(tenure),leaveHours:leave===null?null:(leave/60).toFixed(2),leaveLiability:liability===null?null:`${pay.currency} ${(liability/100).toFixed(2)}`,payAmount:pay?.amountCents===null||pay?.amountCents===undefined?null:`${pay.currency} ${(pay.amountCents/100).toFixed(2)} ${pay.basis}`,phone:view.private?.phone??null,personal_email:view.private?.personal_email??null,openExceptions:String(work.exceptions),overdueWork:String(overdueSources.length)}
   const withheld:string[]=[]
   for(const key of definition.columns) {
    if(key.startsWith('custom.')) {
     const field=view.customFields.fields.find((f:any)=>f.key===key.slice(7));values[key]=field?.value===undefined||field?.value===null?null:String(field.value);if(!field)withheld.push(key)
-   } else if((key==='phone'||key==='personal_email')&&!Object.hasOwn(view.private??{},key)||key==='payAmount'&&!pay||key==='leaveLiability'&&(!pay||!view.leave)||key==='leaveHours'&&!view.leave||key==='employeeNumber'&&view.employeeNumber===undefined)withheld.push(key)
+   } else if(key==='employmentType'&&!view.jobFields?.employmentType||key==='fte'&&!view.jobFields?.fte||key==='tenureDays'&&(!view.jobFields?.startDate||!view.jobFields?.endDate))withheld.push(key)
+   else if((key==='phone'||key==='personal_email')&&!Object.hasOwn(view.private??{},key)||key==='payAmount'&&!pay||key==='leaveLiability'&&(!pay||!view.leave)||key==='leaveHours'&&!view.leave||key==='employeeNumber'&&view.employeeNumber===undefined)withheld.push(key)
   }
   rows.push({personId:person.id,name:view.name,source:`/app/people/${person.id}?asOf=${asOf}`,cells:Object.fromEntries(definition.columns.map(k=>[k,withheld.includes(k)?null:values[k]])),withheld,workSources:work.tasks,exceptionSources:work.sources,overdueSources,
-   measures:{headcount:active?1:0,fte:active&&weekly!==null?Math.round(weekly/2400*1000)/1000:null,tenureDays:tenure,leaveMinutes:leave,liabilityCents:liability,currency:liability===null?null:pay.currency,openExceptions:work.exceptions,overdueWork:overdueSources.length}})
+   measures:{headcount:active?1:0,fte:active&&fte!==null?Math.round(fte*1000)/1000:null,tenureDays:tenure,leaveMinutes:leave,liabilityCents:liability,currency:liability===null?null:pay.currency,openExceptions:work.exceptions,overdueWork:overdueSources.length}})
  }
  const currencies=[...new Set(rows.flatMap(r=>r.measures.currency?[r.measures.currency]:[]))]
  const liability=currencies.map(currency=>({currency,cents:sum(rows.filter(r=>r.measures.currency===currency).map(r=>r.measures.liabilityCents))}))

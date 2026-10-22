@@ -1,3 +1,5 @@
+import { projectJobEmployment } from './job-projection'
+import { hasJobBaseline, readsJobHistoryField, JOB_FIELDS, type JobField } from './levels/job'
 // The one projection of a person: every page, JSON read, preview and agent
 // context of a person is built here from the viewer's facets, selecting only
 // the values those facets allow. Reads of someone else's private contact
@@ -20,6 +22,7 @@ import { casesFor } from './lifecycle'
 import { PRIVATE_FIELDS, currentTerms, displayName, personNames, statusOf } from './people'
 
 export interface ViewOptions {
+  jobFields?: (field: JobField) => boolean
   personalFields?: (field: SelfField) => boolean
   asOf?: string
   audit?: boolean
@@ -60,12 +63,12 @@ async function employmentView(env: Bindings, periods: Row[], current: Row | unde
   const terms = periods.length ? await all(env, `SELECT * FROM wl_terms WHERE period_id IN (${periods.map(() => '?').join(', ')}) ORDER BY effective_from DESC, recorded_at DESC`, ...periods.map(period => period.id)) : []
   const pay = visible.has('pay') && terms.length ? new Map((await all(env, `SELECT * FROM wl_term_pay WHERE term_id IN (${terms.map(() => '?').join(', ')})`, ...terms.map(row => row.id))).map(row => [row.term_id, row])) : null
   const employment = periods.map(period => ({
-    id: period.id, startDate: period.start_date, endDate: period.end_date, employmentType: period.employment_type, status: statusOf(period, date), legalEntity: entities.get(period.id) ?? null,
+    id: period.id, revision: period.revision, startDate: period.start_date, endDate: period.end_date, employmentType: period.employment_type, status: statusOf(period, date), legalEntity: entities.get(period.id) ?? null,
     ...(visible.has('payroll') ? { payrollId: period.payroll_id } : {}),
     ...(visible.has('private') ? { endReason: period.end_reason } : {}),
     terms: terms.filter(row => row.period_id === period.id).map(row => ({
       id: row.id, effectiveFrom: row.effective_from, status: row.status, reason: row.reason, inForce: row.id === current?.id,
-      ...termsSummary(row, look), division: row.department_id ? look.divisions.get(row.department_id) ?? null : null, schedule: row.schedule_id ? { id: row.schedule_id, ...look.schedules.get(row.schedule_id) } : null, recordedAt: row.recorded_at,
+      ...termsSummary(row, look), fte: row.fte ?? (row.schedule_id && look.schedules.get(row.schedule_id) ? look.schedules.get(row.schedule_id)!.weeklyMinutes / 2400 : null), division: row.department_id ? look.divisions.get(row.department_id) ?? null : null, schedule: row.schedule_id ? { id: row.schedule_id, ...look.schedules.get(row.schedule_id) } : null, recordedAt: row.recorded_at,
       ...(pay ? { pay: pay.get(row.id) ? { basis: pay.get(row.id)!.pay_basis, amountCents: pay.get(row.id)!.amount_cents, currency: pay.get(row.id)!.currency } : null } : {}),
     })),
   }))
@@ -78,7 +81,7 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
   const [person, look, periods, currentRows, selectedRows] = await Promise.all([
     one(env, 'SELECT id, legal_name, preferred_name, work_email, employee_number, revision FROM wl_people WHERE id = ? AND NOT EXISTS (SELECT 1 FROM wl_erasure_requests r WHERE r.person_id=wl_people.id AND r.receipt_id IS NOT NULL)', personId),
     lookups(env),
-    all(env, 'SELECT id, start_date, end_date, employment_type, payroll_id, end_reason FROM wl_periods WHERE person_id = ? ORDER BY start_date DESC', personId),
+    all(env, 'SELECT id, revision, start_date, end_date, employment_type, payroll_id, end_reason FROM wl_periods WHERE person_id = ? ORDER BY start_date DESC', personId),
     currentTerms(env, date),
     selectedPeriods(env, date),
   ])
@@ -100,14 +103,17 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
     personCustomFields(env, actor, personId, date, options.customFields),
     personRecordTables(env, actor, personId, date, { allow: options.recordTables }),
   ])
+  if(employment) employment.employment=projectJobEmployment(actor,personId,employment.employment,options.jobFields) as typeof employment.employment
+  const jobFields=Object.fromEntries(JOB_FIELDS.map(field=>[field,readsJobHistoryField(actor,personId,field)&&(!options.jobFields||options.jobFields(field))]))
   const view: Record<string, unknown> = {
+    jobFields,
     customFields,
     recordTables,
     id: person.id, revision: person.revision, name: displayName(person), legalName: person.legal_name, preferredName: person.preferred_name, workEmail: person.work_email,
     asOf: date, status: statusOf(selected, date), selectedPeriod: selected?.id ?? null,
     current: current ? { id: current.id, effectiveFrom: current.effective_from, scheduled: current.effective_from > actor.today, ...termsSummary(current, look),
-      ...(visible.has('employment') ? { schedule: current.schedule_id ? { id: current.schedule_id, ...look.schedules.get(current.schedule_id) } : null } : {}) } : null, facets: [...visible],
-    ...(employment ? { employeeNumber: person.employee_number, ...employment } : {}),
+      ...(visible.has('employment') && jobFields.scheduleId ? { schedule: current.schedule_id ? { id: current.schedule_id, ...look.schedules.get(current.schedule_id) } : null } : {}), ...(visible.has('employment') && jobFields.fte ? {fte: current.fte ?? (current.schedule_id && look.schedules.get(current.schedule_id) ? look.schedules.get(current.schedule_id)!.weeklyMinutes / 2400 : null)} : {}) } : null, facets: [...visible],
+    ...(employment ? { ...(hasJobBaseline(actor,personId) ? {employeeNumber: person.employee_number} : {}), ...employment } : {}),
     ...(personalFields.length ? { private: Object.fromEntries(personalFields.map(field => [field, privateValues?.[field] ?? null])) } : {}),
     ...(visible.has('leave') ? { leave } : {}),
     ...(visible.has('lifecycle') ? { cases } : {}),

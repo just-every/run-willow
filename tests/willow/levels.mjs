@@ -1,3 +1,6 @@
+import { jobBrowserProof } from './levels-job-browser.mjs'
+import { jobWriteProof } from './levels-job-write.mjs'
+import { jobReadProof } from './levels-job-read.mjs'
 import { migrationProof } from './levels-migration.mjs'
 // ROLE-001 named-level slice: public HTTP doors against the production Worker.
 import assert from 'node:assert/strict'
@@ -90,6 +93,9 @@ try {
  const awaitOwnerId=(await api('me')).id
  const audit=await api('audit')
  assert.ok(audit.some(e=>e.action==='level.level'&&e.actor===(awaitOwnerId)))
+ await jobWriteProof(h,owner,fx)
+ const jobReads=await jobReadProof(h,owner,fx)
+ await jobBrowserProof(h,owner,jobReads)
  const personal=await personalFieldProof(h,owner,s)
  const bulk=await bulkLevelProof(h,owner,s,join)
  const scoped=await scopeProof(h,owner,fx)

@@ -1,3 +1,4 @@
+import { jobGrants, type JobGrant } from './levels/job'
 import { documentGrants, type DocumentGrant } from './levels/documents'
 import { otherPersonalGrants, type OtherGrant } from './levels/other-personal'
 import { followsOwnChanges } from './levels/follow'
@@ -50,6 +51,7 @@ export interface Actor {
   personId: string | null
   /** People whose current (or first upcoming) terms name this actor's person as manager. */
   reports: Set<string>
+  jobFields: JobGrant[]
   reportGrants: ReportGrant[]
   documentCategories: DocumentGrant[]
   otherPersonal: OtherGrant[]
@@ -85,7 +87,7 @@ export async function actorFor(env: Bindings, member: { id: string; email: strin
   if (member.owner) PERMISSIONS.filter(permission => permission !== 'eeo.individual').forEach(permission => permissions.add(permission))
   const date = today(await employerZone(env))
   const reports = new Set(member.personId ? (await all<{ person_id: string }>(env, `${CURRENT_TERMS} AND t.manager_person_id = ?`, date, member.personId)).map(row => row.person_id) : [])
-  return { ...member, permissions, reports, today: date, reportGrants: await reportGrants(env,member.id,member.personId,date), documentCategories: await documentGrants(env,member.id,member.personId,date), otherPersonal: await otherPersonalGrants(env, member.id, member.personId, date), followOwnChanges: await followsOwnChanges(env,member), scoped: member.owner ? [] : await scopedGrants(env, member.id, member.personId, date) }
+  return { ...member, permissions, reports, today: date, jobFields: await jobGrants(env,member.id,member.personId,date), reportGrants: await reportGrants(env,member.id,member.personId,date), documentCategories: await documentGrants(env,member.id,member.personId,date), otherPersonal: await otherPersonalGrants(env, member.id, member.personId, date), followOwnChanges: await followsOwnChanges(env,member), scoped: member.owner ? [] : await scopedGrants(env, member.id, member.personId, date) }
 }
 
 export async function ensureMember(env: Bindings, email: string, name: string) {

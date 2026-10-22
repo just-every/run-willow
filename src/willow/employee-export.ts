@@ -1,3 +1,4 @@
+import type { JobField } from './levels/job'
 // DATA-001: exports consume the same permission projection as a person's page.
 import type { Bindings } from '../auth.server'
 import { hasScopedGrant, scopedPeople, type Actor } from './actor'
@@ -10,7 +11,7 @@ import { effectiveField, effectiveFieldDefinitions, fieldSchemas, type Effective
 import { employeeCsv, employeeXlsx } from './export-formats'
 
 type Person = Record<string, any>
-type Column = { personal?: string; label: string; facet?: Facet; value: (person: Person) => unknown }
+type Column = { job?: JobField; personal?: string; label: string; facet?: Facet; value: (person: Person) => unknown }
 const period = (person: Person) => person.employment?.find((row: Person) => row.id === person.selectedPeriod)
 const term = (person: Person) => period(person)?.terms.find((row: Person) => row.inForce)
 export const EMPLOYEE_EXPORT_FIELDS: Record<string, Column> = {
@@ -24,10 +25,11 @@ export const EMPLOYEE_EXPORT_FIELDS: Record<string, Column> = {
   location: { label: 'Location', value: p => p.current?.location?.name },
   manager: { label: 'Manager', value: p => p.current?.manager?.name },
   employeeNumber: { label: 'Employee number', facet: 'employment', value: p => p.employeeNumber },
-  employmentType: { label: 'Employment type', facet: 'employment', value: p => period(p)?.employmentType },
-  startDate: { label: 'Employment start', facet: 'employment', value: p => period(p)?.startDate },
-  endDate: { label: 'Employment end', facet: 'employment', value: p => period(p)?.endDate },
-  schedule: { label: 'Working schedule', facet: 'employment', value: p => p.current?.schedule?.name },
+  employmentType: { job: 'employmentType', label: 'Employment type', facet: 'employment', value: p => period(p)?.employmentType },
+  startDate: { job: 'startDate', label: 'Employment start', facet: 'employment', value: p => period(p)?.startDate },
+  endDate: { job: 'endDate', label: 'Employment end', facet: 'employment', value: p => period(p)?.endDate },
+  schedule: { job: 'scheduleId', label: 'Working schedule', facet: 'employment', value: p => p.current?.schedule?.name },
+  fte: { job:'fte', label:'FTE', facet:'employment', value:p=>p.current?.fte },
   payrollId: { label: 'Payroll identifier', facet: 'payroll', value: p => period(p)?.payrollId },
   payBasis: { label: 'Pay basis', facet: 'pay', value: p => term(p)?.pay?.basis },
   payAmount: { label: 'Pay amount', facet: 'pay', value: p => term(p)?.pay?.amountCents == null ? '' : (term(p).pay.amountCents / 100).toFixed(2) },
@@ -86,7 +88,7 @@ export async function employeeExportData(env: Bindings, actor: Actor, url: URL) 
   for (const person of people) {
     const view = await personView(env, actor, person.id, { asOf: filters.date, customFields: definition => customKeys.has(definition.key) }) as Person
     records.push(view)
-    const withheld = fields.filter(key => key.startsWith('custom.') ? !view.customFields.fields.some((item: EffectiveField) => `custom.${item.key}` === key) : columns[key].personal ? !Object.hasOwn(view.private ?? {},columns[key].personal!) : columns[key].facet && !view.facets.includes(columns[key].facet!))
+    const withheld = fields.filter(key => key.startsWith('custom.') ? !view.customFields.fields.some((item: EffectiveField) => `custom.${item.key}` === key) : columns[key].job ? !view.jobFields?.[columns[key].job!] : columns[key].personal ? !Object.hasOwn(view.private ?? {},columns[key].personal!) : columns[key].facet && !view.facets.includes(columns[key].facet!))
     rows.push([person.id, filters.date, scope!, withheld.join(';'), ...fields.map(key => withheld.includes(key) ? '' : String(columns[key].value(view) ?? ''))])
   }
   return { scope: scope!, asOf: filters.date, fields, rows, records }

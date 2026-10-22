@@ -115,6 +115,8 @@ export interface OrganizationSnapshot {
 export interface ManagerChange {
   /** Include a new period here even when the joiner's person is not inserted yet. */
   period: OrganizationPeriod
+  /** Native period date corrections must name the original start explicitly. */
+  expectedStartDate?: string
   term?: Omit<OrganizationTerm, 'periodId'>
   cancelTermId?: string
 }
@@ -168,8 +170,8 @@ export function assertManagerChange(snapshot: OrganizationSnapshot, change: Mana
     insist(period.endDate >= period.startDate, 'end_before_start')
   }
   const existing = snapshot.periods.find(row => row.id === period.id)
-  insist(!existing || (existing.personId === period.personId && existing.startDate === period.startDate), 'stale', 409)
-  insist(change.term || change.cancelTermId || (existing && existing.endDate !== period.endDate), 'nothing_to_change')
+  insist(!existing || (existing.personId === period.personId && existing.startDate === (change.expectedStartDate ?? period.startDate)), 'stale', 409)
+  insist(change.term || change.cancelTermId || (existing && (existing.endDate !== period.endDate || existing.startDate !== period.startDate)), 'nothing_to_change')
   if (change.cancelTermId) {
     const cancelled = snapshot.terms.find(term => term.id === change.cancelTermId && term.periodId === period.id)
     insist(cancelled, 'stale', 409)

@@ -1,3 +1,4 @@
+import { readsJobField, type JobField } from '../levels/job'
 // ROLE-001: one deliberately small projection shared by detail and list doors.
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
@@ -25,10 +26,13 @@ export async function ownChangeStatus(env:Bindings,actor:Actor,row:Row) {
  const changes: {field:string;from?:string|null;to:string|null}[]=[]
  for(const [key,value] of Object.entries(plan.fields)) {
   if((terms[COLUMNS[key]]??null)===(value??null)) continue
-  const readable=sees(actor,row.person_id,key==='scheduleId'?'employment':'directory')
+  const readable=readsJobField(actor,row.person_id,key as JobField)
   changes.push({field:LABELS[key][0],to:readable?await labelValue(env,LABELS[key][1],value??null):'Withheld'})
  }
  if(plan.employmentType) changes.push({field:'Employment type',to:sees(actor,row.person_id,'employment')?plan.employmentType.replace('_',' '):'Withheld'})
+ if(plan.fte!==undefined) changes.push({field:'FTE',to:readsJobField(actor,row.person_id,'fte')?String(plan.fte??'Unknown'):'Withheld'})
+ for(const [key,value] of Object.entries(plan.dates??{})) changes.push({field:key==='startDate'?'Employment start date':'Employment end date',to:readsJobField(actor,row.person_id,key as JobField)?value??'Ongoing':'Withheld'})
+ if(plan.employmentStatus) changes.push({field:'Employment status',to:readsJobField(actor,row.person_id,'employmentStatus')?plan.employmentStatus:'Withheld'})
  // Self-profile pay access does not imply the level's future self-compensation View right.
  if(plan.pay) changes.push(can(actor,'pay.read')
   ? {field:'Pay',from:formatPay(base.payBasis as never,base.payCents,base.currency),to:formatPay(base.newPayBasis as never,base.newPayCents,base.currency)}

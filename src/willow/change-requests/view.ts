@@ -1,3 +1,4 @@
+import { readsJobHistoryField, type JobField } from '../levels/job'
 // FLOW-004 reads. Only the requester, HR, the owner and members holding a role
 // in the request's resolved steps read it; the person whose terms change does
 // not follow it until an access level (ROLE-001) lets them. Pay is shown only
@@ -64,9 +65,12 @@ export async function changeRequest(env: Bindings, actor: Actor, id: string) {
   const changes = []
   for (const [key, value] of Object.entries(plan.fields)) {
     const [label, table] = LABELS[key]
-    if ((terms[COLUMNS[key]] ?? null) !== (value ?? null)) changes.push({ field: label, from: await name(env, table, terms[COLUMNS[key]] ?? null), to: await name(env, table, value ?? null) })
+    if ((terms[COLUMNS[key]] ?? null) !== (value ?? null)) changes.push(readsJobHistoryField(actor,row.person_id,key as JobField)?{ field: label, from: await name(env, table, terms[COLUMNS[key]] ?? null), to: await name(env, table, value ?? null) }:{field:label,from:'Withheld',to:'Withheld'})
   }
   if (plan.employmentType) changes.push({ field: 'Employment type', from: base.periodType.replace('_', ' '), to: plan.employmentType.replace('_', ' '), note: `On approval the current employment period ends on ${addDays(plan.effectiveFrom, -1)} and a new ${plan.employmentType.replace('_', ' ')} period starts on ${plan.effectiveFrom} with these terms; leave accounts stay with the ended period.` })
+  if(plan.fte!==undefined) changes.push(readsJobHistoryField(actor,row.person_id,'fte')?{field:'FTE',from:String(terms.fte??'Unknown'),to:String(plan.fte??'Unknown')}:{field:'FTE',from:'Withheld',to:'Withheld'})
+  for(const [key,value] of Object.entries(plan.dates??{})) changes.push({field:key==='startDate'?'Employment start date':'Employment end date',from:'Withheld',to:readsJobHistoryField(actor,row.person_id,key as JobField)?value??'Ongoing':'Withheld'})
+  if(plan.employmentStatus) changes.push({field:'Employment status',from:'Withheld',to:readsJobHistoryField(actor,row.person_id,'employmentStatus')?plan.employmentStatus:'Withheld'})
   const pays = canAbout(actor, 'pay.read', row.person_id)
   if (plan.pay) changes.push(pays
     ? { field: 'Pay', from: formatPay(base.payBasis as never, base.payCents, base.currency), to: formatPay(base.newPayBasis as never, base.newPayCents, base.currency), ...(plan.pay.mode === 'percent' ? { percent: plan.pay.percent } : {}) }

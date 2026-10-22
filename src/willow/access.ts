@@ -1,3 +1,4 @@
+import { anyJobGrant } from './levels/job'
 // What a member may see about a person. Every read of a person's data goes
 // through these facets before any value is selected for a response, a page,
 // an export or an agent's context. Managerial rank grants only the manager
@@ -35,7 +36,7 @@ export function facets(actor: Actor, personId: string): Set<Facet> {
   // Rights about this person: employer-wide ones plus those of each scoped level that reaches them (ROLE-002).
   const rights = permissionsAbout(actor, personId), has = (permission: Permission) => actor.owner || rights.has(permission)
   const result = new Set<Facet>(['directory'])
-  if (self || manager || has('people.manage') || has('payroll.handoff')) result.add('employment')
+  if (self || manager || has('people.manage') || has('payroll.handoff') || anyJobGrant(actor,personId)) result.add('employment')
   if (has('people.manage') || has('payroll.handoff')) result.add('payroll')
   if (self || has('people.private')) result.add('private')
   if (self || has('pay.read')) result.add('pay')
@@ -59,4 +60,4 @@ export function readsCategory(actor: Actor, personId: string, category: Record<s
 export const seesEveryone = (actor: Actor) => can(actor, 'people.manage') || can(actor, 'reports.read') || can(actor, 'leave.manage') || can(actor, 'payroll.handoff')
 
 /** Former people: employer-wide holders see them all; a scoped holder only those their scope reaches today. */
-export const seesFormer = (actor: Actor, personId: string) => anyDocumentCategoryGrant(actor,personId) || seesEveryone(actor) || (['people.manage', 'reports.read', 'leave.manage'] as const).some(permission => canAbout(actor, permission, personId))
+export const seesFormer = (actor: Actor, personId: string) => anyJobGrant(actor,personId) || anyDocumentCategoryGrant(actor,personId) || seesEveryone(actor) || (['people.manage', 'reports.read', 'leave.manage'] as const).some(permission => canAbout(actor, permission, personId))
