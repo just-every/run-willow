@@ -46,7 +46,7 @@ export async function confirmThroughBrowser(h, cookie, person) {
     }
     await page.setViewportSize({ width: 1440, height: 1000 })
     await page.getByRole('button', { name: 'Confirm this preview and erase', exact: true }).click()
-    await page.waitForURL(`${h.origin}/app/retention`)
+    await page.waitForURL(url => url.pathname === '/app/retention')
     assert.equal(await page.locator('.error').count(), 0)
     const link = page.locator('a[href^="/app/retention/receipts/"]').first()
     await link.click()

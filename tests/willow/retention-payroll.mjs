@@ -45,5 +45,5 @@ export async function payrollErasure(h, owner, f) {
   assert.ok(!JSON.stringify(custody).includes(peer.person), 'retained payroll slice contains no other worker')
   const receipt = await api(`erasure/receipts/${erased.receipt}`)
   assert.ok(receipt.providerRequests.some(row => row.provider === 'Payroll provider (exported handoff files)' && row.open))
-  await browserEvidence(h, owner, [['payroll-redacted', `/app/payroll/${draft.id}`]])
+  await browserEvidence(h, owner, [['payroll-redacted', `/app/payroll/${draft.id}`], ['directory-after-erasure', '/app/people'], ['access-after-erasure', '/app/access']])
 }

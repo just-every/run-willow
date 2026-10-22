@@ -3795,7 +3795,7 @@
       "executable": false
     },
     "tests/willow/retention-browser.mjs": {
-      "sha256": "87012040478e61c29b01b2333c3b9d35287565780b2b836ed244144d684962e6",
+      "sha256": "6622e9f06a193cd2160f6e9c7f9a8fa0b9648b1d9e24404b2d9ecf696d936faa",
       "executable": false
     },
     "tests/willow/retention-counts.mjs": {
@@ -3807,7 +3807,7 @@
       "executable": false
     },
     "tests/willow/retention-payroll.mjs": {
-      "sha256": "02cfe7810126e5a205e5d54b3236d3e0641e064089e3e74559993ba9e5ecc861",
+      "sha256": "50aebfae63c77ca43d521aeedc9cb8a40eb21cc90f349ef918bf30813d874bca",
       "executable": false
     },
     "tests/willow/retention.mjs": {
