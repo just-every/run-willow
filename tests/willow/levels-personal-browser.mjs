@@ -423,7 +423,7 @@ export async function selectedReportBrowserProof(browser,h,owner,staff,ids) {
    await admin.getByLabel('Member',{exact:true}).selectOption(staff.managerb.member)
    await admin.getByLabel('About this person',{exact:true}).selectOption(staff.employee.person)
    await admin.getByRole('button',{name:'Preview',exact:true}).click()
-   await admin.getByRole('heading',{name:'Selected saved reports',exact:true}).waitFor()
+   await admin.getByRole('heading',{name:'Selected reports',exact:true}).waitFor()
    await capture(admin,'visibility-preview',width)
    await reader.goto(h.origin+'/app')
    if(width===390)await reader.locator('label[for="menu-toggle"]').click()

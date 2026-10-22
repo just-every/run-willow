@@ -28,7 +28,7 @@ try {
  const name=await as(employee,'self.request',{kind:'legalName',legalName:'Elena Patel-Singh'})
  const before=await as(employee,`self-changes/${name.id}`)
  assert.deepEqual(before.before,{legalName:original.legalName});assert.deepEqual(before.after,{legalName:'Elena Patel-Singh'})
- assert.equal(before.owner,'HR');assert.ok(before.dueDate>=today);assert.equal(before.status,'pending')
+ assert.ok((await as(hr,'self-changes')).some(row=>row.id===name.id&&row.status==='pending'),'The native HR queue receives the legal-name proposal');assert.ok(before.dueDate>=today);assert.equal(before.status,'pending')
  assert.equal((await read()).legalName,original.legalName,'SELF-001 pending does not apply')
  for(const cookie of [employee,s.managera.cookie,s.payroll.cookie]) await as(cookie,'self.decide',{change:name.id,decision:'approve',comment:'Unauthorized'},403)
  for(const cookie of [s.managera.cookie,s.payroll.cookie]) {
