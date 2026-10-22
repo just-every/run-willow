@@ -3641,7 +3641,7 @@
       "executable": false
     },
     "src/willow/ui/approval-impact.ts": {
-      "sha256": "3b29b62a73a7b6abbb5bace7afff26f4f5aaedde7d7ccd71e708d92604f30dbd",
+      "sha256": "4fb2f28717c62fa7a7762f22d5f24420123341b68b4c4e07703fb1c002c03e0b",
       "executable": false
     },
     "src/willow/ui/change-compensation.ts": {
@@ -3725,7 +3725,7 @@
       "executable": false
     },
     "src/willow/ui/levels-approvals.ts": {
-      "sha256": "906cecf86a17eba87b7934888d1c37c0a1ce7d24c2d013ca060b7c6eb14cb35e",
+      "sha256": "4efa3515093c54bfcab57ad82fc514c1d645accdf5e62b8870337cc800db45dc",
       "executable": false
     },
     "src/willow/ui/levels-compensation.ts": {
@@ -3741,7 +3741,7 @@
       "executable": false
     },
     "src/willow/ui/levels.ts": {
-      "sha256": "f13bae2d1019db0394d830dcb37e75eb5ff4eb6cb52bdb6e482c964c723db764",
+      "sha256": "697b104932df260bb531c760122af8dc58f09a02b08da4f4dedb19d22d573bea",
       "executable": false
     },
     "src/willow/ui/model-drafts.ts": {
