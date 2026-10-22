@@ -76,7 +76,8 @@ try {
   assert.equal((await get('hr', 'retention')).requests[0].id, request.id)
   assert.equal((await as('hr', 'erasure.withdraw', { request: request.id }, 403)).error, 'owner_required')
   assert.equal((await as('hr', 'erasure.confirm', { person: q, digest: first.digest }, 403)).error, 'owner_required')
-  assert.equal((await api('erasure.confirm', { person: q, digest: first.digest }, 409)).error, 'erasure_blocked')
+  assert.equal((await api('erasure.confirm', { person: q, digest: first.digest }, 409)).error, 'preview_stale')
+  assert.equal((await api('erasure.confirm', { person: q, digest: (await preview('owner', q)).digest }, 409)).error, 'erasure_blocked')
   assert.ok((await as('hr', 'work')).items.every(item => item.kind !== 'erasure-request') && (await get('owner', 'work')).items.some(item => item.kind === 'erasure-request'), 'the open request is the owner\'s work')
 
   // The owner clears each blocker through the owner-only doors.

@@ -3792,12 +3792,16 @@
       "sha256": "624a1bf152490fa213aa9c07a407e6d67741897e0606ddc4b570184a776eaaf9",
       "executable": false
     },
+    "tests/willow/retention-import.mjs": {
+      "sha256": "c0097f2fd3f1441a8406aa08aff98ff5106e32de4226c2a334c54cadda601fe3",
+      "executable": false
+    },
     "tests/willow/retention-payroll.mjs": {
       "sha256": "decf5dcafcee71550daf85a65eba7c80e03c1d3732a5daa0e6b58962412d21dd",
       "executable": false
     },
     "tests/willow/retention.mjs": {
-      "sha256": "ee25fa294d75aea978fcf04fcfb10a026472888769936470b23af7d12200ea0d",
+      "sha256": "1eb1734c532731e68640f2f223f9d686d6fd089ba95443e2b05383d6349c146e",
       "executable": false
     },
     "tests/willow/self-service-browser.mjs": {
