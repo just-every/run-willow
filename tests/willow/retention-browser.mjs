@@ -19,7 +19,7 @@ export async function browserEvidence(h, cookie, pages) {
       for (const width of [1440, 390]) {
         await page.setViewportSize({ width, height: 1000 })
         assert.equal((await page.goto(h.origin + path)).status(), 200)
-        if (name === 'retained' && width === 1440) await page.getByText('Read retained values', { exact: true }).first().click()
+        if (name === 'retained') await page.getByText('Read retained values', { exact: true }).first().click()
         const wide = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth ? [] : [...document.querySelectorAll('body *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1).slice(0, 5).map(el => `${el.tagName.toLowerCase()}.${el.className}: ${el.textContent.slice(0, 40)}`))
         assert.deepEqual(wide, [], `${name} fits ${width}`)
         const screenshot = await page.screenshot({ path: `${destination}/DATA-002-${name}-${width}.png`, fullPage: true })

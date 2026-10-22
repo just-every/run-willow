@@ -3795,7 +3795,7 @@
       "executable": false
     },
     "tests/willow/retention-browser.mjs": {
-      "sha256": "89b0c40f145a45a6430ac3f8706928a8ae8603c2244ca67efb9d2c7d1b6612b5",
+      "sha256": "b9146d8b4589e0817c91a68385f80f3821ffb62ec7d4d209524efcc3e637fa6c",
       "executable": false
     },
     "tests/willow/retention-counts.mjs": {
