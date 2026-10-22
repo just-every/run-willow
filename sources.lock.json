@@ -2846,7 +2846,7 @@
       "executable": false
     },
     "src/willow/change-requests/employment-type.ts": {
-      "sha256": "ddfcf45ec25334948ed6b8f117a127049ecd52810af7c124c1e4a4a87dd52362",
+      "sha256": "455b984cc1dd5f3bc72abc78ebfe2c289479bb516d469bff63a0428e2ab9f672",
       "executable": false
     },
     "src/willow/change-requests/requests.ts": {
@@ -3262,7 +3262,7 @@
       "executable": false
     },
     "src/willow/organization.ts": {
-      "sha256": "c8aa8bf820ab22f7e1a5721b148c18f72e799e66d46e4cf56b543e4d236afb91",
+      "sha256": "23ee1a8ca3b77b9c7b4f9f15cbadd5c2ff54c73e8e8aef95a2b800e228fa761e",
       "executable": false
     },
     "src/willow/payroll-calculation.ts": {
@@ -3286,7 +3286,7 @@
       "executable": false
     },
     "src/willow/people.ts": {
-      "sha256": "56b5fad92f3b45a71d56c8fca822f9b2647cf13dea56cccd4491f74008cce3c1",
+      "sha256": "7bf0e6cd1e61b7388f35b0416e2b1e6bcce1d5f6ab3c3781c87940eaf9162d1d",
       "executable": false
     },
     "src/willow/performance/cycles.ts": {
@@ -3826,7 +3826,7 @@
       "executable": false
     },
     "tests/willow/harness.mjs": {
-      "sha256": "59807bb51068fa187ae6f90facf306809ff3859a10306815965308856a5f53d3",
+      "sha256": "3c00d4fa3eaece02445432c2efeab43830a6b86af4e78d62c4bd7be8e6ab34c8",
       "executable": false
     },
     "tests/willow/hiring-browser.mjs": {
@@ -3873,6 +3873,10 @@
       "sha256": "28aa750e666278c9b0b9c3a232721b83f814d76fd96d0ffd7368079859dce29f",
       "executable": false
     },
+    "tests/willow/levels-migration.mjs": {
+      "sha256": "bdf2b6aaeb319be3c02b4968f1ca4afe2c3ec245eea3e813797d2b18aa99abb5",
+      "executable": false
+    },
     "tests/willow/levels-personal-browser.mjs": {
       "sha256": "06bb3c88b37630e6d686b4a45e727b4661ad71fb8a321e7bc4072d5b6d8daece",
       "executable": false
@@ -3898,7 +3902,7 @@
       "executable": false
     },
     "tests/willow/levels.mjs": {
-      "sha256": "457844c217d1934fa2cf0eba8d045f3b7a71019681ab869d9e4ab2ae9e6121a6",
+      "sha256": "8273226dbe461a7eed22e5a8df1f92988ee0a48ac64a7a2ba5ac6165350c909d",
       "executable": false
     },
     "tests/willow/open-area-fixtures.mjs": {

@@ -3,10 +3,10 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
-import { mkdtemp, mkdir, rm, writeFile, readdir } from 'node:fs/promises'
+import { mkdtemp, mkdir, rm, writeFile, readdir, readFile, copyFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { createRequire } from 'node:module'
 import { workerEnvironment } from '../worker-environment.mjs'
 
@@ -18,7 +18,7 @@ export async function freePort() {
   return port
 }
 
-export async function harness({ bindings = {}, provider, persistTo, port: chosenPort, scheduled = false } = {}) {
+export async function harness({ bindings = {}, provider, persistTo, port: chosenPort, scheduled = false, upgrade } = {}) {
   // The fake provider edge runs beside the real production Worker on local TLS.
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
   const port = chosenPort ?? await freePort()
@@ -30,7 +30,37 @@ export async function harness({ bindings = {}, provider, persistTo, port: chosen
   await writeFile(join(directory, 'local.env'), Object.entries(vars).map(([key, value]) => `${key}=${value}`).join('\n') + '\n', { mode: 0o600 })
   const wrangler = 'node_modules/wrangler/bin/wrangler.js'
   const env = workerEnvironment()
-  execFileSync(process.execPath, [wrangler, 'd1', 'migrations', 'apply', 'DB', '--local', '--persist-to', directory, '--config', 'dist/server/wrangler.json', '--env-file', join(directory, 'local.env')], { stdio: 'ignore', env })
+  // Upgrade inputs are persisted against the actual historical schema before
+  // Wrangler applies the remaining production migrations. No old Worker is faked.
+  let upgradeSnapshot
+  try {
+   if (upgrade) {
+    const configPath = resolve('dist/server/wrangler.json')
+    const config = JSON.parse(await readFile(configPath, 'utf8'))
+    const database = config.d1_databases.find(item => item.binding === 'DB')
+    assert.ok(database?.migrations_dir, 'the built Worker declares its production migrations')
+    const source = resolve(dirname(configPath), database.migrations_dir)
+    const migrations = (await readdir(source)).filter(name => name.endsWith('.sql')).sort()
+    assert.ok(migrations.includes(upgrade.before), 'the upgrade boundary is an actual migration')
+    const staged = join(directory, 'upgrade-migrations')
+    await mkdir(staged)
+    const copied = await Promise.allSettled(migrations.filter(name => name < upgrade.before).map(name => copyFile(join(source, name), join(staged, name))))
+    for (const result of copied) if (result.status === 'rejected') throw result.reason
+    const stagedConfig = join(directory, 'upgrade-wrangler.json')
+    await writeFile(stagedConfig, JSON.stringify({ name: config.name, compatibility_date: config.compatibility_date, d1_databases: [{ ...database, migrations_dir: staged }] }))
+    const local = ['DB', '--local', '--persist-to', directory, '--config', stagedConfig, '--env-file', join(directory, 'local.env')]
+    execFileSync(process.execPath, [wrangler, 'd1', 'migrations', 'apply', ...local], { stdio: 'ignore', env })
+    const fixture = join(directory, 'upgrade-fixture.sql')
+    await writeFile(fixture, upgrade.sql)
+    execFileSync(process.execPath, [wrangler, 'd1', 'execute', ...local, '--file', fixture], { stdio: 'ignore', env })
+    const result = execFileSync(process.execPath, [wrangler, 'd1', 'execute', ...local, '--command', upgrade.snapshot, '--json'], { encoding: 'utf8', env })
+    upgradeSnapshot = JSON.parse(result).flatMap(item => item.results)
+   }
+   execFileSync(process.execPath, [wrangler, 'd1', 'migrations', 'apply', 'DB', '--local', '--persist-to', directory, '--config', 'dist/server/wrangler.json', '--env-file', join(directory, 'local.env')], { stdio: 'ignore', env })
+  } catch (error) {
+    if (!persistTo) await rm(directory, { recursive: true, force: true })
+    throw error
+  }
   const links = new Map()
   let mf, mfOptions, convertOptions
   {
@@ -117,7 +147,7 @@ export async function harness({ bindings = {}, provider, persistTo, port: chosen
   }
 
   const redacted = () => ''
-  return { origin, vars, raw, outstanding, setBindings: async changes => { assert.ok(mf); Object.assign(vars, changes); await mf.setOptions(convertOptions({...mfOptions,bindings:vars})) },  api, submit, signIn, close, output: redacted }
+  return { origin, vars, raw, outstanding, upgradeSnapshot, setBindings: async changes => { assert.ok(mf); Object.assign(vars, changes); await mf.setOptions(convertOptions({...mfOptions,bindings:vars})) },  api, submit, signIn, close, output: redacted }
 }
 
 export const file = (filename, content, type = 'application/octet-stream') => ({ filename, base64: Buffer.from(content).toString('base64'), type })

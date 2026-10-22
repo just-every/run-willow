@@ -1,3 +1,4 @@
+import { migrationProof } from './levels-migration.mjs'
 // ROLE-001 named-level slice: public HTTP doors against the production Worker.
 import assert from 'node:assert/strict'
 import { bulkLevelProof, delegatedLevelProof } from './levels-bulk.mjs'
@@ -106,3 +107,5 @@ try {
 } finally { await h.close() }
 
 await demoProof()
+
+await migrationProof()
