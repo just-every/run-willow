@@ -14,7 +14,7 @@ export async function jobReadProof(h,owner,fx) {
  const target=await join('synthetic-willow-453',{locationId:location.id,scheduleId:schedule.id,fte:'0.75',startDate:day(-170)})
  const outside=await join('synthetic-willow-454',{scheduleId:schedule.id,fte:'0.75'})
  const report=await api('report.save',{definition:{name:'synthetic-willow-455',columns:['name','employmentType','fte','phone','payAmount'],asOf:'today'}})
- const plan={kind:'level',name:'synthetic-willow-456',permissions:['reports.read'],scope:{kind:'group',dimensions:{location:[location.id]}},jobFields:{self:{},others:{scheduleId:'view'}}}
+ const plan={kind:'level',name:'synthetic-willow-456',permissions:['reports.read'],reports:[report.id],scope:{kind:'group',dimensions:{location:[location.id]}},jobFields:{self:{},others:{scheduleId:'view'}}}
  const level=await apply(plan)
  await apply({kind:'assignment',member:reader.member,levels:[level.id]})
  const profile=await read(`people/${target.person}`)
