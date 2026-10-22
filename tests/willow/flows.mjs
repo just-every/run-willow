@@ -455,7 +455,8 @@ try {
     const eeoOpening = await h.api('hiring.opening', cookie.owner, { name: 'Scoped application review', stages: ['New', 'Hired', 'Rejected'], members: [ids.miaMember] })
     const eeoApplication = await h.api('hiring.candidate', cookie.owner, { opening: eeoOpening.id, name: 'Access Applicant', contactEmail: 'scope-applicant@example.com', source: 'Direct application' })
     await h.api('hiring.close', cookie.owner, { application: eeoApplication.id, revision: eeoApplication.revision, openingRevision: eeoOpening.revision, outcome: 'rejected' })
-    const values = { eeoPreboarding: [eeoPacket.id], eeoApplicant: [eeoApplication.id], eeoPerson: [ids.sam, ids.lee], erasureReceipt: ['unknown-receipt'], eeoRun: ['unknown-run'], eeoRunPeople: ['unknown-run'], eeoRunAggregate: ['unknown-run'], hiringOpening: ['unknown-opening'], hiringApplication: ['unknown-application'], levelReview: ['unknown-review'], performanceCycle: ['unknown-review'], performanceFile: ['unknown-review'], surveyPlan: ['unknown-plan'], surveyCsv: ['unknown-survey'], survey: ['unknown-survey'], surveyResults: ['unknown-survey'], compensationCycle: ['unknown-cycle'], companyFile: ['unknown-shared-file'], protectedCase: ['unknown-protected'], protectedDetail: ['unknown-protected','unknown-protected?certificate=1'], customReport: ['unknown-report'], customReportCsv: ['unknown-report'], customReportXlsx: ['unknown-report'], selfChange: ['unknown-self-change'], modelDraft: ['unknown-proposal'], changeRequest: ['unknown-request'], change: ['unknown-request', 'unknown-request?attachment=unknown'], person: [...people, 'me'], context: [...people, 'me'], case: cases, leave: requests, batch: ids.batches, proposal: ids.proposals, request: requests, batchFile: ids.batches, document: versions }
+    const selectedReport=await h.api('report.save',cookie.owner,{definition:{name:'synthetic-willow-9701 limited report',columns:['name','jobTitle','phone','payAmount'],asOf:'today',status:'all'}})
+    const values = { eeoPreboarding: [eeoPacket.id], eeoApplicant: [eeoApplication.id], eeoPerson: [ids.sam, ids.lee], erasureReceipt: ['unknown-receipt'], eeoRun: ['unknown-run'], eeoRunPeople: ['unknown-run'], eeoRunAggregate: ['unknown-run'], hiringOpening: ['unknown-opening'], hiringApplication: ['unknown-application'], levelReview: ['unknown-review'], performanceCycle: ['unknown-review'], performanceFile: ['unknown-review'], surveyPlan: ['unknown-plan'], surveyCsv: ['unknown-survey'], survey: ['unknown-survey'], surveyResults: ['unknown-survey'], compensationCycle: ['unknown-cycle'], companyFile: ['unknown-shared-file'], protectedCase: ['unknown-protected'], protectedDetail: ['unknown-protected','unknown-protected?certificate=1'], customReport: [selectedReport.id], customReportCsv: [selectedReport.id], customReportXlsx: [selectedReport.id], selfChange: ['unknown-self-change'], modelDraft: ['unknown-proposal'], changeRequest: ['unknown-request'], change: ['unknown-request', 'unknown-request?attachment=unknown'], person: [...people, 'me'], context: [...people, 'me'], case: cases, leave: requests, batch: ids.batches, proposal: ids.proposals, request: requests, batchFile: ids.batches, document: versions }
     const fill = (pattern, name) => {
       const base = pattern.replace(/^\^|\$$/g, '').replace(/\\\./g, '.')
       if (name === 'employeeBundle') return ['self', 'team', 'organization'].map(scope => `${base}?scope=${scope}&fields=name,phone,payAmount,payrollId&history=employment,leave,lifecycle,documents`)
@@ -536,7 +537,19 @@ try {
       const body=await (await h.raw(url,{cookie:cookie.ivan})).text()
       for(const key of forbidden.ivan) assert.ok(!body.includes(SECRET[key]),`Category revocation leaked ${key} through ${url}`)
     }
-    console.log(`ROLE-001 crawled ${urls.length} doors with exact named levels, selective personal fields and document categories, and same-session revocation`)
+    const selectedLevel=await h.api('level.apply',cookie.owner,{review:(await h.api('level.preview',cookie.owner,{kind:'level',name:'One selected report',permissions:[],reports:[selectedReport.id],scope:{kind:'group',dimensions:{location:[ids.sydney]}}})).id})
+    await h.api('level.apply',cookie.owner,{review:(await h.api('level.preview',cookie.owner,{kind:'assignment',member:ids.ivanMember,levels:[named.ivan.id,selectedLevel.id]})).id})
+    assert.ok((await h.api(`custom-reports/${selectedReport.id}`,cookie.ivan)).result.rows.length>0)
+    for(const url of urls) {
+      const body=await(await h.raw(url,{cookie:cookie.ivan})).text()
+      for(const key of forbidden.ivan)assert.ok(!body.includes(SECRET[key]),`Selected report leaked ${key} through ${url}`)
+    }
+    await h.api('level.apply',cookie.owner,{review:(await h.api('level.preview',cookie.owner,{kind:'level',level:selectedLevel.id,name:'One selected report',permissions:[],reports:[]})).id})
+    for(const url of urls) {
+      const body=await(await h.raw(url,{cookie:cookie.ivan})).text()
+      for(const key of forbidden.ivan)assert.ok(!body.includes(SECRET[key]),`Selected report revocation leaked ${key} through ${url}`)
+    }
+    console.log(`ROLE-001 crawled ${urls.length} doors with exact named levels, selective personal fields, document categories and saved reports, and same-session revocation`)
     // Reads of someone else's private details are audited.
     const audit = await h.api('audit', cookie.owner)
     assert.ok(audit.some(event => event.action === 'person.private.read' && event.subject === ids.sam && event.actor === ids.hanaMember))

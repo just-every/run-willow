@@ -30,6 +30,7 @@ const NAV: NavItem[][] = [[
   { href: '/app/leave', label: 'Leave', icon: 'calendar', show: () => true },
   { href: '/app/people?view=organization', label: 'Organization chart', icon: 'org', show: () => true },
   { href: '/app/payroll', label: 'Payroll', icon: 'wallet', show: actor => can(actor, 'payroll.handoff') && can(actor, 'pay.read') },
+  { href:'/app/reports/custom',label:'Saved reports',icon:'chart',show:actor=>actor.reportGrants.length>0&&!can(actor,'reports.read')&&!hasScopedGrant(actor,'reports.read')&&actor.reports.size===0 },
   { href: '/app/reports', label: 'Reports', icon: 'chart', show: actor => can(actor, 'reports.read') || hasScopedGrant(actor, 'reports.read') || actor.reports.size > 0 },
   { href: '/app/preboarding', label: 'Preboarding', icon: 'checklist', show: actor => can(actor,'people.manage') },
   { href: '/app/proposals', label: 'Proposals', icon: 'sparkle', show: actor => can(actor, 'people.manage') },

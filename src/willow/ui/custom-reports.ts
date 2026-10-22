@@ -1,6 +1,7 @@
 import { excludesText } from '../retention/excluded'
 import { readsCustomField } from '../custom-fields/read'
 // REPORT-001: saved definitions, authorized results and versioned delivery schedules.
+import { isReporter, selectedReport } from '../levels/reports'
 import type { Bindings } from '../../auth.server'
 import { can, employerZone, type Actor } from '../actor'
 import { effectiveFieldDefinitions, type EffectiveField } from '../custom-fields/store'
@@ -38,9 +39,9 @@ function definitionFields(definition: ReportDefinition, custom: EffectiveField[]
 export async function customReportsPage(env: Bindings, actor: Actor, url: URL) {
   const [reports, custom, zone] = await Promise.all([savedReports(env, actor), visibleDefinitions(env, actor, actor.today), employerZone(env)])
   const definition: ReportDefinition = { name: '', columns: ['name', 'jobTitle', 'department', 'location', 'fte'], asOf: actor.today, from: `${actor.today.slice(0, 7)}-01`, to: actor.today, department: '', location: '', status: 'active' }
-  return page('Custom reports', actor, h`<p class="back"><a href="/app/reports">← Reports</a></p><h1>Custom reports</h1><p>Save the columns, dates and filters you need. Each run uses your current access to people and fields.</p>${relatedReports(actor)}
+  return page('Custom reports', actor, h`${isReporter(actor)?h`<p class="back"><a href="/app/reports">← Reports</a></p>`:''}<h1>Custom reports</h1><p>Save the columns, dates and filters you need. Each run uses your current access to people and fields.</p>${relatedReports(actor)}
 <section class="card"><h2>Saved reports</h2>${reports.length ? table(['Report', 'Version', 'Record as of', 'Created'], reports.map(report => [h`<a href="${route}/${report.id}">${report.definition.name}</a>`, report.version, report.definition.asOf === 'today' ? 'Today, when run' : formatDate(report.definition.asOf), when(report.createdAt, zone)])) : h`<p class="muted">No saved reports in your scope.</p>`}</section>
-<section class="card"><h2>Create a report</h2><p>Organization reporting requires reports access. Managers see their current direct team. Restricted values stay withheld even when a saved report includes their columns.</p>${form('report.save', `${route}/{id}`, definitionFields(definition, custom), 'Save report')}</section>`, { current: '/app/reports', url })
+${isReporter(actor)?h`<section class="card"><h2>Create a report</h2><p>Organization reporting requires reports access. Managers see their current direct team. Restricted values stay withheld even when a saved report includes their columns.</p>${form('report.save', `${route}/{id}`, definitionFields(definition, custom), 'Save report')}</section>`:''}`,  { current: isReporter(actor)?'/app/reports':'/app/reports/custom', url })
 }
 
 function resultRows(result: ReportResult) {
@@ -72,7 +73,8 @@ ${table(['Measure', 'Result', 'Calculation and coverage'], [
 
 type ScheduleData = Awaited<ReturnType<typeof scheduleStatus>>
 function schedulePanel(actor: Actor, report: Awaited<ReturnType<typeof savedReport>>, data: ScheduleData, members: Actor[], zone: string) {
-  const editable = actor.owner || actor.id === report.createdBy
+  if(!isReporter(actor))return ''
+  const editable = isReporter(actor)&&(actor.owner || actor.id === report.createdBy)
   const schedule = data.schedule
   const names = new Map(members.map(member => [member.id, member.name]))
   return h`<section class="card"><h2>Scheduled delivery</h2><p>Recipients receive a sign-in link to this report. Their current access applies when they open it.</p>
@@ -80,7 +82,7 @@ ${schedule ? h`<dl class="facts"><dt>Status</dt><dd>${tag(schedule.enabled ? 'ac
 ${editable ? form('report.schedule', `${route}/${report.id}`, [hidden('report', report.id), hidden('version', report.versionId),
     field('First delivery date', 'firstDate', { type: 'date', value: schedule?.firstDate ?? actor.today }),
     h`<div class="field"><label for="report-cadence">Repeat every (days)</label><input id="report-cadence" name="cadenceDays" type="number" min="1" max="366" step="1" required value="${schedule?.cadenceDays ?? 7}"></div>`,
-    checks('Recipients', 'recipients', members.filter(member => can(member, 'reports.read') || member.reports.size > 0).map(member => ({ value: member.id, label: member.name })), schedule?.recipients ?? []),
+    checks('Recipients', 'recipients', members.filter(member => can(member, 'reports.read') || member.reports.size > 0 || selectedReport(member,report.id)).map(member => ({ value: member.id, label: member.name })), schedule?.recipients ?? []),
     h`<label class="check"><input type="checkbox" name="enabled" value="yes"${!schedule || schedule.enabled ? raw(' checked') : ''}> Enable delivery</label>`,
   ], 'Save schedule') : ''}
 <h3>Delivery history</h3>${data.deliveries.length ? table(['Occurrence', 'Recipient', 'Status', 'Failure', 'Recorded'], data.deliveries.map(delivery => [delivery.occurrence, names.get(delivery.recipient) ?? delivery.recipient, tag(delivery.status), delivery.failure?.replaceAll('_',' ') || '—', when(delivery.createdAt, zone)])) : h`<p class="muted">No deliveries recorded.</p>`}</section>`
@@ -88,11 +90,11 @@ ${editable ? form('report.schedule', `${route}/${report.id}`, [hidden('report', 
 
 export async function customReportPage(env: Bindings, actor: Actor, id: string, url: URL) {
   const report = await savedReport(env, actor, id)
-  const [result, scheduled, members, custom, zone] = await Promise.all([runReport(env, actor, report.definition), scheduleStatus(env, actor, id), workMembers(env), visibleDefinitions(env, actor, report.definition.asOf === 'today' ? actor.today : report.definition.asOf), employerZone(env)])
+  const [result, scheduled, members, custom, zone] = await Promise.all([runReport(env, actor, report.definition,report.id), scheduleStatus(env, actor, id), workMembers(env), visibleDefinitions(env, actor, report.definition.asOf === 'today' ? actor.today : report.definition.asOf), employerZone(env)])
   return page(report.definition.name, actor, h`<p class="back"><a href="${route}">← Custom reports</a></p><header class="page-head"><h1>${report.definition.name}</h1><p>Version ${report.version} · ${result.scope} · record as of ${formatDate(result.asOf)}</p></header>${relatedReports(actor)}
 <p class="actions"><a class="button secondary" href="${route}/${id}.csv">Download CSV</a><a class="button secondary" href="${route}/${id}.xlsx">Download XLSX</a><a href="#calculations">Calculations and unknown values</a></p>
 <section class="card"><h2>Report results</h2><dl class="facts"><dt>Generated</dt><dd>${when(result.generatedAt, zone)}</dd><dt>Latest business event</dt><dd>${when(result.sourceFreshness.recordedThrough, zone)}</dd><dt>Department</dt><dd>${report.definition.department || 'All permitted departments'}</dd><dt>Location</dt><dd>${report.definition.location || 'All permitted locations'}</dd><dt>People included</dt><dd>${report.definition.status === 'active' ? 'Active people' : 'All permitted people'}</dd></dl><p>Withheld means your current access does not permit the value. Unknown / not recorded means no value is available in the readable record.</p>${resultRows(result)}</section>
 ${totals(result)}
-${actor.owner || actor.id === report.createdBy ? h`<section class="card"><details><summary>Save a new report version</summary>${form('report.save', `${route}/${id}`, [hidden('report', id), ...definitionFields(report.definition, custom)], 'Save new version')}</details></section>` : ''}
-${schedulePanel(actor, report, scheduled, members, zone)}`, { current: '/app/reports', url })
+${isReporter(actor)&&(actor.owner || actor.id === report.createdBy) ? h`<section class="card"><details><summary>Save a new report version</summary>${form('report.save', `${route}/${id}`, [hidden('report', id), ...definitionFields(report.definition, custom)], 'Save new version')}</details></section>` : ''}
+${schedulePanel(actor, report, scheduled, members, zone)}`, { current: isReporter(actor)?'/app/reports':'/app/reports/custom', url })
 }

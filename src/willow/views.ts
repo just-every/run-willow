@@ -79,7 +79,7 @@ export const views: Record<string, View> = {
   protectedCase: (env,actor,_request,id) => protectedCase(env,actor,id),
   leaveOverrides,
   customReports: savedReports,
-  customReport: async (env,actor,_request,id) => {const report=await savedReport(env,actor,id);return {report,result:await runReport(env,actor,report.definition),schedule:await scheduleStatus(env,actor,id)}},
+  customReport: async (env,actor,_request,id) => {const report=await savedReport(env,actor,id);return {report,result:await runReport(env,actor,report.definition,report.id),schedule:await scheduleStatus(env,actor,id)}},
   eeoPerson: (env,actor,_request,id,url) => { if([...url.searchParams.keys()].length) throw new WillowError('eeo_filters_not_allowed');return eeoPerson(env,actor,id) }, eeoPeople: (env,actor) => eeoPeople(env,actor),
   eeoMappings: (env,actor) => mappingsView(env,actor), eeoRuns: (env,actor) => runs(env,actor), eeoRun: (env,actor,_request,id) => eeoRunReport(env,actor,id),
   eeoRunPeople: (env,actor,_request,id,url) => runPeople(env,actor,id,url.searchParams), eeoRunAggregate: (env,actor,_request,id) => runAggregate(env,actor,id),

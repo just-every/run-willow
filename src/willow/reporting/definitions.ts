@@ -1,4 +1,5 @@
 // REPORT-001: definitions describe a report, never grant permission to its rows or columns.
+import { isReporter, selectedReport } from '../levels/reports'
 import type { Bindings } from '../../auth.server'
 import { can, hasScopedGrant, type Actor } from '../actor'
 import { all, commit, guard, insist, newId, now, one } from '../core'
@@ -23,9 +24,9 @@ export async function reportDefinition(env:Bindings,raw:unknown,date:string):Pro
  return {name:d.name.trim(),columns:d.columns,asOf,from,to,department:d.department||'',location:d.location||'',status:d.status||'active'}
 }
 export async function savedReports(env:Bindings,actor:Actor) {
- requireReporter(actor)
- const rows=await all(env,`SELECT r.*,v.id AS version_id,v.version,v.definition_json,v.recorded_at FROM wl_saved_reports r JOIN wl_report_versions v ON v.report_id=r.id WHERE v.version=(SELECT MAX(version) FROM wl_report_versions WHERE report_id=r.id) AND (r.created_by=? OR ?=1 OR EXISTS(SELECT 1 FROM wl_report_schedules s,json_each(s.recipients_json) p WHERE s.report_id=r.id AND p.value=?)) ORDER BY v.recorded_at DESC`,actor.id,+can(actor,'reports.read'),actor.id)
- return rows.map(r=>({id:r.id,versionId:r.version_id,version:r.version,definition:JSON.parse(r.definition_json) as ReportDefinition,createdBy:r.created_by,createdAt:r.created_at}))
+ insist(isReporter(actor)||actor.reportGrants.length>0,'forbidden',403)
+ const rows=await all(env,`SELECT r.*,v.id AS version_id,v.version,v.definition_json,v.recorded_at FROM wl_saved_reports r JOIN wl_report_versions v ON v.report_id=r.id WHERE v.version=(SELECT MAX(version) FROM wl_report_versions WHERE report_id=r.id) AND (r.created_by=? OR ?=1 OR r.id IN (SELECT value FROM json_each(?)) OR EXISTS(SELECT 1 FROM wl_report_schedules s,json_each(s.recipients_json) p WHERE s.report_id=r.id AND p.value=?)) ORDER BY v.recorded_at DESC`,actor.id,+can(actor,'reports.read'),JSON.stringify(actor.reportGrants.flatMap(g=>g.reports)),actor.id)
+ return rows.filter(r=>isReporter(actor)||selectedReport(actor,r.id)).map(r=>({id:r.id,versionId:r.version_id,version:r.version,definition:JSON.parse(r.definition_json) as ReportDefinition,createdBy:r.created_by,createdAt:r.created_at}))
 }
 export async function savedReport(env:Bindings,actor:Actor,id:string) {
  const report=(await savedReports(env,actor)).find(r=>r.id===id);insist(report,'not_found',404);return report

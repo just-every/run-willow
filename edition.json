@@ -71,7 +71,8 @@
       "migrations/core/0055_access_delegation.sql",
       "migrations/core/0056_document_category_rights.sql",
       "migrations/core/0057_document_approval_modes.sql",
-      "migrations/core/0058_other_legal_name.sql"
+      "migrations/core/0058_other_legal_name.sql",
+      "migrations/core/0059_selected_reports.sql"
         ]
       }
     },

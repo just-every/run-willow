@@ -132,5 +132,16 @@ try{
  await api('member.permissions',{member:s.hr.member,permissions:['people.manage','reports.read']})
  await as(hr,'eeo/report',undefined,403)
  assert.ok((await api('audit')).some(e=>e.action==='eeo.report.read'))
+ // A selected definition authorizes only its existing scheduled link, never another report or private bytes.
+ const selectedReview=await api('level.preview',{kind:'level',name:'synthetic-willow-9601 report recipient',permissions:[],reports:[report.id]})
+ const selected=await api('level.apply',{review:selectedReview.id})
+ await api('level.apply',{review:(await api('level.preview',{kind:'assignment',member:s.invited.member,levels:[selected.id]})).id})
+ await as(hr,'report.schedule',{report:report.id,version:changed.versionId,firstDate:day(4),cadenceDays:1,recipients:[s.invited.member],enabled:true})
+ const selectedCount=messages.length
+ await tick(day(4));assert.equal(messages.length,selectedCount+1,'A current selected-report recipient receives its reviewed link')
+ for(const content of messages.at(-1).content) assert.ok(!content.value.includes('REPORT-PRIVATE')&&!content.value.includes('91234.57'),'A selected report still sends only the fixed authenticated link')
+ await api('level.apply',{review:(await api('level.preview',{kind:'level',level:selected.id,name:'synthetic-willow-9601 report recipient',permissions:[],reports:[]})).id})
+ await tick(day(5));assert.equal(messages.length,selectedCount+1,'Revoking the selected report prevents the next scheduled dispatch')
+ assert.ok((await detail()).schedule.deliveries.some(d=>d.recipient===s.invited.member&&d.status==='refused'))
  console.log('REPORT-001 custom workforce reports, scheduled links, dated drilldown and protected diversity: PASS')
 }finally{await h.close();await rm(directory,{recursive:true,force:true})}

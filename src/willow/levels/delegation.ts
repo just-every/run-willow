@@ -30,7 +30,7 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
  if(actor.owner) return
  const self=await selfWriteModes(env,actor)
  const categories=await all<{id:string;subject_reads:number}>(env,'SELECT id,subject_reads FROM wl_doc_categories')
- const checkDefinition=(definition:{permissions:readonly string[];selfFields:Record<string,SelfMode>;otherFields:Record<string,OtherMode>;scope:Scope;followOwnChanges:boolean;documentCategories:DocumentRules})=>{
+ const checkDefinition=(definition:{permissions:readonly string[];reports:string[];selfFields:Record<string,SelfMode>;otherFields:Record<string,OtherMode>;scope:Scope;followOwnChanges:boolean;documentCategories:DocumentRules})=>{
   insist(!definition.permissions.some(p=>p==='access.admin'||p==='eeo.individual'),'owner_only_delegation',403)
   insist(definition.permissions.every(p=>actor.permissions.has(p as Permission) || actor.scoped.some(grant=>grant.permissions.has(p as Permission)&&coversScope(grant.scope,definition.scope))),'delegation_ceiling',403)
   for(const relation of ['self','others'] as const) for(const [category,mode] of Object.entries(definition.documentCategories[relation])) if(mode!=='none') {
@@ -38,6 +38,7 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
    const read=actor.permissions.has('documents.private') || relation==='self' && !!actor.personId && !!categories.find(c=>c.id===category)?.subject_reads || sources.some(grant=>CATEGORY_RANK[grant.rules[relation][category]??'none']>0) || relation==='others' && actor.scoped.some(grant=>grant.permissions.has('documents.private')&&coversScope(grant.scope,definition.scope))
    insist(read && (mode==='view'||actor.permissions.has('people.manage')||sources.some(grant=>CATEGORY_RANK[grant.rules[relation][category]??'none']>=CATEGORY_RANK[mode])),'delegation_ceiling',403)
   }
+  for(const report of definition.reports) insist(actor.permissions.has('reports.read') || actor.reportGrants.some(g=>g.reports.includes(report)&&coversScope(g.scope,definition.scope)) || actor.scoped.some(g=>g.permissions.has('reports.read')&&coversScope(g.scope,definition.scope)),'delegation_ceiling',403)
   insist(!definition.followOwnChanges || actor.followOwnChanges,'delegation_ceiling',403)
   for(const field of SELF_FIELDS) if(definition.selfFields[field]) insist(selfRank[definition.selfFields[field]]<=selfRank[self[field]],'delegation_ceiling',403)
   for(const field of OTHER_FIELDS) if(definition.otherFields[field]) {

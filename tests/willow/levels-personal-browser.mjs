@@ -391,3 +391,58 @@ export async function documentWriteBrowserProof(browser,h,owner,staff,ids) {
   }
  } finally {for(const context of contexts) await context.close()}
 }
+
+export async function selectedReportBrowserProof(browser,h,owner,staff,ids) {
+ const contexts=[]
+ const pageFor=async cookie=>{const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context);await context.addCookies(cookie.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})));return context.newPage()}
+ const api=(path,body,status)=>h.api(path,owner,body,status),apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
+ try {
+  const admin=await pageFor(owner),reader=await pageFor(staff.managerb.cookie)
+  const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`selected report ${name} fits ${width}`);await page.screenshot({path:`${evidenceDirectory}/ROLE-001-selected-report-${name}-${width}.png`,fullPage:true})}
+  const submit=async(page,form,name)=>{await form.getByRole('button',{name,exact:true}).click();await page.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'));assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
+  for(const width of [1440,390]) {
+   for(const page of [admin,reader])await page.setViewportSize({width,height:1000})
+   const today=new Date().toISOString().slice(0,10),mover=await api('mover.schedule',{period:staff.employee.period,effectiveFrom:today,locationId:ids.location,reason:'Selected report browser scope'})
+   await admin.goto(h.origin+'/app/access')
+   const name=`Selected saved report ${width}`,create=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:/^Create a level$/})}).first()
+   await create.locator('summary').click()
+   await create.getByLabel('Level name',{exact:true}).fill(name)
+   await create.getByLabel('synthetic-willow-9501 selected report',{exact:true}).check()
+   await create.getByLabel('Scope',{exact:true}).selectOption('group')
+   await create.getByLabel('Selected report group',{exact:true}).check()
+   await capture(admin,'configure',width)
+   await submit(admin,create,'Review level')
+   await capture(admin,'definition-review',width)
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   const assignment=admin.locator('form[action="/app/do/level.preview"]').filter({has:admin.locator('input[name="kind"][value="assignment"]')})
+   await assignment.getByLabel('Assign levels to',{exact:true}).selectOption(staff.managerb.member)
+   await assignment.getByLabel(name,{exact:true}).check()
+   await submit(admin,assignment,'Review assignment')
+   await capture(admin,'assignment-review',width)
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   await reader.goto(h.origin+'/app')
+   if(width===390)await reader.getByRole('button',{name:'Menu',exact:true}).click()
+   await reader.getByRole('link',{name:'Saved reports',exact:true}).click()
+   assert.equal(await reader.getByRole('heading',{name:'Create a report',exact:true}).count(),0)
+   assert.equal(await reader.getByRole('link',{name:'synthetic-willow-9502 unselected report',exact:true}).count(),0)
+   await capture(reader,'list',width)
+   await reader.getByRole('link',{name:'synthetic-willow-9501 selected report',exact:true}).click()
+   assert.ok(await reader.getByText('Withheld',{exact:true}).count()>0)
+   assert.equal(await reader.getByRole('heading',{name:'Scheduled delivery',exact:true}).count(),0)
+   await capture(reader,'result-withheld',width)
+   const [download]=await Promise.all([reader.waitForEvent('download'),reader.getByRole('link',{name:'Download CSV',exact:true}).click()])
+   assert.equal(await download.failure(),null)
+   await admin.goto(h.origin+'/app/access')
+   const edit=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:new RegExp(`^${name} ·`)})}).first()
+   await edit.locator('summary').click()
+   await edit.getByLabel('synthetic-willow-9501 selected report',{exact:true}).uncheck()
+   await submit(admin,edit,'Review level')
+   await capture(admin,'revocation-review',width)
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   assert.equal((await reader.goto(h.origin+`/app/reports/custom/${ids.report}`)).status(),403)
+   await capture(reader,'revoked',width)
+   await apply({kind:'assignment',member:staff.managerb.member,levels:[]})
+   await api('terms.cancel',{terms:mover.terms,reason:'End selected report browser scope'})
+  }
+ } finally {for(const context of contexts)await context.close()}
+}

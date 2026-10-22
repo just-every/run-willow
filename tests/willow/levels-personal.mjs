@@ -425,3 +425,81 @@ export async function documentWriteProof(h,owner,s,ids) {
  console.log('ROLE-001 document writes: PASS — exact category/scope native edits, private immutable HR proposals, withheld pending bytes, no self approval, original bytes, downstream HR follow-up, source/mode/scope/access fences and same-session revocation')
  return {level:level.id,document:pending.document}
 }
+
+
+// ROLE-001 selected saved reports: read one definition within this level's reach only.
+export async function selectedReportProof(h,owner,fx) {
+ const {staff:s,join,templates}=fx
+ const api=(path,body,status)=>h.api(path,owner,body,status),read=(path,body,status)=>h.api(path,s.managerb.cookie,body,status)
+ const apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
+ const assignment=levels=>apply({kind:'assignment',member:s.managerb.member,levels})
+ const location=await api('location.create',{name:'Selected report group',timezone:'UTC'}),today=new Date().toISOString().slice(0,10)
+ const mover=await api('mover.schedule',{period:s.employee.period,effectiveFrom:today,locationId:location.id,reason:'Selected report scope'})
+ const definition={name:'synthetic-willow-9501 selected report',columns:['name','jobTitle','phone','payAmount','employeeNumber'],asOf:'today',status:'all'}
+ const report=await api('report.save',{definition}),hidden=await api('report.save',{definition:{...definition,name:'synthetic-willow-9502 unselected report'}})
+ const scope={kind:'group',dimensions:{location:[location.id]}}
+ const plan={kind:'level',name:'One saved report',permissions:[],reports:[report.id],scope}
+ const level=await apply(plan)
+ await read('custom-reports',undefined,403)
+ await api('level.preview',{...plan,name:'Unknown saved report',reports:['missing']},403)
+ const review=await api('level.preview',{kind:'assignment',member:s.managerb.member,levels:[level.id]})
+ assert.deepEqual(review.impact[0].afterReports[0].reports,[report.id])
+ await api('level.apply',{review:review.id})
+ assert.deepEqual((await read('custom-reports')).map(r=>r.id),[report.id])
+ const result=(await read(`custom-reports/${report.id}`)).result
+ assert.deepEqual(result.rows.map(r=>r.personId),[s.employee.person])
+ assert.equal(result.scope,'selected report scope')
+ assert.equal(result.totals.headcount,1)
+ assert.deepEqual(result.rows[0].withheld.sort(),['employeeNumber','payAmount','phone'])
+ for(const format of ['csv','xlsx']) {
+  const response=await h.raw(`/app/reports/custom/${report.id}.${format}`,{cookie:s.managerb.cookie});assert.equal(response.status,200)
+  const bytes=Buffer.from(await response.arrayBuffer()),text=format==='csv'?bytes.toString():[...readZip(bytes).values()].map(b=>b.toString()).join('')
+  assert.ok(text.includes('Withheld'))
+  assert.ok(!text.includes('81234.56')&&!text.includes('PRIVATE-employee'))
+ }
+ await read(`custom-reports/${hidden.id}`,undefined,404)
+ assert.equal((await h.raw(`/app/reports/custom/${hidden.id}.csv`,{cookie:s.managerb.cookie})).status,404)
+ await read('report.save',{definition},403)
+ await read('report.save',{report:report.id,definition},403)
+ await read('report.schedule',{report:report.id,version:report.versionId,firstDate:today,cadenceDays:7,recipients:[s.managerb.member],enabled:true},403)
+ await read('reports',undefined,403)
+ assert.equal((await h.raw('/app/exports/employees.csv?scope=organization&fields=name,phone',{cookie:s.managerb.cookie})).status,403)
+ assert.equal((await read(`people/${s.employee.person}`)).private,undefined,'A report selection changes no profile authority')
+ assert.equal((await read(`people/${s.employee.person}`)).pay,undefined)
+ assert.deepEqual((await read('me')).permissions,[])
+ await api('report.schedule',{report:report.id,version:report.versionId,firstDate:today,cadenceDays:7,recipients:[s.managerb.member,(await api('me')).id],enabled:true})
+ assert.equal((await read(`custom-reports/${report.id}`)).schedule.schedule,null,'A selected report does not expose delivery configuration or other recipients')
+ // A selected report may include a scoped former row without opening that person's profile.
+ const day=n=>new Date(Date.now()+n*86400000).toISOString().slice(0,10)
+ const former=await join('synthetic-willow-9503',{startDate:day(-20),locationId:location.id})
+ await api('leaver.start',{period:former.period,endDate:day(-1),reason:'Selected report former-row proof',template:templates.leaver})
+ const withFormer=(await read(`custom-reports/${report.id}`)).result
+ assert.ok(withFormer.rows.some(row=>row.personId===former.person))
+ assert.equal(withFormer.totals.headcount,1,'A former row is not counted as active')
+ await read(`people/${former.person}`,undefined,404)
+ await read(`context/${former.person}`,undefined,404)
+ // Directory movement and field revocation are evaluated at read time, including old report dates.
+ await api('terms.cancel',{terms:mover.terms,reason:'Leave selected report scope'})
+ assert.deepEqual((await read(`custom-reports/${report.id}`)).result.rows.map(row=>row.personId),[former.person])
+ const everywhere=await apply({kind:'level',name:'One saved report everywhere',permissions:[],reports:[report.id]})
+ await assignment([level.id,everywhere.id])
+ assert.ok((await read(`custom-reports/${report.id}`)).result.rows.length>1,'Independent selected-report sources form a union')
+ const beforeHR=(await api('levels')).assignments.filter(a=>a.member_id===s.hr.member).map(a=>a.level_id)
+ const admin=await apply({kind:'level',name:'Report selection administrator',permissions:['access.admin']})
+ await apply({kind:'assignment',member:s.hr.member,levels:[...beforeHR,admin.id]})
+ await h.api('level.preview',s.hr.cookie,{kind:'level',name:'No report ceiling',permissions:[],reports:[report.id]},403)
+ const ceiling=await apply({kind:'level',name:'Report delegate ceiling',permissions:[],reports:[report.id],scope})
+ await apply({kind:'assignment',member:s.hr.member,levels:[...beforeHR,admin.id,ceiling.id]})
+ const bounded=await h.api('level.preview',s.hr.cookie,{kind:'level',name:'Selected report in covered group',permissions:[],reports:[report.id],scope})
+ await h.api('level.apply',s.hr.cookie,{review:bounded.id})
+ await h.api('level.preview',s.hr.cookie,{kind:'level',name:'Wider selected report',permissions:[],reports:[report.id]},403)
+ await apply({kind:'assignment',member:s.hr.member,levels:beforeHR})
+ await assignment([level.id])
+ await apply({...plan,level:level.id,reports:[]})
+ await read('custom-reports',undefined,403)
+ await read(`custom-reports/${report.id}`,undefined,403)
+ assert.equal((await h.raw(`/app/reports/custom/${report.id}.csv`,{cookie:s.managerb.cookie})).status,403)
+ await assignment([])
+ console.log('ROLE-001 selected saved reports: PASS — exact definition and current group, withheld fields, JSON/page/CSV/XLSX isolation, no editing/scheduling/general exports, bounded delegation, scope union and same-session revocation')
+ return {report:report.id,hidden:hidden.id,location:location.id,level:level.id,scope}
+}

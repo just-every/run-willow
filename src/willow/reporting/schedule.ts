@@ -1,4 +1,5 @@
 // REPORT-001: immutable-version schedules, safe authenticated links and durable one-attempt custody.
+import { isReporter, requireReportReader } from '../levels/reports'
 import type { Bindings } from '../../auth.server'
 import { actorFor, employerZone, type Actor } from '../actor'
 import { all, commit, guard, insist, newId, now, one, stmt } from '../core'
@@ -11,10 +12,11 @@ import { requireReporter, savedReport } from './definitions'
 import { runReport } from './execute'
 export async function scheduleStatus(env:Bindings,actor:Actor,id:string) {
  const report=await savedReport(env,actor,id),r=await one(env,'SELECT * FROM wl_report_schedules WHERE report_id=?',id)
- return {schedule:r?{firstDate:r.first_date,cadenceDays:r.cadence_days,enabled:!!r.enabled,recipients:JSON.parse(r.recipients_json) as string[],versionId:r.version_id}:null,
-  deliveries:(report.createdBy===actor.id||actor.owner?await all(env,'SELECT * FROM wl_report_deliveries WHERE report_id=? ORDER BY created_at DESC',id):await all(env,'SELECT * FROM wl_report_deliveries WHERE report_id=? AND recipient=? ORDER BY created_at DESC',id,actor.id)).map(d=>({id:d.id,occurrence:d.occurrence,recipient:d.recipient,status:d.status,failure:d.failure,createdAt:d.created_at}))}
+ return {schedule:r&&isReporter(actor)?{firstDate:r.first_date,cadenceDays:r.cadence_days,enabled:!!r.enabled,recipients:JSON.parse(r.recipients_json) as string[],versionId:r.version_id}:null,
+  deliveries:(isReporter(actor)&&(report.createdBy===actor.id||actor.owner)?await all(env,'SELECT * FROM wl_report_deliveries WHERE report_id=? ORDER BY created_at DESC',id):await all(env,'SELECT * FROM wl_report_deliveries WHERE report_id=? AND recipient=? ORDER BY created_at DESC',id,actor.id)).map(d=>({id:d.id,occurrence:d.occurrence,recipient:d.recipient,status:d.status,failure:d.failure,createdAt:d.created_at}))}
 }
 export async function scheduleReport(env:Bindings,actor:Actor,input:Input) {
+ requireReporter(actor)
  const report=await savedReport(env,actor,input.text('report'))
  insist(report.createdBy===actor.id||actor.owner,'forbidden',403)
  insist(input.text('version')===report.versionId,'report_version_changed',409)
@@ -22,7 +24,7 @@ export async function scheduleReport(env:Bindings,actor:Actor,input:Input) {
  insist(isDate(first),'invalid_firstDate')
  insist(recipients.length>0&&recipients.length<=50&&new Set(recipients).size===recipients.length,'invalid_recipients')
  const members=await workMembers(env)
- for(const id of recipients){const member=members.find(a=>a.id===id);insist(member,'recipient_unavailable');requireReporter(member);await runReport(env,member,report.definition)}
+ for(const id of recipients){const member=members.find(a=>a.id===id);insist(member,'recipient_unavailable');requireReportReader(member,report.id);await runReport(env,member,report.definition,report.id)}
  const revision=newId()
  await commit(env,[guard(env,'report_version_changed','(SELECT id FROM wl_report_versions WHERE report_id=? ORDER BY version DESC LIMIT 1)=?',report.id,report.versionId),stmt(env,`INSERT INTO wl_report_schedules VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(report_id) DO UPDATE SET version_id=excluded.version_id,recipients_json=excluded.recipients_json,first_date=excluded.first_date,cadence_days=excluded.cadence_days,enabled=excluded.enabled,revision=excluded.revision,approved_by=excluded.approved_by,approved_at=excluded.approved_at`,report.id,report.versionId,JSON.stringify(recipients),first,cadence,+enabled,revision,actor.id,now())],{actor:actor.id,action:'report.schedule',subject:report.id,detail:{version:report.versionId,enabled}})
  return {id:report.id,revision}
@@ -44,8 +46,8 @@ export async function runReportScheduler(env:Bindings,instant=now()) {
    const [author,member,fresh]=await Promise.all([activeMember(env,schedule.approved_by),activeMember(env,recipient),one(env,`SELECT s.*,v.definition_json FROM wl_report_schedules s JOIN wl_report_versions v ON v.id=s.version_id WHERE s.report_id=? AND s.enabled=1 AND s.revision=? AND s.version_id=(SELECT id FROM wl_report_versions WHERE report_id=s.report_id ORDER BY version DESC LIMIT 1)`,schedule.report_id,schedule.revision)])
    if(author&&member&&fresh) {
     try {
-     requireReporter(author);requireReporter(member)
-     await runReport(env,{...member,today:date},JSON.parse(fresh.definition_json))
+     requireReporter(author);requireReportReader(member,schedule.report_id)
+     await runReport(env,{...member,today:date},JSON.parse(fresh.definition_json),schedule.report_id)
      if(!(await connectionSettings(env))?.notices){status='disabled';failure='notices_disabled'}
      else {
       const sender=operatorMail(env),link=env.AUTH_ORIGIN+'/app/reports/custom/'+schedule.report_id
