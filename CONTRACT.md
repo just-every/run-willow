@@ -356,27 +356,27 @@ A delegate's review carrying pay, payroll handoff or compensation-publication au
 
 The original joint target of ROLE-001 and ROLE-004 to ROLE-013 is preserved verbatim: "Each level sets, per field and section (personal, job, compensation, documents by category, time off, benefits, performance, EEO, training), No access / View / Edit / Edit with approval, separately for "about themselves" and "about others", and which approvals, reports and settings it may use."
 
-#### ROLE-004 — job and employment fields.
+#### ROLE-004 — Job and employment fields.
 
 Verbatim original: the shared sentence, restricted to "job". Target: title, department, location, manager, working schedule, employment status, FTE, start and end dates and the people.manage-equivalent job write, each No access / View / Edit / Edit with approval for "about themselves" and "about others" within the level's ROLE-002 scope. Riders: (1) self modes for job fields are No access or View only; a person never edits their own job record. (2) "Edit with approval" about others starts FLOW-004's typed job chain, not SELF-001's single HR step; the chain, mover workflow and stale-source fence are reused as built. (3) A manager change is refused if it creates a reporting cycle; dated direct-manager authority (WIL-01 boundary) is unchanged. (4) Same projection rule as the personal slice: pages, JSON, preview, agent context, directory, org chart, CSV/XLSX/ZIP, webhooks select only readable fields; PEOPLE-002 directory reads are unchanged and grant no edit. Acceptance (the original first leg): a custom level with View on job fields and no compensation access; crawl every door as that member; edit-with-approval job change lands in the FLOW-004 queue; level change reflected in the same session.
 
-#### ROLE-005 — compensation.
+#### ROLE-005 — Compensation.
 
 Target: pay in force, pay history, bands, bonus and equity records, cycle data (COMP-001 reads) under the four modes. Riders: No access is the default on every built-in and migrated level; never granted to Manager; self-compensation View is an explicit level right (the right the subject-follow text already names) and ordinary self-profile access never implies it; self Edit does not exist; Edit with approval about others starts FLOW-004's typed compensation chain; `compensation.approve` stays the separate employer-wide right and no level or mode grants it; PAYROLL-001 and PAYROLL-006 reads need a held compensation read. Acceptance (the original second leg): a level with no compensation access shows no pay on any door and a "Withheld" label, and the same level at View shows pay only inside its scope.
 
-#### ROLE-006 — time off and absence.
+#### ROLE-006 — Time off and absence.
 
 Target: balances, ledger entries, requests, calendars and policies (LEAVE-001, LEAVE-002) under the four modes; Edit about others is balance adjustment and request entry on behalf; self Edit is request and cancel; Edit with approval routes through the existing leave approval, not a new queue. Shared calendars keep LEAVE-002's coverage-only projection for people outside a reader's scope. Acceptance: view-only balance level cannot adjust; edit-with-approval adjustment leaves the ledger unchanged until decided; out-of-scope people appear as coverage only.
 
-#### ROLE-007 — benefits, dependents and beneficiaries.
+#### ROLE-007 — Benefits, dependents and beneficiaries.
 
 Target: enrollment, life events, dependents, beneficiaries and deduction records (BENEFITS-001..003, PEOPLE-003 dependents table) under the four modes. Riders: dependents and beneficiaries keep SELF-001 approval for self edits (current rule); medical, disability and leave-of-absence reasons stay in the never-granted-to-Manager set; broker and carrier feeds use only fields the acting level reads. Acceptance: a benefits View level sees elections but not dependent medical detail without its own right; a dependent change stays pending until HR decides.
 
-#### ROLE-008 — performance and engagement.
+#### ROLE-008 — Performance and engagement.
 
 Target: reviews, goals, feedback, 1:1 notes and engagement results (PERFORM-001, ENGAGE-001) under the four modes. Before shipping, ROLE-001 preserves ENGAGE-001 named/anonymous result grants, HR-only anonymous comments and recipient-only anonymous participation/reminder visibility in its new doors or channels. Before adding levels, app doors or channels, ROLE-001 preserves PERFORM-001's own-input/HR-note boundaries, explicit immutable releases, named audited succession withholding and retained former-manager releases, including current-authority exports and reminders. Rider: a level can never reveal an anonymous author, a manager's private notes to the subject, or an unreleased review. Acceptance: crawl a performance View level over a cycle with HR notes, anonymous comments and an unreleased review; none appear.
 
-#### ROLE-009 — training and learning.
+#### ROLE-009 — Training and learning.
 
 Target: assignments, completions, certifications and the TalentLMS link state (LEARN-001) under the four modes; Edit is assign/waive/record completion; self Edit is completion where the course allows. Acceptance: a training level assigns and records a completion for in-scope people only; out-of-scope assignment refused; certifications visible per View.
 
@@ -384,23 +384,23 @@ Target: assignments, completions, certifications and the TalentLMS link state (L
 
 Target: the sections "EEO" and the tax/identity and medical records (US-001 I-9/W-4 data, identity documents, medical/accommodation records) under the four modes. Riders: `eeo.individual` stays a separate, explicit, never-built-in, never-migrated permission (current ruling) and an EEO mode here grants only the subject's own self-identification (self View/Edit) and never another person's answers; I-9/W-4/identity values need their own read and are never in any built-in level except an explicit HR/Payroll bundle that the owner reviews; medical stays never-granted-to-Manager. Acceptance: with all built-in levels, no non-subject reads an individual EEO answer; a custom level with tax View shows only masked values unless its own reveal right applies (the audited US-001 reveal path).
 
-#### ROLE-011 — approval selection.
+#### ROLE-011 — Approval selection.
 
 Target: which approvals a level may decide: the SELF-001 queue by change type, FLOW-004 chains by request type and step role, leave, document-category approvals, custom-field approvals. Riders: a level may decide only inside its scope; nobody decides a request about themselves (current rule); deciding never grants read of fields beyond the proposal projection plus current field authority; a step-role label bound to a level tracks membership live; the preview names each added/removed approval and every pending item the change would reassign or orphan. Acceptance: grant and revoke a level's leave and personal-change approval; pending items route per the new level on the next request; self-approval refused through every door.
 
-#### ROLE-012 — built-in report selection.
+#### ROLE-012 — Built-in report selection.
 
 Target: add built-in reports (the REPORT-001 library, payroll, headcount, turnover, I-9, compliance reports) to a level, on the same reach rules as saved-report selections (read of the current definition within the level's scope; no export beyond what the real reader's field authority permits; no editing or scheduling). Acceptance: select two built-in reports on a custom level; only those appear for the member, values filtered by field authority and scope; revoke applies on the next request; the combined WIL-02 reach lists them.
 
-#### ROLE-013 — settings selection.
+#### ROLE-013 — Settings selection.
 
 Target: which settings areas a level may use (company, locations/departments, schedules, custom fields, document categories, integrations and connections, payroll connections, sign-in/security, API credentials, retention). Riders: employer-wide settings need scope everyone (current rule); owner-only items stay owner-only and are never selectable (DATA-002 adoption, holds, approvals and retained reads; MFA owner policy; access administration beyond the ROLE-003 bounded grant; erasure); a delegate selects only settings they hold; a settings right never grants the data the setting governs. Acceptance: select the integration and custom-field settings for a level; the member opens exactly those pages, API credentials issued are bound to ROLE-001 levels and never exceed them, owner-only pages refuse; revoke applies on the next request.
 
-#### ROLE-014 — built-in level definitions.
+#### ROLE-014 — Built-in level definitions.
 
 Target: the written field-level definitions for built-in Employee, Manager, HR administrator, Payroll administrator and IT across every section, shown in the level editor, with migrations preserving every current effective right and a per-built-in before/after report. Depends on ROLE-004..ROLE-013. Acceptance: each built-in's matrix renders from the compiled facets, and a crawl as each built-in agrees with its matrix and with today's effective rights before any custom change.
 
-#### ROLE-015 — all-section crawl.
+#### ROLE-015 — All-section crawl.
 
 Target: the WIL-03 crawl extended over every level, every section and every door (API, page, download, CSV/XLSX/ZIP, preview, agent context, webhooks, mobile, notifications), generated from the compiled facets, failing on any value outside the member's modes. Depends on ROLE-004..ROLE-013; each earlier clause adds its own section to the crawl in the same round, so ROLE-015 stays the final conformance gate. Acceptance: a generated matrix over every built-in and a two-level custom set shows zero out-of-mode values and zero denied reads that a mode grants.
 
