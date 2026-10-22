@@ -45,3 +45,15 @@ export async function stubIdentities(directory, label) {
   }
   return ids
 }
+
+/** The retained original payloads after using the public import/erasure doors. */
+export async function originalPayloadCount(directory, job) {
+  let count = 0
+  for (const path of walk(join(directory, 'v3')).filter(p => p.includes('/d1/') && p.endsWith('.sqlite'))) {
+    const db = new DatabaseSync(path, { readOnly: true })
+    count += db.prepare('SELECT COUNT(*) AS n FROM ik_originals WHERE job_id=? AND bytes IS NOT NULL').get(job).n
+    count += db.prepare('SELECT COUNT(*) AS n FROM ik_d1_original_chunks WHERE job_id=?').get(job).n
+    db.close()
+  }
+  return count
+}

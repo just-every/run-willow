@@ -227,7 +227,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "1df3a877a6f0df7e3c3ae418e9a87775e7100bcba67d311496e7d37f41cff1ef",
+      "sha256": "84e4cbf2b3dfea632b43bbaba7080bddc7e5626a32fad038cf0d4255c285a837",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -251,7 +251,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "e6f6f1cf2ce12566c90d1892d31fc98e86c6c68acf70663760a3e3416a90b433",
+      "sha256": "b5c235341950b1a7289bdb1d0c152b82142e1f029d951298f649dd4756413a3c",
       "executable": false
     },
     "DEMO.md": {
@@ -3279,7 +3279,7 @@
       "executable": false
     },
     "src/willow/retention/import-custody.ts": {
-      "sha256": "333f6e612e4d8743c37edbcdc7f74dd999fe4bf0bcb7dd40adc656e835e00b75",
+      "sha256": "a642d6987e45e7c1306d56a9ba6136ac816b68f366e586a23a116d206cf954f2",
       "executable": false
     },
     "src/willow/retention/import-target.ts": {
@@ -3799,11 +3799,11 @@
       "executable": false
     },
     "tests/willow/retention-counts.mjs": {
-      "sha256": "624a1bf152490fa213aa9c07a407e6d67741897e0606ddc4b570184a776eaaf9",
+      "sha256": "026806bd4bfd65462a7c84a2d378d802925f58da098327f4da8d277fb28c9da3",
       "executable": false
     },
     "tests/willow/retention-import.mjs": {
-      "sha256": "c0097f2fd3f1441a8406aa08aff98ff5106e32de4226c2a334c54cadda601fe3",
+      "sha256": "3321c02d00c06ccc908cd7d53b3d428f306df6b831002ea05bc4a10dce567a85",
       "executable": false
     },
     "tests/willow/retention-payroll.mjs": {

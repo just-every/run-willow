@@ -77,7 +77,7 @@ export function bamboohrErasureKey(record: Pick<SourceRecord, 'payload'>): strin
 
 export function importErasureContext(env: Bindings, actor: Actor): D1ImportContext {
   requireOwner(actor)
-  return { destination: 'people', namespace: 'bamboohr', mappingVersion: 'bamboohr-people-1',
+  return { destination: 'people', namespace: 'bamboohr', originalErasurePolicy: 'withdraw-all-job-artifacts', mappingVersion: 'bamboohr-people-1',
     storage: { database: env.DB as never, targets: erasureTargets },
     authorization: { principalId: actor.id, predicate: () => ownerPredicate(actor) } }
 }
