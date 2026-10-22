@@ -197,6 +197,7 @@ export async function planErasure(env: Bindings, actor: Actor, personId: string)
   const request = await one<{ id: string; status: string; source: string; received_on: string }>(env, "SELECT id, status, source, received_on FROM wl_erasure_requests WHERE person_id = ? AND status IN ('open', 'confirmed')", personId)
   blockers.sort((a, b) => (a.kind + a.ref).localeCompare(b.kind + b.ref))
   const custody = await selectImportErasure(env, { ...subject, legalName: person.legal_name })
+  if (custody.pendingBlobs) blockers.push({ kind: 'staged_import_files', ref: 'FILES', reason: 'An affected import still owns loose document files; publish or withdraw that import before erasure' })
   const digest = await sha256Hex(JSON.stringify({ sequence, custody: custody.snapshot, version: TABLE_VERSION, adopted: adopted?.id ?? null, rules: rules.map(rule => rule.id), holds: activeHolds.map(hold => [hold.id, hold.review_date]), contractor, mapped: [...mapped].sort(),
     items: items.map(item => [item.id, item.id.endsWith('audit') || item.id === 'work_history' ? 1 : item.rows, item.blobs, item.bytes, item.disposition, item.class, item.expiry, item.hold]), blockers: blockers.map(blocker => [blocker.kind, blocker.ref]), copies, personId }))
   const total = (disposition: Item['disposition']) => items.filter(item => item.disposition === disposition).reduce((sum, item) => sum + item.rows, 0)

@@ -3258,12 +3258,16 @@
       "sha256": "05fc26e904c628501f38c9db7ed41e5cf43972cc5427c902cb993be21a1402c4",
       "executable": false
     },
+    "src/willow/retention/blob-custody.ts": {
+      "sha256": "a3e4da7fad2b5f938905fa7d03b1b2aa000990109bc5afd1cf321aa4b5fe34e8",
+      "executable": false
+    },
     "src/willow/retention/erase.ts": {
       "sha256": "0a1b001737e5c551b593d236b8ef28a96cc963af1b8f6179f4dc103bc0618003",
       "executable": false
     },
     "src/willow/retention/erasure.ts": {
-      "sha256": "7f7a24a70706ebaa6e123195fcb26c56fd2aadfab08e861ebe39685c777b8038",
+      "sha256": "43136faeb7c07ddfa18a62f06864df906e2f7e5635024321571a05d785880597",
       "executable": false
     },
     "src/willow/retention/excluded.ts": {
@@ -3275,7 +3279,7 @@
       "executable": false
     },
     "src/willow/retention/import-custody.ts": {
-      "sha256": "af22caaea5c44313ff28ee30b5d771b7a67dcd16067c351005f5fc1011719727",
+      "sha256": "333f6e612e4d8743c37edbcdc7f74dd999fe4bf0bcb7dd40adc656e835e00b75",
       "executable": false
     },
     "src/willow/retention/import-target.ts": {

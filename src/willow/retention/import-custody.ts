@@ -88,7 +88,7 @@ export function importErasureContext(env: Bindings, actor: Actor): D1ImportConte
 export async function selectImportErasure(env: Bindings, subject: ImportErasureSubject) {
   const employeeNumber = subject.employeeNumber ?? ''
   const emails = new Set([subject.workEmail, subject.memberEmail].filter((value): value is string => !!value).map(value => value.toLowerCase()))
-  const keys = new Set<string>(), loaded: { id: string; sources: SourceRecord[] }[] = []
+  const keys = new Set<string>(), loaded: { id: string; sources: SourceRecord[]; entries: { source: SourceRecord; effects: { targetKind: string; value: any }[] }[] }[] = []
   if (employeeNumber) keys.add(`number:${employeeNumber}`)
   // Source ids survive in plan payloads even after a source employee number or
   // email has changed. Decode chunked plans through Base's own loader.
@@ -96,7 +96,7 @@ export async function selectImportErasure(env: Bindings, subject: ImportErasureS
   const jobs = await all(env, 'SELECT j.*,s.revision AS custody_revision FROM ik_jobs j LEFT JOIN ik_d1_custody_states s ON s.job_id=j.id WHERE j.destination=? ORDER BY j.id', 'people')
   for (const job of jobs) {
     const plans = await loadPlans([job], env.DB as never, willowTargets.planCodec)
-    loaded.push({ id: job.id, sources: plans.get(job.id)!.entries.filter(entry => !entry.erased).map(entry => entry.source) })
+    loaded.push({ id: job.id, entries: plans.get(job.id)!.entries.filter(entry => !entry.erased), sources: plans.get(job.id)!.entries.filter(entry => !entry.erased).map(entry => entry.source) })
     for (const entry of plans.get(job.id)!.entries) {
       if (entry.erased) continue
       const cells = cellsOf(entry.source), key = bamboohrErasureKey(entry.source)
@@ -120,6 +120,14 @@ export async function selectImportErasure(env: Bindings, subject: ImportErasureS
     values: [...new Set([subject.personId, subject.employeeNumber, subject.workEmail, subject.memberEmail].filter((value): value is string => !!value))],
     related: { source },
   }
+  const stagedHashes = new Set<string>()
+  for (const job of loaded) for (const entry of job.entries) if (source(entry.source)) {
+    for (const effect of entry.effects) if (effect.targetKind === 'document' && effect.value?.version?.sha256) {
+      const sha = effect.value.version.sha256 as string
+      const row = await one<{ n: number }>(env, 'SELECT (SELECT COUNT(*) FROM wl_document_versions WHERE sha256=?1) + (SELECT COUNT(*) FROM wl_retained_records WHERE instr(row_json,?1)>0) AS n', sha)
+      if (!row!.n) stagedHashes.add(sha)
+    }
+  }
   const headers = jobs.map(job => [job.id, job.fingerprint, job.custody_revision])
   const guards: D1Sql[] = [{
     sql: `INSERT INTO wl_guard(code,ok) SELECT 'stale',
@@ -130,7 +138,7 @@ export async function selectImportErasure(env: Bindings, subject: ImportErasureS
           AND s.revision IS json_extract(h.value,'$[2]')))`,
     params: [headers.length, JSON.stringify(headers)],
   }]
-  return { person, sourceKeys: [...keys].sort(), jobs: loaded.filter(job => job.sources.some(source)).map(job => job.id), guards, snapshot: sha256(canonicalJson(headers)) }
+  return { person, pendingBlobs: stagedHashes.size, sourceKeys: [...keys].sort(), jobs: loaded.filter(job => job.sources.some(source)).map(job => job.id), guards, snapshot: sha256(canonicalJson(headers)) }
 }
 
 const encode = (bytes: Uint8Array) => Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
