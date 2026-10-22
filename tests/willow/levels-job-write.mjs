@@ -15,7 +15,7 @@ export async function jobWriteProof(h, owner, fx) {
  const target = await join('synthetic-willow-403'), pending = await join('synthetic-willow-404')
  const outside = await join('synthetic-willow-405')
  const department = await api('department.create', { name: 'synthetic-willow-406' })
- const location = await api('location.create', { name: 'synthetic-willow-407' })
+ const location = await api('location.create', { name: 'synthetic-willow-407', timezone:'UTC' })
  const secondSchedule = await api('schedule.create', { name: 'synthetic-willow-408', mon: '4', tue: '4', wed: '4', thu: '4', fri: '4' })
  const fields = ['jobTitle', 'departmentId', 'locationId', 'managerPersonId', 'scheduleId', 'employmentType', 'employmentStatus', 'fte', 'startDate', 'endDate']
  const rules = mode => ({ self: {}, others: Object.fromEntries(fields.map(field => [field, mode])) })
@@ -124,7 +124,7 @@ export async function jobWriteProof(h, owner, fx) {
  const scopedWrite = async (person, value, effectiveFrom, status) => as(editor, 'job.field', { person: person.person, period: person.period, revision: (await period(person.person, person.period)).revision, field: 'jobTitle', value, effectiveFrom, reason: 'synthetic-willow-426' }, status)
  await scopedWrite(scoped, 'synthetic-willow-427', day(50))
  await scopedWrite(outside, 'synthetic-willow-427', day(50), 403)
- const movedLocation = await api('location.create', { name: 'synthetic-willow-428' })
+ const movedLocation = await api('location.create', { name: 'synthetic-willow-428', timezone:'UTC' })
  await api('mover.schedule', { period: scoped.period, effectiveFrom: day(-1), reason: 'synthetic-willow-429', locationId: movedLocation.id })
  await scopedWrite(scoped, 'synthetic-willow-430', day(51), 403)
  assert.equal((await profile(scoped.person, day(51))).current.jobTitle, 'synthetic-willow-427', 'A mover removes exact-field authority immediately without altering approved history')

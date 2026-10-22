@@ -3912,11 +3912,11 @@
       "executable": false
     },
     "tests/willow/levels-job-read.mjs": {
-      "sha256": "f7d51b36c183105d5ef7e510b29c76f892db74b5f6925cd96c650903710e196a",
+      "sha256": "edd5de2512cdee738edc9558c8f4de19f513097bae27985e579f0fac1ce28eba",
       "executable": false
     },
     "tests/willow/levels-job-write.mjs": {
-      "sha256": "a266ee39922e84490dcf97a3291f2af99541c8d5d4f1afc095f54c40d62c6e15",
+      "sha256": "ea432c7bc6b4ad1c56a91066d5e676e52545bcdb69b0d5e72f7136941f9b3b4a",
       "executable": false
     },
     "tests/willow/levels-migration.mjs": {

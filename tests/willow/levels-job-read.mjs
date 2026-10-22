@@ -9,7 +9,7 @@ export async function jobReadProof(h,owner,fx) {
  reader.member=(await api('access.give',{person:reader.person})).id
  reader.cookie=await h.signIn('synthetic-willow-450@example.com',{requested:true})
  const read=(path,body,status)=>h.api(path,reader.cookie,body,status)
- const location=await api('location.create',{name:'synthetic-willow-451'})
+ const location=await api('location.create',{name:'synthetic-willow-451',timezone:'UTC'})
  const schedule=await api('schedule.create',{name:'synthetic-willow-452',mon:'6',tue:'6',wed:'6',thu:'6',fri:'6'})
  const target=await join('synthetic-willow-453',{locationId:location.id,scheduleId:schedule.id,fte:'0.75',startDate:day(-170)})
  const outside=await join('synthetic-willow-454',{scheduleId:schedule.id,fte:'0.75'})
