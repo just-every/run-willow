@@ -4216,7 +4216,7 @@
       "executable": false
     },
     "tests/willow/levels-settings-browser.mjs": {
-      "sha256": "f5c81de440a5914e87032f5e86447e30b427e60d0105b80eb39065615ac6e837",
+      "sha256": "ed30702acd1197a8f91aac9ffcb9b243ec9a660560a57dae2cd8050a2debbebf",
       "executable": false
     },
     "tests/willow/levels-settings.mjs": {

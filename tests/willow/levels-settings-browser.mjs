@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { pathToFileURL } from 'node:url'
 import { evidenceDirectory } from './evidence.mjs'
 import { day } from './regression-fixture.mjs'
+import { genericColumns } from './phase2-fixtures.mjs'
 import { settingsSelections } from './levels-settings.mjs'
 
 export async function settingsBrowserProof(h, owner, fx) {
@@ -24,6 +25,10 @@ export async function settingsBrowserProof(h, owner, fx) {
  try {
   const admin = await open(owner), reader = await open(member.cookie)
   const location = await api('location.create', { name: 'synthetic-willow-13300', timezone: 'UTC' })
+  await api('department.create',{name:'synthetic-willow-13304'})
+  await api('payroll.layout',{format:'generic',columns:genericColumns})
+  await api('retention.adopt',{version:(await api('retention')).tableVersion})
+  await api('retention.state',{state:'CA',decision:'none'})
   const bound = await apply({ kind: 'level', name: 'synthetic-willow-13301', permissions: [], scope: { kind: 'group', dimensions: { location: [location.id] } }, otherFields: { phone: 'view' } })
   const submit = async (page, form, button) => {
    await form.getByRole('button', { name: button, exact: true }).click()
