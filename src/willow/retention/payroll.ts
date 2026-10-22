@@ -2,7 +2,7 @@
 // other workers' frozen lines. Its original file and calculation snapshot are
 // withdrawn; retained payroll custody contains only the erased person's lines.
 import type { Bindings } from '../../auth.server'
-import { all, guard, json, newId, stmt } from '../core'
+import { all, guard, insist, newId, stmt } from '../core'
 import type { Item, Subject } from './erasure'
 import type { Line } from '../payroll-calculation'
 
@@ -11,9 +11,11 @@ export async function redactPayroll(env: Bindings, subject: Subject, item: Item 
   const statements: D1PreparedStatement[] = []
   for (const batch of await all<{ id: string; revision: string; lines: string; exceptions: string; status: string; period_start: string; period_end: string; created_at: number }>(env,
     'SELECT id, revision, lines, exceptions, status, period_start, period_end, created_at FROM wl_payroll_batches WHERE instr(lines, ?1) > 0 OR instr(exceptions, ?1) > 0', subject.personId)) {
-    const data = json<{ lines: Line[]; silent?: string[]; sources?: string; customColumns?: string[] }>(batch.lines, { lines: [] })
+    const data = JSON.parse(batch.lines) as { lines: Line[]; customColumns?: string[] }
+    insist(Array.isArray(data.lines), 'payroll_snapshot_invalid', 409)
     const own = data.lines.filter(line => line.person === subject.personId)
-    const exceptions = json<{ person: string }[]>(batch.exceptions, [])
+    const exceptions = JSON.parse(batch.exceptions) as { person: string }[]
+    insist(Array.isArray(exceptions), 'payroll_snapshot_invalid', 409)
     const personal = exceptions.filter(row => row.person === subject.personId)
     statements.push(guard(env, 'preview_stale', 'EXISTS(SELECT 1 FROM wl_payroll_batches WHERE id=? AND revision=?)', batch.id, batch.revision))
     if (['retained', 'held'].includes(item.disposition)) {
