@@ -1,11 +1,12 @@
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
-import { connections } from '../connections'
+import { connections,connectionOverview } from '../connections'
 import { iconPaths, type IconName } from '../../ui/icon-paths'
 import { field, form, h, hidden, page, select, table, tag } from './html'
 
 export async function connectionsPage(env: Bindings, actor: Actor, url: URL) {
-  const state = await connections(env, actor)
+  if(!actor.owner) {const state=await connectionOverview(env,actor);return page('Connections',actor,h`<header class="page-head"><h1>Connections</h1><p>Your level permits connection settings. The owner authorizes provider connections and outbound activity.</p></header><section class="card"><h2>Connection state</h2>${table(['Area','State'],[['Email notices',state.notices?'Enabled':'Disabled'],['Mail configuration',state.mailConfigured?'Configured':'Not configured'],['Optional sign-in',state.identity.enabled?'Enabled':'Disabled'],['Model drafts',state.model.selected?(state.model.configured?'Configured':'Runtime configuration required'):'Disabled']])}</section>`,{current:'/app/connections',url})}
+  const state=await connections(env,actor)
   const last = state.history[0]
   const identityState = state.identity.state !== 'configured' ? state.identity.state : !state.identity.enabled ? 'Not linked' : (state.identity.health.some(p => p.failing_since || p.hard_failure_at) || state.identity.tokenHealth.some(p => p.failed)) ? 'Provider unavailable' : state.identity.links.some(p => p.pending_issuer) ? 'Relink required' : state.identity.links.some(p => p.status === 'linked') ? 'Linked' : 'Unlinked'
   const icon = (name: IconName) => h`<div class="icon-disc" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="${iconPaths[name]}"></path></svg></div>`

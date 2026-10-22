@@ -1,3 +1,4 @@
+import { holdsSetting } from '../levels/settings'
 import { can, type Actor } from '../actor'
 import { formatDate } from '../dates'
 import type { PersonCustomFields } from '../custom-fields/read'
@@ -44,7 +45,7 @@ function ruleDescription(definition: FieldDefinitionVersion | EffectiveField): s
 }
 
 export function fieldDefinitionSection(definitions: FieldSchema[], actor: Actor, returnTo = '/app/custom-fields'): Html {
-  if (!can(actor, 'people.manage')) return h``
+  if (!holdsSetting(actor, 'custom-fields')) return h``
   return h`<section class="card"><h2>Custom fields</h2><p>Each change saves a dated version. General fields may be shared with the person or their current direct manager. Private / HR fields require private access; payroll fields require compensation access. Current access rules also apply to history.</p>
 ${definitions.length ? definitions.map(schema => h`<h3>${schema.definition?.label ?? schema.versions[0]?.label ?? schema.key} ${tag(schema.definition?.retired ? 'retired' : schema.definition ? 'in force' : 'upcoming')}</h3><p>${schema.key} · ${classes.find(item => item.value === schema.classification)?.label}</p><details><summary>Definition history</summary>${definitionHistory(schema.versions)}</details><details><summary>Change or retire field</summary>${definitionForm(actor, schema, returnTo)}</details>`) : h`<p class="muted">No custom fields.</p>`}
 <details><summary>Create a field</summary>${definitionForm(actor, null, returnTo)}</details></section>`

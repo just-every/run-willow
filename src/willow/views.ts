@@ -1,3 +1,5 @@
+import { listCredentials } from './api-credentials'
+import { settingAreaData } from './ui/settings-areas'
 import { builtinReports,runBuiltinReport } from './reporting/builtins'
 import { insist } from './core'
 import { packets, packetRecord } from './preboarding'
@@ -48,7 +50,7 @@ import { API_DOORS, match } from './doors'
 import { context, proposalDetail, proposals } from './proposals'
 import { summary } from './reports'
 
-import { connections } from './connections'
+import { connections,connectionOverview } from './connections'
 import { layoutView } from './payroll-layout'
 import { modelDraft, modelDrafts } from './model-drafts'
 
@@ -65,6 +67,8 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  apiCredentials:listCredentials,
+  settingLocations:(env,actor)=>settingAreaData(env,actor,'locations'),settingSchedules:(env,actor)=>settingAreaData(env,actor,'schedules'),settingCategories:(env,actor)=>settingAreaData(env,actor,'document-categories'),settingPayroll:(env,actor)=>settingAreaData(env,actor,'payroll-connections'),settingSecurity:(env,actor)=>settingAreaData(env,actor,'sign-in'),settingRetention:(env,actor)=>settingAreaData(env,actor,'retention'),
   preboarding: packets, eeoPreboarding: (env,actor,_request,id)=>packetRecord(env,actor,id),
   eeoApplicants: applicantRecordsList, eeoApplicant: (env,actor,_request,id)=>applicantRecord(env,actor,id),
   hiring: hiringOpenings, hiringOpening: (env,actor,_request,id)=>hiringOpening(env,actor,id), hiringApplication: (env,actor,_request,id)=>hiringApplication(env,actor,id),
@@ -102,7 +106,7 @@ export const views: Record<string, View> = {
   changeRequest: (env, actor, _request, id) => changeRequest(env, actor, id),
   work: workList,
   progress: (env, actor, _request, _id, url) => progress(env, actor, url.searchParams.get('select') ?? ''),
-  connections,
+  connections:(env,actor)=>actor.owner?connections(env,actor):connectionOverview(env,actor),
   payrollLayout: layoutView,
   modelDrafts,
   modelDraft: (env, actor, _request, id) => modelDraft(env, actor, id),

@@ -1,7 +1,8 @@
+import { liveSettingsActor } from './levels/settings-authority'
 // Flow 1 (settings): the employer, its locations, departments, working
 // schedules and private document categories.
 import type { Bindings } from '../auth.server'
-import { requireOwner, requirePermission, type Actor } from './actor'
+import { requirePermission, type Actor } from './actor'
 import { all, commit, insist, newId, now, one, stmt } from './core'
 import { validTimezone } from './dates'
 import type { Input } from './input'
@@ -19,7 +20,8 @@ export async function requireEmployer(env: Bindings): Promise<Employer> {
 }
 
 export async function configureEmployer(env: Bindings, actor: Actor, input: Input) {
-  requireOwner(actor)
+  const live=await liveSettingsActor(env,actor,'company')
+  actor=live.actor
   const name = input.text('name', { max: 120 })
   const timezone = input.text('timezone', { max: 64 })
   insist(validTimezone(timezone), 'invalid_timezone')
@@ -27,43 +29,47 @@ export async function configureEmployer(env: Bindings, actor: Actor, input: Inpu
   insist(/^[A-Z]{2}$/.test(country), 'invalid_country')
   const currency = input.text('currency', { max: 3 }).toUpperCase()
   insist(/^[A-Z]{3}$/.test(currency), 'invalid_currency')
-  await commit(env, [stmt(env, 'INSERT INTO wl_employer (singleton, name, timezone, country, currency, updated_at) VALUES (1, ?, ?, ?, ?, ?) ON CONFLICT(singleton) DO UPDATE SET name = excluded.name, timezone = excluded.timezone, country = excluded.country, currency = excluded.currency, updated_at = excluded.updated_at', name, timezone, country, currency, now())], { actor: actor.id, action: 'employer.configure', subject: 'employer', detail: { name, timezone, country, currency } })
+  await commit(env, [...live.guards,stmt(env, 'INSERT INTO wl_employer (singleton, name, timezone, country, currency, updated_at) VALUES (1, ?, ?, ?, ?, ?) ON CONFLICT(singleton) DO UPDATE SET name = excluded.name, timezone = excluded.timezone, country = excluded.country, currency = excluded.currency, updated_at = excluded.updated_at', name, timezone, country, currency, now())], { actor: actor.id, action: 'employer.configure', subject: 'employer', detail: { name, timezone, country, currency } })
   return { name, timezone, country, currency }
 }
 
-async function createNamed(env: Bindings, actor: Actor, table: 'wl_locations' | 'wl_departments' | 'wl_divisions' | 'wl_legal_entities', name: string, extra: Record<string, unknown> = {}) {
+async function createNamed(env: Bindings, actor: Actor, table: 'wl_locations' | 'wl_departments' | 'wl_divisions' | 'wl_legal_entities', name: string, extra: Record<string, unknown> = {}, guards: D1PreparedStatement[] = []) {
   insist(!await one(env, `SELECT 1 FROM ${table} WHERE name = ?`, name), 'name_taken', 409)
   const id = newId(), columns = ['id', 'name', ...Object.keys(extra), 'created_at']
-  await commit(env, [stmt(env, `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`, id, name, ...Object.values(extra), now())], { actor: actor.id, action: `${({ wl_locations: 'location', wl_departments: 'department', wl_divisions: 'division', wl_legal_entities: 'entity' })[table]}.create`, subject: id, detail: { name, ...extra } })
+  await commit(env, [...guards,stmt(env, `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`, id, name, ...Object.values(extra), now())], { actor: actor.id, action: `${({ wl_locations: 'location', wl_departments: 'department', wl_divisions: 'division', wl_legal_entities: 'entity' })[table]}.create`, subject: id, detail: { name, ...extra } })
   return { id, name, ...extra }
 }
 
 export async function createLocation(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
+  const live=await liveSettingsActor(env,actor,'locations')
+  actor=live.actor
   const timezone = input.text('timezone', { max: 64 })
   insist(validTimezone(timezone), 'invalid_timezone')
   const state = input.text('workState', { optional: true, max: 2 }).toUpperCase()
   insist(!state || /^[A-Z]{2}$/.test(state), 'invalid_workState')
-  return await createNamed(env, actor, 'wl_locations', input.text('name', { max: 80 }), { timezone, work_state: state || null })
+  return await createNamed(env, actor, 'wl_locations', input.text('name', { max: 80 }), { timezone, work_state: state || null },live.guards)
 }
 
 export async function createDepartment(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
-  return await createNamed(env, actor, 'wl_departments', input.text('name', { max: 80 }))
+  const live=await liveSettingsActor(env,actor,'locations')
+  actor=live.actor
+  return await createNamed(env, actor, 'wl_departments', input.text('name', { max: 80 }),{},live.guards)
 }
 
 export async function createDivision(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
-  return await createNamed(env, actor, 'wl_divisions', input.text('name', { max: 80 }))
+  const live=await liveSettingsActor(env,actor,'locations')
+  actor=live.actor
+  return await createNamed(env, actor, 'wl_divisions', input.text('name', { max: 80 }),{},live.guards)
 }
 
 /** A department belongs to at most one division; a person's division follows their department in force. */
 export async function setDepartmentDivision(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
+  const live=await liveSettingsActor(env,actor,'locations')
+  actor=live.actor
   const department = input.text('department', { max: 100 }), division = input.text('division', { optional: true, max: 100 })
   insist(await one(env, 'SELECT 1 FROM wl_departments WHERE id = ?', department), 'department_not_found', 404)
   insist(!division || await one(env, 'SELECT 1 FROM wl_divisions WHERE id = ?', division), 'division_not_found', 404)
-  await commit(env, [stmt(env, 'UPDATE wl_departments SET division_id = ? WHERE id = ?', division || null, department)], { actor: actor.id, action: 'department.division', subject: department, detail: { division: division || null } })
+  await commit(env, [...live.guards,stmt(env, 'UPDATE wl_departments SET division_id = ? WHERE id = ?', division || null, department)], { actor: actor.id, action: 'department.division', subject: department, detail: { division: division || null } })
   return { id: department, division: division || null }
 }
 
@@ -85,7 +91,8 @@ export async function setPeriodEntity(env: Bindings, actor: Actor, input: Input)
 export const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
 export async function createSchedule(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
+  const live=await liveSettingsActor(env,actor,'schedules')
+  actor=live.actor
   const name = input.text('name', { max: 80 })
   insist(!await one(env, 'SELECT 1 FROM wl_schedules WHERE name = ?', name), 'name_taken', 409)
   const minutes = WEEKDAYS.map(day => {
@@ -97,16 +104,17 @@ export async function createSchedule(env: Bindings, actor: Actor, input: Input) 
   })
   insist(minutes.some(value => value > 0), 'schedule_has_no_hours')
   const id = newId()
-  await commit(env, [stmt(env, `INSERT INTO wl_schedules (id, name, ${WEEKDAYS.join(', ')}, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, id, name, ...minutes, now())], { actor: actor.id, action: 'schedule.create', subject: id, detail: { name, minutes } })
+  await commit(env, [...live.guards,stmt(env, `INSERT INTO wl_schedules (id, name, ${WEEKDAYS.join(', ')}, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, id, name, ...minutes, now())], { actor: actor.id, action: 'schedule.create', subject: id, detail: { name, minutes } })
   return { id, name, minutes: Object.fromEntries(WEEKDAYS.map((day, index) => [day, minutes[index]])) }
 }
 
 export async function createCategory(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
+  const live=await liveSettingsActor(env,actor,'document-categories')
+  actor=live.actor
   const name = input.text('name', { max: 80 })
   insist(!await one(env, 'SELECT 1 FROM wl_doc_categories WHERE name = ?', name), 'name_taken', 409)
   const id = newId(), subject = input.flag('subjectReads') ? 1 : 0, manager = input.flag('managerReads') ? 1 : 0, acknowledgement = input.flag('acknowledgement') ? 1 : 0
-  await commit(env, [stmt(env, 'INSERT INTO wl_doc_categories (id, name, subject_reads, manager_reads, acknowledgement, created_at) VALUES (?, ?, ?, ?, ?, ?)', id, name, subject, manager, acknowledgement, now())], { actor: actor.id, action: 'category.create', subject: id, detail: { name, subject, manager, acknowledgement } })
+  await commit(env, [...live.guards,stmt(env, 'INSERT INTO wl_doc_categories (id, name, subject_reads, manager_reads, acknowledgement, created_at) VALUES (?, ?, ?, ?, ?, ?)', id, name, subject, manager, acknowledgement, now())], { actor: actor.id, action: 'category.create', subject: id, detail: { name, subject, manager, acknowledgement } })
   return { id, name, subjectReads: !!subject, managerReads: !!manager, acknowledgement: !!acknowledgement }
 }
 

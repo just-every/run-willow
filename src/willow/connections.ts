@@ -1,3 +1,4 @@
+import { requireSetting } from './levels/settings'
 import { demoEffect } from '../modules/demo/index.mjs'
 import { operatorAuth, type Bindings } from '../auth.server'
 import { requireOwner, type Actor } from './actor'
@@ -9,6 +10,11 @@ import { providerBilling } from './provider-billing'
 
 export const connectionSettings = async (env: Bindings) => await one(env, 'SELECT * FROM wl_connections WHERE singleton = 1') ?? { notices: 0, oidc: 0, model: null, revision: null }
 
+export async function connectionOverview(env:Bindings,actor:Actor) {
+ requireSetting(actor,'integrations')
+ const settings=await connectionSettings(env),identity=identityConfiguration(env)
+ return {notices:!!settings.notices,mailConfigured:!!operatorMail(env)&&!!env.MAIL_FROM,identity:{enabled:!!settings.oidc,state:identity.state,providers:identity.providers.map(provider=>({id:provider.id,label:provider.label??provider.id}))},model:{selected:settings.model,configured:!!env.MODELS_ENDPOINT&&!!env.MODELS_KEY}}
+}
 export async function connections(env: Bindings, actor: Actor) {
   requireOwner(actor)
   const settings = (await connectionSettings(env))!

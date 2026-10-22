@@ -1,3 +1,4 @@
+import { liveSettingsActor } from '../levels/settings-authority'
 import type { Bindings } from '../../auth.server'
 import { can, requirePermission, type Actor } from '../actor'
 import { all, auditRead, guard, insist, newId, now, one, stmt } from '../core'
@@ -38,7 +39,7 @@ export async function effectiveFieldDefinitions(env: Bindings, asOf: string): Pr
 
 /** Schema management includes retired and scheduled versions. */
 export async function listFieldDefinitions(env: Bindings, actor: Actor, asOf = actor.today) {
-  requirePermission(actor, 'people.manage')
+  await liveSettingsActor(env,actor,'custom-fields')
   return fieldSchemas(env, asOf)
 }
 

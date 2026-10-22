@@ -1,3 +1,4 @@
+import { holdsSetting } from '../levels/settings'
 // Page frame and small form helpers. Every value is escaped; pages need no script.
 import branding from '../../branding.json'
 import { can, hasScopedGrant, type Actor } from '../actor'
@@ -47,8 +48,17 @@ const NAV: NavItem[][] = [[
 ], [
   { href: '/app/import', label: 'Move in', icon: 'upload', show: actor => can(actor, 'people.manage') },
   { href: '/app/access', label: 'Access', icon: 'shield', show: actor => can(actor, 'people.manage') },
-  { href: '/app/connections', label: 'Connections', icon: 'plug', show: actor => actor.owner },
+  { href: '/app/connections', label: 'Connections', icon: 'plug', show: actor => holdsSetting(actor,'integrations') },
   { href: '/app/retention', label: 'Retention', icon: 'shield', show: actor => actor.owner || can(actor, 'people.manage') },
+  {href:'/app/custom-fields',label:'Custom fields',icon:'checklist',show:actor=>holdsSetting(actor,'custom-fields')&&!can(actor,'people.manage')},
+  {href:'/app/employer',label:'Company settings',icon:'checklist',show:actor=>holdsSetting(actor,'company')&&!actor.owner},
+  {href:'/app/settings/locations',label:'Locations and departments',icon:'org',show:actor=>holdsSetting(actor,'locations')&&!can(actor,'people.manage')},
+  {href:'/app/settings/schedules',label:'Working schedules',icon:'calendar',show:actor=>holdsSetting(actor,'schedules')&&!can(actor,'people.manage')},
+  {href:'/app/settings/document-categories',label:'Document categories',icon:'document',show:actor=>holdsSetting(actor,'document-categories')&&!can(actor,'people.manage')},
+  {href:'/app/settings/payroll-connections',label:'Payroll settings',icon:'wallet',show:actor=>holdsSetting(actor,'payroll-connections')},
+  {href:'/app/settings/sign-in',label:'Sign-in settings',icon:'shield',show:actor=>holdsSetting(actor,'sign-in')},
+  {href:'/app/settings/retention',label:'Retention settings',icon:'shield',show:actor=>holdsSetting(actor,'retention')&&!actor.owner},
+  {href:'/app/api-credentials',label:'API credentials',icon:'shield',show:actor=>holdsSetting(actor,'api-credentials')},
   { href: '/app/audit', label: 'Audit', icon: 'document', show: actor => can(actor, 'audit.read') },
 ], [
   { href: '/app/settings', label: 'Settings', icon: 'gear', show: actor => can(actor, 'people.manage') || can(actor, 'leave.manage') },

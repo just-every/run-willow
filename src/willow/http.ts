@@ -1,5 +1,10 @@
 import { builtinReportsPage,builtinReportPage } from './ui/builtin-reports'
 import { builtinReportFile } from './reporting/builtin-files'
+import { credentialActor, isCredentialActor } from './api-credentials'
+import { credentialRead } from './api-credentials/response'
+import type { CredentialMetadata } from './api-credentials/store'
+import { credentialsPage, issuedCredentialPage } from './ui/api-credentials'
+import { settingAreaPage } from './ui/settings-areas'
 import { invitationResponse } from './invitation-http'
 import { preboardingPage, applicantRecordsPage } from './ui/preboarding'
 import { packetRecord } from './preboarding'
@@ -51,7 +56,7 @@ import { importPage, previewPage } from './ui/movein'
 import { directoryPage, personPage } from './ui/people'
 import { accessPage, customFieldsPage, employerPage, settingsPage } from './ui/settings'
 import { auditPage, batchPage, payrollPage, proposalPage, proposalsPage, reportsPage } from './ui/work'
-import { PAGE_DOORS, match } from './doors'
+import { PAGE_DOORS, INVITATION_DOORS, match } from './doors'
 import { route } from './views'
 import { connectionsPage } from './ui/connections'
 import { progressPage } from './ui/progress'
@@ -74,20 +79,26 @@ export async function willowResponse(request: Request, original: Bindings): Prom
   const env = runtimeBindings(original)
   const url = new URL(request.url)
   const api = url.pathname.startsWith('/api/willow/')
-  const invitation = await invitationResponse(env,request,url)
-  if (invitation) return invitation
-  if (!api && url.pathname !== '/app' && !url.pathname.startsWith('/app/')) return null
-  if (request.method === 'POST' && request.headers.get('origin') !== env.AUTH_ORIGIN) return api ? json({ error: 'invalid_origin' }, 403) : new Response('Forbidden', { status: 403 })
-  if (!['GET', 'HEAD', 'POST'].includes(request.method)) return new Response(null, { status: 405, headers: { allow: 'GET, HEAD, POST' } })
+  if (!request.headers.has('authorization')) {
+    const invitation = await invitationResponse(env,request,url)
+    if (invitation) return invitation
+  }
+  if (!api && url.pathname !== '/app' && !url.pathname.startsWith('/app/') && !match(INVITATION_DOORS,url.pathname)) return null
   let actor: Actor | null = null
   try {
+    // Any Authorization header belongs to this boundary, including invalid credentials.
+    // It must never fall through to a cookie session or a form action.
+    actor = await credentialActor(env, request)
+    if (actor) return json(await credentialRead(env,actor,request,url))
+    if (request.method === 'POST' && request.headers.get('origin') !== env.AUTH_ORIGIN) return api ? json({ error: 'invalid_origin' }, 403) : new Response('Forbidden', { status: 403 })
+    if (!['GET', 'HEAD', 'POST'].includes(request.method)) return new Response(null, { status: 405, headers: { allow: 'GET, HEAD, POST' } })
     actor = await currentActor(env, request)
     if (!actor) return api ? json({ error: 'authentication_required' }, 401) : Response.redirect(`${env.AUTH_ORIGIN}/signin?returnTo=${encodeURIComponent(url.pathname)}`, 303)
     if (api) return await apiResponse(env, actor, request, url)
     return await pageResponse(env, actor, request, url)
   } catch (error) {
     const { code, status, detail } = failure(error)
-    if (api) return json({ error: code, ...(detail === undefined ? {} : { detail }) }, status)
+    if (api || request.headers.has('authorization') || actor&&isCredentialActor(actor)) return json({ error: code, ...(detail === undefined ? {} : { detail }) }, status)
     if (status === 404) return page('Not found', actor, h`<h1>Not found</h1><p>There is nothing here you can open.</p><p><a href="/app">Back to Willow</a></p>`, { status: 404 })
     return page('Something went wrong', actor, h`<h1>That did not work</h1><p>${code.replace(/_/g, ' ')}</p><p><a href="/app">Back to Willow</a></p>`, { status })
   }
@@ -99,6 +110,7 @@ async function apiResponse(env: Bindings, actor: Actor, request: Request, url: U
     const action = actions[path]
     if (!action) throw new WillowError('not_found', 404)
     const result = await action(env, actor, await Input.from(request), request)
+    if (path === 'apiKey.issue' || path === 'apiKey.rotate') return json(result)
     await reconcileRecipients(env,actor.today)
     const notices = await notifyAction(env, path, result)
     return json(notices ? { ...(result as any), notices } : result)
@@ -124,6 +136,7 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
     const returnTo = safeReturnTo(input.text('returnTo', { optional: true, max: 300 }) || '/app', '/app')
     try {
       const result = await action(env, actor, input, request) as { id?: string; notice?: string } | null
+      if (name === 'apiKey.issue' || name === 'apiKey.rotate') return issuedCredentialPage(actor,result as CredentialMetadata&{token:string})
       await reconcileRecipients(env,actor.today)
       const notices = await notifyAction(env, name!, result)
       const failed = notices?.failure || notices?.deliveries?.some(item => ['failed','refused'].includes(item.status))
@@ -148,6 +161,13 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  apiCredentials:(env,actor,_request,url)=>credentialsPage(env,actor,url),
+  settingLocations:(env,actor,_request,url)=>settingAreaPage(env,actor,'locations',url),
+  settingSchedules:(env,actor,_request,url)=>settingAreaPage(env,actor,'schedules',url),
+  settingCategories:(env,actor,_request,url)=>settingAreaPage(env,actor,'document-categories',url),
+  settingPayroll:(env,actor,_request,url)=>settingAreaPage(env,actor,'payroll-connections',url),
+  settingSecurity:(env,actor,_request,url)=>settingAreaPage(env,actor,'sign-in',url),
+  settingRetention:(env,actor,_request,url)=>settingAreaPage(env,actor,'retention',url),
   preboarding: (env,actor,_request,url)=>preboardingPage(env,actor,url),
   eeoPreboarding: async (env,actor,_request,url,id)=>{const data=await packetRecord(env,actor,id);return invitationRecordPage(actor,`Preboarding EEO record: ${data.packet.name}`,data,url)},
   eeoApplicants: (env,actor,_request,url)=>applicantRecordsPage(env,actor,url),

@@ -3,6 +3,7 @@
 // entry, so a new door cannot be added without being crawled.
 // Patterns are relative to /api/willow/ (API) or absolute (pages).
 export const API_DOORS: [string, string][] = [
+  ['^api-credentials$','apiCredentials'],['^setting-areas/locations$','settingLocations'],['^setting-areas/schedules$','settingSchedules'],['^setting-areas/document-categories$','settingCategories'],['^setting-areas/payroll-connections$','settingPayroll'],['^setting-areas/sign-in$','settingSecurity'],['^setting-areas/retention$','settingRetention'],
   ['^preboarding$', 'preboarding'], ['^eeo/preboarding/([\\w-]+)$', 'eeoPreboarding'],
   ['^eeo/applicants$', 'eeoApplicants'], ['^eeo/applicants/([\\w-]+)$', 'eeoApplicant'],
   ['^hiring$', 'hiring'], ['^hiring/openings/([\\w-]+)$', 'hiringOpening'], ['^hiring/applications/([\\w-]+)$', 'hiringApplication'],
@@ -29,6 +30,7 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/api-credentials$','apiCredentials'],['^/app/settings/locations$','settingLocations'],['^/app/settings/schedules$','settingSchedules'],['^/app/settings/document-categories$','settingCategories'],['^/app/settings/payroll-connections$','settingPayroll'],['^/app/settings/sign-in$','settingSecurity'],['^/app/settings/retention$','settingRetention'],
   ['^/app/reports/library$', 'builtinReports'], ['^/app/reports/library/([\\w-]+)\\.csv$', 'builtinReportCsv'], ['^/app/reports/library/([\\w-]+)\\.xlsx$', 'builtinReportXlsx'], ['^/app/reports/library/([\\w-]+)$', 'builtinReport'],
   ['^/app/preboarding$', 'preboarding'], ['^/app/eeo/preboarding/([\\w-]+)$', 'eeoPreboarding'],
   ['^/app/eeo/applicants$', 'eeoApplicants'], ['^/app/eeo/applicants/([\\w-]+)$', 'eeoApplicant'],

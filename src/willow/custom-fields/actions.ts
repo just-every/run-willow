@@ -1,3 +1,4 @@
+import { liveSettingsActor } from '../levels/settings-authority'
 import type { Bindings } from '../../auth.server'
 import { requirePermission, type Actor } from '../actor'
 import { commit, guard, insist, newId, now, one, stmt } from '../core'
@@ -31,7 +32,8 @@ function definitionInput(input: Input): Record<string, unknown> {
 }
 
 export async function defineField(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
+  const live=await liveSettingsActor(env,actor,'custom-fields')
+  actor=live.actor
   const raw = definitionInput(input)
   const { id: suppliedId, key, classification, ...definitionRaw } = raw
   insist(suppliedId === undefined || (typeof suppliedId === 'string' && suppliedId.length > 0 && suppliedId.length <= 200), 'invalid_field_id')
@@ -42,7 +44,7 @@ export async function defineField(env: Bindings, actor: Actor, input: Input) {
   insist(!existing || (existing.key === identity.key && existing.classification === identity.classification), 'field_identity_is_immutable')
   insist(existing || !schemas.some(field => field.key === identity.key), 'duplicate_field_key')
   const id = existing?.id ?? newId(), versionId = newId(), at = now(), version = existing ? Math.max(...existing.versions.map(item => item.version)) + 1 : 1
-  const statements = [guard(env, 'custom_definition_changed', '(SELECT COUNT(*) FROM wl_custom_field_versions) = ? AND (SELECT COUNT(*) FROM wl_custom_fields) = ?', schemas.reduce((sum, field) => sum + field.versions.length, 0), schemas.length)]
+  const statements = [...live.guards,guard(env, 'custom_definition_changed', '(SELECT COUNT(*) FROM wl_custom_field_versions) = ? AND (SELECT COUNT(*) FROM wl_custom_fields) = ?', schemas.reduce((sum, field) => sum + field.versions.length, 0), schemas.length)]
   if (!existing) statements.push(stmt(env, 'INSERT INTO wl_custom_fields (id, key, classification, recorded_at, recorded_by) VALUES (?, ?, ?, ?, ?)', id, identity.key, identity.classification, at, actor.id))
   statements.push(stmt(env, `INSERT INTO wl_custom_field_versions (id, field_id, version, effective_from, label, type, required, employee_read, manager_read, validation_json, retired, recorded_at, recorded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     versionId, id, version, definition.effectiveFrom, definition.label, definition.type, +definition.required, +definition.employeeRead, +definition.managerRead, JSON.stringify(definition.validation), +definition.retired, at, actor.id))

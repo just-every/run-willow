@@ -1,3 +1,4 @@
+import { holdsSetting,requireSetting } from '../levels/settings'
 import { levelPanel } from './levels'
 import { policyRuleFields, policyRuleSummary } from './leave-policy'
 // Employer setup, settings (places, teams, schedules, document categories,
@@ -23,10 +24,10 @@ const ZONES = ['America/New_York', 'America/Chicago', 'America/Denver', 'America
 const zoneOptions = ZONES.map(zone => ({ value: zone, label: zone }))
 
 export async function employerPage(env: Bindings, actor: Actor, url: URL) {
-  requireOwner(actor)
+  requireSetting(actor,'company')
   const current = await employer(env)
   const body = h`<div class="first-run"><h1>Your employer</h1><p>Willow keeps people records for one employer. Dates of employment and leave use this time zone.</p>
-<section class="card">${form('employer.configure', '/app/settings', [
+<section class="card">${form('employer.configure', actor.owner?'/app/settings':'/app/employer', [
     field('Employer name', 'name', { value: current?.name ?? '' }),
     select('Time zone', 'timezone', zoneOptions, current?.timezone ?? 'America/Chicago'),
     field('Country (two-letter code)', 'country', { value: current?.country ?? 'US', hint: 'For example US. Willow encodes no country rules: you supply your own policies.' }),
@@ -69,8 +70,8 @@ ${templateList.filter(template => template.status === 'draft').map(template => h
 
 export async function customFieldsPage(env: Bindings, actor: Actor, url: URL) {
   const definitions = await listFieldDefinitions(env, actor, url.searchParams.get('asOf') ?? actor.today)
-  const tables = await listRecordTables(env, actor)
-  return page('Custom fields', actor, h`<p class="back"><a href="/app/settings">← Settings</a></p><h1>Custom fields and tables</h1>${fieldDefinitionSection(definitions, actor)}${recordTableDefinitions(tables, actor)}`, { current: '/app/settings', url })
+  const tables = can(actor,'people.manage')?await listRecordTables(env, actor):[]
+  return page('Custom fields', actor, h`${can(actor,'people.manage')?h`<p class="back"><a href="/app/settings">← Settings</a></p>`:''}<h1>Custom fields${can(actor,'people.manage')?' and tables':''}</h1>${fieldDefinitionSection(definitions, actor)}${recordTableDefinitions(tables, actor)}`, { current: '/app/settings', url })
 }
 
 export async function accessPage(env: Bindings, actor: Actor, request: Request, url: URL) {
