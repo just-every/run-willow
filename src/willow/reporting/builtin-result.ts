@@ -22,6 +22,7 @@ export interface BuiltinResult {
  definition: ReportDefinition
  asOf: string
  scope: string
+ excludesErased:number
  generatedAt: number
  columns: { key: string; label: string }[]
  rows: BuiltinRow[]
@@ -33,7 +34,7 @@ export interface BuiltinResult {
 const sum = (values: (number | null)[]) => values.reduce<number>((total, value) => total + (value ?? 0), 0)
 
 export function builtinBase(report: BuiltinReport, result: ReportResult): BuiltinResult {
- return { id: report.id, name: report.name, description: report.description, definition: { ...result.definition, columns: [...report.columns] }, asOf: result.asOf, scope: result.scope, generatedAt: result.generatedAt, columns: result.columns.filter(column => report.columns.includes(column.key)), rows: [], totals: {}, sourceFreshness: { recordedThrough: result.sourceFreshness.recordedThrough }, notes: report.calculation }
+ return { id: report.id, name: report.name, description: report.description, definition: { ...result.definition, columns: [...report.columns] }, asOf: result.asOf, scope: result.scope, excludesErased:result.excludesErased,generatedAt: result.generatedAt, columns: result.columns.filter(column => report.columns.includes(column.key)), rows: [], totals: {}, sourceFreshness: { recordedThrough: result.sourceFreshness.recordedThrough }, notes: report.calculation }
 }
 export function projectBuiltinResult(actor: Actor, report: BuiltinReport, result: ReportResult): BuiltinResult {
  const output = builtinBase(report, result)
