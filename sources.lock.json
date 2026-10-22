@@ -3475,7 +3475,7 @@
       "executable": false
     },
     "src/willow/ui/retention.ts": {
-      "sha256": "2028ddc284c025760d8ea11e20b41c7c25825e1082be5ca0aeff2cfb8b74731d",
+      "sha256": "18ec7c3b1982beeef2f52ab737815bc8fd0ef6f6c2bc4da570acf3030e745a83",
       "executable": false
     },
     "src/willow/ui/self-service.ts": {
@@ -3607,7 +3607,7 @@
       "executable": false
     },
     "tests/willow/eeo-snapshot-browser.mjs": {
-      "sha256": "1c1c611783f50c9e7ed2fa638c15cf10b22b21ac15f3fe77a6a3ed5ce4adce68",
+      "sha256": "a7d109aaa364c695f823b10c98d81fef11bdf522ff52d52b7e1c778d469f0b58",
       "executable": false
     },
     "tests/willow/eeo-snapshot-erasure.mjs": {
@@ -3795,7 +3795,7 @@
       "executable": false
     },
     "tests/willow/retention-browser.mjs": {
-      "sha256": "6622e9f06a193cd2160f6e9c7f9a8fa0b9648b1d9e24404b2d9ecf696d936faa",
+      "sha256": "89b0c40f145a45a6430ac3f8706928a8ae8603c2244ca67efb9d2c7d1b6612b5",
       "executable": false
     },
     "tests/willow/retention-counts.mjs": {

@@ -19,9 +19,11 @@ export async function browserEvidence(h, cookie, pages) {
       for (const width of [1440, 390]) {
         await page.setViewportSize({ width, height: 1000 })
         assert.equal((await page.goto(h.origin + path)).status(), 200)
+        if (name === 'retained' && width === 1440) await page.getByText('Read retained values', { exact: true }).first().click()
         const wide = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth ? [] : [...document.querySelectorAll('body *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1).slice(0, 5).map(el => `${el.tagName.toLowerCase()}.${el.className}: ${el.textContent.slice(0, 40)}`))
         assert.deepEqual(wide, [], `${name} fits ${width}`)
-        await page.screenshot({ path: `${destination}/DATA-002-${name}-${width}.png`, fullPage: true })
+        const screenshot = await page.screenshot({ path: `${destination}/DATA-002-${name}-${width}.png`, fullPage: true })
+        assert.equal(screenshot.readUInt32BE(16), width, 'the actual screenshot fits the viewport')
       }
     }
     await context.close()
@@ -42,7 +44,8 @@ export async function confirmThroughBrowser(h, cookie, person) {
     await page.goto(`${h.origin}/app/retention/erasure?person=${person}`)
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 1000 })
-      await page.screenshot({ path: `${destination}/DATA-002-confirm-preview-${width}.png`, fullPage: true })
+      const screenshot = await page.screenshot({ path: `${destination}/DATA-002-confirm-preview-${width}.png`, fullPage: true })
+      assert.equal(screenshot.readUInt32BE(16), width, 'the actual screenshot fits the viewport')
     }
     await page.setViewportSize({ width: 1440, height: 1000 })
     await page.getByRole('button', { name: 'Confirm this preview and erase', exact: true }).click()
@@ -56,7 +59,8 @@ export async function confirmThroughBrowser(h, cookie, person) {
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 1000 })
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
-      await page.screenshot({ path: `${destination}/DATA-002-confirm-receipt-${width}.png`, fullPage: true })
+      const screenshot = await page.screenshot({ path: `${destination}/DATA-002-confirm-receipt-${width}.png`, fullPage: true })
+      assert.equal(screenshot.readUInt32BE(16), width, 'the actual screenshot fits the viewport')
     }
     await context.close()
     return { status: 'confirmed', receipt, label: data.label }

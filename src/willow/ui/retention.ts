@@ -90,7 +90,7 @@ export function receiptPage(actor: Actor, data: Awaited<ReturnType<typeof erasur
 export function retainedPage(actor: Actor, data: Awaited<ReturnType<typeof retainedRecords>>, url?: URL) {
   return page('Retained records', actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Retained records</h1>
 <p>Records kept for a retention rule or a hold, in restricted custody: absent from the directory, profiles, search, reports and exports. Only the owner reads them; EEO values also need EEO compliance.</p>
-<section class="card">${data.records.length ? table(['Person', 'Record', 'Class', 'Until', 'Values'], data.records.map(r => [r.person, r.table, r.class ?? '—', r.hold ? 'Hold' : r.expiry ? formatDate(r.expiry) : '—', r.values ? JSON.stringify(r.values).slice(0, 160) : r.restricted])) : h`<p>No retained records.</p>`}</section>`, { current: PATH, url })
+<section class="card">${data.records.length ? table(['Person', 'Record', 'Class', 'Until', 'Values'], data.records.map(r => [r.person, r.table, r.class ?? '—', r.hold ? 'Hold' : r.expiry ? formatDate(r.expiry) : '—', r.values ? h`<details><summary>Read retained values</summary><pre>${JSON.stringify(r.values, null, 2)}</pre></details>` : r.restricted])) : h`<p>No retained records.</p>`}</section>`, { current: PATH, url })
 }
 
 export function retentionReviewPage(actor: Actor, data: Awaited<ReturnType<typeof reviewList>>, url?: URL) {
