@@ -38,6 +38,12 @@ export async function builtinCustodyProof(h, owner, fx) {
  const documentIds = ['builtin-i9-documents', 'builtin-document-receipts']
  // Every catalog entry is exercised through its own public result and file doors.
  for (const entry of catalog) {
+  if (entry.id === 'builtin-diversity') {
+   // Selecting this definition supplies neither independent protected aggregate right.
+   await read(`builtin-reports/${entry.id}`, undefined, 403)
+   for (const suffix of ['', '.csv', '.xlsx']) assert.equal((await h.raw(`/app/reports/library/${entry.id}${suffix}`, { cookie: reader.cookie })).status, 403)
+   continue
+  }
   const report = await result(entry.id)
   assert.equal(report.id, entry.id)
   assert.ok(report.rows.every(row => row.personId === near.person))
@@ -136,5 +142,44 @@ export async function builtinCustodyProof(h, owner, fx) {
  }
  assert.equal((await h.raw(`/app/files/document/${next.version}`, { cookie: reader.cookie })).status, 404)
  assert.deepEqual((await read('me')).permissions, [])
- console.log('ROLE-012 custody: PASS — full catalog current scope/field withholding, isolated headcount measures, mapped I-9 published custody, exact-category receipts/latest version, independent report/category reach and same-session category revocation')
+
+ // The protected definition uses the native complete-population aggregate and suppression.
+ const submitted = await h.api('eeo.self.write', fx.staff.employee.cookie, { hispanic: 'no', races: ['asian'], sex: 'female' })
+ assert.equal((await h.api('eeo/self', fx.staff.employee.cookie)).current.sequence, submitted.sequence)
+ const native = await api(`eeo/report?asOf=${day(0)}`)
+ assert.equal(native.suppressed, true)
+ assert.equal(native.total, null)
+ const diversity = await api(`builtin-reports/builtin-diversity?asOf=${day(0)}`)
+ assert.equal(diversity.asOf, native.asOf)
+ assert.equal(diversity.scope, native.scope)
+ assert.deepEqual(diversity.totals, { total: native.total, suppressed: native.suppressed })
+ const nativeCells = [...native.raceEthnicity, ...native.sex]
+ assert.deepEqual(diversity.rows.map(row => ({ category: row.cells.category, count: row.cells.count, measure: row.measures.count, withheld: row.withheld.includes('count') })), nativeCells.map(cell => ({ category: cell.label, count: cell.count === null ? null : String(cell.count), measure: cell.count, withheld: cell.suppressed })))
+ assert.ok(diversity.rows.every(row => row.personId === '' && row.source === `/app/eeo/report?asOf=${native.asOf}` && row.cells.count === null && row.measures.count === null))
+ const noIndividual = value => {
+  const text = typeof value === 'string' ? value : JSON.stringify(value)
+  for (const person of [near.person, far.person, ...Object.values(fx.staff).map(staff => staff.person)]) assert.ok(!text.includes(person), 'Protected aggregates contain no individual identifiers')
+  for (const key of ['raceEthnicity', 'sex', 'hispanic', 'races']) assert.ok(!text.includes(`${JSON.stringify(key)}:${JSON.stringify(submitted[key])}`), 'Protected aggregates contain no individual submission payload')
+ }
+ noIndividual(diversity)
+ for (const key of ['answers', 'current', 'history', 'recorded']) assert.equal(diversity[key], undefined)
+ const protectedPage = await h.raw('/app/reports/library/builtin-diversity', { cookie: owner })
+ assert.equal(protectedPage.status, 200)
+ noIndividual(await protectedPage.text())
+ for (const format of ['csv', 'xlsx']) {
+  const response = await h.raw(`/app/reports/library/builtin-diversity.${format}?asOf=${day(0)}`, { cookie: owner })
+  assert.equal(response.status, 200)
+  const bytes = Buffer.from(await response.arrayBuffer())
+  const text = format === 'csv' ? bytes.toString() : [...readZip(bytes).values()].map(part => part.toString()).join('')
+  noIndividual(text)
+  assert.ok(text.includes('Withheld'), 'Suppressed counts stay withheld in exported aggregates')
+ }
+ // No alternate result or download door can turn this aggregate into a filtered drilldown.
+ for (const [key, value] of [['department', 'synthetic-willow-12220'], ['location', outside.id], ['from', day(-1)], ['to', day(0)], ['person', fx.staff.employee.person]]) {
+  const query = `${key}=${encodeURIComponent(value)}`
+  await api(`builtin-reports/builtin-diversity?${query}`, undefined, 400)
+  for (const suffix of ['', '.csv', '.xlsx']) assert.equal((await h.raw(`/app/reports/library/builtin-diversity${suffix}?${query}`, { cookie: owner })).status, 400)
+ }
+ await read('builtin-reports/builtin-diversity', undefined, 403)
+ console.log('ROLE-012 custody: PASS — full catalog current scope/field withholding, isolated headcount measures, mapped I-9 custody and versioned receipts, category revocation, protected diversity admission/native suppression equivalence and no filtered drilldown')
 }

@@ -50,7 +50,8 @@ try {
   const skip = await as('managerb', `change-requests/${id}`)
   assert.ok(skip.mayDecide)
   assert.deepEqual(skip.changes.find(c => c.field === 'Pay'), { field: 'Pay', from: 'Withheld (you cannot read compensation)', to: 'Withheld (you cannot read compensation)', withheld: true })
-  assert.deepEqual(skip.changes.find(c => c.field === 'Job title'), { field: 'Job title', from: 'Present role', to: 'Senior specialist' })
+  // A routed step grants a proposal, not historical/future job-field authority.
+  assert.deepEqual(skip.changes.find(c => c.field === 'Job title'), { field: 'Job title', from: 'Withheld', to: 'Withheld' })
   const skipPage = await (await h.raw(`/app/changes/${id}`, { cookie: s.managerb.cookie })).text()
   assert.ok(skipPage.includes('Withheld') && !skipPage.includes('81,234') && !skipPage.includes('89,358') && !skipPage.includes('10%'), 'the page withholds pay too')
   assert.equal(await (await h.raw(`/app/changes/${id}?attachment=${skip.attachments[0].sha256}`, { cookie: s.managerb.cookie })).text(), 'PROMOTION-CASE')

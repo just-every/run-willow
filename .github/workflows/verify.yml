@@ -193,3 +193,31 @@ jobs:
         with:
           name: willow-browser-pages
           path: ${{ runner.temp }}/willow-evidence/*.png
+
+  section-journeys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - name: Set external evidence directory
+        run: printf 'WILLOW_EVIDENCE_DIR=%s/willow-evidence\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.20.0'
+      - run: npm install --global pnpm@10.12.4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec rer install
+      - run: pnpm exec vite build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: willow-section-pages
+          path: ${{ runner.temp }}/willow-evidence/*.png

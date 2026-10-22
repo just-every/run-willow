@@ -236,7 +236,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "39407bce1ec0e4f5bb1678a5cbd0efd6f5c79c1dab8142f8410c01ddd5941c63",
+      "sha256": "969ec52d6436aa5a2e304a6b0f395173e0c616c59d203457f0c517beac830a29",
       "executable": false
     },
     ".gitignore": {
@@ -248,7 +248,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "4b071f33fe953c31b5039b4b65f4382a6e64c24a41bade9ca62042d5570c7f47",
+      "sha256": "d4922d192220a88f969fa491c667a50ca1ceb455986999879eb889d3e93b4573",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -272,7 +272,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "e032dd95f5016f5d4b4f888371f669cf2a10a2b2fc75c708322c51658a111261",
+      "sha256": "370fa5ad835dc0b62c411759ca968fb611fa01ea35291d0d8fefbbb33739b108",
       "executable": false
     },
     "DEMO.md": {
@@ -1032,7 +1032,7 @@
       "executable": false
     },
     "scripts/verify-app.mjs": {
-      "sha256": "ff3a9b5cec556d970e8f0bda92bb4006414b7b7147be010b7e334520bccf64b9",
+      "sha256": "0a4895374d1deb4c40d7e7a567cbf6d2aedcbd0f94d34c770421673912bbf7a4",
       "executable": false
     },
     "scripts/willow/import-kit-migration.mjs": {
@@ -3532,7 +3532,11 @@
       "executable": false
     },
     "src/willow/reporting/builtin-catalog.ts": {
-      "sha256": "557d113fff445b3ab890465aa66b5180507e901c61e1fd9a89adb02ece2b80aa",
+      "sha256": "e66f8b9196e337a90963f50d6315f6c2a27a728c7acd3858187135521e5b3a59",
+      "executable": false
+    },
+    "src/willow/reporting/builtin-diversity.ts": {
+      "sha256": "dbecc2bd335fda577a62a56ecffced72a88192bf2cd41405549de5217c5ecd0e",
       "executable": false
     },
     "src/willow/reporting/builtin-documents.ts": {
@@ -3552,7 +3556,7 @@
       "executable": false
     },
     "src/willow/reporting/builtins.ts": {
-      "sha256": "1d47185af7a63d0e78a6abbc5daa1b05de2dc8b43fbfb32ed28e2aaf75856a65",
+      "sha256": "5bf3b58d5c43415f934195d904962295533fbfc92ff2909b8c9e2665edb0baad",
       "executable": false
     },
     "src/willow/reporting/definitions.ts": {
@@ -3884,7 +3888,7 @@
       "executable": false
     },
     "src/willow/ui/settings.ts": {
-      "sha256": "39ff02909a8f07ff94d2dfde8ef817a533747fa78535c5adcd7bd93c96b9a1d4",
+      "sha256": "d3cd55f0017d81932b6d81bd5a289212f301cc38432a8539600e872e8281226a",
       "executable": false
     },
     "src/willow/ui/survey-plan.ts": {
@@ -3956,7 +3960,7 @@
       "executable": false
     },
     "tests/willow/change-requests.mjs": {
-      "sha256": "8b40342ec93d353ad34cef92796f36cf26e352511327116cc476ce0ac2135ff8",
+      "sha256": "d7873f4565e3542dc2b9eceaf717a3c065c4331999a20ec15f8d6d8811a20d94",
       "executable": false
     },
     "tests/willow/cli.mjs": {
@@ -4108,11 +4112,11 @@
       "executable": false
     },
     "tests/willow/levels-builtins-browser.mjs": {
-      "sha256": "c34dcca237c7dd76d950f8fc9da8566dc643a99fb1ee1db752d49d411349202c",
+      "sha256": "dfdccbb9b024090d9e4cf3d91c84b7b4bb7e5fa456cb3e515dd0adc7ab5db086",
       "executable": false
     },
     "tests/willow/levels-builtins-custody.mjs": {
-      "sha256": "186012f0c0be60e722e878df91b6026591d0272d9935a515c8f0b3f34be30e34",
+      "sha256": "a37c7f44e4eb420623d37dc7ae2ad42334561a0a8a292f196b06a480230ae9e7",
       "executable": false
     },
     "tests/willow/levels-builtins.mjs": {
@@ -4120,7 +4124,7 @@
       "executable": false
     },
     "tests/willow/levels-bulk-browser.mjs": {
-      "sha256": "66c04def8e10de7bcf6c83a20ce05cb22f500b4694d1ff1c8fef49f76f21739f",
+      "sha256": "27ac3c8af38302e3891dbbda2f36531c071864c2da99eb7747f793bc29b91a8a",
       "executable": false
     },
     "tests/willow/levels-bulk.mjs": {
@@ -4220,7 +4224,7 @@
       "executable": false
     },
     "tests/willow/levels.mjs": {
-      "sha256": "33a740e0a80f22312fa0b6cf8542b8a15734b8e7d4d5188e47ccfdae57da64c9",
+      "sha256": "5162fd84583cc1d6eab1455a54ba12acd0911e51cd9c58a2c6ad297800067d1c",
       "executable": false
     },
     "tests/willow/open-area-fixtures.mjs": {

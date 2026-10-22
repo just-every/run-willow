@@ -113,4 +113,3 @@ await migrationProof()
 
 await jobLevelProof()
 
-await import('./levels-sections.mjs')

@@ -63,10 +63,11 @@ export async function builtinBrowserProof(h, owner, fx) {
    await admin.getByLabel('Member', { exact: true }).selectOption(member.member)
    await admin.getByLabel('About this person', { exact: true }).selectOption(near.person)
    await admin.getByRole('button', { name: 'Preview', exact: true }).click()
+   await admin.waitForURL(url=>url.searchParams.get('member')===member.member&&url.searchParams.get('person')===near.person)
    const selections = (await api(`preview?member=${member.member}&person=${near.person}`)).reportSelections
    assert.deepEqual(selections.map(item => item.id).sort(), [...selectedBuiltinIds].sort())
    assert.ok(selections.every(item => item.reachesThisPerson))
-   for (const id of selectedBuiltinIds) await admin.getByText(catalog.find(item => item.id === id).name, { exact: true }).first().waitFor()
+   for (const id of selectedBuiltinIds) await admin.locator('td').filter({hasText:catalog.find(item => item.id === id).name}).first().waitFor()
    await capture(admin, 'combined-visibility-preview')
 
    await visit(reader, '/app')
