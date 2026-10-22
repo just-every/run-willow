@@ -3132,7 +3132,7 @@
       "executable": false
     },
     "src/willow/job-projection.ts": {
-      "sha256": "54a859210244844a7e21393e85c7d455b623235cbe827e81029f8c10c919a3e4",
+      "sha256": "53b2daed5fb3d86e197eef20d3ad028d850b3b2417e5c157792c5f662ceb1aa1",
       "executable": false
     },
     "src/willow/job-values.ts": {
@@ -3364,7 +3364,7 @@
       "executable": false
     },
     "src/willow/profile.ts": {
-      "sha256": "375e0ac2ca2977603b5a59fc24580c0cb9c7dbc37ccbb82d9c01f388cbd49b36",
+      "sha256": "98b488d504ade534173ffee38a62f34e37bfe80fd0aa2bc7e93bf9986bbf1be0",
       "executable": false
     },
     "src/willow/progress-followup.ts": {

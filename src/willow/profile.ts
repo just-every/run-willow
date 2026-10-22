@@ -119,6 +119,7 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
     ...(visible.has('lifecycle') ? { cases } : {}),
     ...(visible.has('documents') ? { documents } : {}),
   }
+  if(view.current && !jobFields.startDate && current?.effective_from===selected?.start_date) delete (view.current as Record<string,unknown>).effectiveFrom
   if (options.audit !== false && actor.personId !== personId && (personalFields.length || visible.has('pay'))) {
     await auditRead(env, actor.id, 'person.private.read', personId, { private: personalFields, pay: visible.has('pay'), asOf: date })
   }
