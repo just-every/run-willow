@@ -4112,7 +4112,7 @@
       "executable": false
     },
     "tests/willow/levels-builtins-browser.mjs": {
-      "sha256": "dfdccbb9b024090d9e4cf3d91c84b7b4bb7e5fa456cb3e515dd0adc7ab5db086",
+      "sha256": "07f23e61ee6c6141a34ae30d785c41cad8b6e5a3c53240a1dce943948774a6b8",
       "executable": false
     },
     "tests/willow/levels-builtins-custody.mjs": {

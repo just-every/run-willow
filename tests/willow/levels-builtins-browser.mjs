@@ -10,6 +10,14 @@ export async function builtinBrowserProof(h, owner, fx) {
  assert.ok(process.platform !== 'darwin' || process.env.WILLOW_PLAYWRIGHT_PATH, 'Use current Playwright on macOS')
  const ctx = await builtinSelectionFixture(h, owner, fx, 12100)
  const { api, read, assign, reader: member, location, near, catalog, hidden, scope } = ctx
+ // Populate the compliance definitions with native current records for their browser states.
+ const custodyCategory=await api('category.create',{name:'synthetic-willow-12108',subjectReads:true,managerReads:false,acknowledgement:true})
+ await api('retention.map',{kind:'document_category',ref:custodyCategory.id,class:'i9'})
+ const document=await api('document.add',{person:near.person,category:custodyCategory.id,title:'synthetic-willow-12109',file:{filename:'synthetic-willow-12110.txt',base64:Buffer.from('synthetic-willow-12110').toString('base64')}})
+ await api('access.give',{person:near.person})
+ const subject=await h.signIn('synthetic-willow-12102@example.com',{requested:true})
+ await h.api('document.acknowledge',subject,{version:document.version})
+ await h.api('eeo.self.write',fx.staff.employee.cookie,{hispanic:'no',races:['asian'],sex:'female'})
  const { chromium } = await import(process.env.WILLOW_PLAYWRIGHT_PATH ? pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href : '@playwright/test')
  const browser = await chromium.launch({ headless: true, args: ['--use-mock-keychain', '--password-store=basic'] })
  const contexts = []
@@ -132,6 +140,10 @@ export async function builtinBrowserProof(h, owner, fx) {
    await visit(reader, '/app')
    assert.equal(await reader.locator('a[href="/app/reports/library"]').count(), 0)
    await capture(reader, 'revoked-navigation')
+   for (const report of catalog) {
+    await visit(admin, `/app/reports/library/${report.id}`)
+    await capture(admin, `catalog-${report.id}`)
+   }
   }
   console.log('ROLE-012 native browser: PASS — exact built-in level/review/assignment, combined reach, scoped library, withheld/fine pay CSV, same-session revoked doors and navigation at 1440/390')
  } finally {
