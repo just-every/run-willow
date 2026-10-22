@@ -1,3 +1,5 @@
+import { builtinReportsPage,builtinReportPage } from './ui/builtin-reports'
+import { builtinReportFile } from './reporting/builtin-files'
 import { invitationResponse } from './invitation-http'
 import { preboardingPage, applicantRecordsPage } from './ui/preboarding'
 import { packetRecord } from './preboarding'
@@ -169,6 +171,10 @@ const pages: Record<string, Page> = {
   companyFile: (env,actor,_request,_url,id)=>companyFile(env,actor,id,true),
   protectedList: (env,actor,_request,url) => protectedListPage(env,actor,url),
   protectedDetail: (env,actor,_request,url,id) => url.searchParams.has('certificate') ? protectedCertification(env,actor,id,url.searchParams.get('certificate')==='1'?undefined:url.searchParams.get('certificate')!) : protectedDetailPage(env,actor,id,url),
+  builtinReports:(env,actor,_request,url)=>builtinReportsPage(env,actor,url),
+  builtinReport:(env,actor,_request,url,id)=>builtinReportPage(env,actor,id,url),
+  builtinReportCsv:(env,actor,_request,url,id)=>builtinReportFile(env,actor,id,'csv',url),
+  builtinReportXlsx:(env,actor,_request,url,id)=>builtinReportFile(env,actor,id,'xlsx',url),
   customReports: (env,actor,_request,url) => customReportsPage(env,actor,url),
   customReport: (env,actor,_request,url,id) => customReportPage(env,actor,id,url),
   customReportCsv: (env,actor,_request,_url,id) => customReportFile(env,actor,id,'csv'),

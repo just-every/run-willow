@@ -1,5 +1,6 @@
 import { approvalImpact } from './approval-impact'
 import { APPROVAL_INPUTS, readApprovals } from './approvals'
+import { builtinReport } from '../reporting/builtin-catalog'
 import { LEAVE_INPUTS, readLeaveRules, emptyLeaveRules, type LeaveRules } from './leave'
 import { COMPENSATION_INPUTS, readCompensationRules, emptyCompensationRules, type CompensationRules } from './compensation'
 import { JOB_INPUTS, readJobRules, emptyJobRules, type JobRules } from './job'
@@ -125,6 +126,7 @@ async function applyReviewedLevel(env: Bindings, actor: Actor, input: Input, req
  insist(review.impact.every((item:Record<string,unknown>)=>Array.isArray(item.beforeApprovals)&&Array.isArray(item.afterApprovals)&&Array.isArray(item.beforeLeave)&&Array.isArray(item.afterLeave)&&Array.isArray(item.beforeCompensation)&&Array.isArray(item.afterCompensation)),'review_stale',409)
  insist((await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq===review.snapshot,'review_stale',409)
  const data=await levels(env,actor)
+ insist(plan.kind!=='level'||plan.reports.every(id=>data.reportChoices.some(report=>report.id===id)),'review_stale',409)
  const creator=review.actor===actor.id ? actor : await currentLevelAdmin(env,{...actor,id:review.actor})
  await validateDelegation(env,creator,plan,data)
  await validateDelegation(env,actor,plan,data)
@@ -156,7 +158,9 @@ async function applyReviewedLevel(env: Bindings, actor: Actor, input: Input, req
   ...(['self','others'] as const).flatMap(relation=>Object.entries(plan.jobFields[relation]).map(([field,mode])=>stmt(env,'INSERT INTO wl_level_job_fields(level_id,relation,field,mode) VALUES(?,?,?,?)',plan.level,relation,field,mode))),
   stmt(env,'DELETE FROM wl_level_permissions WHERE level_id=?',plan.level),
   stmt(env,'DELETE FROM wl_level_reports WHERE level_id=?',plan.level),
-  ...plan.reports.map(report=>stmt(env,'INSERT INTO wl_level_reports(level_id,report_id) VALUES(?,?)',plan.level,report)),
+  ...plan.reports.filter(report=>!builtinReport(report)).map(report=>stmt(env,'INSERT INTO wl_level_reports(level_id,report_id) VALUES(?,?)',plan.level,report)),
+  stmt(env,'DELETE FROM wl_level_builtin_reports WHERE level_id=?',plan.level),
+  ...plan.reports.filter(report=>!!builtinReport(report)).map(report=>stmt(env,'INSERT INTO wl_level_builtin_reports(level_id,report_id) VALUES(?,?)',plan.level,report)),
   stmt(env,'DELETE FROM wl_level_document_categories WHERE level_id=?',plan.level),
   ...(['self','others'] as const).flatMap(relation=>Object.entries(plan.documentCategories[relation]).map(([category,mode])=>stmt(env,'INSERT INTO wl_level_document_categories(level_id,relation,category_id,mode) VALUES(?,?,?,?)',plan.level,relation,category,mode))),
   stmt(env,'DELETE FROM wl_level_other_fields WHERE level_id=?',plan.level),

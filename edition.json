@@ -79,7 +79,8 @@
           "migrations/core/0063_compensation_records.sql",
           "migrations/core/0064_compensation_field_rights.sql",
           "migrations/core/0065_level_approvals.sql",
-          "migrations/core/0066_custom_field_approvals.sql"
+          "migrations/core/0066_custom_field_approvals.sql",
+          "migrations/core/0067_level_builtin_reports.sql"
         ]
       }
     },

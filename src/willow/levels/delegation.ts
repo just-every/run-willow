@@ -1,6 +1,7 @@
 import { LEAVE_FIELDS, LEAVE_RANK, type LeaveRules } from './leave'
 import { COMPENSATION_FIELDS, COMPENSATION_RANK, type CompensationRules } from './compensation'
 import { JOB_FIELDS, JOB_RANK, type JobRules } from './job'
+import { builtinReport } from '../reporting/builtin-catalog'
 // ROLE-003: explicit global HR delegation. Scoped access-administration is not offered.
 import type { Bindings } from '../../auth.server'
 import { actorFor, requireLevelAdmin, type Actor, type Permission } from '../actor'
@@ -83,7 +84,10 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
     insist(COMPENSATION_RANK[mode]<=ceiling(field),'delegation_ceiling',403)
    }
   }
-  for(const report of definition.reports) insist(actor.permissions.has('reports.read') || actor.reportGrants.some(g=>g.reports.includes(report)&&coversScope(g.scope,definition.scope)) || actor.scoped.some(g=>g.permissions.has('reports.read')&&coversScope(g.scope,definition.scope)),'delegation_ceiling',403)
+  for(const report of definition.reports) {
+   insist(!report.startsWith('builtin-')||builtinReport(report),'report_unavailable',403)
+   insist(actor.permissions.has('reports.read') || actor.reportGrants.some(g=>g.reports.includes(report)&&coversScope(g.scope,definition.scope)) || actor.scoped.some(g=>g.permissions.has('reports.read')&&coversScope(g.scope,definition.scope)),'delegation_ceiling',403)
+  }
   insist(!definition.followOwnChanges || actor.followOwnChanges,'delegation_ceiling',403)
   for(const field of SELF_FIELDS) if(definition.selfFields[field]) insist(selfRank[definition.selfFields[field]]<=selfRank[self[field]],'delegation_ceiling',403)
   for(const field of OTHER_FIELDS) if(definition.otherFields[field]) {

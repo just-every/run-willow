@@ -1,0 +1,26 @@
+// Built-ins are read-only definitions. Selecting one never supplies its fields.
+export interface BuiltinReport {
+ id: string
+ name: string
+ description: string
+ kind: 'workforce' | 'i9-documents' | 'document-receipts'
+ columns: readonly string[]
+ measures: readonly string[]
+ status: 'active' | 'all'
+ calculation: string
+}
+const workforce = (id: string, name: string, description: string, columns: string[], measures: string[], calculation: string, status: 'active' | 'all' = 'active'): BuiltinReport => ({ id: `builtin-${id}`, name, description, kind: 'workforce', columns, measures, status, calculation })
+export const BUILTIN_REPORTS: readonly BuiltinReport[] = [
+ workforce('headcount', 'Headcount', 'People employed on the selected date, within your current report reach.', ['name', 'department', 'location'], ['headcount'], 'One for each person whose selected employment period is in force on the as-of date.'),
+ workforce('fte', 'Full-time equivalent', 'Recorded FTE for active people; unreadable or unrecorded values stay unknown.', ['name', 'jobTitle', 'department', 'fte'], ['fte', 'unknownFte'], 'Sum of recorded FTE, rounded to three decimals per person. Unknown and withheld FTE are counted separately.'),
+ workforce('turnover', 'Turnover', 'Dated leavers and endpoint headcount in your current scope.', ['name', 'department', 'location'], ['turnover'], 'Leavers in the inclusive range divided by the average headcount at its endpoints. Totals and dated sources are withheld when required employment dates are unreadable.', 'all'),
+ workforce('tenure', 'Tenure', 'Elapsed employment days using the employment dates you may read.', ['name', 'department', 'tenureDays'], ['tenureDays', 'averageTenureDays', 'unknownTenure'], 'Calendar days since the selected period began, ending at its end date or the as-of date. Unknown and withheld dates do not enter the average.', 'all'),
+ workforce('leave-balances', 'Leave balances', 'Effective-dated ledger balances you may read.', ['name', 'department', 'leaveHours'], ['leaveHours', 'unknownLeaveBalances'], 'Sum of readable leave-account balances in hours, following ledger effective dates.'),
+ workforce('leave-liability', 'Leave liability', 'Recorded leave valued using separately readable pay and schedule.', ['name', 'department', 'leaveLiability'], ['liability', 'unknownLiability'], 'Hourly rate × balance hours, or salary × balance minutes / (scheduled weekly minutes × 52), rounded half up to cents per person and grouped by currency. Payroll calculation remains with the payroll provider.'),
+ workforce('payroll', 'Payroll roster', 'A roster of recorded pay in force, with restricted fields withheld.', ['name', 'employeeNumber', 'jobTitle', 'department', 'employmentType', 'payAmount'], [], 'Pay is the recorded rate and basis in force on the as-of date. This roster does not calculate tax, payments or provider processing.'),
+ workforce('open-exceptions', 'Open exceptions', 'Permission-checked pending decisions and approved handoffs.', ['name', 'department', 'openExceptions'], ['openExceptions'], 'Counts reconstructable leave/profile decisions and handoffs plus separately authorized payroll exceptions, with links to those native records.', 'all'),
+ workforce('overdue-work', 'Overdue work', 'Person-associated native work overdue on the selected date.', ['name', 'department', 'overdueWork'], ['overdueWork'], 'Current work uses the real reader’s FLOW-002 visibility. Historical work includes reconstructable lifecycle, leave, profile and payroll records and marks other historical sources unknown. Unassigned employer work is excluded.', 'all'),
+ { id: 'builtin-i9-documents', name: 'I-9 document custody', description: 'Published documents in categories explicitly mapped by the owner to the I-9 retention class.', kind: 'i9-documents', columns: ['name', 'category', 'document', 'filename', 'publishedAt'], measures: ['readableDocuments', 'withheldPeople'], status: 'all', calculation: 'Lists the latest published version of each readable document in an explicitly I-9-classified category. Recorded custody is not evidence of examination, attestation, E-Verify processing or statutory completion; US-001 workflows are not implemented.' },
+ { id: 'builtin-document-receipts', name: 'Document receipt acknowledgements', description: 'Recorded receipt status for readable documents that request acknowledgement.', kind: 'document-receipts', columns: ['name', 'category', 'document', 'filename', 'receipt', 'acknowledgedAt'], measures: ['acknowledged', 'awaitingAcknowledgement', 'withheldPeople'], status: 'all', calculation: 'Uses the latest published native document version and its recorded receipt acknowledgement. Acknowledgement is a receipt, not an electronic signature or verification of a legal form.' },
+]
+export const builtinReport = (id: string) => BUILTIN_REPORTS.find(report => report.id === id)

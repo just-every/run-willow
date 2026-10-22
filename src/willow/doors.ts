@@ -13,6 +13,7 @@ export const API_DOORS: [string, string][] = [
   ['^compensation$', 'compensation'], ['^compensation/equity$', 'compensationEquity'], ['^compensation/([\\w-]+)$', 'compensationCycle'],
   ['^company$', 'company'], ['^company-admin$', 'companyAdmin'],
   ['^protected-leave$', 'protectedCases'], ['^protected-leave/([\\w-]+)$', 'protectedCase'], ['^leave-overrides$', 'leaveOverrides'],
+  ['^builtin-reports$', 'builtinReports'], ['^builtin-reports/([\\w-]+)$', 'builtinReport'],
   ['^custom-reports$', 'customReports'], ['^custom-reports/([\\w-]+)$', 'customReport'], ['^eeo/self$', 'eeoSelf'], ['^eeo/report$', 'eeoReport'],
   ['^eeo/person/([\\w-]+)$', 'eeoPerson'], ['^eeo/people$', 'eeoPeople'], ['^eeo/mappings$', 'eeoMappings'], ['^eeo/runs$', 'eeoRuns'], ['^eeo/runs/([\\w-]+)$', 'eeoRun'], ['^eeo/runs/([\\w-]+)/people$', 'eeoRunPeople'], ['^eeo/runs/([\\w-]+)/aggregate$', 'eeoRunAggregate'],
   ['^retention$', 'retention'], ['^erasure/preview$', 'erasurePreview'], ['^erasure/receipts/([\\w-]+)$', 'erasureReceipt'], ['^retained$', 'retained'], ['^retention/review$', 'retentionReview'],
@@ -28,6 +29,7 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/reports/library$', 'builtinReports'], ['^/app/reports/library/([\\w-]+)\\.csv$', 'builtinReportCsv'], ['^/app/reports/library/([\\w-]+)\\.xlsx$', 'builtinReportXlsx'], ['^/app/reports/library/([\\w-]+)$', 'builtinReport'],
   ['^/app/preboarding$', 'preboarding'], ['^/app/eeo/preboarding/([\\w-]+)$', 'eeoPreboarding'],
   ['^/app/eeo/applicants$', 'eeoApplicants'], ['^/app/eeo/applicants/([\\w-]+)$', 'eeoApplicant'],
   ['^/app/hiring$', 'hiring'], ['^/app/hiring/openings/([\\w-]+)$', 'hiringOpening'], ['^/app/hiring/applications/([\\w-]+)$', 'hiringApplication'],

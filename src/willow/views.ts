@@ -1,3 +1,4 @@
+import { builtinReports,runBuiltinReport } from './reporting/builtins'
 import { insist } from './core'
 import { packets, packetRecord } from './preboarding'
 import { applicantRecord, applicantRecordsList } from './eeo-applicants'
@@ -79,6 +80,8 @@ export const views: Record<string, View> = {
   protectedCases,
   protectedCase: (env,actor,_request,id) => protectedCase(env,actor,id),
   leaveOverrides,
+  builtinReports,
+  builtinReport:(env,actor,_request,id,url)=>runBuiltinReport(env,actor,id,url),
   customReports: savedReports,
   customReport: async (env,actor,_request,id) => {const report=await savedReport(env,actor,id);return {report,result:await runReport(env,actor,report.definition,report.id),schedule:await scheduleStatus(env,actor,id)}},
   eeoPerson: (env,actor,_request,id,url) => { if([...url.searchParams.keys()].length) throw new WillowError('eeo_filters_not_allowed');return eeoPerson(env,actor,id) }, eeoPeople: (env,actor) => eeoPeople(env,actor),
