@@ -3132,7 +3132,7 @@
       "executable": false
     },
     "src/willow/job-projection.ts": {
-      "sha256": "53b2daed5fb3d86e197eef20d3ad028d850b3b2417e5c157792c5f662ceb1aa1",
+      "sha256": "1abb92c974435627a74a559c0a75a4558bdaeddce75c1760d60b6b6c136cc811",
       "executable": false
     },
     "src/willow/job-values.ts": {
@@ -3464,7 +3464,7 @@
       "executable": false
     },
     "src/willow/retention/inventory.ts": {
-      "sha256": "8db476926636f308e40bac5e3620bf136e00958a174c97702cdfa33a895aebb8",
+      "sha256": "b2ea8092d5b9b0139d6ca5d6726d6434c8c8b07fe71ee7ab8f7a7cf32b5c1181",
       "executable": false
     },
     "src/willow/retention/journal.d.ts": {
@@ -3708,7 +3708,7 @@
       "executable": false
     },
     "src/willow/views.ts": {
-      "sha256": "f9ae7bd81a48f624096cc5149112e442d2235f0fd6c4156097b4174214efb61b",
+      "sha256": "7bf4e4f525f64aad9121ae8b806b5c3d6b49b00a6983f775ecaafa1ead12f196",
       "executable": false
     },
     "src/willow/work-scheduler.ts": {
@@ -3916,7 +3916,7 @@
       "executable": false
     },
     "tests/willow/levels-job-read.mjs": {
-      "sha256": "5bd4714a57c79e7bbdb32373492aad7988293296ea1fcbbebf6b63c7d7230a63",
+      "sha256": "8b6f2124afc7d8d730447eede41301aee0c79150cf89eeaec20613cad215f249",
       "executable": false
     },
     "tests/willow/levels-job-write.mjs": {

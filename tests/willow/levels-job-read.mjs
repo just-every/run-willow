@@ -51,6 +51,7 @@ export async function jobReadProof(h,owner,fx) {
  assert.equal(full.current.fte,0.75)
  assert.equal(full.employment[0].startDate,day(-170))
  assert.equal(full.employment[0].employmentType,'full_time')
+ assert.equal(full.employment[0].status,'active')
  assert.equal(full.pay,undefined)
  assert.equal(full.employment[0].terms[0].pay,undefined)
  const pages=[`/app/people/${target.person}`,`/api/willow/people/${target.person}`,`/api/willow/context/${target.person}`,`/api/willow/custom-reports/${report.id}`,`/app/reports/custom/${report.id}.csv`,`/app/reports/custom/${report.id}.xlsx`,`/app/exports/employees.csv?scope=organization&fields=${selected}`]

@@ -31,7 +31,7 @@ import { upcomingDates } from './date-alerts/view'
 // Read models served at GET /api/willow/... Every view applies the same access
 // rules as the pages that render it.
 import type { Bindings } from '../auth.server'
-import { PERMISSION_LABELS, requirePermission, type Actor } from './actor'
+import { PERMISSION_LABELS, can, requirePermission, type Actor } from './actor'
 import { WillowError, all } from './core'
 import { employer, settings } from './employer'
 import { Input } from './input'
@@ -106,7 +106,7 @@ export const views: Record<string, View> = {
   levelReview: (env, actor, request, id) => levelReview(env,actor,id!),
   me: async (env, actor) => ({ id: actor.id, email: actor.email, name: actor.name, owner: actor.owner, person: actor.personId, permissions: [...actor.permissions], scoped: actor.scoped.map(grant => ({ level: grant.level, scope: grant.scope, permissions: [...grant.permissions].sort(), people: grant.people.size })), selfWriteModes: await selfWriteModes(env,actor), manages: [...actor.reports], today: actor.today, employer: await employer(env) }),
   permissions: async () => PERMISSION_LABELS,
-  settings: env => settings(env),
+  settings: async (env,actor) => { insist(can(actor,'people.manage')||can(actor,'leave.manage'),'forbidden',403); return settings(env) },
   members: (env, actor, request) => members(env, actor, request),
   preview: (env, actor, _request, _id, url) => visibilityPreview(env, actor, url.searchParams.get('member') ?? '', url.searchParams.get('person') ?? ''),
   people: async (env, actor, _request, _id, url) => {

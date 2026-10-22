@@ -11,7 +11,7 @@ export function projectJobEmployment(actor:Actor, person:string, employment:Reco
  return employment.map(period=>{
   const result={...period}
   for(const [key,field] of Object.entries(names)) if(!reads(field)) delete result[key]
-  if(!baseline) {delete result.legalEntity;delete result.status}
+  if(!baseline) {delete result.legalEntity;if(!reads('employmentStatus'))delete result.status}
   result.terms=period.terms.map((term:Row)=>{
    const item={...term}
    if(!reads('startDate') && term.effectiveFrom===period.startDate)delete item.effectiveFrom
