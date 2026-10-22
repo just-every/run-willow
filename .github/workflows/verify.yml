@@ -35,8 +35,6 @@ jobs:
       - run: pnpm exec rer check --profile first-party
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm exec rer verify
-      - run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
-      - run: pnpm run test:phase2-browser
       - run: pnpm run test:site
       - uses: actions/upload-artifact@v4
         if: always()
@@ -150,3 +148,32 @@ jobs:
       - run: pnpm exec rer install
       - run: pnpm exec vite build
       - run: pnpm run test:restore-erasure
+
+  browser-journeys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - name: Set external evidence directory
+        run: printf 'WILLOW_EVIDENCE_DIR=%s/willow-evidence\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.20.0'
+      - run: npm install --global pnpm@10.12.4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec rer install
+      - run: pnpm exec vite build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
+      - run: pnpm run test:phase2-browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: willow-browser-pages
+          path: ${{ runner.temp }}/willow-evidence/*.png
