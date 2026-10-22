@@ -167,7 +167,7 @@ export const DYNAMIC = ['wl_documents', 'wl_document_versions', 'wl_custom_field
 /** Tables that hold no person's data, each with its reason. The preview refuses when a table is in neither list. */
 const NONE = (reason: string, ...tables: string[]): [string, string][] => tables.map(table => [table, reason])
 export const OUT_OF_SCOPE = new Map<string, string>([
-  ...NONE('Private erasure HMAC key and value-free source tombstones; installation archives preserve the fence', 'wl_retention_import_secret', 'wl_erased_import_keys'),
+  ...NONE('Private erasure HMAC key and value-free source tombstones; installation archives preserve the fence', 'wl_retention_import_secret', 'wl_erased_import_keys', 'wl_import_erasure_fences'),
   ...NONE('employer configuration', 'wl_employer', 'wl_connections', 'wl_import_door', 'wl_payroll_layout', 'wl_work_policy', 'wl_locations', 'wl_departments', 'wl_divisions', 'wl_legal_entities', 'wl_schedules', 'wl_doc_categories'),
   ...NONE('policy and template definitions', 'wl_policy_versions', 'wl_leave_policies', 'wl_leave_policy_rules', 'wl_template_tasks', 'wl_levels', 'wl_level_permissions', 'wl_level_scope_values', 'wl_level_self_fields', 'wl_hiring_openings', 'wl_review_cycles', 'wl_company_announcements', 'wl_company_folders', 'wl_company_files'),
   ...NONE('the erasure window: one row inside the journaled erasure batch, never committed', 'wl_erasure_window'),

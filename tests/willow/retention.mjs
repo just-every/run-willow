@@ -11,6 +11,7 @@ import { imports } from './import-transport.mjs'
 import { findText, rowCounts, stubIdentities } from './retention-counts.mjs'
 import { browserEvidence } from './retention-browser.mjs'
 import { payrollErasure } from './retention-payroll.mjs'
+import { importErasure } from './retention-import.mjs'
 
 const directory = await mkdtemp(join(tmpdir(), 'willow-retention-'))
 const h = await harness({ persistTo: directory, scheduled: true })
@@ -136,6 +137,7 @@ try {
   assert.ok((await get('owner', 'work')).items.some(row => row.kind === 'hold-review'))
 
   // Import custody: a person created by a Base import shows retained originals and plans as redacted.
+  await api('location.create', { name: 'Parramatta', timezone: 'UTC', workState: 'CA' })
   const transfer = imports(h, owner)
   await api('category.create', { name: 'Passport scans' })
   const planned = await transfer.plan({ employees: file('employees.csv', employeesCsv({ conflictingEmail: 'nobody@example.com' })), balances: file('balances.csv', balancesCsv), documents: file('documents.zip', documentsZip()), schedule: f.schedule })
@@ -293,6 +295,7 @@ try {
   assert.ok(!JSON.stringify(await api('audit')).includes('priya.applicant@example.com'))
   assert.equal((await api(`erasure/receipts/${applicantErased.receipt}`)).totals.retained, applicantPlan.summary.retained)
 
+  await importErasure(h, owner, f, transfer, planned, juno, directory)
   await payrollErasure(h, owner, f)
 
   // The purge: records warn 30 days ahead and go when their last rule has expired; held and longer-lived ones stay.

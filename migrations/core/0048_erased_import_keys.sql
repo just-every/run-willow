@@ -8,3 +8,8 @@ CREATE TABLE wl_erased_import_keys (
   digest TEXT PRIMARY KEY,
   receipt_id TEXT NOT NULL
 );
+
+CREATE TABLE wl_import_erasure_fences (
+  job_id TEXT PRIMARY KEY,
+  receipt_id TEXT NOT NULL
+);

@@ -88,7 +88,7 @@ export function importErasureContext(env: Bindings, actor: Actor): D1ImportConte
 export async function selectImportErasure(env: Bindings, subject: ImportErasureSubject) {
   const employeeNumber = subject.employeeNumber ?? ''
   const emails = new Set([subject.workEmail, subject.memberEmail].filter((value): value is string => !!value).map(value => value.toLowerCase()))
-  const keys = new Set<string>()
+  const keys = new Set<string>(), loaded: { id: string; sources: SourceRecord[] }[] = []
   if (employeeNumber) keys.add(`number:${employeeNumber}`)
   // Source ids survive in plan payloads even after a source employee number or
   // email has changed. Decode chunked plans through Base's own loader.
@@ -96,6 +96,7 @@ export async function selectImportErasure(env: Bindings, subject: ImportErasureS
   const jobs = await all(env, 'SELECT j.*,s.revision AS custody_revision FROM ik_jobs j LEFT JOIN ik_d1_custody_states s ON s.job_id=j.id WHERE j.destination=? ORDER BY j.id', 'people')
   for (const job of jobs) {
     const plans = await loadPlans([job], env.DB as never, willowTargets.planCodec)
+    loaded.push({ id: job.id, sources: plans.get(job.id)!.entries.filter(entry => !entry.erased).map(entry => entry.source) })
     for (const entry of plans.get(job.id)!.entries) {
       if (entry.erased) continue
       const cells = cellsOf(entry.source), key = bamboohrErasureKey(entry.source)
@@ -129,7 +130,7 @@ export async function selectImportErasure(env: Bindings, subject: ImportErasureS
           AND s.revision IS json_extract(h.value,'$[2]')))`,
     params: [headers.length, JSON.stringify(headers)],
   }]
-  return { person, sourceKeys: [...keys].sort(), guards, snapshot: sha256(canonicalJson(headers)) }
+  return { person, sourceKeys: [...keys].sort(), jobs: loaded.filter(job => job.sources.some(source)).map(job => job.id), guards, snapshot: sha256(canonicalJson(headers)) }
 }
 
 const encode = (bytes: Uint8Array) => Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
@@ -177,5 +178,5 @@ export async function retireImportCustody(env: Bindings, actor: Actor, subject: 
   nativeSql: D1Sql[], checkpoint: D1Sql[], receiptId: string) {
   const selection = await selectImportErasure(env, subject)
   const quarantine = await erasedImportKeyStatements(env, selection.sourceKeys, receiptId)
-  return retireD1ImportCustody(selection.person, [...selection.guards, ...quarantine, ...nativeSql], importErasureContext(env, actor), checkpoint)
+  return retireD1ImportCustody(selection.person, [...selection.guards, ...quarantine, ...selection.jobs.map(job => ({ sql: 'INSERT OR REPLACE INTO wl_import_erasure_fences(job_id,receipt_id) VALUES(?,?)', params: [job, receiptId] })), ...nativeSql], importErasureContext(env, actor), checkpoint)
 }
