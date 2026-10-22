@@ -134,6 +134,12 @@ try {
     const former = await join('former')
     const access = await api('access.give', { person: former.person })
     const self = await h.signIn('former@example.com', { requested: true })
+    // Self compensation is an explicit level right; keep this viewer-withholding control real.
+    const payReview=await api('level.preview',{kind:'level',name:'synthetic-willow-14000',permissions:[],compensationFields:{self:{pay:'view'},others:{}}})
+    const payLevel=await api('level.apply',{review:payReview.id})
+    const existing=(await api('levels')).assignments.filter(a=>a.member_id===access.id).map(a=>a.level_id)
+    const assignment=await api('level.preview',{kind:'assignment',member:access.id,levels:[...existing,payLevel.id]})
+    await api('level.apply',{review:assignment.id})
     await api('leaver.start', { period: former.period, template: templates.leaver, endDate: day(-1), reason: 'Former' })
     await h.api(`people/${former.person}`, s.employee.cookie, undefined, 404)
     await preview(s.employee.member, former.person, owner, 404)

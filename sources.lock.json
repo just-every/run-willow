@@ -4044,7 +4044,7 @@
       "executable": false
     },
     "tests/willow/employee-bundle.mjs": {
-      "sha256": "fe6814991fc009820a03fd5afa4183859ef6965c51016c375d9441bd18285e6f",
+      "sha256": "a2efcd47f1a9514a38f0e157af5350ee6a7cc895714c8dafbd39780bdd526963",
       "executable": false
     },
     "tests/willow/employee-export.mjs": {
@@ -4284,7 +4284,7 @@
       "executable": false
     },
     "tests/willow/regressions.mjs": {
-      "sha256": "a957858e640f982006036ee4b6e7f98722f1e2625b1a9ff40906cf32e0de8e0f",
+      "sha256": "375707a10b73e080ebb5e3e45806618220a09c28f129b6bf182bcdd3b82c37d8",
       "executable": false
     },
     "tests/willow/restore-access.mjs": {

@@ -14,6 +14,12 @@ try {
   const owner = await h.signIn(h.vars.OWNER_EMAIL)
   await h.raw('/setup', { cookie: owner, form: new URLSearchParams({ confirm: 'yes' }) })
   const { api, staff: s, document } = await fixture(h, owner)
+  // This positive self-pay export uses an explicitly reviewed compensation source.
+  const payReview=await api('level.preview',{kind:'level',name:'synthetic-willow-14001',permissions:[],compensationFields:{self:{pay:'view',history:'view'},others:{}}})
+  const payLevel=await api('level.apply',{review:payReview.id})
+  const existing=(await api('levels')).assignments.filter(a=>a.member_id===s.employee.member).map(a=>a.level_id)
+  const payAssignment=await api('level.preview',{kind:'assignment',member:s.employee.member,levels:[...existing,payLevel.id]})
+  await api('level.apply',{review:payAssignment.id})
   const v2 = await api('document.add', { document: document.id, file: file('contract-revised.txt', 'REVISED-CONTRACT') })
   await h.api('document.acknowledge', s.employee.cookie, { version: v2.version }, 409)
   const sharedCategory = await api('category.create', { name: 'Manager notes', managerReads: true, subjectReads: true, acknowledgement: true })
