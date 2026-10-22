@@ -1,10 +1,10 @@
 import { bulkBrowserProof, delegatedBrowserProof } from './levels-bulk-browser.mjs'
-import { personalBrowserProof, otherPersonalBrowserProof } from './levels-personal-browser.mjs'
+import { personalBrowserProof, otherPersonalBrowserProof, documentCategoryBrowserProof } from './levels-personal-browser.mjs'
 import { scopeBrowserProof } from './levels-scope-browser.mjs'
 import assert from 'node:assert/strict'
 import { pathToFileURL } from 'node:url'
 import { evidenceDirectory } from './evidence.mjs'
-export async function browserEvidence(h,owner,staff,bulk,scoped,delegated) {
+export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,documentRights) {
  if(process.env.WILLOW_LEVELS_BROWSER!=='1') return
  assert.ok(process.platform!=='darwin'||process.env.WILLOW_PLAYWRIGHT_PATH)
  const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
@@ -72,6 +72,7 @@ export async function browserEvidence(h,owner,staff,bulk,scoped,delegated) {
    await scopeBrowserProof(browser,h,owner,scoped)
    await otherPersonalBrowserProof(browser,h,owner,staff)
    if(delegated) await delegatedBrowserProof(browser,h,owner,staff,delegated)
+   if(documentRights) await documentCategoryBrowserProof(browser,h,owner,staff,documentRights)
   } finally {await context.close()}
  } finally {await browser.close()}
 }

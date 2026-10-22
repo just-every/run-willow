@@ -33,7 +33,7 @@ export async function addDocument(env: Bindings, actor: Actor, input: Input) {
 }
 
 async function versionRow(env: Bindings, versionId: string) {
-  return await one(env, 'SELECT v.*, d.person_id, d.title, c.subject_reads, c.manager_reads, c.acknowledgement, c.name AS category FROM wl_document_versions v JOIN wl_documents d ON d.id = v.document_id JOIN wl_doc_categories c ON c.id = d.category_id WHERE v.id = ?', versionId)
+  return await one(env, 'SELECT v.*, d.person_id, d.category_id, d.title, c.subject_reads, c.manager_reads, c.acknowledgement, c.name AS category FROM wl_document_versions v JOIN wl_documents d ON d.id = v.document_id JOIN wl_doc_categories c ON c.id = d.category_id WHERE v.id = ?', versionId)
 }
 
 /** Downloads a version the member may read; anything else is not found. */
@@ -47,7 +47,7 @@ export async function documentFile(env: Bindings, actor: Actor, versionId: strin
 /** The person acknowledges receipt of the latest version of a document in an acknowledgement category. */
 export async function acknowledge(env: Bindings, actor: Actor, input: Input) {
   const row = await versionRow(env, input.text('version', { max: 100 }))
-  insist(row && actor.personId === row.person_id && row.subject_reads, 'not_found', 404)
+  insist(row && actor.personId === row.person_id && readsCategory(actor,row.person_id,row), 'not_found', 404)
   insist(row.acknowledgement, 'acknowledgement_not_requested', 409)
   const latest = await one<{ id: string }>(env, 'SELECT id FROM wl_document_versions WHERE document_id = ? ORDER BY number DESC LIMIT 1', row.document_id)
   insist(latest?.id === row.id, 'not_latest_version', 409)

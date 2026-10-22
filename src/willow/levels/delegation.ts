@@ -4,6 +4,7 @@ import { actorFor, requireLevelAdmin, type Actor, type Permission } from '../act
 import { all, guard, insist, one } from '../core'
 import { SELF_FIELDS, selfWriteModes, type SelfMode } from './personal'
 import { OTHER_FIELDS, type OtherMode } from './other-personal'
+import type { DocumentRules } from './documents'
 import type { Scope } from './scope'
 import type { Plan } from './actions'
 import type { levels } from './store'
@@ -28,9 +29,11 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
  requireLevelAdmin(actor)
  if(actor.owner) return
  const self=await selfWriteModes(env,actor)
- const checkDefinition=(definition:{permissions:readonly string[];selfFields:Record<string,SelfMode>;otherFields:Record<string,OtherMode>;scope:Scope;followOwnChanges:boolean})=>{
+ const categories=await all<{id:string;subject_reads:number}>(env,'SELECT id,subject_reads FROM wl_doc_categories')
+ const checkDefinition=(definition:{permissions:readonly string[];selfFields:Record<string,SelfMode>;otherFields:Record<string,OtherMode>;scope:Scope;followOwnChanges:boolean;documentCategories:DocumentRules})=>{
   insist(!definition.permissions.some(p=>p==='access.admin'||p==='eeo.individual'),'owner_only_delegation',403)
   insist(definition.permissions.every(p=>actor.permissions.has(p as Permission) || actor.scoped.some(grant=>grant.permissions.has(p as Permission)&&coversScope(grant.scope,definition.scope))),'delegation_ceiling',403)
+  for(const relation of ['self','others'] as const) for(const [category,mode] of Object.entries(definition.documentCategories[relation])) if(mode==='view') insist(actor.permissions.has('documents.private') || relation==='self' && !!actor.personId && !!categories.find(c=>c.id===category)?.subject_reads || actor.documentCategories.some(grant=>grant.rules[relation][category]==='view' && (relation==='self'||coversScope(grant.scope,definition.scope))) || relation==='others' && actor.scoped.some(grant=>grant.permissions.has('documents.private')&&coversScope(grant.scope,definition.scope)),'delegation_ceiling',403)
   insist(!definition.followOwnChanges || actor.followOwnChanges,'delegation_ceiling',403)
   for(const field of SELF_FIELDS) if(definition.selfFields[field]) insist(selfRank[definition.selfFields[field]]<=selfRank[self[field]],'delegation_ceiling',403)
   for(const field of OTHER_FIELDS) if(definition.otherFields[field]) {

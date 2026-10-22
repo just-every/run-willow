@@ -231,3 +231,75 @@ export async function otherPersonalProof(h,owner,s) {
  assert.equal((await read()).private,undefined)
  console.log('ROLE-001 personal fields about others: PASS — selective scoped reads, every mode, native edits, immutable HR routing, source/mode/scope fences, exact union and same-session revocation')
 }
+
+// ROLE-001 category reads: every actual document door uses the same current rule.
+export async function documentCategoryProof(h,owner,s) {
+ const api=(path,body,status)=>h.api(path,owner,body,status)
+ const reader=(path,body,status)=>h.api(path,s.managerb.cookie,body,status)
+ const apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
+ const assign=levels=>apply({kind:'assignment',member:s.managerb.member,levels})
+ const category=await api('category.create',{name:'Explicit category view',subjectReads:false,managerReads:false,acknowledgement:true})
+ const hiddenCategory=await api('category.create',{name:'Another private category',subjectReads:false,managerReads:false})
+ const loc=await api('location.create',{name:'Category rights location',timezone:'UTC'})
+ const day=new Date().toISOString().slice(0,10)
+ const mover=await api('mover.schedule',{period:s.employee.period,effectiveFrom:day,locationId:loc.id,reason:'Document category scope'})
+ const document=async(person,category,title,bytes)=>api('document.add',{person,category,title,file:{filename:'synthetic-willow-901.txt',base64:Buffer.from(bytes).toString('base64')}})
+ const inside=await document(s.employee.person,category.id,'synthetic-willow-9101','synthetic-willow-9201')
+ const other=await document(s.employee.person,hiddenCategory.id,'synthetic-willow-9102','synthetic-willow-9202')
+ const outside=await document(s.hr.person,category.id,'synthetic-willow-9103','synthetic-willow-9203')
+ const own=await document(s.managerb.person,category.id,'synthetic-willow-9104','synthetic-willow-9204')
+ const scope={kind:'group',dimensions:{location:[loc.id]}}
+ const rules={self:{[category.id]:'view'},others:{[category.id]:'view'}}
+ const plan={kind:'level',name:'Fine document categories',permissions:[],scope,documentCategories:rules}
+ const level=await apply(plan)
+ const report=await apply({kind:'level',name:'Document export authority',permissions:['reports.read']})
+ for(const invalid of [null,[],{other:{[category.id]:'view'}},{self:{missing:'view'}},{others:{[category.id]:'edit'}}]) await api('level.preview',{...plan,level:level.id,documentCategories:invalid},400)
+ const noRead=await h.raw(`/app/files/document/${inside.version}?download=1`,{cookie:s.managerb.cookie})
+ assert.equal(noRead.status,404)
+ const review=await api('level.preview',{kind:'assignment',member:s.managerb.member,levels:[level.id,report.id]})
+ assert.equal(review.impact[0].afterDocuments.length,1)
+ assert.deepEqual((await reader(`people/${s.employee.person}`)).documents,undefined,'The review grants no category access')
+ await api('level.apply',{review:review.id})
+ const record=await reader(`people/${s.employee.person}`)
+ assert.deepEqual(record.documents.map(d=>d.id),[inside.id],'Only the explicit category appears')
+ assert.equal(record.private,undefined)
+ assert.equal(record.pay,undefined)
+ assert.deepEqual((await reader(`context/${s.employee.person}`)).record.documents,record.documents)
+ const preview=await api(`preview?member=${s.managerb.member}&person=${s.employee.person}`)
+ assert.deepEqual(preview.view.documents.map(d=>d.id),[inside.id])
+ const page=await (await h.raw(`/app/people/${s.employee.person}`,{cookie:s.managerb.cookie})).text()
+ assert.ok(page.includes('synthetic-willow-9101')&&!page.includes('synthetic-willow-9102'))
+ for(const [version,expected] of [[inside.version,200],[other.version,404],[outside.version,404],[own.version,200]]) {
+  for(const suffix of ['', '?download=1']) {
+   const response=await h.raw(`/app/files/document/${version}${suffix}`,{cookie:s.managerb.cookie})
+   assert.equal(response.status,expected)
+   if(expected===200)assert.equal(await response.text(),version===own.version?'synthetic-willow-9204':'synthetic-willow-9201')
+  }
+ }
+ assert.deepEqual((await reader(`people/${s.managerb.person}`)).documents.map(d=>d.id),[own.id],'About-self category reads do not inherit an about-others scope restriction')
+ await reader('document.acknowledge',{version:own.version})
+ await reader('document.acknowledge',{version:own.version},409)
+ await reader('document.acknowledge',{version:inside.version},404)
+ await reader('document.add',{document:inside.id,file:{filename:'synthetic-willow-902.txt',base64:Buffer.from('Denied revision').toString('base64')}},403)
+ const zip=await h.raw(`/app/exports/employees.zip?scope=organization&person=${s.employee.person}&fields=name&history=documents`,{cookie:s.managerb.cookie})
+ assert.equal(zip.status,200)
+ const files=readZip(Buffer.from(await zip.arrayBuffer()))
+ const text=[...files.values()].map(bytes=>bytes.toString()).join('\n')
+ assert.ok(text.includes('synthetic-willow-9101')&&text.includes('synthetic-willow-9201'))
+ for(const withheld of ['synthetic-willow-9102','synthetic-willow-9202','synthetic-willow-9103','synthetic-willow-9203'])assert.ok(!text.includes(withheld),'A bundle never adds another category or person')
+ // A dated scope change applies immediately to both metadata and bytes.
+ await api('terms.cancel',{terms:mover.terms,reason:'Scope no longer reaches this record'})
+ assert.equal((await reader(`people/${s.employee.person}`)).documents,undefined)
+ assert.equal((await h.raw(`/app/files/document/${inside.version}`,{cookie:s.managerb.cookie})).status,404)
+ assert.ok((await reader(`people/${s.managerb.person}`)).documents.some(d=>d.id===own.id))
+ const revoke=await api('level.preview',{...plan,level:level.id,documentCategories:{self:{[category.id]:'none'},others:{[category.id]:'none'}}})
+ assert.equal(revoke.impact[0].beforeDocuments.length,1)
+ assert.equal(revoke.impact[0].afterDocuments.length,0)
+ await api('level.apply',{review:revoke.id})
+ assert.equal((await h.raw(`/app/files/document/${own.version}?download=1`,{cookie:s.managerb.cookie})).status,404)
+ await reader('document.acknowledge',{version:own.version},404)
+ assert.ok(!(await reader(`people/${s.managerb.person}`)).documents.some(d=>d.id===own.id))
+ await assign([])
+ console.log('ROLE-001 document categories: PASS — separate self/others union, scoped metadata and bytes, page/context/preview/bundle parity, explicit subject receipt, no upload grant and same-session revocation')
+ return {category:category.id,hiddenCategory:hiddenCategory.id,location:loc.id,level:level.id,inside,other,outside,own,scope}
+}

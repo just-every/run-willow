@@ -201,3 +201,76 @@ export async function otherPersonalBrowserProof(browser,h,owner,staff) {
   }
  } finally {for(const context of contexts) await context.close()}
 }
+
+export async function documentCategoryBrowserProof(browser,h,owner,staff,ids) {
+ const contexts=[]
+ const pageFor=async cookie=>{
+  const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context)
+  await context.addCookies(cookie.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})))
+  return context.newPage()
+ }
+ const api=(path,body,status)=>h.api(path,owner,body,status)
+ const apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
+ try {
+  const admin=await pageFor(owner),reader=await pageFor(staff.managerb.cookie)
+  const capture=async(page,name,width)=>{
+   await page.evaluate(()=>document.fonts.ready)
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`document category ${name} fits ${width}`)
+   await page.screenshot({path:`${evidenceDirectory}/ROLE-001-document-categories-${name}-${width}.png`,fullPage:true})
+  }
+  const submit=async(page,form,name)=>{
+   await form.getByRole('button',{name,exact:true}).click()
+   await page.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'))
+   assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())
+  }
+  for(const width of [1440,390]) {
+   for(const page of [admin,reader]) await page.setViewportSize({width,height:1000})
+   const terms=await api('mover.schedule',{period:staff.employee.period,effectiveFrom:new Date().toISOString().slice(0,10),locationId:ids.location,reason:'Native category-read browser scope'})
+   await admin.goto(h.origin+'/app/access')
+   const name=`Category reads ${width}`,create=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:/^Create a level$/})}).first()
+   await create.locator('summary').click()
+   await create.getByLabel('Level name',{exact:true}).fill(name)
+   await create.getByLabel('Scope',{exact:true}).selectOption('group')
+   await create.getByLabel('Category rights location',{exact:true}).check()
+   await create.getByLabel('Documents about themselves: Explicit category view',{exact:true}).selectOption('view')
+   await create.getByLabel('Documents about others: Explicit category view',{exact:true}).selectOption('view')
+   await capture(admin,'configure',width)
+   await submit(admin,create,'Review level')
+   await capture(admin,'definition-review',width)
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   const assignment=admin.locator('form[action="/app/do/level.preview"]').filter({has:admin.locator('input[name="kind"][value="assignment"]')})
+   await assignment.getByLabel('Assign levels to',{exact:true}).selectOption(staff.managerb.member)
+   await assignment.getByLabel(name,{exact:true}).check()
+   await submit(admin,assignment,'Review assignment')
+   await capture(admin,'assignment-review',width)
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   await reader.goto(h.origin+`/app/people/${staff.employee.person}`)
+   assert.equal(await reader.getByRole('heading',{name:/synthetic-willow-9102/}).count(),0)
+   const link=reader.locator(`a[href="/app/files/document/${ids.inside.version}?download=1"]`)
+   await link.waitFor()
+   await capture(reader,'other-person-record',width)
+   const [download]=await Promise.all([reader.waitForEvent('download'),link.click()])
+   assert.equal(await download.failure(),null)
+   await reader.goto(h.origin+`/app/people/${staff.managerb.person}`)
+   await reader.locator(`a[href="/app/files/document/${ids.own.version}?download=1"]`).waitFor()
+   await capture(reader,'own-record-outside-other-scope',width)
+   await admin.goto(h.origin+'/app/access')
+   const edit=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:new RegExp(`^${name} ·`)})}).first()
+   await edit.locator('summary').click()
+   await edit.getByLabel('Documents about others: Explicit category view',{exact:true}).selectOption('none')
+   await submit(admin,edit,'Review level')
+   await capture(admin,'revoke-other-review',width)
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   await reader.goto(h.origin+`/app/people/${staff.employee.person}`)
+   assert.equal(await reader.locator(`a[href="/app/files/document/${ids.inside.version}?download=1"]`).count(),0)
+   await capture(reader,'other-revoked',width)
+   assert.equal((await h.raw(`/app/files/document/${ids.inside.version}`,{cookie:staff.managerb.cookie})).status,404)
+   await reader.goto(h.origin+`/app/people/${staff.managerb.person}`)
+   await reader.locator(`a[href="/app/files/document/${ids.own.version}?download=1"]`).waitFor()
+   await capture(reader,'own-read-retained',width)
+   await apply({kind:'assignment',member:staff.managerb.member,levels:[]})
+   assert.equal((await h.raw(`/app/files/document/${ids.own.version}`,{cookie:staff.managerb.cookie})).status,404)
+   await api('terms.cancel',{terms:terms.terms,reason:'End this browser scope'})
+  }
+ } finally {for(const context of contexts) await context.close()}
+}

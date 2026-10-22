@@ -3,7 +3,7 @@ import type { Bindings } from '../../auth.server'
 import { actorFor, canAbout, type Actor } from '../actor'
 import { all, commit, guard, insist, newId, now, one, stmt } from '../core'
 import type { Input } from '../input'
-import { SELF_FIELDS, type SelfField } from './personal'
+import type { SelfField } from './personal'
 import { EVERYONE, levelScopes, scopeMembers, type Scope } from './scope'
 import { personalField, personalValue } from '../self-service/personal'
 

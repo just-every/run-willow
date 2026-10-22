@@ -1,7 +1,7 @@
 // ROLE-001 named-level slice: public HTTP doors against the production Worker.
 import assert from 'node:assert/strict'
 import { bulkLevelProof, delegatedLevelProof } from './levels-bulk.mjs'
-import { personalFieldProof, otherPersonalProof } from './levels-personal.mjs'
+import { personalFieldProof, otherPersonalProof, documentCategoryProof } from './levels-personal.mjs'
 import { harness } from './harness.mjs'
 import { fixture } from './regression-fixture.mjs'
 import { browserEvidence } from './levels-browser.mjs'
@@ -97,7 +97,8 @@ try {
  await scopeKindsProof(h,owner,fx)
  const delegated=await delegatedLevelProof(h,owner,s)
  await otherPersonalProof(h,owner,s)
+ const documentRights=await documentCategoryProof(h,owner,s)
  console.log('ROLE-002 scopes: PASS — everyone, direct, direct and indirect, location, department, employment type, custom field and combined group scopes reach exactly their people through every registered door, control members, dated transfers on each side of the effective date, scoped writes rechecked, invalid scopes refused and batch revert')
- await browserEvidence(h,owner,s,bulk,scoped,delegated)
+ await browserEvidence(h,owner,s,bulk,scoped,delegated,documentRights)
  console.log('ROLE-001: PASS — exact union, owner-only reviewed changes, stale/replay refusal, same-session revocation and ended-access clearing (personal self-write modes and immutable HR routing proved; other field/section rights remain partial)')
 } finally { await h.close() }

@@ -3,6 +3,7 @@
 // an export or an agent's context. Managerial rank grants only the manager
 // facets listed here; private contact, pay and confidential reasons need an
 // explicit permission or being that person.
+import { anyDocumentCategoryGrant, documentCategoryGrant } from './levels/documents'
 import { can, canAbout, permissionsAbout, type Actor, type Permission } from './actor'
 
 export type Facet =
@@ -41,7 +42,7 @@ export function facets(actor: Actor, personId: string): Set<Facet> {
   if (self || manager || has('leave.manage')) result.add('leave')
   if (self || has('leave.manage')) result.add('leave_reason')
   if (self || manager || has('people.manage')) result.add('lifecycle')
-  if (self || manager || has('documents.private')) result.add('documents')
+  if (self || manager || has('documents.private') || anyDocumentCategoryGrant(actor,personId)) result.add('documents')
   return result
 }
 
@@ -49,7 +50,7 @@ export const sees = (actor: Actor, personId: string, facet: Facet) => facets(act
 
 /** Whether a member may read a document category for a person. */
 export function readsCategory(actor: Actor, personId: string, category: Record<string, any>) {
-  if (canAbout(actor, 'documents.private', personId)) return true
+  if (canAbout(actor, 'documents.private', personId) || documentCategoryGrant(actor,personId,category.category_id ?? category.id)) return true
   if (actor.personId === personId && category.subject_reads) return true
   return actor.reports.has(personId) && !!category.manager_reads
 }
@@ -58,4 +59,4 @@ export function readsCategory(actor: Actor, personId: string, category: Record<s
 export const seesEveryone = (actor: Actor) => can(actor, 'people.manage') || can(actor, 'reports.read') || can(actor, 'leave.manage') || can(actor, 'payroll.handoff')
 
 /** Former people: employer-wide holders see them all; a scoped holder only those their scope reaches today. */
-export const seesFormer = (actor: Actor, personId: string) => seesEveryone(actor) || (['people.manage', 'reports.read', 'leave.manage'] as const).some(permission => canAbout(actor, permission, personId))
+export const seesFormer = (actor: Actor, personId: string) => anyDocumentCategoryGrant(actor,personId) || seesEveryone(actor) || (['people.manage', 'reports.read', 'leave.manage'] as const).some(permission => canAbout(actor, permission, personId))
