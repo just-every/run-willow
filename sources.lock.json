@@ -237,7 +237,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "22f5d20c3e8182ed6cbf3a06315a274605b1359b946cdf91c75eeca1067b90c2",
+      "sha256": "9d09cdd3d5e480e377dcdb00e37440861d2fe7181d2a24075794ac7b8d49d26f",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -3813,7 +3813,7 @@
       "executable": false
     },
     "tests/willow/flows.mjs": {
-      "sha256": "efd9e19424f6c880a149de46a2421768eba2fb536a5bccbf6c29d556b673eb48",
+      "sha256": "cc435dcad8f38182d5963de86f4124ae1952fc26f988ddf43437043e921fc117",
       "executable": false
     },
     "tests/willow/harness.mjs": {
@@ -3889,7 +3889,7 @@
       "executable": false
     },
     "tests/willow/levels.mjs": {
-      "sha256": "f23ee64c06d369a21816bd82e34ccfaf9c09699f2de200f9bb1c649cb88f3b35",
+      "sha256": "6f8f4a762a1996dbe74eab4ec92bc3a1eb2b6befcb7420a7a5ee25f69ac0f7b6",
       "executable": false
     },
     "tests/willow/open-area-fixtures.mjs": {

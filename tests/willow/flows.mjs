@@ -516,7 +516,27 @@ try {
       const response=await h.raw(url,{cookie:cookie.mia}),body=await response.text()
       for(const key of forbidden.mia) assert.ok(!body.includes(SECRET[key]),`Revoked personal field leaked ${key} through ${url}`)
     }
-    console.log(`ROLE-001 crawled ${urls.length} doors with exact named levels, selective personal fields and same-session revocation`)
+    // A category-only reader can read that category without acquiring private contact,
+    // compensation, confidential reasons, another category or administrative rights.
+    const categoryReview=await h.api('level.preview',cookie.owner,{kind:'level',name:'One document category',permissions:[],documentCategories:{others:{[ids.medical]:'view'}},scope:{kind:'group',dimensions:{location:[ids.sydney]}}})
+    const categoryLevel=await h.api('level.apply',cookie.owner,{review:categoryReview.id})
+    const categoryAssignment=await h.api('level.preview',cookie.owner,{kind:'assignment',member:ids.ivanMember,levels:[named.ivan.id,categoryLevel.id]})
+    await h.api('level.apply',cookie.owner,{review:categoryAssignment.id})
+    const sawCategory=new Set()
+    for(const url of urls) {
+      const response=await h.raw(url,{cookie:cookie.ivan}),body=await response.text()
+      for(const key of forbidden.ivan.filter(key=>!['docTitle','docBytes'].includes(key))) assert.ok(!body.includes(SECRET[key]),`Selective category right leaked ${key} through ${url}`)
+      for(const key of ['docTitle','docBytes']) if(body.includes(SECRET[key]))sawCategory.add(key)
+    }
+    assert.deepEqual([...sawCategory].sort(),['docBytes','docTitle'],'The one permitted category is actually readable')
+    assert.deepEqual((await h.api('me',cookie.ivan)).permissions.sort(),named.ivan.permissions,'A category grants no additional administrative permission')
+    const categoryRevoke=await h.api('level.preview',cookie.owner,{kind:'level',level:categoryLevel.id,name:'One document category',permissions:[],documentCategories:{others:{[ids.medical]:'none'}}})
+    await h.api('level.apply',cookie.owner,{review:categoryRevoke.id})
+    for(const url of urls) {
+      const body=await (await h.raw(url,{cookie:cookie.ivan})).text()
+      for(const key of forbidden.ivan) assert.ok(!body.includes(SECRET[key]),`Category revocation leaked ${key} through ${url}`)
+    }
+    console.log(`ROLE-001 crawled ${urls.length} doors with exact named levels, selective personal fields and document categories, and same-session revocation`)
     // Reads of someone else's private details are audited.
     const audit = await h.api('audit', cookie.owner)
     assert.ok(audit.some(event => event.action === 'person.private.read' && event.subject === ids.sam && event.actor === ids.hanaMember))

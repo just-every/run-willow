@@ -101,5 +101,5 @@ try {
  await documentWriteProof(h,owner,s,documentRights)
  console.log('ROLE-002 scopes: PASS — everyone, direct, direct and indirect, location, department, employment type, custom field and combined group scopes reach exactly their people through every registered door, control members, dated transfers on each side of the effective date, scoped writes rechecked, invalid scopes refused and batch revert')
  await browserEvidence(h,owner,s,bulk,scoped,delegated,documentRights)
- console.log('ROLE-001: PASS — exact union, owner-only reviewed changes, stale/replay refusal, same-session revocation and ended-access clearing (personal self-write modes and immutable HR routing proved; other field/section rights remain partial)')
+ console.log('ROLE-001: PASS — exact union, explicit bounded administration and reviewed changes, stale/replay refusal, same-session revocation and ended-access clearing (personal self-write modes and immutable HR routing proved; other field/section rights remain partial)')
 } finally { await h.close() }
