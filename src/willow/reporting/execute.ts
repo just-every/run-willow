@@ -30,7 +30,7 @@ export async function runReport(env:Bindings,actor:Actor,definition:ReportDefini
   const view=await personView(env,actor,person.id,{asOf,audit:false,admissionActor:admission}) as Record<string,any>,period=view.employment?.find((p:any)=>p.id===view.selectedPeriod),term=period?.terms.find((t:any)=>t.inForce),active=person.status==='active',weekly=term?.schedule?.weeklyMinutes??null
   const tenure=period?.startDate&&view.jobFields?.endDate?Math.max(0,daysBetween(period.startDate,period.endDate&&period.endDate<asOf?period.endDate:asOf)):null
   const fte=view.jobFields?.fte ? term?.fte??null : null
-  const leave=view.leave?sum(view.leave.accounts.map((a:any)=>a.balanceMinutes)):null,pay=term?.pay
+  const leave=view.leave&&!view.leave.withheld.includes('balances')?sum(view.leave.accounts.map((a:any)=>a.balanceMinutes)):null,pay=term?.pay
   let liability:number|null=null
   if(leave!==null&&pay?.amountCents!==null&&pay?.amountCents!==undefined) {
    const denominator=pay.basis==='hourly'?60:pay.basis==='salary'&&weekly?weekly*52:null
@@ -44,7 +44,7 @@ export async function runReport(env:Bindings,actor:Actor,definition:ReportDefini
    if(key.startsWith('custom.')) {
     const field=view.customFields.fields.find((f:any)=>f.key===key.slice(7));values[key]=field?.value===undefined||field?.value===null?null:String(field.value);if(!field)withheld.push(key)
    } else if(key==='employmentType'&&!view.jobFields?.employmentType||key==='fte'&&!view.jobFields?.fte||key==='tenureDays'&&(!view.jobFields?.startDate||!view.jobFields?.endDate))withheld.push(key)
-   else if((key==='phone'||key==='personal_email')&&!Object.hasOwn(view.private??{},key)||key==='payAmount'&&!pay||key==='leaveLiability'&&(!pay||!view.leave)||key==='leaveHours'&&!view.leave||key==='employeeNumber'&&view.employeeNumber===undefined)withheld.push(key)
+   else if((key==='phone'||key==='personal_email')&&!Object.hasOwn(view.private??{},key)||key==='payAmount'&&!pay||key==='leaveLiability'&&(!pay||leave===null)||key==='leaveHours'&&leave===null||key==='employeeNumber'&&view.employeeNumber===undefined)withheld.push(key)
   }
   rows.push({personId:person.id,name:view.name,source:`/app/people/${person.id}?asOf=${asOf}`,cells:Object.fromEntries(definition.columns.map(k=>[k,withheld.includes(k)?null:values[k]])),withheld,workSources:work.tasks,exceptionSources:work.sources,overdueSources,
    measures:{headcount:active?1:0,fte:active&&fte!==null?Math.round(fte*1000)/1000:null,tenureDays:tenure,leaveMinutes:leave,liabilityCents:liability,currency:liability===null?null:pay.currency,openExceptions:work.exceptions,overdueWork:overdueSources.length}})

@@ -1,3 +1,6 @@
+import { resubmitCompensationRecord,resubmitCompensationDefinition } from './compensation/resubmit'
+import { editCompensationPay, proposeCompensationRecord } from './compensation/pay'
+import { writeCompensationRecord } from './compensation/records'
 import { editJobField } from './job-write'
 import { proposeDocument } from './document-write'
 import { editOtherPersonal } from './levels/other-personal'
@@ -127,6 +130,11 @@ export const actions: Record<string, Handler> = {
   'member.permissions': (env, actor, input, request) => setPermissions(env, actor, input, request),
   'access.give': (env, actor, input, request) => giveAccess(env, actor, input, request),
   'access.end': (env, actor, input, request) => endAccess(env, actor, input, request),
+  'compensation.record':writeCompensationRecord,
+  'compensation.pay':editCompensationPay,
+  'compensation.record.propose':proposeCompensationRecord,
+  'compensation.record.resubmit':resubmitCompensationRecord,
+  'compensation.definition.resubmit':resubmitCompensationDefinition,
   'job.field': editJobField,
   'person.field': editOtherPersonal,
   'person.update': (env, actor, input) => updatePerson(env, actor, input),

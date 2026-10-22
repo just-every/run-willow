@@ -10,6 +10,8 @@ import { policyRulesInput } from './leave-policy-input'
 import type { Bindings } from '../auth.server'
 import { can, canAbout, requireOwner, requirePermission, type Actor } from './actor'
 import { scopeFence } from './levels/scope'
+import { canRequestLeave, readsLeaveField, hasLeaveBaseline, type LeaveField } from './levels/leave'
+import { liveLeaveActor, currentLeaveMember, leaveReadFields, absenceView } from './leave-projection'
 import { sees } from './access'
 import { all, auditRead, commit, guard, insist, json, newId, now, one, stmt, type Row } from './core'
 import { addDays, daysBetween, hours, parseHours, requireDate, weekday } from './dates'
@@ -175,12 +177,14 @@ async function coverage(env: Bindings, personId: string, periodId: string, start
 
 export async function quote(env: Bindings, actor: Actor, input: Input) {
   const account = await signedOff(env, input.text('account', { max: 100 }))
-  insist(sees(actor, account.person_id, 'leave'), 'not_found', 404)
+  const read = leaveReadFields(actor, account.person_id)
+  insist(Object.values(read).some(Boolean), 'not_found', 404)
   const start = requireDate(input.text('startDate', { max: 10 }), 'invalid_startDate'), end = requireDate(input.text('endDate', { max: 10 }), 'invalid_endDate')
-  const calculation = await calculate(env, account, start, end)
+  const calculated = await calculate(env, account, start, end)
+  const calculation = hasLeaveBaseline(actor, account.person_id) ? calculated : { ...calculated, days: calculated.days.map(day => ({ date: day.date, minutes: day.minutes })) }
   const current = await balance(env, account.id)
   const limit = (await one<{ negative_limit_minutes: number }>(env, 'SELECT negative_limit_minutes FROM wl_policy_versions WHERE id = ?', account.policy_version_id))!.negative_limit_minutes
-  return { ...calculation, balanceMinutes: current, afterMinutes: current - calculation.minutes, allowed: current - calculation.minutes >= -limit, coverage: await coverage(env, account.person_id, account.period_id, start, end) }
+  return { ...(read.requests ? { ...calculation, ...(!read.policies ? { policyVersion: undefined } : {}) } : {}), ...(read.balances ? { balanceMinutes: current, afterMinutes: current - calculation.minutes, allowed: current - calculation.minutes >= -limit } : {}), coverage: read.calendar ? await coverage(env, account.person_id, account.period_id, start, end) : [], withheld: Object.keys(read).filter(field => !read[field as LeaveField]) }
 }
 
 /** The approver: the member who is the person's manager on the first day, else the leave managers' queue. */
@@ -192,9 +196,10 @@ async function approverFor(env: Bindings, account: Row, start: string, requester
 }
 
 export async function requestLeave(env: Bindings, actor: Actor, input: Input) {
+  const live = await liveLeaveActor(env, actor)
+  actor = live.actor
   const account = await signedOff(env, input.text('account', { max: 100 }))
-  const self = actor.personId === account.person_id
-  insist(self || canAbout(actor, 'leave.manage', account.person_id), self ? 'forbidden' : 'not_found', self ? 403 : 404)
+  insist(canRequestLeave(actor, account.person_id), Object.values(leaveReadFields(actor, account.person_id)).some(Boolean) ? 'forbidden' : 'not_found', Object.values(leaveReadFields(actor, account.person_id)).some(Boolean) ? 403 : 404)
   const start = requireDate(input.text('startDate', { max: 10 }), 'invalid_startDate'), end = requireDate(input.text('endDate', { max: 10 }), 'invalid_endDate')
   const calculation = await calculate(env, account, start, end)
   insist(!await one(env, "SELECT 1 FROM wl_leave_requests WHERE person_id = ? AND status IN ('pending', 'approved') AND start_date <= ? AND end_date >= ?", account.person_id, end, start), 'overlaps_existing_leave', 409)
@@ -202,7 +207,7 @@ export async function requestLeave(env: Bindings, actor: Actor, input: Input) {
   const limit = (await one<{ negative_limit_minutes: number }>(env, 'SELECT negative_limit_minutes FROM wl_policy_versions WHERE id = ?', account.policy_version_id))!.negative_limit_minutes
   const id = newId(), approver = await approverFor(env, account, start, actor.id)
   await commit(env, [
-    ...await scopeGuard(env, actor, account.person_id, self),
+    ...live.guards,
     // The balance check and the reservation are one atomic batch: two requests cannot spend the same minutes.
     guard(env, 'insufficient_balance', `${BALANCE} - ? >= ?`, account.id, calculation.minutes, -limit),
     guard(env, 'stale', "NOT EXISTS(SELECT 1 FROM wl_leave_requests WHERE person_id = ? AND status IN ('pending', 'approved') AND start_date <= ? AND end_date >= ?)", account.person_id, end, start),
@@ -229,12 +234,14 @@ function mayDecide(actor: Actor, request: Row) {
 const scopeGuard = async (env: Bindings, actor: Actor, personId: string, otherAuthority: boolean) => otherAuthority || can(actor, 'leave.manage') ? [] : await scopeFence(env, actor, personId, 'leave.manage')
 
 // A route grants access to this request only, never the person's account/facets.
-const mayReadRequest = (actor: Actor, request: Row) => sees(actor, request.person_id, 'leave') || request.approver_member_id === actor.id
+const mayReadRequest = (actor: Actor, request: Row) => readsLeaveField(actor, request.person_id, 'requests') || request.approver_member_id === actor.id
 
 const ledgerEntry = (env: Bindings, actor: Actor, request: Row, kind: string, minutes: number, note: string, reverses: string | null = null) =>
   stmt(env, 'INSERT INTO wl_ledger (id, account_id, kind, minutes, effective_date, request_id, reverses, note, recorded_by, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', newId(), request.account_id, kind, minutes, request.start_date, request.id, reverses, note, actor.id, now())
 
 export async function decideLeave(env: Bindings, actor: Actor, input: Input) {
+  const live = await liveLeaveActor(env, actor)
+  actor = live.actor
   const request = await requestRow(env, input.text('request', { max: 100 }))
   insist(mayReadRequest(actor, request), 'not_found', 404)
   insist(mayDecide(actor, request), 'not_your_decision', 403)
@@ -242,7 +249,9 @@ export async function decideLeave(env: Bindings, actor: Actor, input: Input) {
   insist(decision === 'approve' || decision === 'decline', 'invalid_decision')
   const note = input.text('note', { optional: true, max: 500 }) || null
   const approved = decision === 'approve'
+  if (approved) insist(canRequestLeave(await currentLeaveMember(env, request.requested_by), request.person_id), 'leave_access_changed', 403)
   await commit(env, [
+    ...live.guards,
     ...await scopeGuard(env, actor, request.person_id, request.approver_member_id === actor.id),
     guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_leave_requests WHERE id = ? AND status = 'pending')", request.id),
     stmt(env, "UPDATE wl_leave_requests SET status = ?, decided_by = ?, decided_at = ?, decision_note = ? WHERE id = ? AND status = 'pending'", approved ? 'approved' : 'declined', actor.id, now(), note, request.id),
@@ -254,10 +263,12 @@ export async function decideLeave(env: Bindings, actor: Actor, input: Input) {
 }
 
 export async function withdrawLeave(env: Bindings, actor: Actor, input: Input) {
+  const live = await liveLeaveActor(env, actor)
+  actor = live.actor
   const request = await requestRow(env, input.text('request', { max: 100 }))
-  insist(request.person_id === actor.personId || canAbout(actor, 'leave.manage', request.person_id), 'not_found', 404)
+  insist(request.person_id === actor.personId || canAbout(actor, 'leave.manage', request.person_id) || (request.requested_by === actor.id && canRequestLeave(actor, request.person_id)), 'not_found', 404)
   await commit(env, [
-    ...await scopeGuard(env, actor, request.person_id, request.person_id === actor.personId),
+    ...live.guards,
     stmt(env, "UPDATE wl_leave_requests SET status = 'withdrawn', cancelled_by = ?, cancelled_at = ? WHERE id = ? AND status = 'pending'", actor.id, now(), request.id),
     guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_leave_requests WHERE id = ? AND status = 'withdrawn' AND cancelled_by = ?)", request.id, actor.id),
     ledgerEntry(env, actor, request, 'release', request.minutes, 'Reservation released on withdrawal'),
@@ -277,18 +288,22 @@ async function reversalStatements(env: Bindings, actor: Actor, request: Row, not
 }
 
 export async function cancelLeave(env: Bindings, actor: Actor, input: Input) {
+  const live = await liveLeaveActor(env, actor)
+  actor = live.actor
   const request = await requestRow(env, input.text('request', { max: 100 }))
   insist(mayReadRequest(actor, request), 'not_found', 404)
   const own = request.person_id === actor.personId
   insist(request.status === 'approved', 'request_not_approved', 409)
   insist(canAbout(actor, 'leave.manage', request.person_id) || request.approver_member_id === actor.id || (own && request.start_date > actor.today), 'not_your_decision', 403)
   const note = input.text('note', { max: 500 })
-  await commit(env, [...await scopeGuard(env, actor, request.person_id, request.approver_member_id === actor.id || (own && request.start_date > actor.today)), ...await reversalStatements(env, actor, request, note)], { actor: actor.id, action: 'leave.cancel', subject: request.id })
+  await commit(env, [...live.guards, ...await scopeGuard(env, actor, request.person_id, request.approver_member_id === actor.id || (own && request.start_date > actor.today)), ...await reversalStatements(env, actor, request, note)], { actor: actor.id, action: 'leave.cancel', subject: request.id })
   return { id: request.id, status: 'cancelled' }
 }
 
 /** Corrects approved leave: the old use is reversed and the corrected dates are used, in one batch, against the balance. */
 export async function correctLeave(env: Bindings, actor: Actor, input: Input) {
+  const live = await liveLeaveActor(env, actor)
+  actor = live.actor
   const request = await requestRow(env, input.text('request', { max: 100 }))
   insist(mayReadRequest(actor, request), 'not_found', 404)
   insist(canAbout(actor, 'leave.manage', request.person_id) || (request.approver_member_id === actor.id && mayDecide(actor, request)), 'not_your_decision', 403)
@@ -301,6 +316,7 @@ export async function correctLeave(env: Bindings, actor: Actor, input: Input) {
   const note = input.text('note', { max: 500 }), id = newId()
   const corrected = { ...request, id, start_date: start, minutes: calculation.minutes }
   await commit(env, [
+    ...live.guards,
     ...await scopeGuard(env, actor, request.person_id, request.approver_member_id === actor.id),
     ...await reversalStatements(env, actor, request, `Corrected: ${note}`),
     stmt(env, "INSERT INTO wl_leave_requests (id, account_id, person_id, start_date, end_date, minutes, calculation, approver_member_id, status, corrects, requested_by, requested_at, decided_by, decided_at, decision_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?, ?, ?, ?, ?)", id, request.account_id, request.person_id, start, end, calculation.minutes, JSON.stringify(calculation), request.approver_member_id, request.id, request.requested_by, request.requested_at, actor.id, now(), note),
@@ -337,36 +353,60 @@ async function reasonsFor(env: Bindings, actor: Actor, rows: Row[]) {
 export async function leaveDetail(env: Bindings, actor: Actor, id: string) {
   const row = await one(env, `${REQUESTS} WHERE r.id = ?`, id)
   insist(row && mayReadRequest(actor, row), 'not_found', 404)
+  const routed = row.approver_member_id === actor.id
+  const read = leaveReadFields(actor, row.person_id)
   const reasons = await reasonsFor(env, actor, [row])
-  const ledger = await all(env, `SELECT kind, minutes, effective_date, reverses, recorded_at FROM wl_ledger WHERE request_id = ? ORDER BY ${LEDGER_ORDER}`, id)
+  const ledger = read.ledger || routed ? await all(env, `SELECT kind, minutes, effective_date, reverses, recorded_at FROM wl_ledger WHERE request_id = ? ORDER BY ${LEDGER_ORDER}`, id) : []
+  const request = requestView(row, reasons.get(id), sees(actor, row.person_id, 'leave_reason'))
+  if (!read.policies && !routed) delete (request as Record<string, unknown>).policy
+  if (!hasLeaveBaseline(actor, row.person_id) && !routed) { request.decisionNote = null; request.cancelNote = null }
+  const calculation = json<Record<string, unknown>>(row.calculation, {})
+  if (!hasLeaveBaseline(actor, row.person_id) && !routed && Array.isArray(calculation.days)) calculation.days = calculation.days.map((day: Record<string, unknown>) => ({ date: day.date, minutes: day.minutes }))
+  if (!read.policies && !routed) delete calculation.policyVersion
   return {
-    ...requestView(row, reasons.get(id), sees(actor, row.person_id, 'leave_reason')), name: displayName(row),
-    calculation: json(row.calculation, {}), ledger,
-    ...(sees(actor, row.person_id, 'leave') ? { balanceMinutes: await balance(env, row.account_id) } : {}),
-    coverage: await coverage(env, row.person_id, (await one<{ period_id: string }>(env, 'SELECT period_id FROM wl_leave_accounts WHERE id = ?', row.account_id))!.period_id, row.start_date, row.end_date),
+    ...request, name: displayName(row), calculation, ledger,
+    ...(read.balances ? { balanceMinutes: await balance(env, row.account_id) } : {}),
+    coverage: read.calendar || routed ? await coverage(env, row.person_id, (await one<{ period_id: string }>(env, 'SELECT period_id FROM wl_leave_accounts WHERE id = ?', row.account_id))!.period_id, row.start_date, row.end_date) : [],
+    withheld: Object.keys(read).filter(field => !read[field as LeaveField]),
     canDecide: row.status === 'pending' && mayDecide(actor, row),
-    canCancel: row.status === 'approved' && (canAbout(actor, 'leave.manage', row.person_id) || row.approver_member_id === actor.id || (row.person_id === actor.personId && row.start_date > actor.today)),
-    canCorrect: row.status === 'approved' && (canAbout(actor, 'leave.manage', row.person_id) || (row.approver_member_id === actor.id && mayDecide(actor, row))),
+    canCancel: row.status === 'approved' && (canAbout(actor, 'leave.manage', row.person_id) || routed || (row.person_id === actor.personId && row.start_date > actor.today)),
+    canCorrect: row.status === 'approved' && (canAbout(actor, 'leave.manage', row.person_id) || (routed && mayDecide(actor, row))),
   }
 }
 
-/** A person's leave accounts with balances, ledger and requests (the leave facet). */
-export async function leaveFor(env: Bindings, actor: Actor, personId: string, withReason = sees(actor, personId, 'leave_reason'), asOf?: string) {
-  const accounts = await all(env, 'SELECT a.*, l.name AS policy_name, v.version AS policy_version, v.summary AS policy_summary FROM wl_leave_accounts a JOIN wl_periods p ON p.id = a.period_id JOIN wl_leave_policies l ON l.id = a.policy_id JOIN wl_policy_versions v ON v.id = a.policy_version_id WHERE p.person_id = ? ORDER BY a.created_at', personId)
-  const ledger = (accounts.length ? await all(env, `SELECT * FROM wl_ledger WHERE account_id IN (${accounts.map(() => '?').join(', ')}) ORDER BY ${LEDGER_ORDER}`, ...accounts.map(account => account.id)) : []).filter(entry => !asOf || entry.effective_date <= asOf)
-  const requests = await all(env, `${REQUESTS} WHERE r.person_id = ? ORDER BY r.start_date DESC`, personId)
-  const reasons = withReason ? await reasonsFor(env, actor, requests) : new Map<string, string>()
-  const calculations = new Map(await Promise.all(accounts.map(async account => [account.id, await calculationsFor(env,account.id,asOf)] as const)))
+/** Independent ordinary leave fields; reading one never supplies another. */
+export async function leaveFor(env: Bindings, actor: Actor, personId: string, withReason = sees(actor, personId, 'leave_reason'), asOf?: string, allow?: (field: LeaveField) => boolean) {
+  const read = leaveReadFields(actor, personId, allow)
+  const accounts = Object.values(read).some(Boolean) ? await all(env, 'SELECT a.*, l.name AS policy_name, v.version AS policy_version FROM wl_leave_accounts a JOIN wl_periods p ON p.id = a.period_id JOIN wl_leave_policies l ON l.id = a.policy_id JOIN wl_policy_versions v ON v.id = a.policy_version_id WHERE p.person_id = ? ORDER BY a.created_at', personId) : []
+  const ledger = (read.balances || read.ledger) && accounts.length ? (await all(env, `SELECT * FROM wl_ledger WHERE account_id IN (${accounts.map(() => '?').join(', ')}) ORDER BY ${LEDGER_ORDER}`, ...accounts.map(account => account.id))).filter(entry => !asOf || entry.effective_date <= asOf) : []
+  const requests = read.requests || read.calendar ? (await all(env, `${REQUESTS} WHERE r.person_id = ? ORDER BY r.start_date DESC`, personId)).filter(row => !asOf || row.start_date <= asOf) : []
+  const reasons = read.requests && withReason ? await reasonsFor(env, actor, requests) : new Map<string, string>()
   return {
-    accounts: accounts.filter(account => !asOf || account.cutover_date <= asOf).map(account => ({
-      id: account.id, period: account.period_id, policy: { id: account.policy_id, name: account.policy_name, version: account.policy_version, versionId: account.policy_version_id },
-      cutoverDate: account.cutover_date, openingMinutes: account.opening_minutes, openingStatus: account.opening_status, accruedThrough: account.accrued_through,
-      balanceMinutes: ledger.filter(entry => entry.account_id === account.id).reduce((sum, entry) => sum + entry.minutes, 0),
-      calculations: calculations.get(account.id) ?? [],
-      ledger: ledger.filter(entry => entry.account_id === account.id).map(entry => ({ id: entry.id, kind: entry.kind, minutes: entry.minutes, effectiveDate: entry.effective_date, request: entry.request_id, reverses: entry.reverses, note: entry.note })),
-    })),
-    requests: requests.filter(row => !asOf || row.start_date <= asOf).map(row => requestView(row, reasons.get(row.id), withReason)),
+    accounts: read.balances || read.ledger || read.requests || read.policies ? await Promise.all(accounts.filter(account => !asOf || account.cutover_date <= asOf).map(async account => ({
+      id: account.id,
+      ...(read.requests || read.ledger ? { period: account.period_id } : {}),
+      ...(read.policies ? { policy: { id: account.policy_id, name: account.policy_name, version: account.policy_version, versionId: account.policy_version_id } } : {}),
+      ...(read.requests || read.balances ? { openingStatus: account.opening_status } : {}),
+      ...(read.balances ? { cutoverDate: account.cutover_date, openingMinutes: account.opening_minutes, accruedThrough: account.accrued_through, balanceMinutes: ledger.filter(entry => entry.account_id === account.id).reduce((sum, entry) => sum + entry.minutes, 0) } : {}),
+      ...(read.ledger ? { calculations: read.balances && read.policies ? await calculationsFor(env, account.id, asOf) : [], ledger: ledger.filter(entry => entry.account_id === account.id).map(entry => ({ id: entry.id, kind: entry.kind, minutes: entry.minutes, effectiveDate: entry.effective_date, ...(read.requests ? { request: entry.request_id } : {}), reverses: entry.reverses, note: entry.note })) } : {}),
+    }))) : [],
+    requests: read.requests ? requests.map(row => {
+      const request = requestView(row, reasons.get(row.id), withReason && sees(actor, personId, 'leave_reason'))
+      if (!read.policies) delete (request as Record<string, unknown>).policy
+      if (!hasLeaveBaseline(actor, personId)) { request.decisionNote = null; request.cancelNote = null }
+      return request
+    }) : [],
+    calendar: read.calendar ? requests.filter(row => ['pending', 'approved'].includes(row.status)).map(row => absenceView(row, displayName(row))) : [],
+    withheld: Object.keys(read).filter(field => !read[field as LeaveField]),
   }
+}
+
+/** Fine policy reads expose only currently approved versions assigned in today's scope. */
+export async function readablePolicies(env: Bindings, actor: Actor, personId?: string) {
+  if (can(actor, 'leave.manage')) return policies(env)
+  const rows = await all(env, 'SELECT DISTINCT p.person_id,a.policy_version_id FROM wl_leave_accounts a JOIN wl_periods p ON p.id=a.period_id')
+  const ids = new Set(rows.filter(row => (!personId || row.person_id === personId) && readsLeaveField(actor, row.person_id, 'policies')).map(row => row.policy_version_id))
+  return (await policies(env)).map(policy => ({ ...policy, versions: policy.versions.filter(version => version.status === 'approved' && ids.has(version.id)) })).filter(policy => policy.versions.length)
 }
 
 /** Requests waiting for this member's decision. */

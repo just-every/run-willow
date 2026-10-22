@@ -41,7 +41,13 @@ try {
   const owner = await server.signIn('owner@example.com')
   await confirm(server.origin, owner)
   const f = await fixture(server, owner), api = f.api
-  const gone = await f.join('gone')
+  const gone = await f.join('synthetic-willow-920'), peer = await f.join('synthetic-willow-921')
+  const targetBonus = await api('compensation.record', { person: gone.person, kind: 'bonus', effectiveDate: day(-10), amount: '125.25', currency: 'AUD', note: 'synthetic-willow-922' })
+  const targetCorrection = await api('compensation.record', { person: gone.person, kind: 'bonus', record: targetBonus.id, revision: targetBonus.revision, effectiveDate: day(-10), amount: '150.50', currency: 'AUD', note: 'synthetic-willow-923' })
+  const targetEquity = await api('compensation.record', { person: gone.person, kind: 'equity', effectiveDate: day(-9), units: '12.0625', security: 'synthetic-willow-924', note: 'synthetic-willow-925' })
+  await api('compensation.record', { person: peer.person, kind: 'bonus', effectiveDate: day(-8), amount: '300.75', currency: 'AUD', note: 'synthetic-willow-926' })
+  await api('compensation.record', { person: peer.person, kind: 'equity', effectiveDate: day(-7), units: '99.123456', security: 'synthetic-willow-927', note: 'synthetic-willow-928' })
+  const peerAwards = (await api(`people/${peer.person}`)).compensationRecords
   await api('leaver.start', { period: gone.period, template: f.templates.leaver, endDate: day(-1), reason: 'Left' })
   for (const open of (await api(`people/${gone.person}`)).cases.filter(item => item.status === 'open')) {
     for (const task of (await api(`cases/${open.id}`)).tasks) await api('task.complete', { task: task.id, evidence: 'Done' })
@@ -53,10 +59,11 @@ try {
   server = await harness({ persistTo: join(source, '.wrangler/state'), port: sourcePort })
   const sourceOwner = await server.signIn('owner@example.com')
   const sourceApi = (path, body, status) => server.api(path, sourceOwner, body, status)
-  await sourceApi('retention.adopt', { version: '2026-10-21' })
+  await sourceApi('retention.adopt', { version: (await sourceApi('retention')).tableVersion })
   await sourceApi('erasure.request', { person: gone.person, source: 'own_request', receivedOn: day(-1) })
   const preview = await sourceApi(`erasure/preview?person=${gone.person}`)
   assert.deepEqual(preview.blockers, [])
+  assert.deepEqual([preview.items.find(row => row.id === 'comp_records').rows, preview.items.find(row => row.id === 'comp_records').class], [3, 'payroll'])
   await sourceApi('erasure.confirm', { person: gone.person, digest: preview.digest })
   assert.ok(!(await sourceApi('people')).some(person => person.id === gone.person))
   await server.close(); server = null
@@ -78,7 +85,15 @@ try {
   const people = await destination.api('people', restoredOwner)
   assert.ok(!people.some(person => person.id === gone.person), 'the erased person is not restored')
   assert.ok(people.some(person => person.id === f.staff.employee.person), 'everyone else is')
-  assert.equal((await destination.api('retained', restoredOwner)).records.length > 0, true, 'the retained remainder travels in the owner archive')
+  const restoredAwards = (await destination.api(`people/${peer.person}`, restoredOwner)).compensationRecords
+  assert.deepEqual(restoredAwards, peerAwards, 'Native bonus/equity values, exact units and immutable award identities survive the owner archive')
+  const custody = (await destination.api('retained', restoredOwner)).records
+  assert.ok(custody.length > 0, 'the retained remainder travels in the owner archive')
+  const heldAwards = custody.filter(row => row.store === 'comp_records' && [targetBonus.id, targetEquity.id].includes(row.values?.record_id))
+  assert.deepEqual(heldAwards.map(row => row.values.revision).sort(), [targetBonus.revision, targetCorrection.revision, targetEquity.revision].sort(), 'The erased worker’s full native award history restores only into restricted custody')
+  assert.ok(heldAwards.every(row => row.class === 'payroll'))
+  const restoredHr = await destination.signIn('hr@example.com')
+  await destination.api('retained', restoredHr, undefined, 403)
   console.log('DATA-002 restore fence: passed')
 } finally {
   if (destination) await destination.close()

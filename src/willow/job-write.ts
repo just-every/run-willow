@@ -5,6 +5,7 @@ import { commit, guard, insist, one } from './core'
 import { selectedPeriods } from './employment'
 import { Input } from './input'
 import { prepareJobChange } from './job-values'
+import { canRequestCompensation } from './levels/compensation'
 import { JOB_FIELDS, canEditJobField, canRequestJobField, type JobField } from './levels/job'
 
 export const jobField = (value: string): JobField => {
@@ -22,10 +23,10 @@ export async function liveJobActor(env: Bindings, actor: Pick<Actor, 'id' | 'ses
 }
 
 /** The existing manager/HR path may request pay; fine job rights never confer that path. */
-export function requireJobRequest(actor: Actor, person: string, fields: JobField[], pay: boolean) {
+export function requireJobRequest(actor: Actor, person: string, fields: JobField[], pay: boolean, payField:'pay'|'history'='pay') {
  insist(actor.personId !== person, 'own_terms', 403)
  const native = canAbout(actor, 'people.manage', person) || actor.reports.has(person)
- insist(native || (!pay && fields.length > 0 && fields.every(field => canRequestJobField(actor, person, field))), 'forbidden', 403)
+ insist(native || ((pay||fields.length>0) && (!pay||canRequestCompensation(actor,person,payField)) && fields.every(field => canRequestJobField(actor, person, field))), 'forbidden', 403)
 }
 
 export async function editJobField(env: Bindings, actor: Actor, input: Input) {

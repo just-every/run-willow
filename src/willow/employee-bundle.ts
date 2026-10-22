@@ -40,11 +40,11 @@ export async function employeeBundle(env: Bindings, actor: Actor, url: URL, requ
     // The shared projection contains only explicitly selected and currently readable custom fields.
     if (data.fields.some(key => key.startsWith('custom.'))) record.customFields = person.customFields
     for (const section of sections as (keyof typeof EXPORT_SECTIONS)[]) {
-      if (SECTION_FACETS[section] && !person.facets.includes(SECTION_FACETS[section]!)) {
+      if (SECTION_FACETS[section] && !person.facets.includes(SECTION_FACETS[section]!) && !(section==='employment'&&Object.values(person.compensationFields??{}).some(Boolean))) {
         (record.withheldSections as string[]).push(section)
         continue
       }
-      if (section === 'employment') record.employment = person.employment
+      if (section === 'employment') {record.employment = person.employment;record.compensationRecords=person.compensationRecords;record.compensation=person.compensation}
       if (section === 'reviews') record.reviews = reviews!(person.id)
       if (section === 'profileChanges') {
         record.profileChanges = history.changes.filter(change => change.personId === person.id)

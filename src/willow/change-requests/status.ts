@@ -1,3 +1,4 @@
+import { readsCompensation } from '../levels/compensation'
 import { readsJobField, type JobField } from '../levels/job'
 // ROLE-001: one deliberately small projection shared by detail and list doors.
 import type { Bindings } from '../../auth.server'
@@ -33,8 +34,10 @@ export async function ownChangeStatus(env:Bindings,actor:Actor,row:Row) {
  if(plan.fte!==undefined) changes.push({field:'FTE',to:readsJobField(actor,row.person_id,'fte')?String(plan.fte??'Unknown'):'Withheld'})
  for(const [key,value] of Object.entries(plan.dates??{})) changes.push({field:key==='startDate'?'Employment start date':'Employment end date',to:readsJobField(actor,row.person_id,key as JobField)?value??'Ongoing':'Withheld'})
  if(plan.employmentStatus) changes.push({field:'Employment status',to:readsJobField(actor,row.person_id,'employmentStatus')?plan.employmentStatus:'Withheld'})
+ if(plan.compensationRecord) {const award=plan.compensationRecord;changes.push({field:award.kind==='bonus'?'Bonus':'Equity',to:readsCompensation(actor,row.person_id,award.kind)?award.kind==='bonus'?`${award.currency} ${award.amount}`:`${award.units} ${award.security}`:'Withheld'})}
+  if(plan.compensationDefinition){const definition=plan.compensationDefinition;changes.push({field:definition.kind==='bands'?'Compensation band':'Compensation cycle',to:readsCompensation(actor,row.person_id,definition.kind)?Object.values(definition.values).join(' · '):'Withheld'})}
  // Self-profile pay access does not imply the level's future self-compensation View right.
- if(plan.pay) changes.push(can(actor,'pay.read')
+ if(plan.pay) changes.push(readsCompensation(actor,row.person_id,plan.payField??'pay')
   ? {field:'Pay',from:formatPay(base.payBasis as never,base.payCents,base.currency),to:formatPay(base.newPayBasis as never,base.newPayCents,base.currency)}
   : {field:'Pay',from:'Withheld',to:'Withheld'})
  return {statusOnly:true as const,id:row.id,type:row.request_type,status:row.status,effectiveFrom:plan.effectiveFrom,submittedAt:row.requested_at,updatedAt:row.updated_at,

@@ -1,9 +1,12 @@
 // Bands and job levels share effective dates with the people record. Each correction appends a version.
 import type { Bindings } from '../../auth.server'
-import { requirePermission, type Actor } from '../actor'
+import type { Actor } from '../actor'
 import { all, auditRead, commit, guard, insist, newId, now, one, stmt } from '../core'
 import { requireDate } from '../dates'
 import type { Input } from '../input'
+import { currentTerms } from '../people'
+import { readsCompensation } from '../levels/compensation'
+import { compensationDefinitionMode, definitionAuthority, freshDefinitionActor, hasDefinitionRead, readCompensationDefinition, readsWholeDefinition, requestDefinition } from './definitions'
 
 export async function businessVersion(env: Bindings) {
  return (await one<{seq:number}>(env,"SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit WHERE action NOT LIKE '%.read'"))!.seq
@@ -33,18 +36,51 @@ export async function bandPosition(env:Bindings,subject:{personId:string;date:st
  const position: 'below'|'within'|'above'|'unbanded'=!band||subject.amountCents===null?'unbanded':subject.amountCents<band.minimum_cents?'below':subject.amountCents>band.maximum_cents?'above':'within'
  return {position,band,level:level.level,levelRevision:level.revision,source}
 }
-export async function defineBand(env:Bindings,actor:Actor,input:Input) {
- requirePermission(actor,'people.manage','pay.read')
- const job=input.text('jobTitle',{max:120}),level=input.text('level',{max:120}),location=input.text('location',{optional:true,max:100}),basis=input.text('basis',{max:10}),date=requireDate(input.text('effectiveFrom'),'invalid_effectiveFrom')
- insist(['salary','hourly'].includes(basis),'invalid_basis')
- const minimum=cents(input.text('minimum')),maximum=cents(input.text('maximum'));insist(maximum>=minimum,'invalid_band_range')
+/** Prepare the native immutable band version; FLOW-004 alone sets approved. */
+export async function prepareBand(env:Bindings,actor:Actor,input:Input,{approved=false}={}) {
+ const plan=readCompensationDefinition('bands',input)
+ insist(plan.kind==='bands','invalid_compensation_definition_kind')
+ const authority=await definitionAuthority(env,actor,'bands',plan.person,approved);actor=authority.actor
+ const {jobTitle:job,level,location,basis,effectiveFrom:date,minimum,maximum}=plan.values
  insist((await one(env,'SELECT currency FROM wl_employer'))?.currency==='USD','compensation_usd_required',409)
  if(location)insist(await one(env,'SELECT 1 FROM wl_locations WHERE id=?',location),'location_not_found',404)
  const id=newId()
- await commit(env,[stmt(env,'INSERT INTO wl_comp_bands (id,sequence,job_title,level,location_id,basis,effective_from,minimum_cents,maximum_cents,recorded_at,recorded_by) SELECT ?,COALESCE(MAX(sequence),0)+1,?,?,?,?,?,?,?,?,? FROM wl_comp_bands',id,job,level,location,basis,date,minimum,maximum,now(),actor.id)],{actor:actor.id,action:'compensation.band',subject:id,detail:{job,level,basis,effectiveFrom:date}})
- return {id}
+ return {guards:authority.guards,statements:[...authority.guards,stmt(env,'INSERT INTO wl_comp_bands (id,sequence,job_title,level,location_id,basis,effective_from,minimum_cents,maximum_cents,recorded_at,recorded_by) SELECT ?,COALESCE(MAX(sequence),0)+1,?,?,?,?,?,?,?,?,? FROM wl_comp_bands',id,job,level,location,basis,date,cents(minimum),cents(maximum),now(),actor.id)],
+  audit:{actor:actor.id,action:'compensation.band',subject:id,detail:{job,level,basis,effectiveFrom:date}},result:{id,terms:null,case:null}}
+}
+export async function defineBand(env:Bindings,actor:Actor,input:Input) {
+ actor=await freshDefinitionActor(env,actor)
+ if(compensationDefinitionMode(actor,'bands')==='approval') {
+  const plan=readCompensationDefinition('bands',input)
+  return requestDefinition(env,actor,input.text('person'),plan)
+ }
+ const prepared=await prepareBand(env,actor,input)
+ await commit(env,prepared.statements,prepared.audit)
+ return prepared.result
 }
 export async function bands(env:Bindings,actor:Actor) {
- requirePermission(actor,'pay.read');await auditRead(env,actor.id,'compensation.bands.read','employer')
- return all(env,'SELECT * FROM wl_comp_bands ORDER BY effective_from DESC,sequence DESC')
+ insist(hasDefinitionRead(actor,'bands'),'forbidden',403)
+ const rows=await all(env,'SELECT * FROM wl_comp_bands ORDER BY effective_from DESC,sequence DESC')
+ let visible=rows
+ if(!readsWholeDefinition(actor,'bands')) {
+  const current=await currentTerms(env,actor.today),matches=new Set<string>(),history=new Set<string>()
+  for(const [person,terms] of current) {
+   if(!readsCompensation(actor,person,'bands'))continue
+   const level=(await jobLevel(env,person,actor.today)).level
+   if(!level)continue
+   const key=JSON.stringify([terms.job_title,level,terms.location_id??''])
+   matches.add(key)
+   if(readsCompensation(actor,person,'history'))history.add(key)
+  }
+  const latest=new Set<string>()
+  visible=rows.filter(row=>{
+   const key=JSON.stringify([row.job_title,row.level,row.location_id])
+   if(!matches.has(key)||row.effective_from>actor.today)return false
+   const version=JSON.stringify([key,row.basis])
+   if(latest.has(version)&&!history.has(key))return false
+   latest.add(version);return true
+  })
+ }
+ await auditRead(env,actor.id,'compensation.bands.read',readsWholeDefinition(actor,'bands')?'employer':'scope')
+ return visible
 }

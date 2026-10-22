@@ -144,8 +144,9 @@ export async function context(env: Bindings, actor: Actor, personId: string, asO
   insist(id, 'not_found', 404)
   const view = await personView(env, actor, id, { asOf })
   const visible = facets(actor, id)
-  const leave = view.leave as { accounts: { policy: { versionId: string } }[] } | undefined
-  const versions = leave?.accounts.length ? await all(env, `SELECT v.id, v.version, v.summary, v.accrual_weeks_hundredths, v.negative_limit_minutes, p.name FROM wl_policy_versions v JOIN wl_leave_policies p ON p.id = v.policy_id WHERE v.id IN (${leave.accounts.map(() => '?').join(', ')})`, ...leave.accounts.map(account => account.policy.versionId)) : []
+  const leave = view.leave as { accounts: { policy?: { versionId: string } }[] } | undefined
+  const policyVersions=leave?.accounts.flatMap(account=>account.policy?[account.policy.versionId]:[])??[]
+  const versions = policyVersions.length ? await all(env, `SELECT v.id, v.version, v.summary, v.accrual_weeks_hundredths, v.negative_limit_minutes, p.name FROM wl_policy_versions v JOIN wl_leave_policies p ON p.id = v.policy_id WHERE v.id IN (${policyVersions.map(() => '?').join(', ')})`, ...policyVersions) : []
   return {
     subject: id, record: view,
     withheld: (Object.keys(FACET_LABELS) as Facet[]).filter(facet => !visible.has(facet)).map(facet => FACET_LABELS[facet]),

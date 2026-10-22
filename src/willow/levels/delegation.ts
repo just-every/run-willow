@@ -1,3 +1,5 @@
+import { LEAVE_FIELDS, LEAVE_RANK, type LeaveRules } from './leave'
+import { COMPENSATION_FIELDS, COMPENSATION_RANK, type CompensationRules } from './compensation'
 import { JOB_FIELDS, JOB_RANK, type JobRules } from './job'
 // ROLE-003: explicit global HR delegation. Scoped access-administration is not offered.
 import type { Bindings } from '../../auth.server'
@@ -31,7 +33,7 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
  if(actor.owner) return
  const self=await selfWriteModes(env,actor)
  const categories=await all<{id:string;subject_reads:number}>(env,'SELECT id,subject_reads FROM wl_doc_categories')
- const checkDefinition=(definition:{permissions:readonly string[];jobFields:JobRules;reports:string[];selfFields:Record<string,SelfMode>;otherFields:Record<string,OtherMode>;scope:Scope;followOwnChanges:boolean;documentCategories:DocumentRules})=>{
+ const checkDefinition=(definition:{permissions:readonly string[];jobFields:JobRules;leaveFields:LeaveRules;compensationFields:CompensationRules;reports:string[];selfFields:Record<string,SelfMode>;otherFields:Record<string,OtherMode>;scope:Scope;followOwnChanges:boolean;documentCategories:DocumentRules})=>{
   insist(!definition.permissions.some(p=>p==='access.admin'||p==='eeo.individual'),'owner_only_delegation',403)
   insist(definition.permissions.every(p=>actor.permissions.has(p as Permission) || actor.scoped.some(grant=>grant.permissions.has(p as Permission)&&coversScope(grant.scope,definition.scope))),'delegation_ceiling',403)
   for(const relation of ['self','others'] as const) for(const [category,mode] of Object.entries(definition.documentCategories[relation])) if(mode!=='none') {
@@ -45,6 +47,25 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
    const broad=actor.permissions.has('people.manage') || actor.scoped.some(grant=>grant.permissions.has('people.manage')&&coversScope(grant.scope,definition.scope))
    const held=actor.jobFields.filter(grant=>relation==='self'||coversScope(grant.scope,definition.scope)).reduce((best,grant)=>Math.max(best,JOB_RANK[grant.fields[relation][field]??'none']),0)
    insist(broad || JOB_RANK[mode]<=held,'delegation_ceiling',403)
+  }
+  const holdsScope=(permission:Permission)=>actor.permissions.has(permission) || actor.scoped.some(grant=>grant.permissions.has(permission)&&coversScope(grant.scope,definition.scope))
+  for(const relation of ['self','others'] as const) for(const field of LEAVE_FIELDS) {
+   const mode=definition.leaveFields[relation][field]??'none'
+   if(mode==='none') continue
+   const native=relation==='self' ? actor.permissions.has('leave.manage') || !!actor.personId : holdsScope('leave.manage')
+   const baseline=native ? (field==='requests'||relation==='others'?LEAVE_RANK.edit:LEAVE_RANK.view) : 0
+   const held=actor.leaveFields.filter(grant=>relation==='self'||coversScope(grant.scope,definition.scope)).reduce((best,grant)=>Math.max(best,LEAVE_RANK[grant.fields[relation][field]??'none']),baseline)
+   insist(LEAVE_RANK[mode]<=held,'delegation_ceiling',403)
+  }
+  for(const relation of ['self','others'] as const) {
+   const broadRead=relation==='self' ? actor.permissions.has('pay.read') || !!actor.personId && actor.scoped.some(grant=>grant.permissions.has('pay.read')&&grant.people.has(actor.personId!)) : holdsScope('pay.read')
+   const broadEdit=relation==='others' && broadRead && holdsScope('people.manage')
+   const ceiling=(field:typeof COMPENSATION_FIELDS[number])=>actor.compensationFields.filter(grant=>relation==='self'||coversScope(grant.scope,definition.scope)).reduce((best,grant)=>Math.max(best,COMPENSATION_RANK[grant.fields[relation][field]??'none']),broadEdit?COMPENSATION_RANK.edit:broadRead?COMPENSATION_RANK.view:0)
+   for(const field of COMPENSATION_FIELDS) {
+    const mode=definition.compensationFields[relation][field]??'none'
+    if(mode==='none') continue
+    insist(COMPENSATION_RANK[mode]<=ceiling(field),'delegation_ceiling',403)
+   }
   }
   for(const report of definition.reports) insist(actor.permissions.has('reports.read') || actor.reportGrants.some(g=>g.reports.includes(report)&&coversScope(g.scope,definition.scope)) || actor.scoped.some(g=>g.permissions.has('reports.read')&&coversScope(g.scope,definition.scope)),'delegation_ceiling',403)
   insist(!definition.followOwnChanges || actor.followOwnChanges,'delegation_ceiling',403)
@@ -78,7 +99,8 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
 
 export async function delegatedPayReview(env: Bindings,actor: Actor,plan: Plan,data: Awaited<ReturnType<typeof levels>>) {
  if(actor.owner) return false
- if(plan.kind==='level') return plan.permissions.some(p=>PAY_RIGHTS.includes(p))
+ const sensitive=(definition:{permissions:readonly string[];compensationFields:CompensationRules})=>definition.permissions.some(p=>PAY_RIGHTS.includes(p)) || (['self','others'] as const).some(relation=>Object.values(definition.compensationFields[relation]).some(mode=>mode!=='none'))
+ if(plan.kind==='level') return sensitive(plan)
  const assigned=plan.kind==='revert' ? plan.assignments.flatMap(a=>a.levels) : plan.levels
- return assigned.some(id=>data.levels.find(l=>l.id===id)!.permissions.some(p=>PAY_RIGHTS.includes(p)))
+ return assigned.some(id=>sensitive(data.levels.find(l=>l.id===id)!))
 }

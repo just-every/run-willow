@@ -14,6 +14,7 @@ import { confirmApplicant } from './applicant'
 import { redactPayroll } from './payroll'
 import { captureErasureSql, retireImportCustody } from './import-custody'
 import { AUTHORED, AUTHORED_STORES, STORES, type Store } from './inventory'
+import { COMPENSATION_AUTHORSHIP, compensationRedactions } from './compensation'
 import { BUSINESS_SEQUENCE, planErasure, type Item, type Plan } from './erasure'
 
 const quote = (value: string) => `'${value.replace(/'/g, "''")}'`
@@ -84,7 +85,9 @@ export async function moveRows(env: Bindings, rowTargets: RowTarget[], ids: Map<
         SELECT ?2, ?3, ?4, ?5, ?6, ?7, ?8, json_object(${columns.map(column => `'${column}', t.${column}`).join(', ')}), ?9 FROM ${target.table} t WHERE ${meta.rowid ? 't.rowid' : `json_array(${meta.pk.map(column => `t.${column}`).join(', ')})`} IN (SELECT value FROM json_each(?1))`,
         JSON.stringify(list), erasureId, target.id, target.table, target.item.class, target.item.rule, target.item.expiry, target.item.hold, at))
     }
-    statements.push(stmt(env, `DELETE FROM ${target.table} WHERE ${where}`, JSON.stringify(list)))
+    // A peer's award remains live after its author's identity is erased. Holds
+    // preserve the original in restricted custody; the native row is scrubbed.
+    if (target.id !== COMPENSATION_AUTHORSHIP) statements.push(stmt(env, `DELETE FROM ${target.table} WHERE ${where}`, JSON.stringify(list)))
   }
   return statements
 }
@@ -114,6 +117,8 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
   const replaced = (column: string) => swap.reduce((expression, [from, to]) => `replace(${expression}, ${quote(from)}, ${quote(to)})`, column)
   const scrubbed: Record<string, number> = {}
   for (const [table, column] of textColumns) scrubbed[table] = (await one<{ n: number }>(env, `SELECT COUNT(*) AS n FROM ${table} WHERE ${swap.map(([from]) => `instr(${column}, ${quote(from)}) > 0`).join(' OR ') || '0'}`))!.n
+  const awards = await compensationRedactions(env, subject, swap)
+  scrubbed.wl_comp_records = awards.count
 
   const fk: { tbl: string; col: string; parent: string }[] = []
   for (const { name } of await all<{ name: string }>(env, "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'")) {
@@ -134,6 +139,7 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
     if (real) statements.push(stmt(env, `UPDATE ${tbl} SET ${col} = ? WHERE ${col} = ?`, stub, real))
   }
   for (const [table, column] of AUTHORED) if (subject.memberId) statements.push(stmt(env, `UPDATE ${table} SET ${column} = ? WHERE ${column} = ?`, stubMember, subject.memberId))
+  statements.push(...awards.statements)
   for (const [table, column, real, stub] of [['wl_audit', 'actor', subject.memberId, stubMember], ['wl_audit', 'subject', subject.memberId, stubMember], ['wl_audit', 'subject', subject.personId, stubPerson], ['wl_work_history', 'actor', subject.memberId, stubMember], ['wl_permissions', 'granted_by', subject.memberId, stubMember], ['wl_level_permissions', 'granted_by', subject.memberId, stubMember]] as const) {
     if (real) statements.push(stmt(env, `UPDATE ${table} SET ${column} = ? WHERE ${column} = ?`, stub, real))
   }

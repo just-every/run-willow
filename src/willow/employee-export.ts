@@ -88,7 +88,7 @@ export async function employeeExportData(env: Bindings, actor: Actor, url: URL) 
   for (const person of people) {
     const view = await personView(env, actor, person.id, { asOf: filters.date, customFields: definition => customKeys.has(definition.key) }) as Person
     records.push(view)
-    const withheld = fields.filter(key => key.startsWith('custom.') ? !view.customFields.fields.some((item: EffectiveField) => `custom.${item.key}` === key) : columns[key].job ? !view.jobFields?.[columns[key].job!] : columns[key].personal ? !Object.hasOwn(view.private ?? {},columns[key].personal!) : columns[key].facet && !view.facets.includes(columns[key].facet!))
+    const withheld = fields.filter(key => key.startsWith('custom.') ? !view.customFields.fields.some((item: EffectiveField) => `custom.${item.key}` === key) : columns[key].job ? !view.jobFields?.[columns[key].job!] : columns[key].personal ? !Object.hasOwn(view.private ?? {},columns[key].personal!) : columns[key].facet === 'pay' ? !term(view)?.pay : columns[key].facet && !view.facets.includes(columns[key].facet!))
     rows.push([person.id, filters.date, scope!, withheld.join(';'), ...fields.map(key => withheld.includes(key) ? '' : String(columns[key].value(view) ?? ''))])
   }
   return { scope: scope!, asOf: filters.date, fields, rows, records }

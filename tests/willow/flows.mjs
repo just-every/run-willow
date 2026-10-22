@@ -1,3 +1,4 @@
+import { sectionDoorProof } from './levels-section-doors.mjs'
 import { jobDoorProof } from './levels-job-doors.mjs'
 import { exerciseImportDoor } from './import-door.mjs'
 import { imports } from './import-transport.mjs'
@@ -476,7 +477,7 @@ try {
       ivan: ['phone', 'salary', 'salaryCents', 'reason', 'endReason', 'docTitle', 'docBytes'],
       pat: ['phone', 'reason', 'endReason', 'docTitle', 'docBytes'],
       hana: ['salary', 'salaryCents'],
-      sam: ['endReason', 'docTitle', 'docBytes'],
+      sam: ['salary','salaryCents','endReason', 'docTitle', 'docBytes'],
     }
     const seen = new Set()
     for (const [who, keys] of Object.entries(forbidden)) {
@@ -488,7 +489,7 @@ try {
       }
     }
     // Positive control: each holder does read the values they are entitled to through some door.
-    for (const expected of ['pat:salaryCents', 'hana:phone', 'hana:reason', 'hana:endReason', 'hana:docTitle', 'hana:docBytes', 'sam:phone', 'sam:salaryCents', 'sam:reason']) assert.ok(seen.has(expected), `${expected} is readable by its holder`)
+    for (const expected of ['pat:salaryCents', 'hana:phone', 'hana:reason', 'hana:endReason', 'hana:docTitle', 'hana:docBytes', 'sam:phone', 'sam:reason']) assert.ok(seen.has(expected), `${expected} is readable by its holder`)
     // Revoke the payroll level in the same session and repeat the whole crawl.
     const revoke = await h.api('level.preview', cookie.owner, { kind: 'level', level: named.pat.id, name: 'Exact pat access', permissions: [] })
     assert.deepEqual(revoke.impact[0].removed.sort(), named.pat.permissions)
@@ -582,6 +583,7 @@ try {
     assert.ok((await h.api('audit',cookie.owner)).some(event=>event.action==='level.level'&&event.subject===combined.id&&event.actor===ownerMember))
     await applyLevel({kind:'assignment',member:ids.ivanMember,levels:[named.ivan.id]})
     await jobDoorProof(h,cookie.owner,cookie.ivan,{ids,urls,today,addDays})
+    await sectionDoorProof(h,cookie.owner,cookie.ivan,{ids,urls,today,addDays})
     await h.api('level.apply',cookie.owner,{review:(await h.api('level.preview',cookie.owner,{kind:'assignment',member:ids.ivanMember,levels:[named.ivan.id]})).id})
     console.log(`ROLE-001 crawled ${urls.length} doors with exact named levels, selective personal fields, document categories and saved reports, and same-session revocation`)
     // Reads of someone else's private details are audited.

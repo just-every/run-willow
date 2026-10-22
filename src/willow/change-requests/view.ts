@@ -1,3 +1,5 @@
+import { readsCompensation, canRequestCompensation } from '../levels/compensation'
+import { canRequestCompensationDefinition } from '../compensation/definitions'
 import { readsJobHistoryField, type JobField } from '../levels/job'
 // FLOW-004 reads. Only the requester, HR, the owner and members holding a role
 // in the request's resolved steps read it; the person whose terms change does
@@ -71,24 +73,32 @@ export async function changeRequest(env: Bindings, actor: Actor, id: string) {
   if(plan.fte!==undefined) changes.push(readsJobHistoryField(actor,row.person_id,'fte')?{field:'FTE',from:String(terms.fte??'Unknown'),to:String(plan.fte??'Unknown')}:{field:'FTE',from:'Withheld',to:'Withheld'})
   for(const [key,value] of Object.entries(plan.dates??{})) changes.push({field:key==='startDate'?'Employment start date':'Employment end date',from:'Withheld',to:readsJobHistoryField(actor,row.person_id,key as JobField)?value??'Ongoing':'Withheld'})
   if(plan.employmentStatus) changes.push({field:'Employment status',from:'Withheld',to:readsJobHistoryField(actor,row.person_id,'employmentStatus')?plan.employmentStatus:'Withheld'})
-  const pays = canAbout(actor, 'pay.read', row.person_id)
+  const pays = readsCompensation(actor,row.person_id,plan.payField??'pay')
   if (plan.pay) changes.push(pays
     ? { field: 'Pay', from: formatPay(base.payBasis as never, base.payCents, base.currency), to: formatPay(base.newPayBasis as never, base.newPayCents, base.currency), ...(plan.pay.mode === 'percent' ? { percent: plan.pay.percent } : {}) }
     : actor.id === row.requested_by && plan.pay.mode === 'percent' ? { field: 'Pay', from: WITHHELD, to: `${plan.pay.percent}% change`, percent: plan.pay.percent } : { field: 'Pay', from: WITHHELD, to: WITHHELD, withheld: true })
+  if(plan.compensationRecord){const award=plan.compensationRecord;changes.push({field:award.kind==='bonus'?'Bonus':'Equity',from:'Withheld',to:readsCompensation(actor,row.person_id,award.kind)?award.kind==='bonus'?`${award.currency} ${award.amount}`:`${award.units} ${award.security}`:'Withheld'})}
+  if(plan.compensationDefinition){const definition=plan.compensationDefinition;changes.push({field:definition.kind==='bands'?'Compensation band':'Compensation cycle',to:readsCompensation(actor,row.person_id,definition.kind)?Object.values(definition.values).join(' · '):'Withheld'})}
   const members = new Map((await all(env, 'SELECT id, name FROM wl_members')).map(m => [m.id, m.name]))
   const events = await all(env, 'SELECT revision, step, kind, actor, comment, at FROM wl_change_events WHERE request_id = ? ORDER BY at, id', id)
   const current = row.status === 'pending' ? steps[row.step] : undefined
+  const typed = !!(plan.compensationRecord || plan.compensationDefinition)
+  const salaryOnly = !!plan.pay && !typed && !Object.keys(plan.fields).length && !plan.employmentType && plan.fte === undefined && !plan.employmentStatus && !Object.keys(plan.dates ?? {}).length
+  const typedReadable = plan.compensationRecord ? readsCompensation(actor,row.person_id,plan.compensationRecord.kind) : plan.compensationDefinition ? readsCompensation(actor,row.person_id,plan.compensationDefinition.kind) : true
+  const typedEditable = typedReadable && (plan.compensationRecord ? canRequestCompensation(actor,row.person_id,plan.compensationRecord.kind) : plan.compensationDefinition ? canRequestCompensationDefinition(actor,row.person_id,plan.compensationDefinition.kind) : salaryOnly ? canRequestCompensation(actor,row.person_id,plan.payField ?? 'pay') && (pays || plan.pay!.mode === 'percent') : true)
+  const requester = actor.id === row.requested_by
+  const editCompensation = requester && typedEditable ? plan.compensationRecord ? { kind: 'record' as const, values: plan.compensationRecord } : plan.compensationDefinition ? { kind: 'definition' as const, values: plan.compensationDefinition } : salaryOnly ? { kind: 'pay' as const, values: { pay: plan.pay!, effectiveFrom: plan.effectiveFrom } } : undefined : undefined
   return {
     statusOnly:false as const, id: row.id, person: { id: row.person_id, name: displayName(row) }, type: row.request_type, status: row.status, revision: row.revision, state: row.state,
-    requestedBy: { id: row.requested_by, name: members.get(row.requested_by) }, effectiveFrom: plan.effectiveFrom, reason: plan.reason, changes,
+    requestedBy: { id: row.requested_by, name: members.get(row.requested_by) }, effectiveFrom: plan.effectiveFrom, reason: typed && !typedReadable || salaryOnly && plan.pay!.mode === 'amount' && !pays ? 'Withheld' : plan.reason, changes, editCompensation,
     fields: actor.id === row.requested_by ? plan.fields : undefined, employmentType: actor.id === row.requested_by ? plan.employmentType ?? null : undefined,
     steps: steps.map((step, index) => ({ position: index + 1, role: step.role, label: ROLE_LABELS[step.role], member: step.member ? members.get(step.member) ?? null : null, note: step.note,
       state: row.status === 'approved' || index < row.step ? 'approved' : row.status === 'pending' && index === row.step ? 'waiting' : row.status === 'declined' && index === row.step ? 'declined' : row.status === 'returned' && index === row.step ? 'returned' : 'not reached' })),
-    history: events.map(e => ({ revision: e.revision, step: e.step === null ? null : e.step + 1, kind: e.kind, by: members.get(e.actor) ?? e.actor, comment: e.comment, at: e.at })),
+    history: events.map(e => ({ revision: e.revision, step: e.step === null ? null : e.step + 1, kind: e.kind, by: members.get(e.actor) ?? e.actor, comment: typed && !typedReadable || plan.pay && !pays ? null : e.comment, at: e.at })),
     attachments: json<Attachment[]>(row.attachments_json, []).map(a => ({ filename: a.filename, size: a.size, sha256: a.sha256, revision: a.revision })),
     result: json<{ terms: string; case: string | null } | null>(row.result_json, null),
     mayDecide: !!current && await mayApprove(env, actor, row as { requested_by: string; person_id: string }, current),
-    mayEdit: actor.id === row.requested_by && (row.status === 'pending' || row.status === 'returned'),
+    mayEdit: requester && typedEditable && (row.status === 'pending' || row.status === 'returned'),
   }
 }
 

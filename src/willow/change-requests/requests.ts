@@ -10,7 +10,12 @@ import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
 import { scopeFence } from '../levels/scope'
 import { commit, guard, insist, json, newId, now, one, stmt, type Row } from '../core'
+import { activeTemplate,caseStatements } from '../lifecycle'
 import { selectedPeriods } from '../employment'
+import { payWriteField } from '../compensation/pay-authority'
+import { canRequestCompensation,readsCompensation } from '../levels/compensation'
+import { parseCompensationRecord, prepareCompensationRecord, type CompensationRecordPlan } from '../compensation/records'
+import { parseCompensationDefinition, prepareCompensationDefinition, canRequestCompensationDefinition, type DefinitionPlan } from '../compensation/definitions'
 import { bandPosition, guardBandSnapshot } from '../compensation/bands'
 import { store, type Stored } from '../files'
 import { Input } from '../input'
@@ -26,7 +31,7 @@ const COLUMNS: Record<typeof FIELDS[number], string> = { jobTitle: 'job_title', 
 const ATTACHMENT_BYTES = 10_000_000
 
 export type PayPlan = { mode: 'percent'; percent: string } | { mode: 'amount'; basis: string; amount: string }
-export interface Plan { effectiveFrom: string; reason: string; fields: Partial<Record<typeof FIELDS[number], string | null>>; pay: PayPlan | null; employmentType?: string | null; fte?: number | null; dates?: JobDates; employmentStatus?: JobStatus }
+export interface Plan { effectiveFrom: string; reason: string; fields: Partial<Record<typeof FIELDS[number], string | null>>; pay: PayPlan | null; payField?:'pay'|'history'; employmentType?: string | null; fte?: number | null; dates?: JobDates; employmentStatus?: JobStatus; compensationRecord?: CompensationRecordPlan; compensationDefinition?:DefinitionPlan }
 export interface Base { periodType: string; periodRevision: string; termId: string; payBasis: string; payCents: number | null; newPayBasis: string | null; newPayCents: number | null; currency: string; band?: { id: string | null; position: BandPosition; levelRevision: string | null } }
 export interface Attachment extends Stored { revision: number; by: string; at: number }
 
@@ -35,7 +40,12 @@ const raised = (cents: number, percent: string) => Math.round(cents * (10_000 + 
 
 async function readRequest(env: Bindings, actor: Actor, personId: string, input: Input) {
   insist(personId !== actor.personId, 'own_terms', 403)
-  const effectiveFrom = input.text('effectiveFrom', { max: 10 })
+  const compensationRecord = input.provided('compensationRecord') ? parseCompensationRecord(input.json('compensationRecord')) : undefined
+  const compensationDefinition=input.provided('compensationDefinition')?parseCompensationDefinition(input.json('compensationDefinition')):undefined
+  insist(!compensationRecord||!compensationDefinition,'compensation_record_exact')
+  const effectiveFrom = compensationDefinition?.values.effectiveFrom ?? compensationRecord?.effectiveDate ?? input.text('effectiveFrom', { max: 10 })
+  insist(!compensationRecord || !input.has('effectiveFrom') || input.text('effectiveFrom') === effectiveFrom, 'compensation_effective_date_mismatch')
+  const payField=await payWriteField(env,actor,personId,effectiveFrom)
   const fields: Plan['fields'] = {}
   // A request sets the fields it names; a blank value means unchanged, never cleared.
   for (const key of FIELDS) { const value = input.has(key) ? input.text(key, { max: 120, optional: true }) : ''; if (value) fields[key] = value }
@@ -47,7 +57,13 @@ async function readRequest(env: Bindings, actor: Actor, personId: string, input:
   const employmentStatus = input.has('employmentStatus') ? input.text('employmentStatus', { max: 20 }) as JobStatus : undefined
   insist(!employmentStatus || (JOB_STATUSES as readonly string[]).includes(employmentStatus), 'invalid_employmentStatus')
   const named: JobField[] = [...Object.keys(fields) as JobField[], ...(input.has('employmentType') ? ['employmentType' as const] : []), ...(fte !== undefined ? ['fte' as const] : []), ...(employmentStatus ? ['employmentStatus' as const] : []), ...Object.keys(dates) as JobField[]]
-  requireJobRequest(actor, personId, named, input.has('payIncreasePercent') || input.has('payAmount') || input.has('payBasis'))
+  if (compensationDefinition) {
+    insist(!named.length&&!input.has('payIncreasePercent')&&!input.has('payAmount')&&!input.has('payBasis'),'compensation_definition_exact')
+    insist(canRequestCompensationDefinition(actor,personId,compensationDefinition.kind),'compensation_definition_forbidden',403)
+  } else if (compensationRecord) {
+    insist(!named.length && !input.has('payIncreasePercent') && !input.has('payAmount') && !input.has('payBasis'), 'compensation_record_exact')
+    insist(canRequestCompensation(actor, personId, compensationRecord.kind), 'compensation_field_forbidden', 403)
+  } else requireJobRequest(actor, personId, named, input.has('payIncreasePercent') || input.has('payAmount') || input.has('payBasis'),payField)
   const period = (await selectedPeriods(env, actor.today)).get(personId)
   insist(period, 'period_not_found', 404)
   let pay: PayPlan | null = null
@@ -56,13 +72,13 @@ async function readRequest(env: Bindings, actor: Actor, personId: string, input:
     insist(/^-?\d{1,3}(\.\d{1,2})?$/.test(percent) && Number(percent) > -100, 'invalid_payIncreasePercent')
     pay = { mode: 'percent', percent }
   } else if (input.text('payAmount', { optional: true, max: 20 })) {
-    const read = readPay(actor, input)!
+    const read = readPay(actor, input, {approved:canRequestCompensation(actor,personId,payField)&&readsCompensation(actor,personId,payField)})!
     pay = { mode: 'amount', basis: read.basis, amount: input.text('payAmount', { max: 20 }) }
   }
   const requestedType = input.text('employmentType', { optional: true, max: 20 })
   insist(!requestedType || (EMPLOYMENT_TYPES as readonly string[]).includes(requestedType), 'invalid_employmentType')
   const employmentType = requestedType && requestedType !== period.employment_type ? requestedType : null
-  const plan: Plan = { effectiveFrom, reason: input.text('reason', { max: 300 }), fields, pay, employmentType, ...(employmentStatus ? { employmentStatus } : {}), ...(fte !== undefined ? { fte } : {}), ...(Object.keys(dates).length ? { dates } : {}) }
+  const plan: Plan = { effectiveFrom, reason: input.text('reason', { max: 300 }), fields, pay, payField, employmentType, ...(compensationRecord ? { compensationRecord } : {}), ...(compensationDefinition?{compensationDefinition}:{}), ...(employmentStatus ? { employmentStatus } : {}), ...(fte !== undefined ? { fte } : {}), ...(Object.keys(dates).length ? { dates } : {}) }
   const base = await termsOn(env, period.id, effectiveFrom < period.start_date ? period.start_date : effectiveFrom)
   insist(base, 'effective_before_start')
   const basePay = (await one(env, 'SELECT pay_basis, amount_cents, currency FROM wl_term_pay WHERE term_id = ?', base.id))!
@@ -73,15 +89,15 @@ async function readRequest(env: Bindings, actor: Actor, personId: string, input:
   } else if (pay) { newPayBasis = pay.basis; newPayCents = Math.round(Number(pay.amount) * 100) }
   const payChanged = pay !== null && (newPayBasis !== basePay.pay_basis || newPayCents !== basePay.amount_cents)
   const changed = FIELDS.filter(key => key in fields && (fields[key] ?? null) !== (base[COLUMNS[key]] ?? null))
-  insist(changed.length || payChanged || employmentType || employmentStatus || (fte !== undefined && fte !== (base.fte ?? null)) || Object.entries(dates).some(([key, value]) => value !== period[key === 'startDate' ? 'start_date' : 'end_date']), 'nothing_to_change')
+  insist(compensationDefinition || compensationRecord || changed.length || payChanged || employmentType || employmentStatus || (fte !== undefined && fte !== (base.fte ?? null)) || Object.entries(dates).some(([key, value]) => value !== period[key === 'startDate' ? 'start_date' : 'end_date']), 'nothing_to_change')
   // Validate with the code that executes it; nothing is written.
   await execute(env, actor, period.id, { ...plan, pay: payChanged ? pay : null }, { newPayBasis, newPayCents }, '')
   const locationAfter = (fields.locationId !== undefined ? fields.locationId : base.location_id) ?? null
   const increasePercent = payChanged && newPayBasis === basePay.pay_basis && basePay.amount_cents ? (newPayCents! - basePay.amount_cents) * 100 / basePay.amount_cents : null
-  const type: RequestType = payChanged ? 'compensation' : 'job'
+  const type: RequestType = compensationDefinition || compensationRecord || payChanged ? 'compensation' : 'job'
   const chain = await currentChain(env, type)
   insist(chain, 'change_chain_missing', 409)
-  const band = chain.steps.some(step => step.bandPositions?.length) ? await bandPosition(env, {
+  const band = !compensationDefinition && !compensationRecord && chain.steps.some(step => step.bandPositions?.length) ? await bandPosition(env, {
     personId, date: effectiveFrom, jobTitle: fields.jobTitle ?? base.job_title, locationId: locationAfter,
     basis: payChanged ? newPayBasis! : basePay.pay_basis, amountCents: payChanged ? newPayCents : basePay.amount_cents,
   }) : null
@@ -95,7 +111,19 @@ function executionPlan(periodId: string, plan: Plan, pay: { newPayBasis: string 
   return { period: periodId, effectiveFrom: plan.effectiveFrom, reason: plan.reason, template, ...fields, ...(plan.employmentStatus ? { employmentStatus: plan.employmentStatus } : {}), ...Object.fromEntries(Object.entries(plan.dates ?? {}).map(([key, value]) => [key, value ?? ''])), ...(Object.hasOwn(plan, 'fte') ? { fte: plan.fte === null ? '' : String(plan.fte) } : {}), ...(pay.newPayBasis ? { payBasis: pay.newPayBasis, payAmount: pay.newPayCents === null ? '' : (pay.newPayCents / 100).toFixed(2) } : {}) }
 }
 
-function execute(env: Bindings, actor: Actor, periodId: string, plan: Plan, pay: { newPayBasis: string | null; newPayCents: number | null }, template: string) {
+async function execute(env: Bindings, actor: Actor, periodId: string, plan: Plan, pay: { newPayBasis: string | null; newPayCents: number | null }, template: string) {
+  if(plan.compensationDefinition) {
+    const period=await one(env,'SELECT person_id FROM wl_periods WHERE id=?',periodId)
+    insist(period,'period_not_found',404)
+    const prepared=await prepareCompensationDefinition(env,actor,period.person_id,plan.compensationDefinition,{approved:true})
+    const opened=template?await caseStatements(env,actor,await activeTemplate(env,template,'mover'),period.person_id,periodId,plan.effectiveFrom,(await termsOn(env,periodId,plan.effectiveFrom))?.manager_person_id??null):null
+    return {...prepared,statements:[...prepared.statements,...(opened?.statements??[])],result:{...prepared.result,case:opened?.caseId??null,period:periodId}}
+  }
+  if (plan.compensationRecord) {
+    const period = await one(env, 'SELECT person_id FROM wl_periods WHERE id=?', periodId)
+    insist(period, 'period_not_found', 404)
+    return prepareCompensationRecord(env, actor, period.person_id, plan.compensationRecord, { approved: true, template })
+  }
   const execution = executionPlan(periodId, plan, pay, template)
   return prepareJobChange(env, actor, periodId, execution, plan.employmentType)
 }
@@ -192,7 +220,9 @@ export async function decideChange(env: Bindings, actor: Actor, input: Input) {
     bandSource = band.source
   }
   const requester = await liveJobActor(env, { id: row.requested_by, sessionId: '' })
-  requireJobRequest(requester.actor, row.person_id, [...Object.keys(plan.fields) as JobField[], ...(plan.employmentType ? ['employmentType' as const] : []), ...(Object.hasOwn(plan, 'fte') ? ['fte' as const] : []), ...(plan.employmentStatus ? ['employmentStatus' as const] : []), ...Object.keys(plan.dates ?? {}) as JobField[]], !!plan.pay)
+  if(plan.compensationDefinition) insist(canRequestCompensationDefinition(requester.actor,row.person_id,plan.compensationDefinition.kind),'compensation_definition_forbidden',403)
+  else if (plan.compensationRecord) insist(canRequestCompensation(requester.actor, row.person_id, plan.compensationRecord.kind), 'compensation_field_forbidden', 403)
+  else requireJobRequest(requester.actor, row.person_id, [...Object.keys(plan.fields) as JobField[], ...(plan.employmentType ? ['employmentType' as const] : []), ...(Object.hasOwn(plan, 'fte') ? ['fte' as const] : []), ...(plan.employmentStatus ? ['employmentStatus' as const] : []), ...Object.keys(plan.dates ?? {}) as JobField[]], !!plan.pay,plan.payField??'pay')
   const chain = (await one(env, 'SELECT template_id FROM wl_change_chains WHERE id = ?', row.chain_id))!
   const prepared = await execute(env, actor, row.period_id, plan, base, chain.template_id)
   await commit(env, [

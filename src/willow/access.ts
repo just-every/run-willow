@@ -1,3 +1,5 @@
+import { anyLeaveGrant } from './levels/leave'
+import { readsCompensation, compensationMode, COMPENSATION_FIELDS } from './levels/compensation'
 import { anyJobGrant } from './levels/job'
 // What a member may see about a person. Every read of a person's data goes
 // through these facets before any value is selected for a response, a page,
@@ -39,8 +41,8 @@ export function facets(actor: Actor, personId: string): Set<Facet> {
   if (self || manager || has('people.manage') || has('payroll.handoff') || anyJobGrant(actor,personId)) result.add('employment')
   if (has('people.manage') || has('payroll.handoff')) result.add('payroll')
   if (self || has('people.private')) result.add('private')
-  if (self || has('pay.read')) result.add('pay')
-  if (self || manager || has('leave.manage')) result.add('leave')
+  if (readsCompensation(actor,personId,'pay')) result.add('pay')
+  if (self || manager || has('leave.manage') || anyLeaveGrant(actor,personId)) result.add('leave')
   if (self || has('leave.manage')) result.add('leave_reason')
   if (self || manager || has('people.manage')) result.add('lifecycle')
   if (self || manager || has('documents.private') || anyDocumentCategoryGrant(actor,personId)) result.add('documents')
@@ -60,4 +62,4 @@ export function readsCategory(actor: Actor, personId: string, category: Record<s
 export const seesEveryone = (actor: Actor) => can(actor, 'people.manage') || can(actor, 'reports.read') || can(actor, 'leave.manage') || can(actor, 'payroll.handoff')
 
 /** Former people: employer-wide holders see them all; a scoped holder only those their scope reaches today. */
-export const seesFormer = (actor: Actor, personId: string) => anyJobGrant(actor,personId) || anyDocumentCategoryGrant(actor,personId) || seesEveryone(actor) || (['people.manage', 'reports.read', 'leave.manage'] as const).some(permission => canAbout(actor, permission, personId))
+export const seesFormer = (actor: Actor, personId: string) => anyLeaveGrant(actor,personId) || COMPENSATION_FIELDS.some(field=>compensationMode(actor,personId,field)!=='none') || anyJobGrant(actor,personId) || anyDocumentCategoryGrant(actor,personId) || seesEveryone(actor) || (['people.manage', 'reports.read', 'leave.manage'] as const).some(permission => canAbout(actor, permission, personId))

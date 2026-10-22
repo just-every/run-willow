@@ -4,18 +4,33 @@ import type { Cycle, Proposal } from './types'
 import type { Bindings } from '../../auth.server'
 import { can, requirePermission, type Actor } from '../actor'
 import { all, auditRead, commit, guard, insist, json, newId, now, one, sha256Hex, stmt, type Row } from '../core'
-import { requireDate } from '../dates'
 import { Input } from '../input'
 import { prepareTerms } from '../people'
+import { readsCompensation } from '../levels/compensation'
+import { compensationDefinitionMode, definitionAuthority, freshDefinitionActor, hasDefinitionRead, readCompensationDefinition, readsWholeDefinition, requestDefinition } from './definitions'
 import { annualCents, bandPosition, bands, businessVersion, cents, guardBandSnapshot } from './bands'
 
-export async function createCycle(env:Bindings,actor:Actor,input:Input) {
- requirePermission(actor,'people.manage','pay.read')
+/** A cycle definition creates only a draft; budgets and publication keep COMP-001 authority. */
+export async function prepareCycle(env:Bindings,actor:Actor,input:Input,{approved=false}={}) {
+ const plan=readCompensationDefinition('cycles',input)
+ insist(plan.kind==='cycles','invalid_compensation_definition_kind')
+ const authority=await definitionAuthority(env,actor,'cycles',plan.person,approved);actor=authority.actor
  insist((await one(env,'SELECT currency FROM wl_employer'))?.currency==='USD','compensation_usd_required',409)
- const id=newId(),kind=input.text('kind');insist(['merit','promotion','bonus'].includes(kind),'invalid_kind')
- const date=requireDate(input.text('effectiveFrom'),'invalid_effectiveFrom');insist(date>=actor.today,'compensation_past_date')
- await commit(env,[stmt(env,'INSERT INTO wl_comp_cycles (id,name,kind,effective_from,budget_cents,created_by,created_at) VALUES (?,?,?,?,?,?,?)',id,input.text('name',{max:120}),kind,date,cents(input.text('budget')),actor.id,now())],{actor:actor.id,action:'compensation.cycle.create',subject:id})
- return {id,status:'draft'}
+ const {name,kind,effectiveFrom:date,budget}=plan.values
+ insist(date>=actor.today,'compensation_past_date')
+ const id=newId()
+ return {guards:authority.guards,statements:[...authority.guards,stmt(env,'INSERT INTO wl_comp_cycles (id,name,kind,effective_from,budget_cents,created_by,created_at) VALUES (?,?,?,?,?,?,?)',id,name,kind,date,cents(budget),actor.id,now())],
+  audit:{actor:actor.id,action:'compensation.cycle.create',subject:id},result:{id,status:'draft',terms:null,case:null}}
+}
+export async function createCycle(env:Bindings,actor:Actor,input:Input) {
+ actor=await freshDefinitionActor(env,actor)
+ if(compensationDefinitionMode(actor,'cycles')==='approval') {
+  const plan=readCompensationDefinition('cycles',input)
+  return requestDefinition(env,actor,input.text('person'),plan)
+ }
+ const prepared=await prepareCycle(env,actor,input)
+ await commit(env,prepared.statements,prepared.audit)
+ return prepared.result
 }
 export async function approveBudget(env:Bindings,actor:Actor,input:Input) {
  const authority=await compensationApprovalAuthority(env,actor);actor=authority.actor
@@ -81,12 +96,30 @@ export async function publishCycle(env:Bindings,actor:Actor,input:Input) {
  await commit(env,[...sourceGuards,...statements],[...audits,{actor:actor.id,action:'compensation.cycle.publish',subject:id,detail:{count:results.length,costCents:review.costCents,exceptionReason:reason||null}}])
  return {id,status:'published',results}
 }
+/** Field readers see participation only for currently admitted people, never a frozen global snapshot. */
+async function fieldCycleRows(env:Bindings,actor:Actor,cycle:Cycle) {
+ const proposals=await currentProposals(env,cycle.id)
+ return proposals.filter(p=>readsCompensation(actor,p.person_id,'cycles') || p.requested_by===actor.id&&actor.reports.has(p.person_id)).map(p=>{
+  const amounts=readsCompensation(actor,p.person_id,cycle.kind==='bonus'?'bonus':'pay')
+  return {id:p.id,person_id:p.person_id,legal_name:p.legal_name,preferred_name:p.preferred_name,job_title:p.job_title,note:p.note,status:cycle.status,
+   basis:amounts?p.basis:null,amount_cents:amounts?p.amount_cents:null,previous_cents:amounts&&readsCompensation(actor,p.person_id,'history')?p.previous_cents:null}
+ })
+}
+const cycleDefinition=(actor:Actor,cycle:Cycle)=>({...cycle,budget_cents:readsWholeDefinition(actor,'cycles')?cycle.budget_cents:null,publication_json:null})
 export async function compensationHome(env:Bindings,actor:Actor) {
- insist(can(actor,'people.manage')||actor.reports.size>0||can(actor,'pay.read'),'forbidden',403)
- const pay=can(actor,'pay.read'),manage=can(actor,'people.manage'),cycles=await all<Cycle>(env,'SELECT * FROM wl_comp_cycles ORDER BY created_at DESC,id DESC')
+ const pay=can(actor,'pay.read'),manage=can(actor,'people.manage'),readBands=hasDefinitionRead(actor,'bands'),readCycles=hasDefinitionRead(actor,'cycles')
+ insist(manage||actor.reports.size>0||pay||readBands||readCycles,'forbidden',403)
+ const stored=await all<Cycle>(env,'SELECT * FROM wl_comp_cycles ORDER BY created_at DESC,id DESC'),cycles:Cycle[]=[]
+ for(const cycle of stored) {
+  if(pay)cycles.push(cycle)
+  else if(manage||actor.reports.size>0||readsWholeDefinition(actor,'cycles')||(readCycles&&(await fieldCycleRows(env,actor,cycle)).length))cycles.push(cycleDefinition(actor,cycle))
+ }
  const people=await all(env,'SELECT id,legal_name,preferred_name FROM wl_people ORDER BY legal_name')
- if(pay)await auditRead(env,actor.id,'compensation.home.read','employer')
- return {cycles:cycles.map(c=>({...c,...(!pay?{budget_cents:null,publication_json:null}:{})})),bands:pay?await bands(env,actor):[],people:people.filter(p=>p.id!==actor.personId&&(manage||actor.reports.has(p.id))),mayMaintain:manage&&pay,mayApprove:mayApproveCompensation(actor),maySeePay:pay}
+ if(pay||readCycles)await auditRead(env,actor.id,'compensation.home.read','employer')
+ return {cycles,bands:readBands?await bands(env,actor):[],people:people.filter(p=>p.id!==actor.personId&&(manage||actor.reports.has(p.id))),
+  definitionPeople:people.filter(p=>p.id!==actor.personId),mayMaintain:manage&&pay,mayApprove:mayApproveCompensation(actor),maySeePay:pay,
+  mayMaintainBands:compensationDefinitionMode(actor,'bands')==='edit',mayMaintainCycles:compensationDefinitionMode(actor,'cycles')==='edit',
+  mayRequestBands:compensationDefinitionMode(actor,'bands')==='approval',mayRequestCycles:compensationDefinitionMode(actor,'cycles')==='approval'}
 }
 export async function compensationCycle(env:Bindings,actor:Actor,id:string) {
  const cycle=await cycleRow(env,id)
@@ -99,7 +132,8 @@ export async function compensationCycle(env:Bindings,actor:Actor,id:string) {
   }
   return {...review,reconciliation,mayApprove:mayApproveCompensation(actor),maySeePay:true}
  }
- insist(actor.reports.size>0,'forbidden',403)
- const own=(await currentProposals(env,id)).filter(p=>p.requested_by===actor.id&&actor.reports.has(p.person_id))
- return {cycle:{...cycle,budget_cents:null,publication_json:null},rows:own.map(p=>({id:p.id,person_id:p.person_id,legal_name:p.legal_name,job_title:p.job_title,note:p.note,status:cycle.status})),mayApprove:false,maySeePay:false}
+ const rows=await fieldCycleRows(env,actor,cycle)
+ insist(actor.reports.size>0||readsWholeDefinition(actor,'cycles')||hasDefinitionRead(actor,'cycles')&&rows.length,'forbidden',403)
+ await auditRead(env,actor.id,'compensation.cycle.read',id)
+ return {cycle:cycleDefinition(actor,cycle),rows,mayApprove:false,maySeePay:rows.some(row=>row.amount_cents!==null),mayPropose:actor.reports.size>0}
 }

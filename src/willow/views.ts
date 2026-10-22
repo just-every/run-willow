@@ -36,7 +36,7 @@ import { PERMISSION_LABELS, can, requirePermission, type Actor } from './actor'
 import { WillowError, all } from './core'
 import { employer, settings } from './employer'
 import { Input } from './input'
-import { approvals, leaveDetail, policies, quote } from './leave'
+import { readablePolicies, approvals, leaveDetail, policies, quote } from './leave'
 import { caseDetail, myTasks, templates } from './lifecycle'
 import { members, visibilityPreview } from './members'
 import { importJobs } from './movein/bamboohr'
@@ -123,7 +123,7 @@ export const views: Record<string, View> = {
   templates: async (env, actor) => { requirePermission(actor, 'people.manage'); return await templates(env) },
   case: (env, actor, _request, id) => caseDetail(env, actor, id),
   tasks: (env, actor) => myTasks(env, actor),
-  policies: env => policies(env),
+  policies: (env,actor) => readablePolicies(env,actor),
   leave: (env, actor, _request, id) => leaveDetail(env, actor, id),
   approvals: (env, actor) => approvals(env, actor),
   quote: (env, actor, _request, _id, url) => quote(env, actor, query(url)),

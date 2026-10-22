@@ -1,6 +1,7 @@
 // FLOW-004 pages: requests in the member's scope, a request form for managers
 // and HR, HR's chain settings, and one request with its chain and history.
 import type { Bindings } from '../../auth.server'
+import { changeCompensationForm } from './change-compensation'
 import { can, employerZone, type Actor } from '../actor'
 import { all } from '../core'
 import { formatDate } from '../dates'
@@ -50,10 +51,10 @@ export async function changeRequestPage(env: Bindings, actor: Actor, id: string,
 <section class="card"><h2>Requested change</h2><dl><dt>Effective from</dt><dd>${formatDate(r.effectiveFrom)}</dd><dt>Requested by</dt><dd>${r.requestedBy.name}</dd><dt>Reason</dt><dd>${r.reason}</dd></dl>
 ${table(['Field', 'Now', 'Requested'], r.changes.map(c => [c.field, c.from ?? '—', h`${c.to ?? '—'}${'note' in c && c.note ? h`<p class="muted">${c.note}</p>` : ''}`]))}
 ${r.attachments.length ? h`<h3>Attachments</h3><ul>${r.attachments.map(a => h`<li><a href="/app/changes/${r.id}?attachment=${a.sha256}">${a.filename}</a> (revision ${a.revision})</li>`)}</ul>` : ''}
-${r.result ? h`<p>Approved terms version recorded${r.result.case ? h`; <a href="/app/cases/${r.result.case}">mover case started</a>` : ''}. The change is in the payroll handoff queue.</p>` : ''}</section>
+${r.result ? h`<p>${r.result.terms?'Approved terms version recorded':'Approved compensation record saved'}${r.result.case ? h`; <a href="/app/cases/${r.result.case}">mover case started</a>` : ''}.${r.result.terms?' The change is in the payroll handoff queue.':''}</p>` : ''}</section>
 <section class="card"><h2>Approval chain</h2><ol>${r.steps.map(s => h`<li>${s.label}${s.member ? ` (${s.member})` : ''} · ${tag(s.state)}${s.note ? h`<p class="muted">${s.note}</p>` : ''}</li>`)}</ol>
 ${r.mayDecide ? h`${form('change.decide', `/app/changes/${r.id}`, [hidden('request', r.id), hidden('state', r.state), select('Decision', 'decision', [{ value: 'approve', label: 'Approve' }, { value: 'return', label: 'Send back to the requester' }, { value: 'decline', label: 'Decline' }]), area('Comment (required to send back)', 'comment', '', false)], 'Record decision')}` : ''}</section>
-${r.mayEdit ? h`<section class="card"><h2>${r.status === 'returned' ? 'Revise and resubmit' : 'Edit request'}</h2><p>Editing restarts the approval chain from its first step.</p>${form('change.edit', `/app/changes/${r.id}`, [hidden('request', r.id), hidden('state', r.state), requestFields(actor, await options(env), { ...r.fields, employmentType: r.employmentType, effectiveFrom: r.effectiveFrom, reason: r.reason, payIncreasePercent: (r.changes.find(c => c.field === 'Pay') as { percent?: string } | undefined)?.percent })], 'Resubmit', { multipart: true })}</section>` : ''}
+${r.mayEdit ? h`<section class="card"><h2>${r.status === 'returned' ? 'Revise and resubmit' : 'Edit request'}</h2><p>Editing restarts the approval chain from its first step.</p>${r.editCompensation ? changeCompensationForm({...r,editCompensation:r.editCompensation},(await options(env)).locations) : form('change.edit', `/app/changes/${r.id}`, [hidden('request', r.id), hidden('state', r.state), requestFields(actor, await options(env), { ...r.fields, employmentType: r.employmentType, effectiveFrom: r.effectiveFrom, reason: r.reason, payIncreasePercent: (r.changes.find(c => c.field === 'Pay') as { percent?: string } | undefined)?.percent })], 'Resubmit', { multipart: true })}</section>` : ''}
 <section class="card"><h2>History</h2><ul>${r.history.map(e => h`<li>${when(e.at, zone)} · revision ${e.revision}${e.step ? ` · step ${e.step}` : ''} · ${e.kind} by ${e.by}${e.comment ? h`: “${e.comment}”` : ''}</li>`)}</ul></section>`
   return page('Change request', actor, body, { current: '/app/changes', url })
 }

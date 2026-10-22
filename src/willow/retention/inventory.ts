@@ -33,7 +33,7 @@ const OP = '(SELECT id FROM oa_operators WHERE lower(email) = ?5)'
 const APPS = "(SELECT id FROM wl_hiring_applications WHERE ?3 <> '' AND lower(contact_email) = ?3)"
 const SELFC = '(SELECT id FROM wl_self_changes WHERE person_id = ?1)'
 const SURVEYA = '(SELECT id FROM wl_survey_answers WHERE member_id = ?2)'
-const MEMBER_ROWS = (table: string, column: string): Store => ({ id: `${table}:${column}`, table, label: `${table.replace(/^wl_/, '').replace(/_/g, ' ')} authored by the person`, kind: 'authored', from: `${table} t WHERE t.${column} = ?2` })
+const MEMBER_ROWS = (table: string, column: string): Store => ({ id: `${table}:${column}`, table, label: `${table.replace(/^wl_/, '').replace(/_/g, ' ')} authored by the person`, kind: 'authored', from: `${table} t WHERE t.${column} = ?2${table === 'wl_comp_records' ? ' AND t.person_id <> ?1' : ''}` })
 
 const cls = (key: ClassKey): Kind => ({ class: key })
 const s = (id: string, table: string, label: string, kind: Kind, from: string, extra: Partial<Store> = {}): Store => ({ id, table, label, kind, from: `${table} t WHERE ${from}`, ...extra })
@@ -57,6 +57,7 @@ export const STORES: Store[] = [
   s('leave_events', 'wl_leave_policy_events', 'Policy events on ledger entries', cls('payroll'), `t.ledger_id IN (SELECT id FROM wl_ledger WHERE account_id IN ${ACC})`),
   s('comp_proposals', 'wl_comp_proposals', 'Compensation decisions', cls('payroll'), 't.person_id = ?1', { ms: 't.requested_at' }),
   s('comp_bonuses', 'wl_comp_bonuses', 'Bonuses', cls('payroll'), 't.person_id = ?1', { ms: 't.recorded_at' }),
+  s('comp_records', 'wl_comp_records', 'Native bonus and equity award versions', cls('payroll'), 't.person_id = ?1', { ms: 't.recorded_at' }),
   s('payroll_items', 'wl_payroll_items', 'Payroll handoff items', cls('payroll'), `t.source_id IN ${REQ}`),
   s('payroll_batches', 'wl_payroll_batches', 'Payroll handoff lines naming the person', cls('payroll'), 'instr(t.lines, ?1) > 0 OR instr(t.exceptions, ?1) > 0', { ms: 't.created_at' }),
   s('cases', 'wl_cases', 'Joiner, mover and leaver cases', cls('personnel'), 't.person_id = ?1', { ms: 't.opened_at' }),
@@ -149,7 +150,7 @@ export const STORES: Store[] = [
 // Rows another person's records keep: the person's attribution is replaced by the erasure label.
 export const AUTHORED: [string, string][] = [
   ['wl_preboard_packets','created_by'], ['wl_applicant_eeo_invitations','invited_by'], ['wl_applicant_eeo_invitations','revoked_by'], ['wl_hiring_closures','closed_by'],
-  ['wl_documents', 'created_by'], ['wl_document_versions', 'uploaded_by'], ['wl_comp_bands', 'recorded_by'], ['wl_comp_cycles', 'created_by'],
+  ['wl_documents', 'created_by'], ['wl_document_versions', 'uploaded_by'], ['wl_comp_bands', 'recorded_by'], ['wl_comp_cycles', 'created_by'], ['wl_comp_records', 'recorded_by'],
   ['wl_custom_field_values', 'recorded_by'], ['wl_custom_field_versions', 'recorded_by'], ['wl_custom_fields', 'recorded_by'],
   ['wl_record_row_versions', 'recorded_by'], ['wl_record_table_versions', 'recorded_by'], ['wl_record_tables', 'recorded_by'],
   ['wl_hiring_events', 'actor'], ['wl_goal_checkins', 'author'], ['wl_surveys', 'created_by'],
@@ -178,7 +179,7 @@ const NONE = (reason: string, ...tables: string[]): [string, string][] => tables
 export const OUT_OF_SCOPE = new Map<string, string>([
   ...NONE('Private erasure HMAC key and value-free source tombstones; installation archives preserve the fence', 'wl_retention_import_secret', 'wl_erased_import_keys', 'wl_import_erasure_fences'),
   ...NONE('employer configuration', 'wl_employer', 'wl_connections', 'wl_import_door', 'wl_payroll_layout', 'wl_work_policy', 'wl_locations', 'wl_departments', 'wl_divisions', 'wl_legal_entities', 'wl_schedules', 'wl_doc_categories'),
-  ...NONE('policy and template definitions', 'wl_policy_versions', 'wl_leave_policies', 'wl_leave_policy_rules', 'wl_template_tasks', 'wl_levels', 'wl_level_permissions', 'wl_level_scope_values', 'wl_level_self_fields', 'wl_level_other_fields', 'wl_level_document_categories', 'wl_level_reports', 'wl_level_job_fields', 'wl_hiring_openings', 'wl_review_cycles', 'wl_company_announcements', 'wl_company_folders', 'wl_company_files'),
+  ...NONE('policy and template definitions', 'wl_policy_versions', 'wl_leave_policies', 'wl_leave_policy_rules', 'wl_template_tasks', 'wl_levels', 'wl_level_permissions', 'wl_level_scope_values', 'wl_level_self_fields', 'wl_level_other_fields', 'wl_level_document_categories', 'wl_level_reports', 'wl_level_job_fields', 'wl_level_compensation_fields', 'wl_level_leave_fields', 'wl_hiring_openings', 'wl_review_cycles', 'wl_company_announcements', 'wl_company_folders', 'wl_company_files'),
   ...NONE('the erasure window: one row inside the journaled erasure batch, never committed', 'wl_erasure_window'),
   ...NONE('restricted custody of records already removed from every live table: owner-read only, purged by rule', 'wl_retained_records'),
   ...NONE('value-free erasure receipts and the post-commit blob work list: counts, labels and content digests only', 'wl_erasure_receipts', 'wl_erasure_blobs'),
