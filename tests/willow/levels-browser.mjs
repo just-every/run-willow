@@ -77,3 +77,62 @@ export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,docume
   } finally {await context.close()}
  } finally {await browser.close()}
 }
+
+
+// The demo's public bootstrap must initialize real document records through the
+// same live-session fence as ordinary category writes, without a seeding bypass.
+export async function demoProof() {
+ const {harness,file}=await import('./harness.mjs')
+ const h=await harness({bindings:{RER_DEMO:'1'}})
+ let browser
+ try {
+  const bootstrap=await h.raw('/auth/bootstrap',{body:{token:h.vars.SETUP_TOKEN,displayName:'Demo Owner'}})
+  assert.equal(bootstrap.status,303,'The public demo bootstrap succeeds')
+  const cookie=bootstrap.headers.getSetCookie().map(line=>line.split(';')[0]).join('; ')
+  const directory=await h.raw('/app/people',{cookie})
+  assert.equal(directory.status,200,'The first directory request initializes the demo under live owner authority')
+  assert.match(await directory.text(),/Harbor &amp; Field/)
+  const people=await h.api('people',cookie)
+  assert.equal(people.length,12,'Every demo person was initialized')
+  const owner=await h.api('me',cookie)
+  const person=await h.api(`people/${owner.person}`,cookie)
+  assert.equal(person.documents.length,1)
+  const document=person.documents[0],version=document.versions[0]
+  const download=await h.raw(`/app/files/document/${version.id}`,{cookie})
+  assert.equal(download.status,200)
+  assert.match(await download.text(),/Welcome to Harbor & Field/,'The seeded native file has its real stored bytes')
+  assert.equal((await h.raw('/app/people')).status,303,'Demo data does not grant an anonymous record session')
+  for(let i=0;i<2;i++) {
+   assert.equal((await h.raw('/app/people',{cookie})).status,200)
+   assert.equal((await h.api('people',cookie)).length,12)
+   assert.equal((await h.api(`people/${owner.person}`,cookie)).documents[0].versions.length,1,'Repeated entry does not duplicate initialization')
+  }
+  if(process.env.WILLOW_LEVELS_BROWSER==='1') {
+   const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
+   browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+   const context=await browser.newContext({ignoreHTTPSErrors:true})
+   try {
+    await context.addCookies(cookie.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})))
+    const page=await context.newPage()
+    for(const width of [1440,390]) {
+     await page.setViewportSize({width,height:1000})
+     for(const [name,path] of [['directory','/app/people'],['document',`/app/people/${owner.person}`]]) {
+      assert.equal((await page.goto(h.origin+path)).status(),200)
+      await page.evaluate(()=>document.fonts.ready)
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`Demo ${name} fits ${width}`)
+      await page.screenshot({path:`${evidenceDirectory}/demo-${name}-${width}.png`,fullPage:true})
+     }
+    }
+   } finally {await context.close()}
+  }
+  // Ordinary category writes still require a live authenticated session after
+  // initialization, and a revoked bootstrap session cannot append file bytes.
+  const input={document:document.id,revision:person.documents[0].revision,file:file('synthetic-willow-1.txt','synthetic-willow-1')}
+  await h.api('document.add',cookie,input)
+  assert.equal((await h.api(`people/${owner.person}`,cookie)).documents[0].versions.length,2)
+  const signout=await h.raw('/auth/signout',{body:{},cookie})
+  assert.equal(signout.status,204)
+  await h.api('document.add',cookie,input,401)
+  console.log('Demo initialization: PASS — public bootstrap, populated directory, native file bytes, idempotent entry and live-session revocation')
+ } finally {await browser?.close();await h.close()}
+}

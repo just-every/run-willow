@@ -1,6 +1,6 @@
 import type { Bindings } from './auth.server'
 import { PERMISSIONS, ensureMember, type Actor } from './willow/actor'
-import { all, one, stmt } from './willow/core'
+import { all, insist, one, stmt } from './willow/core'
 import { addDays } from './willow/dates'
 import { configureEmployer, createCategory, createDepartment, createLocation, createSchedule } from './willow/employer'
 import { Input } from './willow/input'
@@ -18,7 +18,13 @@ import { approveWorkPolicy } from './willow/work'
 export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail: string; now: Date }) {
  const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
  const member = await ensureMember(env, ownerEmail, 'Rowan Hale')
- const actor: Actor = { id: member.id, sessionId: 'demo-seed', email: ownerEmail, name: 'Rowan Hale', owner: true, permissions: new Set(PERMISSIONS), personId: null, reports: new Set(), today: date, followOwnChanges: false, otherPersonal: [], reportGrants: [], documentCategories: [], scoped: [] }
+ // Bootstrap creates a real owner session before withDemo initializes records.
+ // Reuse its identity, never a synthetic id or a bypass of native write fences.
+ const session = await one<{id: string}>(env, `SELECT s.id FROM oa_sessions s JOIN oa_operators o ON o.id = s.operator_id
+  WHERE o.email = ? AND o.role = 'owner' AND o.status = 'active' AND s.revoked_at IS NULL
+  AND s.operator_version = o.version AND s.expires_at > ? ORDER BY s.created_at DESC, s.id LIMIT 1`, ownerEmail, Date.now())
+ insist(session, 'demo_owner_session_required', 503)
+ const actor: Actor = { id: member.id, sessionId: session.id, email: ownerEmail, name: 'Rowan Hale', owner: true, permissions: new Set(PERMISSIONS), personId: null, reports: new Set(), today: date, followOwnChanges: false, otherPersonal: [], reportGrants: [], documentCategories: [], scoped: [] }
  const input = Input.of
  const stage = async (name: string, run: () => Promise<void>) => {
   if (await one(env, 'SELECT 1 FROM rer_demo WHERE name = ?', `willow:${name}`)) return

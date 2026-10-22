@@ -4,7 +4,7 @@ import { bulkLevelProof, delegatedLevelProof } from './levels-bulk.mjs'
 import { personalFieldProof, otherPersonalProof, documentCategoryProof, documentWriteProof, selectedReportProof } from './levels-personal.mjs'
 import { harness } from './harness.mjs'
 import { fixture } from './regression-fixture.mjs'
-import { browserEvidence } from './levels-browser.mjs'
+import { browserEvidence, demoProof } from './levels-browser.mjs'
 import { scopeProof, transferProof } from './levels-scope.mjs'
 import { scopeKindsProof } from './levels-scope-kinds.mjs'
 import { decisionProof } from './levels-scope-decisions.mjs'
@@ -104,3 +104,5 @@ try {
  await browserEvidence(h,owner,s,bulk,scoped,delegated,documentRights,selectedReport)
  console.log('ROLE-001: PASS — exact union, explicit bounded administration and reviewed changes, stale/replay refusal, same-session revocation and ended-access clearing (personal self-write modes and immutable HR routing proved; other field/section rights remain partial)')
 } finally { await h.close() }
+
+await demoProof()
