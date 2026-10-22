@@ -14,7 +14,7 @@ import { personView } from './profile'
 
 export async function members(env: Bindings, actor: Actor, request: Request) {
   requirePermission(actor, 'people.manage')
-  const rows = await all(env, 'SELECT m.id, m.email, m.name, m.person_id, m.status, (SELECT json_group_array(permission) FROM wl_effective_permissions p WHERE p.member_id = m.id) AS permissions FROM wl_members m ORDER BY m.name')
+  const rows = await all(env, 'SELECT m.id, m.email, m.name, m.person_id, m.status, (SELECT json_group_array(permission) FROM wl_effective_permissions p WHERE p.member_id = m.id) AS permissions FROM wl_members m WHERE NOT EXISTS (SELECT 1 FROM wl_erasure_requests r WHERE r.person_id=m.person_id AND r.receipt_id IS NOT NULL) ORDER BY m.name')
   const operators = new Map((await operatorAuth(env).listOperators(request)).map(operator => [operator.email.toLowerCase(), operator]))
   return rows.map(row => {
     const operator = operators.get(row.email)

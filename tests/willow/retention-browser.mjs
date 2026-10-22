@@ -27,3 +27,38 @@ export async function browserEvidence(h, cookie, pages) {
     await context.close()
   } finally { await browser.close() }
 }
+
+/** Use the owner's actual preview/confirmation and receipt navigation. */
+export async function confirmThroughBrowser(h, cookie, person) {
+  if (process.env.WILLOW_RETENTION_BROWSER !== '1') return null
+  const destination = process.env.WILLOW_EVIDENCE_DIR
+  assert.ok(destination)
+  const { chromium } = await import(process.env.WILLOW_PLAYWRIGHT_PATH ? pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href : '@playwright/test')
+  const browser = await chromium.launch({ headless: true, args: ['--use-mock-keychain', '--password-store=basic'] })
+  try {
+    const context = await browser.newContext({ ignoreHTTPSErrors: true })
+    await context.addCookies(cookie.split('; ').map(item => ({ name: item.slice(0, item.indexOf('=')), value: item.slice(item.indexOf('=') + 1), url: h.origin })))
+    const page = await context.newPage()
+    await page.goto(`${h.origin}/app/retention/erasure?person=${person}`)
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 1000 })
+      await page.screenshot({ path: `${destination}/DATA-002-confirm-preview-${width}.png`, fullPage: true })
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    await page.getByRole('button', { name: 'Confirm this preview and erase', exact: true }).click()
+    await page.waitForURL(`${h.origin}/app/retention`)
+    assert.equal(await page.locator('.error').count(), 0)
+    const link = page.locator('a[href^="/app/retention/receipts/"]').first()
+    await link.click()
+    await page.waitForURL('**/app/retention/receipts/*')
+    const receipt = new URL(page.url()).pathname.split('/').at(-1)
+    const data = await h.api(`erasure/receipts/${receipt}`, cookie)
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 1000 })
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+      await page.screenshot({ path: `${destination}/DATA-002-confirm-receipt-${width}.png`, fullPage: true })
+    }
+    await context.close()
+    return { status: 'confirmed', receipt, label: data.label }
+  } finally { await browser.close() }
+}

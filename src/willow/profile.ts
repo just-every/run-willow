@@ -73,7 +73,7 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
   const date = options.asOf === undefined ? actor.today : requireDate(options.asOf, 'invalid_asOf')
   const zone = options.asOf === undefined ? undefined : await employerZone(env)
   const [person, look, periods, currentRows, selectedRows] = await Promise.all([
-    one(env, 'SELECT id, legal_name, preferred_name, work_email, employee_number, revision FROM wl_people WHERE id = ?', personId),
+    one(env, 'SELECT id, legal_name, preferred_name, work_email, employee_number, revision FROM wl_people WHERE id = ? AND NOT EXISTS (SELECT 1 FROM wl_erasure_requests r WHERE r.person_id=wl_people.id AND r.receipt_id IS NOT NULL)', personId),
     lookups(env),
     all(env, 'SELECT id, start_date, end_date, employment_type, payroll_id, end_reason FROM wl_periods WHERE person_id = ? ORDER BY start_date DESC', personId),
     currentTerms(env, date),
@@ -119,7 +119,7 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
 export async function directory(env: Bindings, actor: Actor, asOf = actor.today) {
   const date = requireDate(asOf, 'invalid_asOf')
   const look = await lookups(env)
-  const people = await all(env, 'SELECT id, legal_name, preferred_name, work_email FROM wl_people ORDER BY COALESCE(preferred_name, legal_name)')
+  const people = await all(env, 'SELECT id, legal_name, preferred_name, work_email FROM wl_people WHERE NOT EXISTS (SELECT 1 FROM wl_erasure_requests r WHERE r.person_id=wl_people.id AND r.receipt_id IS NOT NULL) ORDER BY COALESCE(preferred_name, legal_name)')
   const selected = await selectedPeriods(env, date)
   const current = await currentTerms(env, date)
   const everyone = seesEveryone(actor)

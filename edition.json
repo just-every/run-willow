@@ -55,7 +55,13 @@
           "migrations/core/0039_follow_own_changes.sql",
           "migrations/core/0040_hiring_resumes.sql",
           "migrations/core/0041_level_scopes.sql",
-          "migrations/core/0042_divisions_entities.sql"
+          "migrations/core/0042_divisions_entities.sql",
+          "migrations/core/0043_retention.sql",
+          "migrations/core/0044_eeo_individual.sql",
+          "migrations/core/0045_eeo_snapshot.sql",
+          "migrations/core/0046_erasure.sql",
+          "migrations/core/0047_erasure_applicants.sql",
+          "migrations/core/0048_erased_import_keys.sql"
         ]
       }
     },

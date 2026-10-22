@@ -185,6 +185,9 @@ try {
   // Nothing else still points at the person: only the stub identity and the audit, request and member rows that carry it.
   const stubIds = await stubIdentities(directory, erased.label)
   assert.equal(stubIds.length, 2, 'one stub person and one stub member carry the label')
+  assert.ok(!(await api('people')).some(row => row.name === erased.label), 'erased attribution is absent from the directory')
+  assert.ok(!(await api('members')).some(row => row.name === erased.label), 'erased attribution is absent from member pickers')
+  for (const id of stubIds) await api(`people/${id}`, undefined, 404)
   const pointing = await findText(directory, stubIds)
   assert.deepEqual(Object.keys(pointing).sort(), ['wl_audit', 'wl_erasure_requests', 'wl_members', 'wl_people', 'wl_work_history', 'wl_work_schedule'].sort(), `only identity, audit, request and work-history rows carry the stub: ${JSON.stringify(pointing)}`)
   const auditAfter = JSON.stringify(await api('audit'))

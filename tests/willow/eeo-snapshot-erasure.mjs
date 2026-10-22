@@ -1,5 +1,6 @@
 // DATA-002's EEO-002 exception, exercised by real erasure and frozen-run doors.
 import assert from 'node:assert/strict'
+import { browserEvidence } from './eeo-snapshot-browser.mjs'
 
 export async function erasedSnapshotEvidence(h, { f, owner, staff, reports, aggregate }) {
   const api = f.api, hr = f.staff.hr.cookie, reader = f.staff.managerb.cookie
@@ -75,6 +76,7 @@ export async function erasedSnapshotEvidence(h, { f, owner, staff, reports, aggr
       assert.equal((await h.raw(`/app/${path}`, { cookie })).status, 403)
     }
   }
+  await browserEvidence(h, { hr, aggregate: reader }, reports[0].id)
   // Permission removal takes effect immediately, including for retained rows.
   await api('eeo.grant', { member: f.staff.hr.member, enabled: false })
   await h.api(`eeo/runs/${reports[0].id}/people`, hr, undefined, 403)

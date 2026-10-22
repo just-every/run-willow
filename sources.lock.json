@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "people/willow",
-  "manifest": "c034eaef06f7ad20f5ae4edb2240605f4aa3da794b1b7a1f6f7ce45d9d70e061",
+  "manifest": "6d929d446d7e7a971ae4348bd07f9f0c0af23f660091e2492bbaac0d2912329d",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -55,7 +55,13 @@
           "migrations/core/0039_follow_own_changes.sql",
           "migrations/core/0040_hiring_resumes.sql",
           "migrations/core/0041_level_scopes.sql",
-          "migrations/core/0042_divisions_entities.sql"
+          "migrations/core/0042_divisions_entities.sql",
+          "migrations/core/0043_retention.sql",
+          "migrations/core/0044_eeo_individual.sql",
+          "migrations/core/0045_eeo_snapshot.sql",
+          "migrations/core/0046_erasure.sql",
+          "migrations/core/0047_erasure_applicants.sql",
+          "migrations/core/0048_erased_import_keys.sql"
         ]
       },
       "baseline": null
@@ -301,7 +307,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "c034eaef06f7ad20f5ae4edb2240605f4aa3da794b1b7a1f6f7ce45d9d70e061",
+      "sha256": "6d929d446d7e7a971ae4348bd07f9f0c0af23f660091e2492bbaac0d2912329d",
       "executable": false
     },
     "EXPORTING.md": {
@@ -3081,7 +3087,7 @@
       "executable": false
     },
     "src/willow/members.ts": {
-      "sha256": "a93d96db58a9c33044a965901c80f9f01dd98f0acb468689d24fee4c68f52efd",
+      "sha256": "f914196ce66f507d2bf960e335e2ce37edc6111e83a35e3aa38ff97104fdf0a0",
       "executable": false
     },
     "src/willow/model-drafts.ts": {
@@ -3181,7 +3187,7 @@
       "executable": false
     },
     "src/willow/profile.ts": {
-      "sha256": "55009ab8126fab39003dbdf1861e10acd9a6325eeb331d85f2c09312ddb44d0b",
+      "sha256": "90f6700f3a49745f8559008513c83da1204d46109ec90b756e631b43f3b07aa3",
       "executable": false
     },
     "src/willow/progress-followup.ts": {
@@ -3601,7 +3607,7 @@
       "executable": false
     },
     "tests/willow/eeo-snapshot-erasure.mjs": {
-      "sha256": "ea510a8139c740089ac36b68ca275a16dfb377a85e6afd0ff7f630d5eff31e87",
+      "sha256": "36d976a368ce99f23cd48326b9b2b4343ee3b90cffd71b9f4df88458ba4c5e39",
       "executable": false
     },
     "tests/willow/eeo-snapshot.mjs": {
@@ -3785,7 +3791,7 @@
       "executable": false
     },
     "tests/willow/retention-browser.mjs": {
-      "sha256": "96f14e3c70e289e8b9ca1225eefca99e06924ee38731abf3ee6530ab9ae57825",
+      "sha256": "87012040478e61c29b01b2333c3b9d35287565780b2b836ed244144d684962e6",
       "executable": false
     },
     "tests/willow/retention-counts.mjs": {
@@ -3797,11 +3803,11 @@
       "executable": false
     },
     "tests/willow/retention-payroll.mjs": {
-      "sha256": "decf5dcafcee71550daf85a65eba7c80e03c1d3732a5daa0e6b58962412d21dd",
+      "sha256": "3440f05fdf8a35a0ebc6e7fc6d57d52ee8e6172c042a7a6ebbb786fb704f42a2",
       "executable": false
     },
     "tests/willow/retention.mjs": {
-      "sha256": "1eb1734c532731e68640f2f223f9d686d6fd089ba95443e2b05383d6349c146e",
+      "sha256": "825dfd4643ac275ed2cb8677fe9cd08a0166552c5c9b475916ebab8a8a40d505",
       "executable": false
     },
     "tests/willow/self-service-browser.mjs": {

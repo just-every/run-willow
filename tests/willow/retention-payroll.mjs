@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { genericColumns } from './phase2-fixtures.mjs'
 import { today, day } from './regression-fixture.mjs'
-import { browserEvidence } from './retention-browser.mjs'
+import { browserEvidence, confirmThroughBrowser } from './retention-browser.mjs'
 
 export async function payrollErasure(h, owner, f) {
   const api = f.api, target = await f.join('nina'), peer = await f.join('omar')
@@ -23,7 +23,7 @@ export async function payrollErasure(h, owner, f) {
   const preview = await api(`erasure/preview?person=${target.person}`)
   assert.deepEqual(preview.blockers, [])
   assert.equal(preview.items.find(row => row.id === 'payroll_batches').disposition, 'retained')
-  const erased = await api('erasure.confirm', { person: target.person, digest: preview.digest })
+  const erased = await confirmThroughBrowser(h, owner, target.person) ?? await api('erasure.confirm', { person: target.person, digest: preview.digest })
   const after = await api(`payroll/${draft.id}`)
   assert.deepEqual(after.lines, before.lines.filter(row => row.person !== target.person))
   assert.equal(after.filePreview, null)
