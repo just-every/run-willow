@@ -11,6 +11,12 @@ export async function payrollErasure(h, owner, f) {
     for (const task of (await api(`cases/${item.id}`)).tasks) await api('task.complete', { task: task.id, evidence: 'Complete' })
     await api('case.complete', { case: item.id })
   }
+  let serial = 20
+  for (const person of await api('people')) {
+    for (const period of (await api(`people/${person.id}`)).employment ?? []) {
+      if (!period.payrollId) await api('period.payroll', { period: period.id, payrollId: `synthetic-willow-${++serial}` })
+    }
+  }
   await api('payroll.layout', { format: 'generic', columns: genericColumns })
   const draft = await api('payroll.draft', { periodStart: day(-100), periodEnd: today })
   const file = await api('payroll.preview', { batch: draft.id })
