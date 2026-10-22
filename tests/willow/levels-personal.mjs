@@ -493,6 +493,13 @@ export async function selectedReportProof(h,owner,fx) {
  const bounded=await h.api('level.preview',s.hr.cookie,{kind:'level',name:'Selected report in covered group',permissions:[],reports:[report.id],scope})
  await h.api('level.apply',s.hr.cookie,{review:bounded.id})
  await h.api('level.preview',s.hr.cookie,{kind:'level',name:'Wider selected report',permissions:[],reports:[report.id]},403)
+ // A scoped general reporter may delegate one of their own visible definitions within that scope.
+ const scopedReporter=await apply({kind:'level',name:'Scoped report builder ceiling',permissions:['reports.read'],scope})
+ await apply({kind:'assignment',member:s.hr.member,levels:[...beforeHR,admin.id,scopedReporter.id]})
+ const ownReport=await h.api('report.save',s.hr.cookie,{definition:{...definition,name:'synthetic-willow-9504 own scoped report'}})
+ const ownBounded=await h.api('level.preview',s.hr.cookie,{kind:'level',name:'Own report within held general scope',permissions:[],reports:[ownReport.id],scope})
+ await h.api('level.apply',s.hr.cookie,{review:ownBounded.id})
+ await h.api('level.preview',s.hr.cookie,{kind:'level',name:'Own report beyond held scope',permissions:[],reports:[ownReport.id]},403)
  await apply({kind:'assignment',member:s.hr.member,levels:beforeHR})
  await assignment([level.id])
  await apply({...plan,level:level.id,reports:[]})

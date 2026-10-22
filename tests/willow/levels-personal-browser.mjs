@@ -421,7 +421,7 @@ export async function selectedReportBrowserProof(browser,h,owner,staff,ids) {
    await capture(admin,'assignment-review',width)
    await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
    await reader.goto(h.origin+'/app')
-   if(width===390)await reader.getByRole('button',{name:'Menu',exact:true}).click()
+   if(width===390)await reader.locator('label[for="menu-toggle"]').click()
    await reader.getByRole('link',{name:'Saved reports',exact:true}).click()
    assert.equal(await reader.getByRole('heading',{name:'Create a report',exact:true}).count(),0)
    assert.equal(await reader.getByRole('link',{name:'synthetic-willow-9502 unselected report',exact:true}).count(),0)
