@@ -3856,7 +3856,7 @@
       "executable": false
     },
     "tests/willow/flows.mjs": {
-      "sha256": "e432c014ad6a4d4a51415a87f1d1aea8d56ebb10071f347400ea90a09c766f5c",
+      "sha256": "69078c03430a9005f4a96804744d327c38e48b74bb2c0ac8f85390ee2331674c",
       "executable": false
     },
     "tests/willow/harness.mjs": {
@@ -3909,6 +3909,10 @@
     },
     "tests/willow/levels-job-browser.mjs": {
       "sha256": "50a12944dc9bc5726ca565c496854deed8e4d2582cc6e7b992b160ce63ad12f7",
+      "executable": false
+    },
+    "tests/willow/levels-job-doors.mjs": {
+      "sha256": "0dbe159463d87dc872fd227d675a501467100f8d5b1e37a03dc34d74fc1214b0",
       "executable": false
     },
     "tests/willow/levels-job-read.mjs": {

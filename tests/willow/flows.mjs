@@ -1,3 +1,4 @@
+import { jobDoorProof } from './levels-job-doors.mjs'
 import { exerciseImportDoor } from './import-door.mjs'
 import { imports } from './import-transport.mjs'
 import { queuedEntrypoint } from '@runeditrun/rer/queued-entry'
@@ -580,6 +581,8 @@ try {
     const ownerMember=(await h.api('me',cookie.owner)).id
     assert.ok((await h.api('audit',cookie.owner)).some(event=>event.action==='level.level'&&event.subject===combined.id&&event.actor===ownerMember))
     await applyLevel({kind:'assignment',member:ids.ivanMember,levels:[named.ivan.id]})
+    await jobDoorProof(h,cookie.owner,cookie.ivan,{ids,urls,today,addDays})
+    await h.api('level.apply',cookie.owner,{review:(await h.api('level.preview',cookie.owner,{kind:'assignment',member:ids.ivanMember,levels:[named.ivan.id]})).id})
     console.log(`ROLE-001 crawled ${urls.length} doors with exact named levels, selective personal fields, document categories and saved reports, and same-session revocation`)
     // Reads of someone else's private details are audited.
     const audit = await h.api('audit', cookie.owner)
