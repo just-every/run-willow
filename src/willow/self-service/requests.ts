@@ -1,4 +1,5 @@
 // SELF-001: proposed bytes never change. HR approval commits the native revision and outcome together.
+import { otherPersonalFence } from '../levels/other-personal'
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
 import { scopeFence } from '../levels/scope'
@@ -13,9 +14,10 @@ import { handlesSelfExceptions, reviewsSelfChanges } from './view'
 
 export async function proposeSelfChange(env: Bindings, actor: Actor, input: Input) {
  const kind=input.text('kind')
- input.only(kind==='personal' ? ['returnTo','kind','field','value'] : ['returnTo','kind','legalName','row','remove','values','col.name','col.relationship','col.date_of_birth'])
- insist(actor.personId,'person_required',403)
- const person=await one(env,'SELECT * FROM wl_people WHERE id=?',actor.personId)
+ input.only(kind==='personal' ? ['returnTo','kind','person','field','value'] : ['returnTo','kind','legalName','row','remove','values','col.name','col.relationship','col.date_of_birth'])
+ const personId=kind==='personal' && input.provided('person') ? input.text('person') : actor.personId
+ insist(personId,'person_required',403)
+ const person=await one(env,'SELECT * FROM wl_people WHERE id=? AND NOT EXISTS(SELECT 1 FROM wl_erasure_requests r WHERE r.person_id=wl_people.id AND r.receipt_id IS NOT NULL)',personId)
  insist(person,'not_found',404)
  insist(kind==='legalName'||kind==='dependent'||kind==='personal','invalid_change_kind')
  const guards: D1PreparedStatement[]=[]
@@ -23,8 +25,8 @@ export async function proposeSelfChange(env: Bindings, actor: Actor, input: Inpu
  if(kind==='legalName') { before={legalName:person.legal_name}; after={legalName:input.text('legalName',{max:160})}; insist(JSON.stringify(before)!==JSON.stringify(after),'nothing_to_change') }
  else if(kind==='personal') {
   const field=personalField(input.text('field')), value=personalValue(input,field)
-  guards.push(await personalModeSnapshot(env,actor,field),guard(env,'stale','EXISTS(SELECT 1 FROM wl_people WHERE id=? AND revision=?)',actor.personId,source))
-  const view=await personView(env,actor,actor.personId)
+  const view=await personView(env,actor,personId)
+  guards.push(personId===actor.personId ? await personalModeSnapshot(env,actor,field) : await otherPersonalFence(env,actor,personId,field,'approval'),guard(env,'stale','EXISTS(SELECT 1 FROM wl_people WHERE id=? AND revision=?)',personId,source))
   before={[field]:field==='preferredName'?view.preferredName:(view.private as Record<string,unknown>)[field]}
   after={[field]:value}
   rowId=field
@@ -34,7 +36,7 @@ export async function proposeSelfChange(env: Bindings, actor: Actor, input: Inpu
   insist(!table.current.retired,'table_retired',409)
   rowId=input.text('row',{optional:true,max:100})||null
   source=String((await one<{n:number}>(env,'SELECT COUNT(*) AS n FROM wl_record_row_versions v JOIN wl_record_rows r ON r.id=v.row_id WHERE r.person_id=? AND r.table_id=?',actor.personId,DEPENDENTS))!.n)
-  const record=(await personRecordTables(env,actor,actor.personId)).tables.find(t=>t.id===DEPENDENTS)!
+  const record=(await personRecordTables(env,actor,personId)).tables.find(t=>t.id===DEPENDENTS)!
   const row=record.rows.find(r=>r.id===rowId)
   insist(!rowId||row,'not_found',404)
   insist(!input.flag('remove')||row,'row_required')
@@ -43,8 +45,8 @@ export async function proposeSelfChange(env: Bindings, actor: Actor, input: Inpu
   tableVersion=table.current.id
  }
  const id=newId(), at=now(), due=addDays(actor.today,7)
- await commit(env,[...guards,stmt(env,'INSERT INTO wl_self_changes (id,person_id,kind,row_id,before_json,after_json,source_revision,table_version_id,requested_by,requested_at,due_date) VALUES (?,?,?,?,?,?,?,?,?,?,?)',id,actor.personId,kind,rowId,JSON.stringify(before),JSON.stringify(after),source,tableVersion,actor.id,at,due)],
- {actor:actor.id,action:'selfChange.request',subject:id,detail:{person:actor.personId,kind}})
+ await commit(env,[...guards,stmt(env,'INSERT INTO wl_self_changes (id,person_id,kind,row_id,before_json,after_json,source_revision,table_version_id,requested_by,requested_at,due_date) VALUES (?,?,?,?,?,?,?,?,?,?,?)',id,personId,kind,rowId,JSON.stringify(before),JSON.stringify(after),source,tableVersion,actor.id,at,due)],
+ {actor:actor.id,action:'selfChange.request',subject:id,detail:{person:personId,kind}})
  return {id,status:'pending'}
 }
 

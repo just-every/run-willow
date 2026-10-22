@@ -40,7 +40,7 @@ export async function runReport(env:Bindings,actor:Actor,definition:ReportDefini
   for(const key of definition.columns) {
    if(key.startsWith('custom.')) {
     const field=view.customFields.fields.find((f:any)=>f.key===key.slice(7));values[key]=field?.value===undefined||field?.value===null?null:String(field.value);if(!field)withheld.push(key)
-   } else if((key==='phone'||key==='personal_email')&&!view.private||key==='payAmount'&&!pay||key==='leaveLiability'&&(!pay||!view.leave)||key==='leaveHours'&&!view.leave||key==='employeeNumber'&&view.employeeNumber===undefined)withheld.push(key)
+   } else if((key==='phone'||key==='personal_email')&&!Object.hasOwn(view.private??{},key)||key==='payAmount'&&!pay||key==='leaveLiability'&&(!pay||!view.leave)||key==='leaveHours'&&!view.leave||key==='employeeNumber'&&view.employeeNumber===undefined)withheld.push(key)
   }
   rows.push({personId:person.id,name:view.name,source:`/app/people/${person.id}?asOf=${asOf}`,cells:Object.fromEntries(definition.columns.map(k=>[k,withheld.includes(k)?null:values[k]])),withheld,workSources:work.tasks,exceptionSources:work.sources,overdueSources,
    measures:{headcount:active?1:0,fte:active&&weekly!==null?Math.round(weekly/2400*1000)/1000:null,tenureDays:tenure,leaveMinutes:leave,liabilityCents:liability,currency:liability===null?null:pay.currency,openExceptions:work.exceptions,overdueWork:overdueSources.length}})

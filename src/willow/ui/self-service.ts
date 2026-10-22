@@ -66,7 +66,7 @@ ${hr(actor, change.personId) && change.status === 'approved' && change.reconcili
 }
 
 export async function selfChangesPanel(env: Bindings, actor: Actor) {
-  if (!actor.personId && !can(actor,'people.private')) return h``
+  if (!actor.personId && !can(actor,'people.private') && !actor.otherPersonal.length) return h``
   const changes = await selfChanges(env, actor)
   const pending = changes.filter(change => change.status === 'pending').length
   const open = changes.filter(change => change.status === 'approved' && change.reconciliation?.status === 'open').length

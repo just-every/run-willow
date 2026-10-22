@@ -10,7 +10,7 @@ import { effectiveField, effectiveFieldDefinitions, fieldSchemas, type Effective
 import { employeeCsv, employeeXlsx } from './export-formats'
 
 type Person = Record<string, any>
-type Column = { label: string; facet?: Facet; value: (person: Person) => unknown }
+type Column = { personal?: string; label: string; facet?: Facet; value: (person: Person) => unknown }
 const period = (person: Person) => person.employment?.find((row: Person) => row.id === person.selectedPeriod)
 const term = (person: Person) => period(person)?.terms.find((row: Person) => row.inForce)
 export const EMPLOYEE_EXPORT_FIELDS: Record<string, Column> = {
@@ -32,11 +32,11 @@ export const EMPLOYEE_EXPORT_FIELDS: Record<string, Column> = {
   payBasis: { label: 'Pay basis', facet: 'pay', value: p => term(p)?.pay?.basis },
   payAmount: { label: 'Pay amount', facet: 'pay', value: p => term(p)?.pay?.amountCents == null ? '' : (term(p).pay.amountCents / 100).toFixed(2) },
   payCurrency: { label: 'Pay currency', facet: 'pay', value: p => term(p)?.pay?.currency },
-  personalEmail: { label: 'Personal email', facet: 'private', value: p => p.private?.personal_email },
-  phone: { label: 'Phone', facet: 'private', value: p => p.private?.phone },
-  address: { label: 'Home address', facet: 'private', value: p => p.private?.address },
-  dateOfBirth: { label: 'Date of birth', facet: 'private', value: p => p.private?.date_of_birth },
-  emergencyContact: { label: 'Emergency contact', facet: 'private', value: p => p.private?.emergency_contact },
+  personalEmail: { personal: 'personal_email', label: 'Personal email', facet: 'private', value: p => p.private?.personal_email },
+  phone: { personal: 'phone', label: 'Phone', facet: 'private', value: p => p.private?.phone },
+  address: { personal: 'address', label: 'Home address', facet: 'private', value: p => p.private?.address },
+  dateOfBirth: { personal: 'date_of_birth', label: 'Date of birth', facet: 'private', value: p => p.private?.date_of_birth },
+  emergencyContact: { personal: 'emergency_contact', label: 'Emergency contact', facet: 'private', value: p => p.private?.emergency_contact },
 }
 
 // A scoped holder's organization export is exactly the people their scoped levels reach.
@@ -86,7 +86,7 @@ export async function employeeExportData(env: Bindings, actor: Actor, url: URL) 
   for (const person of people) {
     const view = await personView(env, actor, person.id, { asOf: filters.date, customFields: definition => customKeys.has(definition.key) }) as Person
     records.push(view)
-    const withheld = fields.filter(key => key.startsWith('custom.') ? !view.customFields.fields.some((item: EffectiveField) => `custom.${item.key}` === key) : columns[key].facet && !view.facets.includes(columns[key].facet!))
+    const withheld = fields.filter(key => key.startsWith('custom.') ? !view.customFields.fields.some((item: EffectiveField) => `custom.${item.key}` === key) : columns[key].personal ? !Object.hasOwn(view.private ?? {},columns[key].personal!) : columns[key].facet && !view.facets.includes(columns[key].facet!))
     rows.push([person.id, filters.date, scope!, withheld.join(';'), ...fields.map(key => withheld.includes(key) ? '' : String(columns[key].value(view) ?? ''))])
   }
   return { scope: scope!, asOf: filters.date, fields, rows, records }

@@ -18,7 +18,7 @@ import { approveWorkPolicy } from './willow/work'
 export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail: string; now: Date }) {
  const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
  const member = await ensureMember(env, ownerEmail, 'Rowan Hale')
- const actor: Actor = { id: member.id, sessionId: 'demo-seed', email: ownerEmail, name: 'Rowan Hale', owner: true, permissions: new Set(PERMISSIONS), personId: null, reports: new Set(), today: date, followOwnChanges: false, scoped: [] }
+ const actor: Actor = { id: member.id, sessionId: 'demo-seed', email: ownerEmail, name: 'Rowan Hale', owner: true, permissions: new Set(PERMISSIONS), personId: null, reports: new Set(), today: date, followOwnChanges: false, otherPersonal: [], scoped: [] }
  const input = Input.of
  const stage = async (name: string, run: () => Promise<void>) => {
   if (await one(env, 'SELECT 1 FROM rer_demo WHERE name = ?', `willow:${name}`)) return

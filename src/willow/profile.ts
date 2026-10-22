@@ -2,6 +2,8 @@
 // context of a person is built here from the viewer's facets, selecting only
 // the values those facets allow. Reads of someone else's private contact
 // details or pay are audited.
+import { readsPersonalField } from './levels/other-personal'
+import type { SelfField } from './levels/personal'
 import { personCustomFields } from './custom-fields/read'
 import { personRecordTables } from './record-tables/rows'
 import type { RecordTable } from './record-tables/schema'
@@ -18,6 +20,7 @@ import { casesFor } from './lifecycle'
 import { PRIVATE_FIELDS, currentTerms, displayName, personNames, statusOf } from './people'
 
 export interface ViewOptions {
+  personalFields?: (field: SelfField) => boolean
   asOf?: string
   audit?: boolean
   /** Preview admission is the selected member's; reads/audits remain the real viewer's. */
@@ -86,10 +89,11 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
   const admittedPeriod = (await selectedPeriods(env, admitted.today)).get(personId)
   insist(statusOf(admittedPeriod, admitted.today) !== 'former' || seesFormer(admitted, personId) || admitted.personId === personId || facetsOf(admitted, personId).has('employment'), 'not_found', 404)
   const visible = options.facets ?? facetsOf(actor, personId)
+  const personalFields=PRIVATE_FIELDS.filter(field=>readsPersonalField(actor,personId,field) && (!options.personalFields || options.personalFields(field)))
   // Resolve independent facets together, after admission and before rendering.
   const [employment, privateValues, leave, cases, documents, customFields, recordTables] = await Promise.all([
     visible.has('employment') ? employmentView(env, periods, current, look, visible, date) : undefined,
-    visible.has('private') ? one(env, `SELECT ${PRIVATE_FIELDS.join(', ')} FROM wl_person_private WHERE person_id = ?`, personId) : undefined,
+    personalFields.length ? one(env, `SELECT ${personalFields.join(', ')} FROM wl_person_private WHERE person_id = ?`, personId) : undefined,
     visible.has('leave') ? leaveFor(env, actor, personId, visible.has('leave_reason'), options.asOf === undefined ? undefined : date) : undefined,
     visible.has('lifecycle') ? casesFor(env, personId, options.asOf === undefined ? undefined : { date, zone: zone! }) : undefined,
     visible.has('documents') ? documentsFor(env, actor, personId, options.categories ?? (category => readsCategory(actor, personId, category)), options.asOf === undefined ? undefined : { date, zone: zone! }) : undefined,
@@ -104,13 +108,13 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
     current: current ? { id: current.id, effectiveFrom: current.effective_from, scheduled: current.effective_from > actor.today, ...termsSummary(current, look),
       ...(visible.has('employment') ? { schedule: current.schedule_id ? { id: current.schedule_id, ...look.schedules.get(current.schedule_id) } : null } : {}) } : null, facets: [...visible],
     ...(employment ? { employeeNumber: person.employee_number, ...employment } : {}),
-    ...(visible.has('private') ? { private: Object.fromEntries(PRIVATE_FIELDS.map(field => [field, privateValues?.[field] ?? null])) } : {}),
+    ...(personalFields.length ? { private: Object.fromEntries(personalFields.map(field => [field, privateValues?.[field] ?? null])) } : {}),
     ...(visible.has('leave') ? { leave } : {}),
     ...(visible.has('lifecycle') ? { cases } : {}),
     ...(visible.has('documents') ? { documents } : {}),
   }
-  if (options.audit !== false && actor.personId !== personId && (visible.has('private') || visible.has('pay'))) {
-    await auditRead(env, actor.id, 'person.private.read', personId, { private: visible.has('private'), pay: visible.has('pay'), asOf: date })
+  if (options.audit !== false && actor.personId !== personId && (personalFields.length || visible.has('pay'))) {
+    await auditRead(env, actor.id, 'person.private.read', personId, { private: personalFields, pay: visible.has('pay'), asOf: date })
   }
   return view
 }

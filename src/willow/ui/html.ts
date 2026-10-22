@@ -37,7 +37,7 @@ const NAV: NavItem[][] = [[
   { href: '/app/eeo/person', label: 'EEO compliance', icon: 'shield', show: actor => actor.permissions.has('eeo.individual') || actor.scoped.some(grant => grant.permissions.has('eeo.individual')) },
   { href: '/app/eeo/runs', label: 'EEO-1 snapshot', icon: 'chart', show: actor => actor.permissions.has('eeo.individual') || (can(actor, 'eeo.read') && can(actor, 'reports.read')) },
   { href: '/app/eeo/mappings', label: 'EEO-1 mappings', icon: 'checklist', show: actor => can(actor, 'people.manage') || actor.permissions.has('eeo.individual') },
-  { href: '/app/self-changes', label: 'Personal changes', icon: 'checklist', show: actor => !!actor.personId || can(actor,'people.private') },
+  { href: '/app/self-changes', label: 'Personal changes', icon: 'checklist', show: actor => !!actor.personId || can(actor,'people.private') || actor.otherPersonal.some(grant=>Object.values(grant.fields).some(mode=>mode==='approval'||mode==='edit')) },
   { href: '/app/performance', label: 'Performance', icon: 'chart', show: () => true },
   { href: '/app/surveys', label: 'Surveys', icon: 'chart', show: () => true },
   { href: '/app/dates', label: 'Upcoming dates', icon: 'calendar', show: () => true },

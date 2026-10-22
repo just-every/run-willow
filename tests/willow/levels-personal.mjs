@@ -1,5 +1,6 @@
 // ROLE-001 personal-field slice, exercised through signed-in production HTTP doors.
 import assert from 'node:assert/strict'
+import { readZip } from './export-reader.mjs'
 export async function personalFieldProof(h,owner,s) {
  const api=(path,body,status)=>h.api(path,owner,body,status)
  const employee=(path,body,status)=>h.api(path,s.employee.cookie,body,status)
@@ -73,4 +74,131 @@ export async function personalFieldProof(h,owner,s) {
  assert.ok(audit.some(e=>e.action==='level.level'&&JSON.stringify(e).includes('phone')))
  assert.ok(!JSON.stringify(await h.api(`people/${s.employee.person}`,s.managera.cookie)).includes('elena.patel@example.com'))
  return {level:level.id,approvalRules}
+}
+
+// The other-person field matrix uses the same native projection and immutable HR queue.
+export async function otherPersonalProof(h,owner,s) {
+ const api=(path,body,status)=>h.api(path,owner,body,status)
+ const reader=(path,body,status)=>h.api(path,s.managerb.cookie,body,status)
+ const hr=(path,body,status)=>h.api(path,s.hr.cookie,body,status)
+ const fields=['preferredName','personal_email','phone','address','date_of_birth','emergency_contact']
+ const values={preferredName:'synthetic-willow-10001',personal_email:'synthetic-willow-10002@example.com',phone:'synthetic-willow-10003',address:'synthetic-willow-10004',date_of_birth:'1990-05-06',emergency_contact:'synthetic-willow-10005'}
+ const apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
+ const assign=levels=>apply({kind:'assignment',member:s.managerb.member,levels})
+ const read=()=>reader(`people/${s.employee.person}`)
+ const value=(record,field)=>field==='preferredName'?record.preferredName:record.private?.[field]
+ await api('person.update',{person:s.employee.person,revision:(await api(`people/${s.employee.person}`)).revision,private:true,...values})
+ await api('person.field',{person:s.employee.person,field:'preferredName',value:values.preferredName,revision:(await api(`people/${s.employee.person}`)).revision})
+ const location=await api('location.create',{name:'Personal field group',timezone:'UTC'})
+ const day=offset=>new Date(Date.now()+offset*86400000).toISOString().slice(0,10)
+ await api('mover.schedule',{period:s.employee.period,effectiveFrom:day(-2),locationId:location.id,reason:'Move into personal field scope'})
+ const rules=Object.fromEntries(fields.map(field=>[field,'none']))
+ const plan={kind:'level',name:'Scoped personal fields',permissions:[],otherFields:rules,scope:{kind:'group',dimensions:{location:[location.id]}}}
+ const level=await apply(plan)
+ await assign([level.id])
+ assert.equal((await read()).private,undefined,'No additional access is deny by default')
+ assert.deepEqual((await reader('me')).permissions,[])
+ for(const invalid of [{phone:'owner'},{payAmount:'view'},{phone:{}},[],null]) await api('level.preview',{...plan,level:level.id,otherFields:invalid},400)
+ const reports=await apply({kind:'level',name:'Personal field export reader',permissions:['reports.read']})
+ await assign([level.id,reports.id])
+ const report=await reader('report.save',{definition:{name:'Selected personal fields',columns:['name','phone','personal_email','payAmount'],asOf:'today'}})
+ for(const [index,field] of fields.entries()) {
+  const ownRules={...rules,[field]:'view'}
+  const review=await api('level.preview',{...plan,level:level.id,otherFields:ownRules})
+  assert.equal(review.impact[0].afterOther[0].fields[field],'view')
+  assert.deepEqual(review.impact[0].added,[],'Field reads imply no employer-wide permission')
+  await api('level.apply',{review:review.id})
+  await api('level.apply',{review:review.id},409)
+  const record=await read()
+  assert.equal(value(record,field),values[field])
+  assert.deepEqual(Object.keys(record.private??{}),field==='preferredName'?[]:[field],'Only the selected private field is projected')
+  assert.equal(record.pay,undefined)
+  assert.equal(record.employeeNumber,undefined)
+  const exportFields='name,phone,personalEmail,address,dateOfBirth,emergencyContact,payAmount'
+  for(const format of ['csv','xlsx','zip']) {
+   const response=await h.raw(`/app/exports/employees.${format}?scope=organization&person=${s.employee.person}&fields=${exportFields}${format==='zip'?'&history=employment,profileChanges':''}`,{cookie:s.managerb.cookie})
+   assert.equal(response.status,200)
+   const buffer=Buffer.from(await response.arrayBuffer())
+   const text=format==='csv'?buffer.toString():[...readZip(buffer).values()].map(b=>b.toString()).join('\n')
+   for(const hidden of fields.filter(f=>f!==field&&f!=='preferredName')) assert.ok(!text.includes(values[hidden]),`The ${format} export withholds ${hidden}`)
+   assert.ok(!text.includes('8123456')&&!text.includes('81234.56'),'The selected field never implies compensation')
+   if(field!=='preferredName') assert.ok(text.includes(values[field]),`The ${format} export includes only the granted personal value`)
+  }
+  const reportRow=(await reader(`custom-reports/${report.id}`)).result.rows.find(r=>r.personId===s.employee.person)
+  for(const key of ['phone','personal_email']) assert.equal(reportRow.withheld.includes(key),key!==field,'Saved reports distinguish unreadable fields from readable nulls')
+
+  const context=await reader(`context/${s.employee.person}`)
+  assert.deepEqual(context.record.private,record.private)
+  const preview=await api(`preview?member=${s.managerb.member}&person=${s.employee.person}`)
+  assert.deepEqual(preview.view.private,record.private)
+  assert.equal(preview.personalFields.find(f=>f.field===field).visible,true)
+  const page=await (await h.raw(`/app/people/${s.employee.person}`,{cookie:s.managerb.cookie})).text()
+  for(const hidden of fields.filter(f=>f!==field&&f!=='preferredName')) assert.ok(!page.includes(values[hidden]),`Field ${field} never exposes ${hidden}`)
+  assert.equal((await reader(`people/${s.hr.person}`)).private,undefined,'A field grant never widens its own scope')
+  const body={person:s.employee.person,field,value:field==='date_of_birth'?'1993-08-09':`synthetic-willow-${index+10}`,revision:record.revision}
+  await reader('person.field',body,403)
+  await reader('person.update',{person:s.employee.person,revision:record.revision,private:true,...values},403)
+  await reader('self.request',{kind:'personal',person:s.employee.person,field,value:field==='date_of_birth'?'1994-09-10':'Denied by view mode'},403)
+  await apply({...plan,level:level.id,otherFields:{...ownRules,[field]:'approval'}})
+  const proposed=field==='date_of_birth'?'1991-06-07':`synthetic-willow-${index+20}`+(field==='personal_email'?'@example.com':'')
+  const before=await read()
+  const request=await reader('self.request',{kind:'personal',person:s.employee.person,field,value:proposed})
+  const saved=await reader(`self-changes/${request.id}`)
+  assert.deepEqual(saved.before,{[field]:value(before,field)})
+  assert.deepEqual(saved.after,{[field]:proposed})
+  assert.equal(value(await read(),field),value(before,field),'A proposal changes no native value')
+  assert.ok((await hr('self-changes')).some(row=>row.id===request.id))
+  assert.ok((await reader('self-changes')).some(row=>row.id===request.id),'The current proposer can follow only their proposal')
+  await reader('self.decide',{change:request.id,decision:'approve',comment:'Self approve'},403)
+  await hr('self.decide',{change:request.id,decision:'approve',comment:'Another HR member reviewed the field'})
+  assert.equal(value(await read(),field),proposed)
+  values[field]=proposed
+  assert.ok((await h.api('self-exceptions',s.payroll.cookie)).some(row=>row.id===request.id),'The approved field feeds the existing metadata-only handoff')
+  await hr('self.decide',{change:request.id,decision:'approve',comment:'Replay'},409)
+  await apply({...plan,level:level.id,otherFields:{...ownRules,[field]:'edit'}})
+  const immediate=field==='date_of_birth'?'1992-07-08':`synthetic-willow-${index+30}`+(field==='personal_email'?'@example.com':'')
+  await reader('person.field',{person:s.employee.person,field,value:immediate,revision:(await read()).revision})
+  values[field]=immediate
+  assert.equal(value(await read(),field),immediate)
+  await reader('person.field',{person:s.hr.person,field,value:immediate,revision:(await api(`people/${s.hr.person}`)).revision},403)
+  await reader('person.field',{person:s.managerb.person,field,value:immediate,revision:(await reader(`people/${s.managerb.person}`)).revision},403)
+  await reader('person.field',{person:s.employee.person,field,value:immediate,revision:before.revision},409)
+ }
+ // A record version, changed mode, ended requester and scope transfer cannot authorize old pending bytes.
+ const phonePlan={...plan,level:level.id,otherFields:{phone:'approval'}}
+ await apply(phonePlan)
+ const propose=()=>reader('self.request',{kind:'personal',person:s.employee.person,field:'phone',value:'synthetic-willow-60'})
+ const stale=await propose()
+ await api('person.field',{person:s.employee.person,field:'phone',value:'synthetic-willow-61',revision:(await api(`people/${s.employee.person}`)).revision})
+ await hr('self.decide',{change:stale.id,decision:'approve',comment:'Stale source'},409)
+ await hr('self.decide',{change:stale.id,decision:'reject',comment:'Source changed'})
+ const pending=await propose()
+ await apply({...phonePlan,otherFields:{phone:'none'}})
+ await reader(`self-changes/${pending.id}`,undefined,404)
+ assert.ok(!(await reader('self-changes')).some(row=>row.id===pending.id),'Revocation removes proposal reads in the same session')
+ await hr('self.decide',{change:pending.id,decision:'approve',comment:'Revoked mode'},403)
+ await hr('self.decide',{change:pending.id,decision:'reject',comment:'Access revoked'})
+ await apply(phonePlan)
+ const ended=await propose()
+ await api('access.end',{person:s.managerb.person})
+ await hr('self.decide',{change:ended.id,decision:'approve',comment:'Requester access ended'},403)
+ await hr('self.decide',{change:ended.id,decision:'reject',comment:'No current requester authority'})
+ await api('access.give',{person:s.managerb.person})
+ s.managerb.cookie=await h.signIn('managerb@example.com')
+ await assign([level.id])
+ const transfer=await propose()
+ await api('mover.schedule',{period:s.employee.period,effectiveFrom:day(-1),locationId:(await api('location.create',{name:'Outside personal field group',timezone:'UTC'})).id,reason:'Leave personal field scope'})
+ assert.equal((await read()).private,undefined,'Dated scope membership is reevaluated on the next request')
+ await hr('self.decide',{change:transfer.id,decision:'approve',comment:'No current reach'},403)
+ await hr('self.decide',{change:transfer.id,decision:'reject',comment:'Scope ended'})
+ // Rights union never combine the fields of disjoint scopes and never narrow a direct grant.
+ const anywhere=await apply({kind:'level',name:'Other field everywhere',permissions:[],otherFields:{address:'view'}})
+ await assign([level.id,anywhere.id])
+ assert.deepEqual(Object.keys((await read()).private),['address'])
+ await api('member.permissions',{member:s.managerb.member,permissions:['people.private']})
+ await assign([level.id])
+ assert.deepEqual(Object.keys((await read()).private).sort(),fields.filter(f=>f!=='preferredName').sort())
+ await api('member.permissions',{member:s.managerb.member,permissions:[]})
+ assert.equal((await read()).private,undefined)
+ console.log('ROLE-001 personal fields about others: PASS — selective scoped reads, every mode, native edits, immutable HR routing, source/mode/scope fences, exact union and same-session revocation')
 }

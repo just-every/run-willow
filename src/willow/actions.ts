@@ -1,3 +1,4 @@
+import { editOtherPersonal } from './levels/other-personal'
 import { createPacket, withdrawPacket } from './preboarding'
 import { inviteApplicant, revokeApplicantInvitation, closeApplication } from './eeo-applicants'
 import { createHiringOpening, setHiringTeam, addHiringCandidate, moveHiringCandidate, scoreHiringCandidate, addHiringResume } from './hiring'
@@ -124,6 +125,7 @@ export const actions: Record<string, Handler> = {
   'member.permissions': (env, actor, input, request) => setPermissions(env, actor, input, request),
   'access.give': (env, actor, input, request) => giveAccess(env, actor, input, request),
   'access.end': (env, actor, input, request) => endAccess(env, actor, input, request),
+  'person.field': editOtherPersonal,
   'person.update': (env, actor, input) => updatePerson(env, actor, input),
   'period.payroll': (env, actor, input) => setPayrollId(env, actor, input),
   'terms.cancel': (env, actor, input) => cancelTerms(env, actor, input),

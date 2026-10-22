@@ -76,3 +76,89 @@ export async function personalBrowserProof(browser,h,owner,staff) {
   }
  } finally {for(const context of contexts) await context.close()}
 }
+
+// Selective access to somebody else's record, through the actual native forms.
+export async function otherPersonalBrowserProof(browser,h,owner,staff) {
+ const contexts=[]
+ const pageFor=async cookie=>{
+  const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context)
+  await context.addCookies(cookie.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})))
+  return context.newPage()
+ }
+ try {
+  const admin=await pageFor(owner),reader=await pageFor(staff.managerb.cookie),hr=await pageFor(staff.hr.cookie)
+  const capture=async(page,name,width)=>{
+   await page.evaluate(()=>document.fonts.ready)
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name} fits ${width}`)
+   await page.screenshot({path:`${evidenceDirectory}/ROLE-001-other-personal-${name}-${width}.png`,fullPage:true})
+  }
+  const submit=async(page,form,name)=>{
+   await form.getByRole('button',{name,exact:true}).click()
+   await page.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'))
+   assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())
+  }
+  for(const width of [1440,390]) {
+   for(const page of [admin,reader,hr]) await page.setViewportSize({width,height:1000})
+   const name=`Personal fields about others ${width}`
+   await admin.goto(h.origin+'/app/access')
+   const create=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:/^Create a level$/})}).first()
+   await create.locator('summary').click()
+   await create.getByLabel('Level name',{exact:true}).fill(name)
+   await create.getByLabel('About others: Phone',{exact:true}).selectOption('approval')
+   await create.getByLabel('About others: Home address',{exact:true}).selectOption('edit')
+   await capture(admin,'configure',width)
+   await submit(admin,create,'Review level')
+   await capture(admin,'definition-review',width)
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   const assignment=admin.locator('form[action="/app/do/level.preview"]').filter({has:admin.locator('input[name="kind"][value="assignment"]')})
+   await assignment.getByLabel('Assign levels to',{exact:true}).selectOption(staff.managerb.member)
+   await assignment.getByLabel(name,{exact:true}).check()
+   await submit(admin,assignment,'Review assignment')
+   await capture(admin,'assignment-review',width)
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   await admin.getByLabel('Member',{exact:true}).selectOption(staff.managerb.member)
+   await admin.getByLabel('About this person',{exact:true}).selectOption(staff.employee.person)
+   await admin.getByRole('button',{name:'Preview',exact:true}).click()
+   await capture(admin,'visibility-preview',width)
+   await reader.goto(h.origin+`/app/people/${staff.employee.person}`)
+   assert.equal(await reader.getByLabel('Date of birth',{exact:true}).count(),0)
+   const address=reader.locator('form[action="/app/do/person.field"]').filter({has:reader.locator('input[name="field"][value="address"]')})
+   await address.locator('..').locator('summary').click()
+   await address.getByLabel('Home address',{exact:true}).fill(`synthetic-willow-${width}-address`)
+   await capture(reader,'immediate-form',width)
+   await submit(reader,address,'Save home address')
+   assert.equal((await h.api(`people/${staff.employee.person}`,staff.managerb.cookie)).private.address,`synthetic-willow-${width}-address`)
+   await capture(reader,'immediate-saved',width)
+   const request=reader.locator('form[action="/app/do/self.request"]').filter({has:reader.locator('input[name="field"][value="phone"]')})
+   await request.locator('..').locator('summary').click()
+   await request.getByLabel('Phone',{exact:true}).fill(`synthetic-willow-${width}-phone`)
+   await capture(reader,'request-form',width)
+   await submit(reader,request,'Request phone change')
+   const id=new URL(reader.url()).pathname.split('/').pop()
+   assert.equal((await h.api(`self-changes/${id}`,staff.managerb.cookie)).status,'pending')
+   await capture(reader,'pending',width)
+   await hr.goto(h.origin+`/app/self-changes/${id}`)
+   const decision=hr.locator('form[action="/app/do/self.decide"]')
+   await decision.getByLabel('Decision',{exact:true}).selectOption('approve')
+   await decision.getByLabel('Comment',{exact:true}).fill('Reviewed permitted personal field')
+   await capture(hr,'hr-review',width)
+   await submit(hr,decision,'Record decision')
+   await capture(hr,'approved',width)
+   await reader.reload()
+   await capture(reader,'approved-history',width)
+   await admin.goto(h.origin+'/app/access')
+   const edit=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:new RegExp(`^${name} ·`)})}).first()
+   await edit.locator('summary').click()
+   await edit.getByLabel('About others: Phone',{exact:true}).selectOption('none')
+   await edit.getByLabel('About others: Home address',{exact:true}).selectOption('none')
+   await submit(admin,edit,'Review level')
+   await capture(admin,'revoke-review',width)
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   await reader.goto(h.origin+`/app/people/${staff.employee.person}`)
+   assert.equal(await reader.getByRole('heading',{name:'Private details',exact:true}).count(),0)
+   assert.equal(await reader.getByRole('heading',{name:'Change permitted personal fields',exact:true}).count(),0)
+   await capture(reader,'revoked',width)
+   await h.api(`self-changes/${id}`,staff.managerb.cookie,undefined,404)
+  }
+ } finally {for(const context of contexts) await context.close()}
+}

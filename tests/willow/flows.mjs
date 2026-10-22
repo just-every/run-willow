@@ -498,7 +498,25 @@ try {
     }
     const restore = await h.api('level.preview', cookie.owner, { kind: 'level', level: named.pat.id, name: 'Exact pat access', permissions: named.pat.permissions })
     await h.api('level.apply', cookie.owner, { review: restore.id })
-    console.log(`ROLE-001 crawled ${urls.length} doors with exact named levels and same-session revocation`)
+    // A fine personal-field grant contributes only its field, including exports, previews and context.
+    const fine=await h.api('level.preview',cookie.owner,{kind:'level',name:'One personal field',permissions:[],otherFields:{phone:'view'}})
+    const fineLevel=await h.api('level.apply',cookie.owner,{review:fine.id})
+    const assigned=await h.api('level.preview',cookie.owner,{kind:'assignment',member:ids.miaMember,levels:[named.mia.id,fineLevel.id]})
+    await h.api('level.apply',cookie.owner,{review:assigned.id})
+    let sawPhone=false
+    for(const url of urls) {
+      const response=await h.raw(url,{cookie:cookie.mia}),body=await response.text()
+      for(const key of forbidden.mia.filter(key=>key!=='phone')) assert.ok(!body.includes(SECRET[key]),`Selective personal right leaked ${key} through ${url}`)
+      if(body.includes(SECRET.phone)) sawPhone=true
+    }
+    assert.ok(sawPhone,'Selective phone read is reachable through the public doors')
+    const fineRevoke=await h.api('level.preview',cookie.owner,{kind:'level',level:fineLevel.id,name:'One personal field',permissions:[],otherFields:{phone:'none'}})
+    await h.api('level.apply',cookie.owner,{review:fineRevoke.id})
+    for(const url of urls) {
+      const response=await h.raw(url,{cookie:cookie.mia}),body=await response.text()
+      for(const key of forbidden.mia) assert.ok(!body.includes(SECRET[key]),`Revoked personal field leaked ${key} through ${url}`)
+    }
+    console.log(`ROLE-001 crawled ${urls.length} doors with exact named levels, selective personal fields and same-session revocation`)
     // Reads of someone else's private details are audited.
     const audit = await h.api('audit', cookie.owner)
     assert.ok(audit.some(event => event.action === 'person.private.read' && event.subject === ids.sam && event.actor === ids.hanaMember))
