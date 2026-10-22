@@ -238,7 +238,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "5edee4024813f55c4a529770903c848c52aef5bf36af046e0100e17ba0887f94",
+      "sha256": "3d5691d838353eff99ebbcab7d4762a1d55ade47e35ea3b217fd08e07538d1c7",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -262,7 +262,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "8bf0f27d5fd2110d9143f3ad167465ecb249dd02fdb0771c035e468e92245956",
+      "sha256": "6aa05bacdd1e32e7fb2300d85fece6e447e58da64f1b270cf123d31e5ae22858",
       "executable": false
     },
     "DEMO.md": {
@@ -3214,7 +3214,7 @@
       "executable": false
     },
     "src/willow/members.ts": {
-      "sha256": "5d3a4faa645eceb6287c48271eaa2cf0a94347e0fdca7df9da1261bda9218b5c",
+      "sha256": "821ec8e918a84848196cab773111a9cde97e8b46ab57454279943c956b6c9526",
       "executable": false
     },
     "src/willow/model-drafts.ts": {
@@ -3650,7 +3650,7 @@
       "executable": false
     },
     "src/willow/ui/settings.ts": {
-      "sha256": "fac27567148550976abde2ef3ea049f190b9fd592b1a3c4dba5772f1a0b7bda4",
+      "sha256": "0fc2b2f79d30e474c355068abf8fd13749123ce03ff103f0690b9694edae6ee0",
       "executable": false
     },
     "src/willow/ui/survey-plan.ts": {
@@ -3874,11 +3874,11 @@
       "executable": false
     },
     "tests/willow/levels-personal-browser.mjs": {
-      "sha256": "5ad43ffe83311321129d545d83c0e248d0d3ae3c547605f3df25029714d036c1",
+      "sha256": "06bb3c88b37630e6d686b4a45e727b4661ad71fb8a321e7bc4072d5b6d8daece",
       "executable": false
     },
     "tests/willow/levels-personal.mjs": {
-      "sha256": "a6bacb3ad73cc259fb4680cfd2bbf287b51a8f9e7ac5d5dc88794eb6f3ad7b2b",
+      "sha256": "0af335fa53d63f16f9c042270fbc78c39766577de37601f010de07a9dcea3668",
       "executable": false
     },
     "tests/willow/levels-scope-browser.mjs": {

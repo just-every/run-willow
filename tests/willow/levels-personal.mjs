@@ -446,6 +446,10 @@ export async function selectedReportProof(h,owner,fx) {
  assert.deepEqual(review.impact[0].afterReports[0].reports,[report.id])
  await api('level.apply',{review:review.id})
  assert.deepEqual((await read('custom-reports')).map(r=>r.id),[report.id])
+ const preview=await api(`preview?member=${s.managerb.member}&person=${s.employee.person}`)
+ assert.deepEqual(preview.reportSelections,[{id:report.id,name:definition.name,withheldFromYou:false,reachesThisPerson:true}])
+ const restrictedPreview=await h.api(`preview?member=${s.managerb.member}&person=${s.employee.person}`,s.hr.cookie)
+ assert.deepEqual(restrictedPreview.reportSelections,[{id:report.id,name:null,withheldFromYou:true,reachesThisPerson:true}])
  const result=(await read(`custom-reports/${report.id}`)).result
  assert.deepEqual(result.rows.map(r=>r.personId),[s.employee.person])
  assert.equal(result.scope,'selected report scope')
@@ -481,6 +485,7 @@ export async function selectedReportProof(h,owner,fx) {
  // Directory movement and field revocation are evaluated at read time, including old report dates.
  await api('terms.cancel',{terms:mover.terms,reason:'Leave selected report scope'})
  assert.deepEqual((await read(`custom-reports/${report.id}`)).result.rows.map(row=>row.personId),[former.person])
+ assert.equal((await api(`preview?member=${s.managerb.member}&person=${s.employee.person}`)).reportSelections[0].reachesThisPerson,false,'The visibility preview uses the current union reach too')
  const everywhere=await apply({kind:'level',name:'One saved report everywhere',permissions:[],reports:[report.id]})
  await assignment([level.id,everywhere.id])
  assert.ok((await read(`custom-reports/${report.id}`)).result.rows.length>1,'Independent selected-report sources form a union')
