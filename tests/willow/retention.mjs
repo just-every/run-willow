@@ -42,6 +42,10 @@ try {
   const text = value => ({ filename: 'a.txt', base64: Buffer.from(value).toString('base64') })
   const offerVersion = (await api('document.add', { person: q, category: offers, title: 'Offer', file: text('synthetic-willow-1') })).version
   const formVersion = (await api('document.add', { person: q, category: forms, title: 'Withholding form', file: text('synthetic-willow-2') })).version
+  // Pending document uploads already use native category custody and must not escape a held erasure.
+  const pendingLevel=await api('level.apply',{review:(await api('level.preview',{kind:'level',name:'Pending payroll document',permissions:[],documentCategories:{self:{[forms]:'approval'},others:{}}})).id})
+  await api('level.apply',{review:(await api('level.preview',{kind:'assignment',member:quinnMemberId,levels:[pendingLevel.id]})).id})
+  const pendingDocument=await h.api('document.propose',quinnCookie,{person:q,category:forms,title:'Pending form',file:text('synthetic-willow-14')})
   const badge = await as('hr', 'customField.define', { definition: { key: 'badge', classification: 'hr', type: 'text', validation: { maxLength: 40 }, effectiveFrom: day(-60), label: 'Badge', required: false, employeeRead: false, managerRead: false, retired: false } })
   await as('hr', 'customField.write', { person: q, effectiveFrom: day(-1), values: { badge: 'synthetic-willow-3' } })
   await as('hr', 'recordRow.write', { person: q, table: 'certifications', effectiveFrom: day(-1), values: { name: 'Forklift', issuer: 'Board', number: 'FL-9', issued_on: day(-300), expires_on: day(40) } })
@@ -58,11 +62,11 @@ try {
   // Before any decision: every blocker is named and nothing can be confirmed.
   const first = await preview('owner', q)
   const kinds = new Set(first.blockers.map(b => b.kind))
-  for (const kind of ['open_case', 'retention_not_adopted', 'state_unconfirmed', 'unmapped_class']) assert.ok(kinds.has(kind), `${kind} blocks`)
+  for (const kind of ['open_case', 'retention_not_adopted', 'state_unconfirmed', 'unmapped_class', 'pending_self_change']) assert.ok(kinds.has(kind), `${kind} blocks`)
   assert.equal(first.confirmable, false)
   assert.ok(first.examined > 140, 'the inventory classified every table')
   const byId = Object.fromEntries(first.items.map(item => [item.id, item]))
-  for (const id of ['people', 'private', 'periods', 'terms', 'leave_accounts', 'eeo', 'members', 'sessions', 'audit', 'cases', `custom_field:${badge.id}`, `documents:${offers}`, `documents:${forms}`]) assert.ok(byId[id]?.rows > 0, `${id} is classified`)
+  for (const id of ['people', 'private', 'periods', 'terms', 'leave_accounts', 'eeo', 'members', 'sessions', 'audit', 'cases', `custom_field:${badge.id}`, `documents:${offers}`, `documents:${forms}`, 'document_proposals']) assert.ok(byId[id]?.rows > 0, `${id} is classified`)
   assert.equal(byId.eeo.class, 'eeo')
   assert.equal(byId.sessions.disposition, 'erased')
   for (const who of ['hr', 'managera', 'employee']) assert.equal((await preview(who, q, 403)).error, 'owner_required')
@@ -79,6 +83,9 @@ try {
   assert.equal((await api('erasure.confirm', { person: q, digest: first.digest }, 409)).error, 'preview_stale')
   assert.equal((await api('erasure.confirm', { person: q, digest: (await preview('owner', q)).digest }, 409)).error, 'erasure_blocked')
   assert.ok((await as('hr', 'work')).items.every(item => item.kind !== 'erasure-request') && (await get('owner', 'work')).items.some(item => item.kind === 'erasure-request'), 'the open request is the owner\'s work')
+
+  // The pending upload is explicitly rejected before erasure; its unpublished bytes remain category custody.
+  await as('hr','self.decide',{change:pendingDocument.id,decision:'reject',comment:'Do not publish a document while this erasure is being reviewed'})
 
   // The owner clears each blocker through the owner-only doors.
   for (const open of (await api(`people/${q}`)).cases.filter(item => item.status === 'open')) {
@@ -105,6 +112,7 @@ try {
   assert.equal(clean.confirmable, true)
   const item = Object.fromEntries(clean.items.map(row => [row.id, row]))
   assert.equal(item[`documents:${forms}`].disposition, 'held')
+  assert.equal(item[`documents:${forms}`].blobs,2,'Both the published and rejected pending file remain in the held category census')
   assert.equal(item[`documents:${forms}`].hold, hold.id)
   assert.equal(item[`documents:${offers}`].disposition, 'retained')
   assert.equal(item[`documents:${offers}`].expiry, years(today, 1))
@@ -220,7 +228,8 @@ try {
   assert.equal(kept.eeo.values, null, 'EEO values in custody need eeo.individual even for the owner')
   assert.ok(kept.people.values.legal_name, 'the owner reads the retained identity')
   await as('managera', 'retained', undefined, 403)
-  for (const version of [offerVersion, formVersion]) for (const who of ['managera', 'employee']) assert.equal((await h.raw(`/app/files/document/${version}`, { cookie: s[who].cookie })).status, 404, 'documents are no longer served')
+  for (const version of [offerVersion, formVersion, pendingDocument.version]) for (const who of ['managera', 'employee']) assert.equal((await h.raw(`/app/files/document/${version}`, { cookie: s[who].cookie })).status, 404, 'documents are no longer served')
+  assert.equal((await h.raw(`/app/files/document/${pendingDocument.version}`,{cookie:owner})).status,404,'The owner cannot reopen the erased proposal through the original file door')
   assert.equal(afterCounts.blobs, sourceBefore.blobs, 'retained and held bytes stay in custody')
 
 

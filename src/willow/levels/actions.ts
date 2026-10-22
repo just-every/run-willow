@@ -76,7 +76,7 @@ async function prepareLevelReview(env: Bindings, actor: Actor, input: Input) {
   const afterFollow=ids.some(id=>define(id).followOwnChanges)
   const otherRights=async(stored: boolean, selected: string[])=>Promise.all(selected.map(id=>stored ? data.levels.find(l=>l.id===id)! : define(id)).filter(l=>Object.values(l.otherFields).some(mode=>mode!=='none')).map(async l=>({name:l.name,fields:l.otherFields,scope:l.scope,reach:l.scope.kind==='everyone' ? 'everyone except themselves' : (await scopeMembers(env,actor.today,l.scope,member.person_id)).size})))
   const beforeOther=await otherRights(true,beforeLevels), afterOther=await otherRights(false,ids)
-  const docs=(selected:string[],stored=false)=>selected.map(id=>stored?data.levels.find(l=>l.id===id)!:define(id)).filter(l=>Object.values(l.documentCategories.self).includes('view')||Object.values(l.documentCategories.others).includes('view')).map(l=>({name:l.name,scope:l.scope,rules:l.documentCategories}))
+  const docs=(selected:string[],stored=false)=>selected.map(id=>stored?data.levels.find(l=>l.id===id)!:define(id)).filter(l=>Object.values(l.documentCategories.self).some(mode=>mode!=='none')||Object.values(l.documentCategories.others).some(mode=>mode!=='none')).map(l=>({name:l.name,scope:l.scope,rules:l.documentCategories}))
   const beforeDocuments=docs(beforeLevels,true),afterDocuments=docs(ids)
   impact.push({beforeDocuments,afterDocuments,beforeOther,afterOther,beforeFollow,afterFollow,beforeScoped,afterScoped,beforeLevels,afterLevels:ids,levelVersions:Object.fromEntries([...new Set([...beforeLevels,...ids])].map(id=>[id,data.levels.find(l=>l.id===id)!.version])),beforeSelf,afterSelf,changedFields:SELF_FIELDS.filter(field=>beforeSelf[field]!==afterSelf[field]),member:member.id,name:member.name,before,after,added:after.filter(p=>!before.includes(p)),removed:before.filter(p=>!after.includes(p))})
  }
@@ -141,6 +141,6 @@ async function applyReviewedLevel(env: Bindings, actor: Actor, input: Input, req
  }
  statements.push(stmt(env,'UPDATE wl_level_reviews SET consumed=1 WHERE id=?',review.id))
  const id=plan.kind==='level'?plan.level:plan.kind==='assignment'?plan.member:plan.kind==='revert'?plan.batch:review.id
- await commit(env,statements,{actor:actor.id,action:`level.${plan.kind}`,subject:id,detail:{plan,impact:review.impact,requestedBy:review.actor}})
+ await commit(env,statements,{actor:actor.id,action:`level.${plan.kind}`,subject:id,detail:{plan,impact:review.impact.map((item:Record<string,unknown>)=>Object.fromEntries(Object.entries(item).filter(([key])=>key!=='name'))),requestedBy:review.actor}})
  return {id}
 }

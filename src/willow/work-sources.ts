@@ -1,4 +1,4 @@
-import { readsSelfChange } from './self-service/view'
+import { readsSelfChange, reviewsChange, SELF_CHANGE_SELECT } from './self-service/view'
 import { performanceWork } from './performance/work'
 import { surveyWork } from './surveys/work'
 import { latestAnnouncements } from './company/store'
@@ -40,8 +40,8 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  const deadline = (instant: number) => addDays(today(zone, instant), defaultDays)
  const hr = (a: Actor) => can(a,'people.manage'), payroll = (a: Actor) => can(a,'payroll.handoff') && can(a,'pay.read')
  const add = (kind: string, row: Row, title: string, path: string, due: string, visible: WorkSource['visible'], responsible = visible, preferred?: string | null, progress = 'Awaiting action') => result.push({ key: `${kind}:${row.id}`, kind, title, path, due, visible, responsible, preferred, progress, personId: row.person_id??null, next: title })
- for (const r of await all(env,"SELECT c.*,d.outcome FROM wl_self_changes c LEFT JOIN wl_self_decisions d ON d.change_id=c.id WHERE d.change_id IS NULL")) add('self-change',r,'Review private profile change',`/app/self-changes/${r.id}`,r.due_date,a=>readsSelfChange(a,r),a=>reviewsSelfChanges(a,r.person_id)&&a.id!==r.requested_by&&a.personId!==r.person_id)
- for (const r of await all(env,"SELECT c.* FROM wl_self_changes c JOIN wl_self_decisions d ON d.change_id=c.id WHERE d.outcome='approved' AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation r WHERE r.change_id=c.id)")) add('self-exception',r,'Reconcile approved profile revision','/app/self-changes',r.due_date,a=>a.personId===r.person_id||handlesSelfExceptions(a,r.person_id),a=>handlesSelfExceptions(a,r.person_id),null,'Approved revision awaits a recorded downstream handoff; no provider confirmation')
+ for (const r of await all(env,`${SELF_CHANGE_SELECT} WHERE d.change_id IS NULL`)) add('self-change',r,'Review private profile change',`/app/self-changes/${r.id}`,r.due_date,a=>readsSelfChange(a,r),a=>reviewsChange(a,r)&&a.id!==r.requested_by&&a.personId!==r.person_id)
+ for (const r of await all(env,`${SELF_CHANGE_SELECT} WHERE d.outcome='approved' AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation reconciled WHERE reconciled.change_id=c.id)`)) add('self-exception',r,'Reconcile approved profile revision','/app/self-changes',r.due_date,a=>r.kind==='document'?readsSelfChange(a,r):a.personId===r.person_id||handlesSelfExceptions(a,r.person_id),a=>r.kind==='document'?reviewsChange(a,r):handlesSelfExceptions(a,r.person_id),null,'Approved revision awaits a recorded downstream handoff; no provider confirmation')
  // SELF-002 read acknowledgments are owned work; completion remains the target member's.
  const companyPublications=(await latestAnnouncements(env)).filter(p=>!p.retired&&p.ack_required&&p.starts_on<=today(zone)&&(!p.ends_on||p.ends_on>=today(zone)))
  if(companyPublications.length){

@@ -1,5 +1,5 @@
 import { bulkBrowserProof, delegatedBrowserProof } from './levels-bulk-browser.mjs'
-import { personalBrowserProof, otherPersonalBrowserProof, documentCategoryBrowserProof } from './levels-personal-browser.mjs'
+import { personalBrowserProof, otherPersonalBrowserProof, documentCategoryBrowserProof, documentWriteBrowserProof } from './levels-personal-browser.mjs'
 import { scopeBrowserProof } from './levels-scope-browser.mjs'
 import assert from 'node:assert/strict'
 import { pathToFileURL } from 'node:url'
@@ -72,7 +72,7 @@ export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,docume
    await scopeBrowserProof(browser,h,owner,scoped)
    await otherPersonalBrowserProof(browser,h,owner,staff)
    if(delegated) await delegatedBrowserProof(browser,h,owner,staff,delegated)
-   if(documentRights) await documentCategoryBrowserProof(browser,h,owner,staff,documentRights)
+   if(documentRights) {await documentCategoryBrowserProof(browser,h,owner,staff,documentRights);await documentWriteBrowserProof(browser,h,owner,staff,documentRights)}
   } finally {await context.close()}
  } finally {await browser.close()}
 }

@@ -1,3 +1,4 @@
+import { proposeDocument } from './document-write'
 import { editOtherPersonal } from './levels/other-personal'
 import { createPacket, withdrawPacket } from './preboarding'
 import { inviteApplicant, revokeApplicantInvitation, closeApplication } from './eeo-applicants'
@@ -140,6 +141,7 @@ export const actions: Record<string, Handler> = {
   'leaver.start': (env, actor, input) => startLeaver(env, actor, input),
   'task.complete': (env, actor, input, request) => completeTask(env, actor, input, request),
   'case.complete': (env, actor, input) => completeCase(env, actor, input),
+  'document.propose': proposeDocument,
   'document.add': (env, actor, input) => addDocument(env, actor, input),
   'document.acknowledge': (env, actor, input) => acknowledge(env, actor, input),
   'policy.write': (env, actor, input) => createPolicy(env, actor, input),

@@ -1,11 +1,12 @@
 // ROLE-001: additive category reads, independently about self and others.
 import type { Bindings } from '../../auth.server'
-import type { Actor } from '../actor'
+import { can, type Actor } from '../actor'
 import { all, insist } from '../core'
 import type { Input } from '../input'
 import { EVERYONE, levelScopes, scopeMembers, type Scope } from './scope'
 
-export type CategoryMode='none'|'view'
+export type CategoryMode='none'|'view'|'approval'|'edit'
+export const CATEGORY_RANK:Record<CategoryMode,number>={none:0,view:1,approval:2,edit:3}
 export interface DocumentRules {self:Record<string,CategoryMode>;others:Record<string,CategoryMode>}
 export interface DocumentGrant {level:string;scope:Scope;rules:DocumentRules;people:Set<string>|null}
 export const emptyDocumentRules=():DocumentRules=>({self:{},others:{}})
@@ -18,7 +19,7 @@ export function readDocumentRules(input: Input,categories:{id:string}[]):Documen
  const rules=raw as Partial<DocumentRules>
  for(const relation of ['self','others'] as const) {
   const value=rules[relation]??{}
-  insist(value&&typeof value==='object'&&!Array.isArray(value)&&Object.entries(value).every(([id,mode])=>categories.some(category=>category.id===id)&&['none','view'].includes(mode)),'invalid_document_rights')
+  insist(value&&typeof value==='object'&&!Array.isArray(value)&&Object.entries(value).every(([id,mode])=>categories.some(category=>category.id===id)&&['none','view','approval','edit'].includes(mode)),'invalid_document_rights')
  }
  return {self:rules.self??{},others:rules.others??{}}
 }
@@ -32,5 +33,10 @@ export async function documentGrants(env: Bindings,member:string,person:string|n
   return {level,scope,rules,people:scope.kind==='everyone'?null:await scopeMembers(env,date,scope,person)}
  }))
 }
-export const documentCategoryGrant=(actor:Actor,person:string,category:string)=>actor.documentCategories.some(grant=>actor.personId===person ? grant.rules.self[category]==='view' : grant.rules.others[category]==='view'&&(!grant.people||grant.people.has(person)))
-export const anyDocumentCategoryGrant=(actor:Actor,person:string)=>actor.documentCategories.some(grant=>actor.personId===person ? Object.values(grant.rules.self).includes('view') : Object.values(grant.rules.others).includes('view')&&(!grant.people||grant.people.has(person)))
+export const documentCategoryGrant=(actor:Actor,person:string,category:string)=>actor.documentCategories.some(grant=>actor.personId===person ? CATEGORY_RANK[grant.rules.self[category]??'none']>0 : CATEGORY_RANK[grant.rules.others[category]??'none']>0&&(!grant.people||grant.people.has(person)))
+export const anyDocumentCategoryGrant=(actor:Actor,person:string)=>actor.documentCategories.some(grant=>actor.personId===person ? Object.values(grant.rules.self).some(mode=>CATEGORY_RANK[mode]>0) : Object.values(grant.rules.others).some(mode=>CATEGORY_RANK[mode]>0)&&(!grant.people||grant.people.has(person)))
+export function documentMode(actor:Actor,person:string,category:string):CategoryMode {
+ if(can(actor,'people.manage')) return 'edit'
+ const modes=actor.documentCategories.filter(grant=>actor.personId===person || !grant.people || grant.people.has(person)).map(grant=>(actor.personId===person?grant.rules.self:grant.rules.others)[category]??'none')
+ return modes.reduce<CategoryMode>((best,mode)=>CATEGORY_RANK[mode]>CATEGORY_RANK[best]?mode:best,'none')
+}

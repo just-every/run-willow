@@ -1,45 +1,29 @@
+import { publishedDocumentVersion } from './document-publication'
+import { readsDocumentChange, writeDocument } from './document-write'
 // Flow 5: private documents with category access, immutable revisions and
 // receipt acknowledgements. An acknowledgement records that the person
 // received a version; it is not a legal signature. Every download is audited.
 import type { Bindings } from '../auth.server'
-import { requirePermission, type Actor } from './actor'
+import type { Actor } from './actor'
 import { readsCategory, sees } from './access'
 import { all, auditRead, commit, insist, newId, now, one, stmt } from './core'
-import { serve, store } from './files'
+import { serve } from './files'
 import { today } from './dates'
 import type { Input } from './input'
 
 export const ACK_STATEMENT = 'I received this document. This is a receipt acknowledgement, not a signature.'
-const FILE_BYTES = 10_000_000
 
-export async function addDocument(env: Bindings, actor: Actor, input: Input) {
-  requirePermission(actor, 'people.manage')
-  const existing = input.text('document', { optional: true, max: 100 })
-  const document = existing ? await one(env, 'SELECT * FROM wl_documents WHERE id = ?', existing) : null
-  if (existing) insist(document, 'document_not_found', 404)
-  const personId = document?.person_id ?? input.text('person', { max: 100 })
-  const categoryId = document?.category_id ?? input.text('category', { max: 100 })
-  insist(await one(env, 'SELECT 1 FROM wl_people WHERE id = ?', personId), 'person_not_found', 404)
-  insist(await one(env, 'SELECT 1 FROM wl_doc_categories WHERE id = ?', categoryId), 'category_not_found', 404)
-  const file = (await input.file('file', { maxBytes: FILE_BYTES }))!
-  const stored = await store(env, file)
-  const id = document?.id ?? newId(), versionId = newId()
-  const number = ((await one<{ n: number }>(env, 'SELECT MAX(number) AS n FROM wl_document_versions WHERE document_id = ?', id))?.n ?? 0) + 1
-  await commit(env, [
-    ...(document ? [stmt(env, 'UPDATE wl_documents SET revision = ? WHERE id = ?', newId(), id)] : [stmt(env, 'INSERT INTO wl_documents (id, person_id, category_id, title, revision, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', id, personId, categoryId, input.text('title', { max: 160 }), newId(), actor.id, now())]),
-    stmt(env, 'INSERT INTO wl_document_versions (id, document_id, number, filename, media_type, size, sha256, uploaded_by, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', versionId, id, number, stored.filename, stored.mediaType, stored.size, stored.sha256, actor.id, now()),
-  ], { actor: actor.id, action: document ? 'document.revise' : 'document.add', subject: id, detail: { version: number, sha256: stored.sha256 } })
-  return { id, version: versionId, number, sha256: stored.sha256, mediaType: stored.mediaType }
-}
+export const addDocument=(env:Bindings,actor:Actor,input:Input)=>writeDocument(env,actor,input,false)
 
 async function versionRow(env: Bindings, versionId: string) {
-  return await one(env, 'SELECT v.*, d.person_id, d.category_id, d.title, c.subject_reads, c.manager_reads, c.acknowledgement, c.name AS category FROM wl_document_versions v JOIN wl_documents d ON d.id = v.document_id JOIN wl_doc_categories c ON c.id = d.category_id WHERE v.id = ?', versionId)
+  return await one(env, 'SELECT v.*, d.person_id, d.category_id, d.title, c.subject_reads, c.manager_reads, c.acknowledgement, c.name AS category, p.change_id, change.requested_by, change.after_json, decision.outcome FROM wl_document_versions v JOIN wl_documents d ON d.id = v.document_id JOIN wl_doc_categories c ON c.id = d.category_id LEFT JOIN wl_document_proposals p ON p.version_id=v.id LEFT JOIN wl_self_changes change ON change.id=p.change_id LEFT JOIN wl_self_decisions decision ON decision.change_id=p.change_id WHERE v.id = ?', versionId)
 }
 
 /** Downloads a version the member may read; anything else is not found. */
 export async function documentFile(env: Bindings, actor: Actor, versionId: string, download: boolean) {
   const row = await versionRow(env, versionId)
   insist(row && sees(actor, row.person_id, 'documents') && readsCategory(actor, row.person_id, row), 'not_found', 404)
+  if(row.change_id && row.outcome!=='approved') insist(readsDocumentChange(actor,{...row,kind:'document',doc_category_id:row.category_id,doc_subject_reads:row.subject_reads,doc_manager_reads:row.manager_reads}),'not_found',404)
   await auditRead(env, actor.id, 'document.download', versionId, { document: row.document_id, person: row.person_id })
   return await serve(env, { filename: row.filename, mediaType: row.media_type, size: row.size, sha256: row.sha256 }, { download })
 }
@@ -48,8 +32,9 @@ export async function documentFile(env: Bindings, actor: Actor, versionId: strin
 export async function acknowledge(env: Bindings, actor: Actor, input: Input) {
   const row = await versionRow(env, input.text('version', { max: 100 }))
   insist(row && actor.personId === row.person_id && readsCategory(actor,row.person_id,row), 'not_found', 404)
+  insist(!row.change_id || row.outcome==='approved','not_found',404)
   insist(row.acknowledgement, 'acknowledgement_not_requested', 409)
-  const latest = await one<{ id: string }>(env, 'SELECT id FROM wl_document_versions WHERE document_id = ? ORDER BY number DESC LIMIT 1', row.document_id)
+  const latest = await one<{ id: string }>(env, `SELECT id FROM wl_document_versions v WHERE document_id = ? AND ${publishedDocumentVersion()} ORDER BY number DESC LIMIT 1`, row.document_id)
   insist(latest?.id === row.id, 'not_latest_version', 409)
   insist(!await one(env, 'SELECT 1 FROM wl_acknowledgements WHERE version_id = ? AND person_id = ?', row.id, row.person_id), 'already_acknowledged', 409)
   const id = newId()
@@ -63,9 +48,9 @@ export async function documentsFor(env: Bindings, actor: Actor, personId: string
   const documents = (await all(env, 'SELECT d.*, c.name AS category, c.subject_reads, c.manager_reads, c.acknowledgement FROM wl_documents d JOIN wl_doc_categories c ON c.id = d.category_id WHERE d.person_id = ? ORDER BY c.name, d.title', personId)).filter(readable)
   if (!documents.length) return []
   const ids = documents.map(document => document.id)
-  const versions = (await all(env, `SELECT v.*, (SELECT a.at FROM wl_acknowledgements a WHERE a.version_id = v.id AND a.person_id = ?) AS acknowledged_at FROM wl_document_versions v WHERE v.document_id IN (${ids.map(() => '?').join(', ')}) ORDER BY v.number DESC`, personId, ...ids)).filter(version => !asOf || today(asOf.zone, version.uploaded_at) <= asOf.date)
+  const versions = (await all(env, `SELECT v.*, COALESCE((SELECT decision.decided_at FROM wl_document_proposals staged JOIN wl_self_decisions decision ON decision.change_id=staged.change_id WHERE staged.version_id=v.id AND decision.outcome='approved'),v.uploaded_at) AS published_at, (SELECT a.at FROM wl_acknowledgements a WHERE a.version_id = v.id AND a.person_id = ?) AS acknowledged_at FROM wl_document_versions v WHERE v.document_id IN (${ids.map(() => '?').join(', ')}) AND ${publishedDocumentVersion()} ORDER BY v.number DESC`, personId, ...ids)).filter(version => !asOf || today(asOf.zone, version.published_at) <= asOf.date)
   return documents.filter(document => versions.some(version => version.document_id === document.id)).map(document => ({
-    id: document.id, title: document.title, category: document.category, acknowledgementRequested: !!document.acknowledgement,
-    versions: versions.filter(version => version.document_id === document.id).map(version => ({ id: version.id, number: version.number, filename: version.filename, mediaType: version.media_type, size: version.size, sha256: version.sha256, uploadedAt: version.uploaded_at, acknowledgedAt: version.acknowledged_at && (!asOf || today(asOf.zone, version.acknowledged_at) <= asOf.date) ? version.acknowledged_at : null })),
+    id: document.id, categoryId:document.category_id, revision:document.revision, title: document.title, category: document.category, acknowledgementRequested: !!document.acknowledgement,
+    versions: versions.filter(version => version.document_id === document.id).map(version => ({ id: version.id, number: versions.filter(v=>v.document_id===version.document_id&&v.number<=version.number).length, filename: version.filename, mediaType: version.media_type, size: version.size, sha256: version.sha256, uploadedAt: version.uploaded_at, publishedAt:version.published_at, acknowledgedAt: version.acknowledged_at && (!asOf || today(asOf.zone, version.acknowledged_at) <= asOf.date) ? version.acknowledged_at : null })),
   }))
 }
