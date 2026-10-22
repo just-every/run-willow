@@ -27,6 +27,8 @@ export async function importErasure(h, owner, f, transfer, planned, person, dire
   assert.ok(!JSON.stringify(repeat).includes('Juno'))
   const afterRepeat = await findText(directory, ['juno.ashby@example.com', 'E104'])
   assert.deepEqual(Object.keys(afterRepeat), ['wl_retained_records'], 'a refused repeat leaves no newly uploaded unsanitized original')
+  const status = (await api('imports')).find(row => row.planId === planned.planId)
+  assert.ok(status.blockers.some(row => row.kind === 'erasure' && row.target === erased.receipt), 'the owner sees the named erasure fence before trying undo')
   const undo = await transfer.request('undo', { planId: planned.planId }, 409)
   assert.ok(JSON.stringify(undo).includes(erased.receipt), 'undo names the erasure that withdrew its original')
   await browserEvidence(h, owner, [['import-receipt', `/app/retention/receipts/${erased.receipt}`], ['import-history', '/app/import']])

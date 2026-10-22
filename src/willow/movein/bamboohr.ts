@@ -428,10 +428,14 @@ export async function importJobs(env: Bindings, actor: Actor) {
     result.push({ id: job.id, appliedAt: job.at, state: job.state, counts: JSON.parse(job.detail).counts, effects: job.total, blockers: job.state === 'completed' ? await undoBlockers(env, job.id) : [] })
   }
   const totals=new Map((await all<{id:string;total:number}>(env,'SELECT id,total FROM ik_jobs')).map(row=>[row.id,row.total]))
-  if (actor.owner) for (const item of await doorHistory(env, actor)) result.push({
-    id:item.jobId, planId:item.planId, fingerprint:item.fingerprint, caption:item.caption,
-    appliedAt:Date.parse(item.approvedAt), state:item.state, effects:totals.get(item.jobId)??0, counts:{},
-    blockers:item.state==='completed'?await undoBlockers(env,item.jobId):[],
-  })
+  if (actor.owner) for (const item of await doorHistory(env, actor)) {
+    const blockers = item.state === 'completed' ? await undoBlockers(env, item.jobId) : []
+    const fence = await one<{ receipt_id: string }>(env, 'SELECT receipt_id FROM wl_import_erasure_fences WHERE job_id=?', item.jobId)
+    if (fence) blockers.push({ kind: 'erasure', target: fence.receipt_id, reason: `Import custody was withdrawn by erasure receipt ${fence.receipt_id}` })
+    result.push({
+      id:item.jobId, planId:item.planId, fingerprint:item.fingerprint, caption:item.caption,
+      appliedAt:Date.parse(item.approvedAt), state:item.state, effects:totals.get(item.jobId)??0, counts:{}, blockers,
+    })
+  }
   return result.sort((a,b)=>b.appliedAt-a.appliedAt)
 }
