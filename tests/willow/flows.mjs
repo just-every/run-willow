@@ -549,6 +549,37 @@ try {
       const body=await(await h.raw(url,{cookie:cookie.ivan})).text()
       for(const key of forbidden.ivan)assert.ok(!body.includes(SECRET[key]),`Selected report revocation leaked ${key} through ${url}`)
     }
+    // Certify the split ROLE-001 acceptance as one otherwise empty level.
+    const applyLevel=async plan=>h.api('level.apply',cookie.owner,{review:(await h.api('level.preview',cookie.owner,plan)).id})
+    const unselected=await h.api('report.save',cookie.owner,{definition:{name:'synthetic-willow-9702 unselected report',columns:['name','phone','payAmount'],asOf:'today'}})
+    const combinedPlan={kind:'level',name:'Personal approval, one category, one report',permissions:[],selfFields:{phone:'approval'},otherFields:{phone:'approval'},documentCategories:{others:{[ids.medical]:'view'}},reports:[selectedReport.id]}
+    const combined=await applyLevel(combinedPlan)
+    await applyLevel({kind:'assignment',member:ids.ivanMember,levels:[combined.id]})
+    assert.deepEqual((await h.api('me',cookie.ivan)).permissions,[],'The acceptance member has no other grant')
+    const approval=await h.api('self.request',cookie.ivan,{kind:'personal',person:ids.sam,field:'phone',value:'synthetic-willow-9703'})
+    assert.ok((await h.api('self-changes',cookie.hana)).some(row=>row.id===approval.id),'The approval-required edit enters HR’s queue')
+    assert.equal((await personOf('ivan',ids.sam)).private.phone,SECRET.phone,'The pending edit does not change the record')
+    await h.api('self.decide',cookie.hana,{change:approval.id,decision:'reject',comment:'Keep the acceptance source unchanged'})
+    const combinedDoors=[...urls,`/api/willow/custom-reports/${unselected.id}`,`/app/reports/custom/${unselected.id}`,`/app/reports/custom/${unselected.id}.csv`,`/app/reports/custom/${unselected.id}.xlsx`]
+    const allowed=new Set()
+    for(const url of combinedDoors) {
+      const body=await(await h.raw(url,{cookie:cookie.ivan})).text()
+      for(const key of ['salary','salaryCents','reason','endReason']) assert.ok(!body.includes(SECRET[key]),`Combined level withholds ${key} through ${url}`)
+      for(const key of ['phone','docTitle','docBytes']) if(body.includes(SECRET[key])) allowed.add(key)
+      assert.ok(!body.includes(unselected.definition?.name??'synthetic-willow-9702 unselected report'),`Unselected report stays hidden through ${url}`)
+    }
+    assert.deepEqual([...allowed].sort(),['docBytes','docTitle','phone'],'All selected facets are actually readable')
+    await h.api(`custom-reports/${unselected.id}`,cookie.ivan,undefined,404)
+    await h.api('self.decide',cookie.ivan,{change:approval.id,decision:'approve',comment:'No decision authority'},403)
+    await applyLevel({...combinedPlan,level:combined.id,selfFields:{phone:'view'},otherFields:{phone:'none'},documentCategories:{others:{[ids.medical]:'none'}},reports:[]})
+    for(const url of combinedDoors) {
+      const body=await(await h.raw(url,{cookie:cookie.ivan})).text()
+      for(const key of forbidden.ivan) assert.ok(!body.includes(SECRET[key]),`Combined same-session revocation withholds ${key} through ${url}`)
+    }
+    await h.api('self.request',cookie.ivan,{kind:'personal',person:ids.sam,field:'phone',value:'synthetic-willow-9704'},403)
+    const ownerMember=(await h.api('me',cookie.owner)).id
+    assert.ok((await h.api('audit',cookie.owner)).some(event=>event.action==='level.level'&&event.subject===combined.id&&event.actor===ownerMember))
+    await applyLevel({kind:'assignment',member:ids.ivanMember,levels:[named.ivan.id]})
     console.log(`ROLE-001 crawled ${urls.length} doors with exact named levels, selective personal fields, document categories and saved reports, and same-session revocation`)
     // Reads of someone else's private details are audited.
     const audit = await h.api('audit', cookie.owner)
