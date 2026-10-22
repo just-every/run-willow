@@ -59,3 +59,89 @@ export async function bulkBrowserProof(page,h,owner,{members,level,location,prio
   await capture(row,'reverted-batch')
  }
 }
+
+// ROLE-003: owner delegates; HR creates/assigns a level; pay changes wait for a second administrator.
+export async function delegatedBrowserProof(browser,h,owner,staff,ids) {
+ const contexts=[]
+ const pageFor=async cookie=>{
+  const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context)
+  await context.addCookies(cookie.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})))
+  return context.newPage()
+ }
+ const api=(path,body,status)=>h.api(path,owner,body,status)
+ const apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
+ try {
+  const admin=await pageFor(owner),hr=await pageFor(staff.hr.cookie),reader=await pageFor(staff.managerb.cookie)
+  const capture=async(page,name,width)=>{
+   await page.evaluate(()=>document.fonts.ready)
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`ROLE-003 ${name} fits ${width}`)
+   await page.screenshot({path:`${evidenceDirectory}/ROLE-003-${name}-${width}.png`,fullPage:true})
+  }
+  const submit=async(page,form,name)=>{
+   await form.getByRole('button',{name,exact:true}).click()
+   await page.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'))
+   assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())
+  }
+  const assignment=page=>page.locator('form[action="/app/do/level.preview"]').filter({has:page.locator('input[name="kind"][value="assignment"]')})
+  const create=page=>page.locator('details').filter({has:page.locator('summary').filter({hasText:/^Create a level$/})}).first()
+  for(const width of [1440,390]) {
+   for(const page of [admin,hr,reader]) await page.setViewportSize({width,height:1000})
+   await admin.goto(h.origin+'/app/access')
+   const form=create(admin),name=`Delegated administration ${width}`
+   await form.locator('summary').click()
+   await form.getByLabel('Level name',{exact:true}).fill(name)
+   await form.getByLabel('Administer named access levels (also requires employer-wide manage people; owner alone delegates this right)',{exact:true}).check()
+   await capture(admin,'owner-grant-form',width)
+   await submit(admin,form,'Review level')
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   const delegation=(await api('levels')).levels.find(l=>l.name===name)
+   const assign=assignment(admin),data=await api('levels')
+   await assign.getByLabel('Assign levels to',{exact:true}).selectOption(staff.hr.member)
+   for(const id of [...ids.originalHR,delegation.id]) await assign.getByLabel(data.levels.find(l=>l.id===id).name,{exact:true}).check()
+   await submit(admin,assign,'Review assignment')
+   await capture(admin,'owner-grant-review',width)
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   await hr.goto(h.origin+'/app/access')
+   const contactName=`HR contact view ${width}`,contact=create(hr)
+   await contact.locator('summary').click()
+   await contact.getByLabel('Level name',{exact:true}).fill(contactName)
+   await contact.getByLabel('Read private contact details',{exact:true}).check()
+   await capture(hr,'hr-create-form',width)
+   await submit(hr,contact,'Review level')
+   await capture(hr,'hr-create-review',width)
+   await submit(hr,hr.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   const target=assignment(hr)
+   await target.getByLabel('Assign levels to',{exact:true}).selectOption(staff.managerb.member)
+   await target.getByLabel(contactName,{exact:true}).check()
+   await submit(hr,target,'Review assignment')
+   await capture(hr,'hr-assignment-review',width)
+   await submit(hr,hr.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   await reader.goto(h.origin+`/app/people/${staff.employee.person}`)
+   await reader.getByRole('heading',{name:'Private details',exact:true}).waitFor()
+   await capture(reader,'assigned-contact-view',width)
+   // This first-phase grant gives HR only their existing pay ceiling when the owner explicitly adds it.
+   await apply({kind:'assignment',member:staff.hr.member,levels:[...ids.originalHR,delegation.id,ids.payCeiling]})
+   await hr.goto(h.origin+'/app/access')
+   const payName=`HR pay review ${width}`,pay=create(hr)
+   await pay.locator('summary').click()
+   await pay.getByLabel('Level name',{exact:true}).fill(payName)
+   await pay.getByLabel('Read compensation',{exact:true}).check()
+   await submit(hr,pay,'Review level')
+   const review=new URL(hr.url()).searchParams.get('levelReview')
+   await hr.getByText('Waiting for the owner or a different eligible access administrator to apply this review.',{exact:true}).waitFor()
+   assert.equal(await hr.locator('form[action="/app/do/level.apply"]').count(),0)
+   await capture(hr,'pay-waits-for-second-admin',width)
+   await admin.goto(h.origin+'/app/access')
+   await admin.locator(`a[href="/app/access?levelReview=${review}"]`).click()
+   await capture(admin,'second-admin-pay-review',width)
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   await capture(admin,'second-admin-applied',width)
+   await apply({kind:'assignment',member:staff.hr.member,levels:ids.originalHR})
+   await hr.goto(h.origin+'/app/access')
+   assert.equal(await hr.getByRole('heading',{name:'Named access levels',exact:true}).count(),0)
+   await capture(hr,'delegation-revoked',width)
+   await h.api('levels',staff.hr.cookie,undefined,403)
+   await apply({kind:'assignment',member:staff.managerb.member,levels:ids.originalTarget})
+  }
+ } finally {for(const context of contexts) await context.close()}
+}

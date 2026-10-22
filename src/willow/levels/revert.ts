@@ -1,6 +1,6 @@
 // Restore only an original, still-independent batch. Never reconstruct prior rights from today's presets.
 import type { Bindings } from '../../auth.server'
-import { requireOwner, type Actor } from '../actor'
+import { requireLevelAdmin, type Actor } from '../actor'
 import { all, insist, one } from '../core'
 import type { levels } from './store'
 
@@ -9,7 +9,7 @@ const mentions=(value:unknown, ids:Set<string>):boolean=>typeof value==='string'
 const same=(a:string[],b:string[])=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort())
 
 export async function revertPlan(env:Bindings,actor:Actor,batch:string,data:Awaited<ReturnType<typeof levels>>):Promise<RevertPlan> {
- requireOwner(actor)
+ requireLevelAdmin(actor)
  const original=await one(env,`SELECT r.*,a.seq FROM wl_level_reviews r JOIN wl_audit a ON a.subject=r.id AND a.action='level.bulk-assignment' WHERE r.id=? AND r.consumed=1`,batch)
  insist(original,'batch_not_found',404)
  const plan=JSON.parse(original.plan), impact=JSON.parse(original.impact)
@@ -28,7 +28,7 @@ export async function revertPlan(env:Bindings,actor:Actor,batch:string,data:Awai
  const later=await all(env,'SELECT actor,action,subject,detail FROM wl_audit WHERE seq>? ORDER BY seq',original.seq)
  for(const event of later) {
   // Public read/download/export audits preserve chronology but do not create business dependencies.
-  if(/\.(read|download|export)$/.test(event.action)) continue
+  if(event.action==='level.denied'||/\.(read|download|export)$/.test(event.action)) continue
   insist(!ids.has(event.actor)&&!ids.has(event.subject)&&!mentions(JSON.parse(event.detail),ids),'batch_dependency',409)
  }
  return {kind:'revert',batch,assignments:impact.map((item:any)=>({member:item.member,levels:item.beforeLevels}))}

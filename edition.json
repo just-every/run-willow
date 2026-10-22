@@ -67,7 +67,8 @@
       "migrations/core/0051_preboard_erasure.sql",
       "migrations/core/0052_other_personal_fields.sql",
       "migrations/core/0053_compensation_approval.sql",
-      "migrations/core/0054_legal_name_mode.sql"
+      "migrations/core/0054_legal_name_mode.sql",
+      "migrations/core/0055_access_delegation.sql"
         ]
       }
     },

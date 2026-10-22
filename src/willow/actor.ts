@@ -11,7 +11,7 @@ import { WillowError, all, insist, newId, now, one, stmt } from './core'
 import { today } from './dates'
 import { CURRENT_TERMS } from './employment'
 
-export const PERMISSIONS = ['people.manage', 'people.private', 'pay.read', 'leave.manage', 'payroll.handoff', 'documents.private', 'reports.read', 'eeo.read', 'eeo.individual', 'it.tasks', 'audit.read', 'compensation.approve'] as const
+export const PERMISSIONS = ['people.manage', 'people.private', 'pay.read', 'leave.manage', 'payroll.handoff', 'documents.private', 'reports.read', 'eeo.read', 'eeo.individual', 'it.tasks', 'audit.read', 'compensation.approve', 'access.admin'] as const
 export type Permission = typeof PERMISSIONS[number]
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
@@ -26,6 +26,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'eeo.individual': 'EEO compliance: read and record individual EEO answers (never implied by ownership or any other right)',
   'it.tasks': 'Receive IT lifecycle tasks',
   'audit.read': 'Read the audit trail',
+  'access.admin': 'Administer named access levels (also requires employer-wide manage people; owner alone delegates this right)',
   'compensation.approve': 'Approve compensation budgets and publication (also requires manage people and pay access)',
 }
 
@@ -114,6 +115,9 @@ export const hasScopedGrant = (actor: Actor, ...permissions: Permission[]) => ac
 export function requirePermission(actor: Actor, ...permissions: Permission[]) {
   insist(permissions.every(permission => can(actor, permission)), 'forbidden', 403)
 }
+
+export const canLevelAdmin=(actor: Actor)=>actor.owner || (can(actor,'people.manage') && can(actor,'access.admin'))
+export function requireLevelAdmin(actor: Actor) { insist(canLevelAdmin(actor),'access_administrator_required',403) }
 
 export function requireOwner(actor: Actor) {
   insist(actor.owner, 'owner_required', 403)

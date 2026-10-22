@@ -1,7 +1,7 @@
 // Reviews bind the owner, the complete audited snapshot, the exact change and one use.
 import { operatorAuth, type Bindings } from '../../auth.server'
-import { PERMISSIONS, requireOwner, type Actor } from '../actor'
-import { all, commit, guard, insist, newId, now, one, stmt } from '../core'
+import { PERMISSIONS, requireLevelAdmin, type Actor } from '../actor'
+import { all, auditRead, commit, guard, insist, newId, now, one, stmt, WillowError } from '../core'
 import type { Input } from '../input'
 import { effectivePermissions, levels } from './store'
 import { bulkSelection } from './selection'
@@ -10,10 +10,16 @@ import { readOtherRules, type OtherRules } from './other-personal'
 import { combineSelfRules, readSelfRules, SELF_FIELDS, type SelfRules } from './personal'
 import { EVERYONE, SCOPE_INPUTS, readScope, scopeMembers, validateScope, type Scope } from './scope'
 
-type Plan = { kind: 'level'; level: string; name: string; permissions: string[]; otherFields: OtherRules; selfFields: SelfRules; followOwnChanges: boolean; scope: Scope } | { kind: 'assignment'; member: string; levels: string[] } | { kind: 'bulk-assignment'; members: string[]; levels: string[]; filter?: Record<string,string> } | RevertPlan
+export type Plan = { kind: 'level'; level: string; name: string; permissions: string[]; otherFields: OtherRules; selfFields: SelfRules; followOwnChanges: boolean; scope: Scope } | { kind: 'assignment'; member: string; levels: string[] } | { kind: 'bulk-assignment'; members: string[]; levels: string[]; filter?: Record<string,string> } | RevertPlan
+
+import { currentLevelAdmin, delegatedPayReview, levelSessionFence, validateDelegation } from './delegation'
 
 export async function previewLevel(env: Bindings, actor: Actor, input: Input) {
- requireOwner(actor)
+ try { return await prepareLevelReview(env,actor,input) }
+ catch(error) {if(!actor.owner && error instanceof WillowError) await auditRead(env,actor.id,'level.denied',actor.id,{code:error.code,operation:'preview'});throw error}
+}
+async function prepareLevelReview(env: Bindings, actor: Actor, input: Input) {
+ actor=await currentLevelAdmin(env,actor)
  input.only(['kind','level','name','permissions','member','members','levels','returnTo','selfFields','otherFields',...SELF_FIELDS.map(field=>`otherMode.${field}`),'followOwnChanges','selection','q','location','department','role','status','batch',...SCOPE_INPUTS,...SELF_FIELDS.map(field=>`selfMode.${field}`)])
  const snapshot=(await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
  const data=await levels(env,actor), kind=input.text('kind')
@@ -47,6 +53,8 @@ export async function previewLevel(env: Bindings, actor: Actor, input: Input) {
   insist(assigned.every(id=>data.levels.some(row=>row.id===id)),'level_not_found',404)
   plan=kind==='assignment' ? {kind,member:members[0],levels:assigned} : {kind,members,levels:assigned,...(selection?.filter?{filter:selection.filter}:{})}
  }
+ await validateDelegation(env,actor,plan,data)
+ const needsApproval=await delegatedPayReview(env,actor,plan,data)
  const affected=data.members.filter(m=>plan.kind==='level' ? !m.owner && data.assignments.some(a=>a.member_id===m.id && a.level_id===plan.level) : plan.kind==='assignment' ? m.id===plan.member : plan.kind==='revert' ? plan.assignments.some(a=>a.member===m.id) : plan.members.includes(m.id))
  const impact=[]
  // A level's rights are employer-wide only at scope everyone; a scoped level's rights reach the people its scope names.
@@ -68,38 +76,47 @@ export async function previewLevel(env: Bindings, actor: Actor, input: Input) {
   impact.push({beforeOther,afterOther,beforeFollow,afterFollow,beforeScoped,afterScoped,beforeLevels,afterLevels:ids,levelVersions:Object.fromEntries([...new Set([...beforeLevels,...ids])].map(id=>[id,data.levels.find(l=>l.id===id)!.version])),beforeSelf,afterSelf,changedFields:SELF_FIELDS.filter(field=>beforeSelf[field]!==afterSelf[field]),member:member.id,name:member.name,before,after,added:after.filter(p=>!before.includes(p)),removed:before.filter(p=>!after.includes(p))})
  }
  const id=newId()
- await env.DB.batch([guard(env,'stale','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',snapshot),stmt(env,'INSERT INTO wl_level_reviews(id,actor,snapshot,plan,impact) VALUES(?,?,?,?,?)',id,actor.id,snapshot,JSON.stringify(plan),JSON.stringify(impact)),stmt(env,'DELETE FROM wl_guard')])
- return {id,plan,impact}
+ await env.DB.batch([guard(env,'stale','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',snapshot),stmt(env,'INSERT INTO wl_level_reviews(id,actor,snapshot,plan,impact,needs_approval) VALUES(?,?,?,?,?,?)',id,actor.id,snapshot,JSON.stringify(plan),JSON.stringify(impact),needsApproval?1:0),stmt(env,'DELETE FROM wl_guard')])
+ return {id,plan,impact,needsApproval}
 }
 
 export async function levelReview(env: Bindings, actor: Actor, id: string) {
- requireOwner(actor)
- const row=await one<{id:string;actor:string;snapshot:number;consumed:number;plan:string;impact:string}>(env,'SELECT * FROM wl_level_reviews WHERE id=? AND actor=?',id,actor.id)
- insist(row,'review_not_found',404)
- return {...row,plan:JSON.parse(row.plan),impact:JSON.parse(row.impact)}
+ requireLevelAdmin(actor)
+ const row=await one<{id:string;actor:string;snapshot:number;consumed:number;plan:string;impact:string;needs_approval:number}>(env,'SELECT * FROM wl_level_reviews WHERE id=?',id)
+ insist(row && (row.actor===actor.id || row.needs_approval),'review_not_found',404)
+ return {...row,needsApproval:!!row.needs_approval,plan:JSON.parse(row.plan),impact:JSON.parse(row.impact)}
 }
 
 export async function applyLevel(env: Bindings, actor: Actor, input: Input, request: Request) {
- requireOwner(actor)
+ try {return await applyReviewedLevel(env,actor,input,request)}
+ catch(error) {if(!actor.owner && error instanceof WillowError) await auditRead(env,actor.id,'level.denied',actor.id,{code:error.code,operation:'apply'});throw error}
+}
+async function applyReviewedLevel(env: Bindings, actor: Actor, input: Input, request: Request) {
+ actor=await currentLevelAdmin(env,actor)
  input.only(['review','returnTo'])
  const review=await levelReview(env,actor,input.text('review')), plan=review.plan as Plan
  insist(!review.consumed,'review_consumed',409)
  // A pre-field-rules preview cannot authorize replacing rules it never showed.
  insist(plan.kind!=='level'||(plan.otherFields && plan.selfFields && typeof plan.followOwnChanges==='boolean' && plan.scope),'review_stale',409)
  insist((await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq===review.snapshot,'review_stale',409)
+ const data=await levels(env,actor)
+ const creator=review.actor===actor.id ? actor : await currentLevelAdmin(env,{...actor,id:review.actor})
+ await validateDelegation(env,creator,plan,data)
+ await validateDelegation(env,actor,plan,data)
+ insist(!review.needsApproval || actor.owner || actor.id!==review.actor,'second_administrator_required',403)
  if(plan.kind==='revert') await revertPlan(env,actor,plan.batch,await levels(env,actor))
- // Base administration follows the existing people.manage grant; Base revokes
- // sessions on an admin-role transition just as member.permissions does.
+ // Native grants and Base administrator transitions share one transaction.
+ // Base's version/last-owner triggers remain authoritative and revoke prior sessions on transitions.
  const operators=await operatorAuth(env).listOperators(request)
+ const statements=[levelSessionFence(env,actor),guard(env,'access_changed',"EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active')",creator.id),guard(env,'stale','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',review.snapshot),guard(env,'stale','EXISTS(SELECT 1 FROM wl_level_reviews WHERE id=? AND consumed=0)',review.id)]
  for(const impact of review.impact) {
-  const member=await one(env,'SELECT email FROM wl_members WHERE id=?',impact.member)
-  const operator=operators.find(o=>o.email.toLowerCase()===member!.email)
+  const member=data.members.find(m=>m.id===impact.member)!
+  const operator=operators.find(o=>o.email.toLowerCase()===member.email)
   if(operator && operator.role!=='owner') {
    const role=impact.after.includes('people.manage')?'admin':'member'
-   if(operator.role!==role) await operatorAuth(env).setRole(request,operator.id,role)
+   if(operator.role!==role) statements.push(guard(env,'access_changed',"EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND role!='owner')",operator.id,operator.version),stmt(env,"UPDATE oa_operators SET role=? WHERE id=? AND role!='owner'",role,operator.id))
   }
  }
- const statements=[guard(env,'stale','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',review.snapshot),guard(env,'stale','EXISTS(SELECT 1 FROM wl_level_reviews WHERE id=? AND consumed=0)',review.id)]
  if(plan.kind==='level') statements.push(
   stmt(env,'INSERT INTO wl_levels(id,name,follow_own_changes,scope_kind) VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,follow_own_changes=excluded.follow_own_changes,scope_kind=excluded.scope_kind,version=version+1',plan.level,plan.name,plan.followOwnChanges?1:0,plan.scope.kind),
   stmt(env,'DELETE FROM wl_level_scope_values WHERE level_id=?',plan.level),
@@ -117,6 +134,6 @@ export async function applyLevel(env: Bindings, actor: Actor, input: Input, requ
  }
  statements.push(stmt(env,'UPDATE wl_level_reviews SET consumed=1 WHERE id=?',review.id))
  const id=plan.kind==='level'?plan.level:plan.kind==='assignment'?plan.member:plan.kind==='revert'?plan.batch:review.id
- await commit(env,statements,{actor:actor.id,action:`level.${plan.kind}`,subject:id,detail:{plan,impact:review.impact}})
+ await commit(env,statements,{actor:actor.id,action:`level.${plan.kind}`,subject:id,detail:{plan,impact:review.impact,requestedBy:review.actor}})
  return {id}
 }
