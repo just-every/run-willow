@@ -7,6 +7,7 @@ import { all, auditRead, commit, guard, insist, newId, now, one, sha256Hex, stmt
 import { isDate, today as dayOf } from '../dates'
 import type { Input } from '../input'
 import { holds, type Hold } from './holds'
+import { unclaimedFiles } from './blob-custody'
 import { selectImportErasure } from './import-custody'
 import { AUTHORED_STORES, DYNAMIC, OUT_OF_SCOPE, STORES, type Store } from './inventory'
 import { CLASSES, TABLE_VERSION, classExpiry, type ClassKey, type Contractor } from './rules'
@@ -128,6 +129,8 @@ export async function planErasure(env: Bindings, actor: Actor, personId: string)
   const periods = await all<{ start: string; end: string | null }>(env, 'SELECT start_date AS start, end_date AS end FROM wl_periods WHERE person_id = ? ORDER BY start_date', personId)
   const [adopted, rules, activeHolds, contractor, mapped] = await Promise.all([adoption(env), stateRules(env), holds(env, { active: true }), contractorStatus(env, actor.today), mappings(env)])
   const blockers: Blocker[] = []
+  const unclaimed = await unclaimedFiles(env)
+  if (unclaimed) blockers.push({ kind: 'unclaimed_blob_custody', ref: 'FILES', reason: `${unclaimed} loose files have no native, retained or import-plan owner; resolve their custody before erasure` })
   if (periods.some(period => !period.end || period.end >= actor.today)) blockers.push({ kind: 'current_employment', ref: personId, reason: 'The person has a current or future employment period' })
   if (member && (await one(env, "SELECT 1 FROM oa_operators WHERE lower(email) = ? AND role = 'owner'", subject.memberEmail))) blockers.push({ kind: 'owner_account', ref: member.id, reason: 'The owner account cannot be erased' })
   for (const [kind, table, where, reason] of OPEN_WORK) {

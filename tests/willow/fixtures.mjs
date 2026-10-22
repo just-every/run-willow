@@ -52,11 +52,12 @@ function zip(files) {
   return Buffer.concat([...locals, directory, end])
 }
 
-export function documentsZip() {
+export function documentsZip({ extra = [] } = {}) {
   return zip([
     ['export/manifest.csv', csv([['file', 'id', 'category', 'title'], ['contract-101.pdf', '101', 'Employment contract', 'Employment contract'], ['id-102.pdf', '102', 'Passport scans', 'Passport']])],
     ['export/contract-101.pdf', contractPdf],
     ['export/id-102.pdf', contractPdf],
+    ...extra,
   ])
 }
 

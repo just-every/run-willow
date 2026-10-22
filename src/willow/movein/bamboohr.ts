@@ -370,7 +370,11 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
     ],
     carry:{...carry,...custom.carry},
   }
-  return { records, preview, files, hashes, mapping: { version: mappingVersion, map(source: SourceRecord): MappingResult {
+  // Only mapped native documents need loose FILES bytes. Unmapped ZIP entries
+  // remain in the opaque retained original, which Base withdraws on erasure.
+  const documentHashes = new Set(entries.flatMap(entry => entry.effects ?? []).filter(effect => effect.targetKind === 'document').map(effect => (effect.value as { version: { sha256: string } }).version.sha256))
+  const mappedFiles = new Map([...files].filter(([name]) => documentHashes.has(hashes.get(name)!)))
+  return { records, preview, files: mappedFiles, hashes, mapping: { version: mappingVersion, map(source: SourceRecord): MappingResult {
     // Base may remove credentials while reading; never recover their original values from this parser cache.
     return mapped.get(canonicalJson([source.kind, source.sourceId, source.payloadHash])) ?? { effects: [], rejection: 'Source changed during credential screening; review a clean export.' }
   } } }

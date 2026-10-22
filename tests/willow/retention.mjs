@@ -141,7 +141,7 @@ try {
   await api('location.create', { name: 'Parramatta', timezone: 'UTC', workState: 'CA' })
   const transfer = imports(h, owner)
   await api('category.create', { name: 'Passport scans' })
-  const planned = await transfer.plan({ employees: file('employees.csv', employeesCsv({ conflictingEmail: 'nobody@example.com' })), balances: file('balances.csv', balancesCsv), documents: file('documents.zip', documentsZip()), schedule: f.schedule })
+  const planned = await transfer.plan({ employees: file('employees.csv', employeesCsv({ conflictingEmail: 'nobody@example.com' })), balances: file('balances.csv', balancesCsv), documents: file('documents.zip', documentsZip({ extra: [['export/unmapped-juno.txt', Buffer.from('synthetic-willow-13 juno.ashby@example.com')]] })), schedule: f.schedule })
   await transfer.apply(planned)
   const juno = (await api('people')).find(person => person.name === 'Juno Ashby')
   const custody = (await preview('owner', juno.id)).items.filter(row => row.id.startsWith('import_'))
