@@ -1086,8 +1086,8 @@ released contract; push-further clauses are the agent section. The earlier statu
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 21 | 0 | 0 | 21 |
-| Target and push further | 20 | 28 | 22 | 70 |
-| All | 41 | 28 | 22 | 91 |
+| Target and push further | 20 | 28 | 34 | 82 |
+| All | 41 | 28 | 34 | 103 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
