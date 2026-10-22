@@ -16,10 +16,10 @@ import { planErasure, type Item, type Plan } from './erasure'
 const quote = (value: string) => `'${value.replace(/'/g, "''")}'`
 const hex = (bytes: number) => Array.from(crypto.getRandomValues(new Uint8Array(bytes)), byte => byte.toString(16).padStart(2, '0')).join('')
 
-interface Target { id: string; table: string; label: string; from: string; item: Item; blob?: string }
+export interface Target { id: string; table: string; label: string; from: string; item: Item; blob?: string }
 
 /** The stores an item stands for, with the rows each one removes. Dynamic items stand for per-category documents, fields and tables. */
-function targets(plan: Plan): Target[] {
+export function targets(plan: Plan): Target[] {
   const result: Target[] = []
   const known = new Map([...STORES, ...AUTHORED_STORES].map(store => [store.id, store] as [string, Store]))
   for (const item of plan.view.items) {

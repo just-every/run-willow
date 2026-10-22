@@ -140,9 +140,18 @@ export async function planErasure(env: Bindings, actor: Actor, personId: string)
   const extra = (cls: ClassKey) => Math.max(0, ...rules.filter(rule => states.has(rule.state) && rule.decision === 'longer' && (rule.class === 'all' || rule.class === cls)).map(rule => rule.years ?? 0))
   const context: Context = { today: actor.today, hire: periods[0]?.start ?? actor.today, end: periods.reduce((latest, period) => period.end && period.end > latest ? period.end : latest, periods[0]?.start ?? actor.today), contractor, holds: activeHolds, periods, personId, extra }
   const items: Item[] = []
+  // A record with no date of its own is as recent as the newest record of its class: a child never outlives its parent's rule.
+  const staged: { store: Store; measured: Awaited<ReturnType<typeof measure>> }[] = []
+  const latest = new Map<string, string>()
   for (const store of [...STORES, ...AUTHORED_STORES]) {
     const measured = await measure(env, store, subject, zone)
-    if (measured.rows) items.push(classify(context, store, store.kind, null, measured))
+    if (!measured.rows) continue
+    staged.push({ store, measured })
+    if (typeof store.kind === 'object' && measured.record && measured.record > (latest.get(store.kind.class) ?? '')) latest.set(store.kind.class, measured.record)
+  }
+  for (const { store, measured } of staged) {
+    const record = measured.record ?? (typeof store.kind === 'object' ? latest.get(store.kind.class) ?? null : null)
+    items.push(classify(context, store, store.kind, null, { ...measured, record }))
   }
   for (const row of await all<{ category: string; name: string; docs: number; versions: number; blobs: number; bytes: number; ms: number | null }>(env, `SELECT d.category_id AS category, c.name, COUNT(DISTINCT d.id) AS docs, COUNT(v.id) AS versions, COUNT(DISTINCT v.sha256) AS blobs, COALESCE(SUM(v.size), 0) AS bytes, MAX(v.uploaded_at) AS ms
       FROM wl_documents d JOIN wl_doc_categories c ON c.id = d.category_id LEFT JOIN wl_document_versions v ON v.document_id = d.id WHERE d.person_id = ? GROUP BY d.category_id, c.name`, personId)) {

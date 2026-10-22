@@ -18,6 +18,7 @@ import { runReport } from './reporting/execute'
 import { scheduleStatus } from './reporting/schedule'
 import { eeoSelf, diversityReport, eeoPerson, eeoPeople, mappingsView, runs, eeoRunReport, runPeople, runAggregate } from './eeo'
 import { retention, erasurePreview, erasureReceipt, retainedRecords } from './retention/view'
+import { reviewList } from './retention/review'
 import { selfChanges, selfChange, selfExceptions } from './self-service/view'
 import { listFieldDefinitions } from './custom-fields/store'
 import { listRecordTables } from './record-tables/schema'
@@ -80,7 +81,7 @@ export const views: Record<string, View> = {
   eeoRunPeople: (env,actor,_request,id,url) => runPeople(env,actor,id,url.searchParams), eeoRunAggregate: (env,actor,_request,id) => runAggregate(env,actor,id),
   eeoSelf: (env,actor,_request,_id,url) => { if([...url.searchParams.keys()].length) throw new WillowError('eeo_filters_not_allowed');return eeoSelf(env,actor) },
   eeoReport: (env,actor,_request,_id,url) => diversityReport(env,actor,Object.fromEntries(url.searchParams.size?url.searchParams:[['asOf',actor.today]]) as {asOf:string}),
-  retained: (env,actor) => retainedRecords(env,actor), erasureReceipt: (env,actor,_request,id) => erasureReceipt(env,actor,id),
+  retained: (env,actor) => retainedRecords(env,actor), retentionReview: (env,actor) => reviewList(env,actor), erasureReceipt: (env,actor,_request,id) => erasureReceipt(env,actor,id),
   retention: (env,actor,_request,_id,url) => retention(env,actor,url.searchParams.get('asOf') ?? undefined), erasurePreview: (env,actor,_request,_id,url) => erasurePreview(env,actor,url),
   selfChanges,
   selfChange: (env,actor,_request,id) => selfChange(env,actor,id),

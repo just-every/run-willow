@@ -250,6 +250,27 @@ try {
   assert.equal((await rowCounts(directory)).blobs, blobsBefore - 1)
   assert.equal((await h.raw(`/app/files/document/${raeVersion}`, { cookie: owner })).status, 404)
 
+  // The review list: a former worker who is not being erased has an I-9-class document past its period; the owner purges it by digest.
+  const sol = await f.join('sol', { startDate: '2019-01-01' })
+  const solVersion = (await api('document.add', { person: sol.person, category: identity, title: 'Identity', file: text('synthetic-willow-11') })).version
+  await api('leaver.start', { period: sol.period, template: f.templates.leaver, endDate: '2020-06-30', reason: 'Left' })
+  for (const open of (await api(`people/${sol.person}`)).cases.filter(item => item.status === 'open')) {
+    for (const task of (await api(`cases/${open.id}`)).tasks) await api('task.complete', { task: task.id, evidence: 'Done' })
+    await api('case.complete', { case: open.id })
+  }
+  await as('managera', 'retention/review', undefined, 403)
+  const review = (await api('retention/review')).records.find(row => row.person.id === sol.person)
+  assert.ok(review && review.purgeable && review.expired.every(item => item.class === 'i9'), 'the expired I-9-class records are on the owner\'s review list')
+  await as('managera', 'retention.purge', { person: sol.person, digest: review.digest }, 403)
+  assert.equal((await api('retention.purge', { person: sol.person, digest: 'stale' }, 409)).error, 'preview_stale')
+  const blobsBeforePurge = (await rowCounts(directory)).blobs
+  await api('retention.purge', { person: sol.person, digest: review.digest })
+  assert.equal((await api(`people/${sol.person}`)).documents.length, 0, 'the expired documents are gone and the person is not')
+  assert.equal((await rowCounts(directory)).blobs, blobsBeforePurge - 1, 'their bytes go with them')
+  assert.ok(!(await api('retention/review')).records.some(row => row.person.id === sol.person), 'the list no longer carries them')
+  assert.ok((await api('audit')).some(event => event.action === 'retention.purge'))
+  assert.equal((await h.raw(`/app/files/document/${solVersion}`, { cookie: owner })).status, 404)
+
   // An applicant who was not hired: every linked application, resume and scorecard goes the same way.
   const job = await api('hiring.opening', { name: 'Open role', stages: ['New', 'Rejected', 'Hired'], members: [s.managera.member] })
   const candidate = await h.api('hiring.candidate', s.managera.cookie, { opening: job.id, name: 'Priya Applicant', contactEmail: 'priya.applicant@example.com', source: 'Referral' })

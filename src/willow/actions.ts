@@ -19,6 +19,7 @@ import { placeHold, releaseHold, reviewHold } from './retention/holds'
 import { openRequest, withdrawRequest } from './retention/erasure'
 import { confirmErasure } from './retention/erase'
 import { recordProviderOutcome } from './retention/providers'
+import { confirmPurge } from './retention/review'
 import { proposeSelfChange, decideSelfChange, reconcileSelfChange } from './self-service/requests'
 import { defineField, writeFieldValues } from './custom-fields/actions'
 import { configureDoor } from './movein/authority'
@@ -81,7 +82,7 @@ export const actions: Record<string, Handler> = {
   'eeo.self.write': writeEeoSelf, 'eeo.record': recordEeoCategory, 'eeo.grant': grantEeo, 'eeo.title': mapTitle, 'eeo.establishment': mapEstablishment, 'eeo.run': createRun,
   'retention.adopt': adoptTable, 'retention.state': recordState, 'retention.map': recordMapping, 'contractor.set': recordContractor,
   'hold.place': placeHold, 'hold.release': releaseHold, 'hold.review': reviewHold,
-  'erasure.request': openRequest, 'erasure.withdraw': withdrawRequest, 'erasure.confirm': confirmErasure, 'erasure.provider': recordProviderOutcome,
+  'erasure.request': openRequest, 'erasure.withdraw': withdrawRequest, 'erasure.confirm': confirmErasure, 'erasure.provider': recordProviderOutcome, 'retention.purge': confirmPurge,
   'self.request': proposeSelfChange,
   'self.decide': decideSelfChange,
   'self.reconcile': reconcileSelfChange,

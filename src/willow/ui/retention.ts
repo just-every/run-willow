@@ -9,6 +9,7 @@ import { SOURCES, previewErasure } from '../retention/erasure'
 import { previewApplicant } from '../retention/applicant'
 import { CLASS_KEYS } from '../retention/rules'
 import { erasureReceipt, retainedRecords, retention } from '../retention/view'
+import { reviewList } from '../retention/review'
 import { field, form, h, hidden, page, select, table, tag } from './html'
 
 const PATH = '/app/retention'
@@ -58,7 +59,7 @@ ${mappingRefs.length ? h`<form method="post" action="/app/do/retention.map"><inp
   hold.released_at ? '' : h`${form('hold.release', PATH, hidden('hold', hold.id), 'Release', { secondary: true })}`])) : h`<p>No holds.</p>`}
 ${form('hold.place', PATH, [select('Scope', 'scope', SCOPES.map(value => ({ value, label: SCOPE_LABELS[value] }))), field('Reference (person, category id or class)', 'ref', { required: false }), field('From (date range only)', 'from', { type: 'date', required: false }), field('To (date range only)', 'to', { type: 'date', required: false }),
   field('Reason', 'reason'), select('Hold owner', 'holdOwner', members.map(m => ({ value: m.id, label: m.name }))), field('Review date', 'reviewDate', { type: 'date' })], 'Place hold')}</section>
-<p><a href="${PATH}/retained">Retained records in restricted custody</a></p>
+<p><a href="${PATH}/retained">Retained records in restricted custody</a> · <a href="${PATH}/review">Records past retention</a></p>
 <section class="card"><h2>Erasure requests</h2>${requests(true)}${requestForm(data.former, actor.today)}${applicantForm(applicants, actor.today)}${data.former.length ? '' : h`<p class="muted">No former worker is eligible yet: erasure covers people with no current or future employment.</p>`}</section>`, { current: PATH, url })
 }
 
@@ -90,4 +91,10 @@ export function retainedPage(actor: Actor, data: Awaited<ReturnType<typeof retai
   return page('Retained records', actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Retained records</h1>
 <p>Records kept for a retention rule or a hold, in restricted custody: absent from the directory, profiles, search, reports and exports. Only the owner reads them; EEO values also need EEO compliance.</p>
 <section class="card">${data.records.length ? table(['Person', 'Record', 'Class', 'Until', 'Values'], data.records.map(r => [r.person, r.table, r.class ?? '—', r.hold ? 'Hold' : r.expiry ? formatDate(r.expiry) : '—', r.values ? JSON.stringify(r.values).slice(0, 160) : r.restricted])) : h`<p>No retained records.</p>`}</section>`, { current: PATH, url })
+}
+
+export function retentionReviewPage(actor: Actor, data: Awaited<ReturnType<typeof reviewList>>, url?: URL) {
+  return page('Records past retention', actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Records past retention</h1>
+<p>People who are not being erased whose retention period has run out for some records. Nothing here is purged silently: you confirm one person's purge by its digest.</p>
+<section class="card">${data.records.length ? table(['Person', 'Records', 'Classes', ''], data.records.map(r => [r.person.name, r.rows, [...new Set(r.expired.map(item => item.class))].join(', '), r.purgeable ? form('retention.purge', `${PATH}/review`, [hidden('person', r.person.id), hidden('digest', r.digest)], 'Purge these records', { secondary: true }) : h`Blocked: ${r.blockers.join(', ').replace(/_/g, ' ')}`])) : h`<p>No records are past their retention period.</p>`}</section>`, { current: PATH, url })
 }
