@@ -3799,7 +3799,7 @@
       "executable": false
     },
     "tests/willow/retention-counts.mjs": {
-      "sha256": "026806bd4bfd65462a7c84a2d378d802925f58da098327f4da8d277fb28c9da3",
+      "sha256": "4d90ffe9e83e78e1af2a2aabb73634d9e28640ccd9e3b2be0f14c3f4b7859ae0",
       "executable": false
     },
     "tests/willow/retention-import.mjs": {
