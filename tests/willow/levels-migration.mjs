@@ -87,7 +87,7 @@ export async function migrationProof() {
         if (expected.includes('pay.read') && expected.includes('payroll.handoff')) assert.equal(profile.employment[0].terms[0].pay.amountCents, 8123456)
         await h.api('levels', cookie, undefined, 403) // No legacy grant implies access administration.
       }
-      expectedRows.push([prior.name, JSON.stringify(prior.permissions), JSON.stringify(expected), '0'])
+      expectedRows.push([prior.name, prior.permissions.join(', ')||'None', expected.join(', ')||'None', '0'])
     }
     const response = await h.raw('/app/access', { cookie: owner })
     assert.equal(response.status, 200)
