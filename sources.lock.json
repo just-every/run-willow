@@ -3916,7 +3916,7 @@
       "executable": false
     },
     "tests/willow/levels-job-read.mjs": {
-      "sha256": "8b6f2124afc7d8d730447eede41301aee0c79150cf89eeaec20613cad215f249",
+      "sha256": "233a27e9800a8425537f20247f48523142036d354b2925af449d51fa8d5dd301",
       "executable": false
     },
     "tests/willow/levels-job-write.mjs": {
@@ -3952,7 +3952,7 @@
       "executable": false
     },
     "tests/willow/levels.mjs": {
-      "sha256": "15bedb18653517569679a18709916503be3a7931e019bc3311e67d7a758c30cf",
+      "sha256": "7bf1e29ee255420d66301f0a8cf31d3a024227d30bbefd19b9a2386ef6087f30",
       "executable": false
     },
     "tests/willow/open-area-fixtures.mjs": {

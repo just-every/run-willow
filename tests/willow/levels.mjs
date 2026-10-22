@@ -1,6 +1,4 @@
-import { jobBrowserProof } from './levels-job-browser.mjs'
-import { jobWriteProof } from './levels-job-write.mjs'
-import { jobReadProof } from './levels-job-read.mjs'
+import { jobLevelProof } from './levels-job-read.mjs'
 import { migrationProof } from './levels-migration.mjs'
 // ROLE-001 named-level slice: public HTTP doors against the production Worker.
 import assert from 'node:assert/strict'
@@ -99,9 +97,6 @@ try {
  await transferProof(h,scoped)
  await decisionProof(h,owner,scoped)
  await scopeKindsProof(h,owner,fx)
- await jobWriteProof(h,owner,fx)
- const jobReads=await jobReadProof(h,owner,fx)
- await jobBrowserProof(h,owner,jobReads)
  const delegated=await delegatedLevelProof(h,owner,s)
  await otherPersonalProof(h,owner,s)
  const documentRights=await documentCategoryProof(h,owner,s)
@@ -115,3 +110,5 @@ try {
 await demoProof()
 
 await migrationProof()
+
+await jobLevelProof()

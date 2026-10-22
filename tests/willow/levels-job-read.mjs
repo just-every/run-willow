@@ -64,3 +64,18 @@ export async function jobReadProof(h,owner,fx) {
  console.log('ROLE-004 job reads: PASS — exact historical fields, scope, page/JSON/context/preview/CSV/XLSX/ZIP/report withholding, view-only refusals and same-session revocation')
  return {reader,target,outside,level,plan,schedule,report,location}
 }
+
+export async function jobLevelProof() {
+ const {harness}=await import('./harness.mjs'),{fixture}=await import('./regression-fixture.mjs')
+ const {jobWriteProof}=await import('./levels-job-write.mjs'),{jobBrowserProof}=await import('./levels-job-browser.mjs')
+ const h=await harness()
+ try {
+  assert.equal((await h.raw('/auth/bootstrap',{body:{token:h.vars.SETUP_TOKEN,displayName:'Olive Owner'}})).status,303)
+  const owner=await h.signIn(h.vars.OWNER_EMAIL)
+  await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})
+  const fx=await fixture(h,owner)
+  await jobWriteProof(h,owner,fx)
+  const reads=await jobReadProof(h,owner,fx)
+  await jobBrowserProof(h,owner,reads)
+ }finally{await h.close()}
+}
