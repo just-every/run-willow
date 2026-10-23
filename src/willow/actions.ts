@@ -1,3 +1,4 @@
+import { correctReview } from './performance/corrections'
 import { issueCredential,rotateCredential,revokeCredential } from './api-credentials'
 import { resubmitCompensationRecord,resubmitCompensationDefinition } from './compensation/resubmit'
 import { editCompensationPay, proposeCompensationRecord } from './compensation/pay'
@@ -71,7 +72,7 @@ export const actions: Record<string, Handler> = {
   'survey.create': createSurvey, 'survey.close': closeSurvey, 'survey.respond': respondSurvey,
   'survey.plan': createActionPlan, 'survey.plan.complete': completeActionPlan, 'survey.comment.hide': hideSurveyComment,
   'performance.cycle': createReviewCycle, 'performance.assign': assignReview, 'performance.respond': respondReview, 'performance.close': closeReviewCycle,
-  'performance.note': calibrateReview, 'performance.release': releaseReview, 'performance.withhold': withholdReview, 'performance.ack': acknowledgeReview, 'performance.appeal': appealReview,
+  'performance.correct': correctReview, 'performance.note': calibrateReview, 'performance.release': releaseReview, 'performance.withhold': withholdReview, 'performance.ack': acknowledgeReview, 'performance.appeal': appealReview,
   'goal.create': saveGoal, 'goal.checkin': checkinGoal, 'goal.complete': finishDevelopment,
   'compensation.band': defineBand,
   'compensation.cycle': createCycle,

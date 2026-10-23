@@ -178,6 +178,7 @@ try {
   await as(s.managerb.cookie,'goal.checkin',{goal:goal.id,progress:70,note:'MANAGER-CHECKIN coached the recovery exercise'})
   await hr('performance.close', { cycle: cycle.id })
   const locked = await detail()
+  await hr('performance.correct', {review:first.id,summary:'Cannot correct closed history',rating:'Unapproved'},409)
   await respond(s.employee.cookie, assignments.self, 'Cannot overwrite closed feedback', 409)
   await hr('performance.release', { cycle: cycle.id, person: s.employee.person, summary: 'Cannot replace a closed summary', rating: 'Unapproved' }, 409)
   await hr('performance.note', { cycle: cycle.id, person: s.employee.person, note: 'Cannot revise closed calibration', rating: 'Unapproved' }, 409)

@@ -1,3 +1,4 @@
+import { readsReviewProposal } from '../performance/corrections'
 import { readsGoal } from '../performance/goals'
 // SELF-001 proposals remain exact projections; selection adds decisions, never field access.
 import { readsDocumentChange, reviewsDocumentChange, nativeReviewsDocumentChange } from '../document-write'
@@ -22,6 +23,7 @@ function customPolicy(actor: Actor, row: Row) {
 }
 export function readsProposalField(actor: Actor,row: Row) {
  if(row.kind==='document') return readsDocumentChange(actor,row)
+ if(row.kind==='review') return readsReviewProposal(actor,row)
  if(row.kind==='goal') return readsGoal(actor,row.person_id)
  if(row.kind==='customField') {const policy=customPolicy(actor,row);return !!policy && readsCustomField(actor,row.person_id,policy)}
  if(row.kind==='dependent') return actor.personId===row.person_id || canAbout(actor,'people.private',row.person_id)
@@ -31,6 +33,7 @@ export function readsProposalField(actor: Actor,row: Row) {
 export function reviewsChange(actor:Actor,row:Row):boolean {
  if(actor.id===row.requested_by || actor.personId===row.person_id) return false
  if(row.kind==='document') return reviewsDocumentChange(actor,row)
+ if(row.kind==='review') return can(actor,'people.manage')
  if(!readsProposalField(actor,row)) return false
  const policy=row.kind==='customField'?customPolicy(actor,row):null
  const native=row.kind==='goal' ? canAbout(actor,'people.manage',row.person_id) : row.kind==='customField' ? !!policy&&writesCustomField(actor,policy) : reviewsSelfChanges(actor,row.person_id)
@@ -38,6 +41,7 @@ export function reviewsChange(actor:Actor,row:Row):boolean {
 }
 export function readsSelfChange(actor:Actor,row:Row):boolean {
  if(row.kind==='document') return readsDocumentChange(actor,row)
+ if(row.kind==='review') return readsReviewProposal(actor,row)
  if(!readsProposalField(actor,row)) return false
  if(row.kind==='goal') return actor.personId===row.person_id||actor.id===row.requested_by||reviewsChange(actor,row)
  if(row.kind==='customField') return actor.personId===row.person_id || actor.id===row.requested_by || reviewsChange(actor,row)
@@ -46,6 +50,8 @@ export function readsSelfChange(actor:Actor,row:Row):boolean {
 export const SELF_CHANGE_SELECT = `SELECT c.*,cat.id AS doc_category_id,cat.name AS doc_category_name,cat.subject_reads AS doc_subject_reads,cat.manager_reads AS doc_manager_reads,
  cf.classification AS custom_classification,cf.key AS custom_key,
  (SELECT json_group_array(json_object('id',v.id,'effectiveFrom',v.effective_from,'version',v.version,'employeeRead',v.employee_read,'managerRead',v.manager_read,'retired',v.retired)) FROM wl_custom_field_versions v WHERE v.field_id=cf.id) AS custom_versions_json,
+ (SELECT json_group_array(member_id) FROM wl_review_recipients WHERE summary_id=c.row_id AND c.kind='review') AS review_recipients,
+ (SELECT json_group_array(manager) FROM wl_review_withholdings WHERE summary_id=c.row_id AND c.kind='review') AS review_withholdings,
  d.outcome,d.decided_by,d.decided_at,d.comment,r.reference,r.recorded_by,r.recorded_at AS reconciled_at
  FROM wl_self_changes c LEFT JOIN wl_self_decisions d ON d.change_id=c.id LEFT JOIN wl_self_reconciliation r ON r.change_id=c.id LEFT JOIN wl_doc_categories cat ON c.kind='document' AND cat.id=json_extract(c.after_json,'$.category') LEFT JOIN wl_custom_fields cf ON c.kind='customField' AND cf.id=c.row_id`
 
@@ -64,7 +70,7 @@ export async function currentSelfApprovalDeciders(env:Bindings,row:Row):Promise<
 }
 const project=(actor:Actor,r:Row)=>({id:r.id,personId:r.person_id,kind:r.kind,before:JSON.parse(r.before_json),after:JSON.parse(r.after_json),requestedBy:r.requested_by,requestedAt:r.requested_at,dueDate:r.due_date,owner:'Approver',status:r.outcome??'pending',
  decision:r.outcome?{by:r.decided_by,at:r.decided_at,comment:r.comment}:null,
- reconciliation:r.kind!=='goal'&&r.outcome==='approved'&&(actor.personId===r.person_id||actor.id===r.requested_by||(r.kind==='document'?nativeReviewsDocumentChange(actor,r):handlesSelfExceptions(actor,r.person_id)))?{status:r.reference?'resolved':'open',reference:r.reference,by:r.recorded_by,at:r.reconciled_at}:null})
+ reconciliation:!['goal','review'].includes(r.kind)&&r.outcome==='approved'&&(actor.personId===r.person_id||actor.id===r.requested_by||(r.kind==='document'?nativeReviewsDocumentChange(actor,r):handlesSelfExceptions(actor,r.person_id)))?{status:r.reference?'resolved':'open',reference:r.reference,by:r.recorded_by,at:r.reconciled_at}:null})
 export async function selfChanges(env:Bindings,actor:Actor) {
  const rows=(await all(env,`${SELF_CHANGE_SELECT} ORDER BY c.requested_at DESC,c.id`)).filter(row=>readsSelfChange(actor,row))
  if(rows.some(row=>row.person_id!==actor.personId))await auditRead(env,actor.id,'selfChange.private.read','list')
@@ -78,5 +84,5 @@ export async function selfChange(env:Bindings,actor:Actor,id:string) {
 }
 export async function selfExceptions(env:Bindings,actor:Actor) {
  insist(can(actor,'payroll.handoff')&&can(actor,'pay.read')||hasScopedGrant(actor,'people.manage')||can(actor,'people.manage')||reviewsSelfChanges(actor,''),'forbidden',403)
- return (await all(env,`${SELF_CHANGE_SELECT} WHERE d.outcome='approved' ORDER BY c.requested_at,c.id`)).filter(r=>r.kind!=='goal'&&(r.kind==='document'?nativeReviewsDocumentChange(actor,r):handlesSelfExceptions(actor,r.person_id))).map(r=>({id:r.id,personId:r.person_id,kind:r.kind,dueDate:r.due_date,status:r.reference?'resolved':'open',reference:r.reference,owner:'Payroll / HR',next:'Review the approved revision in the authorized system; record a handoff reference. No provider confirmation is implied.'}))
+ return (await all(env,`${SELF_CHANGE_SELECT} WHERE d.outcome='approved' ORDER BY c.requested_at,c.id`)).filter(r=>!['goal','review'].includes(r.kind)&&(r.kind==='document'?nativeReviewsDocumentChange(actor,r):handlesSelfExceptions(actor,r.person_id))).map(r=>({id:r.id,personId:r.person_id,kind:r.kind,dueDate:r.due_date,status:r.reference?'resolved':'open',reference:r.reference,owner:'Payroll / HR',next:'Review the approved revision in the authorized system; record a handoff reference. No provider confirmation is implied.'}))
 }

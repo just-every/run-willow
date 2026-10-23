@@ -12,7 +12,7 @@ import { area, field, form, h, hidden, page, select, table, tag, when, type Html
 
 const route = '/app/self-changes'
 const hr = (actor: Actor, personId = '') => canAbout(actor, 'people.manage', personId) && canAbout(actor, 'people.private', personId)
-const title = (kind: string) => kind === 'goal' ? 'Goal change' : kind === 'customField' ? 'Custom field change' : kind === 'document' ? 'Document change' : kind === 'legalName' ? 'Legal name change' : kind === 'dependent' ? 'Dependent change' : 'Personal detail change'
+const title = (kind: string) => kind === 'review' ? 'Review correction' : kind === 'goal' ? 'Goal change' : kind === 'customField' ? 'Custom field change' : kind === 'document' ? 'Document change' : kind === 'legalName' ? 'Legal name change' : kind === 'dependent' ? 'Dependent change' : 'Personal detail change'
 const PERSONAL_LABELS: Record<SelfField, string> = { legalName:'Legal name', preferredName: 'Preferred name', ...PRIVATE_LABELS }
 const LABELS: Record<string, string> = { ...PERSONAL_LABELS, operation:'Goal change', payload:'Proposed details', title:'Goal', milestones:'Milestones', dueDate:'Due date', owner:'Goal owner', progress:'Progress percent', evidence:'Completion evidence', goal:'Goal id', source:'Source revision', legalName: 'Legal name', name: 'Name', relationship: 'Relationship', row: 'Dependent row', values: 'Details', removed: 'Removed' }
 type PersonalModes = Record<SelfField, 'view' | 'approval' | 'edit'>

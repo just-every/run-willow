@@ -1,3 +1,4 @@
+import { reviewCorrectionMode } from './corrections'
 import { readsPerformanceField } from '../levels/performance'
 import type { Bindings } from '../../auth.server'
 import { type Actor } from '../actor'
@@ -24,7 +25,9 @@ export async function performanceDetail(env:Bindings,actor:Actor,id:string) {
  const released=privileged?[]:await levelReleasedReviews(env,actor)
  const ownRecipients=new Set((await all<{summary_id:string}>(env,'SELECT summary_id FROM wl_review_recipients WHERE member_id=?',actor.id)).map(r=>r.summary_id))
  const assignments=await all(env,`SELECT a.*,m.name AS author_name,p.legal_name AS person_name FROM wl_review_assignments a JOIN wl_members m ON m.id=a.member_id JOIN wl_people p ON p.id=a.person_id WHERE a.cycle_id=? ${privileged?'':'AND a.member_id=?'} ORDER BY a.id`,id,...privileged?[]:[actor.id])
- const summaries=(await all(env,`SELECT s.*,p.legal_name AS person_name FROM wl_review_summaries s JOIN wl_people p ON p.id=s.person_id WHERE s.cycle_id=? ${privileged?'':'AND (EXISTS(SELECT 1 FROM wl_review_recipients r WHERE r.summary_id=s.id AND r.member_id=?) OR s.id IN (SELECT value FROM json_each(?)))'} ORDER BY s.person_id,s.version`,id,...privileged?[]:[actor.id,JSON.stringify(released.map(r=>r.id))])).map(s=>({...s,mayAcknowledge:ownRecipients.has(s.id)} as Row & {mayAcknowledge:boolean}))
+ const summaryRows=(await all(env,`SELECT s.*,p.legal_name AS person_name,(SELECT MAX(v.version) FROM wl_review_summaries v WHERE v.cycle_id=s.cycle_id AND v.person_id=s.person_id) AS latest_version FROM wl_review_summaries s JOIN wl_people p ON p.id=s.person_id WHERE s.cycle_id=? ${privileged?'':'AND (EXISTS(SELECT 1 FROM wl_review_recipients r WHERE r.summary_id=s.id AND r.member_id=?) OR s.id IN (SELECT value FROM json_each(?)))'} ORDER BY s.person_id,s.version`,id,...privileged?[]:[actor.id,JSON.stringify(released.map(r=>r.id))]))
+ const summaries=summaryRows.map(({latest_version,...s})=>({...s,mayAcknowledge:ownRecipients.has(s.id)} as Row & {mayAcknowledge:boolean}))
+ const reviewActions=summaryRows.filter(s=>s.version===s.latest_version&&cycle.status==='open'&&['edit','approval'].includes(reviewCorrectionMode(actor,s.person_id))).map(s=>({id:s.id,requiresApproval:reviewCorrectionMode(actor,s.person_id)==='approval'}))
  insist(privileged||assignments.length||summaries.length,'not_found',404)
  const inputs=(await all(env,`SELECT i.*,a.person_id,a.role,m.name AS author_name FROM wl_review_inputs i JOIN wl_review_assignments a ON a.id=i.assignment_id JOIN wl_members m ON m.id=i.author WHERE a.cycle_id=? ${privileged?'':'AND i.author=?'} ORDER BY i.seq`,id,...privileged?[]:[actor.id])).map(i=>({...i,answers:json<string[]>(i.answers,[])} as Row & {answers:string[]}))
  const notes=privileged?await all(env,'SELECT * FROM wl_review_notes WHERE cycle_id=? ORDER BY seq',id):[]
@@ -37,7 +40,7 @@ export async function performanceDetail(env:Bindings,actor:Actor,id:string) {
  const questions=json<Record<string,string[]>>(cycle.questions,{})
  const permittedQuestions=Object.fromEntries(Object.entries(questions).filter(([role])=>privileged||assignments.some(a=>a.role===role)))
  await auditRead(env,actor.id,'performance.read',id)
- return {cycle:{...cycle,questions:permittedQuestions},assignments,inputs,notes,summaries,appeals,acknowledgments,subjects,members,withholdings,recipients,mayManage:privileged}
+ return {reviewActions,cycle:{...cycle,questions:permittedQuestions},assignments,inputs,notes,summaries,appeals,acknowledgments,subjects,members,withholdings,recipients,mayManage:privileged}
 }
 export async function performanceFile(env:Bindings,actor:Actor,id:string) {
  return new Response(JSON.stringify(await performanceDetail(env,actor,id),null,2),{headers:{'content-type':'application/json; charset=utf-8','content-disposition':`attachment; filename="performance-${id}.json"`,'cache-control':'private, no-store','x-content-type-options':'nosniff'}})

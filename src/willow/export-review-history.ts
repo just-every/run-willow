@@ -1,3 +1,4 @@
+import { selfChanges } from './self-service/view'
 // DATA-001: current native review authority, then selected-person/date filtering.
 import type { Bindings } from '../auth.server'
 import { type Actor } from './actor'
@@ -7,7 +8,8 @@ import { performanceDetail, performanceHome } from './performance/views'
 
 export async function exportReviewHistory(env: Bindings, actor: Actor, asOf: string, zone: string) {
   const before = (at: number) => today(zone, at) <= asOf
-  const cycles: Omit<Awaited<ReturnType<typeof performanceDetail>>, 'members' | 'mayManage'>[] = []
+  const requests=(await selfChanges(env,actor)).filter(row=>row.kind==='review'&&before(row.requestedAt)).map(row=>({...row,...row.decision&&!before(row.decision.at)?{status:'pending',decision:null}:{}}))
+  const cycles: Omit<Awaited<ReturnType<typeof performanceDetail>>, 'members' | 'mayManage' | 'reviewActions'>[] = []
   for (const summary of (await performanceHome(env, actor)).cycles) {
     const view = await performanceDetail(env, actor, summary.id)
     if (!before(view.cycle.created_at)) continue
@@ -42,7 +44,7 @@ export async function exportReviewHistory(env: Bindings, actor: Actor, asOf: str
     const selected = (rows: Row[]) => rows.filter(row => summaryIds.has(row.summary_id))
     const notes = view.notes.filter(row => row.person_id === person)
     if (!assignments.length && !summaries.length && !notes.length && !view.subjects.some(row => row.person_id === person)) return []
-    return [{ cycle: view.cycle, assignments,
+    return [{ cycle: view.cycle, assignments, corrections:requests.filter(row=>row.personId===person&&summaryIds.has(row.after.review)),
       inputs: view.inputs.filter(row => row.person_id === person), notes, summaries,
       appeals: selected(view.appeals), acknowledgments: selected(view.acknowledgments),
       withholdings: selected(view.withholdings), recipients: selected(view.recipients) }]

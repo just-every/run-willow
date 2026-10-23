@@ -25,7 +25,7 @@ export function readPerformanceRules(input: Input): PerformanceRules | undefined
   if (value === undefined) continue
   insist(value && typeof value === 'object' && !Array.isArray(value), 'invalid_performance_fields')
   for (const [field, mode] of Object.entries(value)) {
-   insist((PERFORMANCE_FIELDS as readonly string[]).includes(field) && typeof mode==='string' && Object.hasOwn(PERFORMANCE_RANK,mode) && (field==='goals'||mode==='none'||mode==='view'), 'invalid_performance_fields')
+   insist((PERFORMANCE_FIELDS as readonly string[]).includes(field) && typeof mode==='string' && Object.hasOwn(PERFORMANCE_RANK,mode) && (field!=='engagement'||mode==='none'||mode==='view'), 'invalid_performance_fields')
    rules[relation][field as PerformanceField] = mode as PerformanceMode
   }
  }

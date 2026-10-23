@@ -14,7 +14,7 @@ export async function exportModuleHistory(env: Bindings, actor: Actor, sections:
    ? { ...row.reconciliation, status: 'open', reference: null, by: null, at: null } : row.reconciliation
   return { ...row, reconciliation }
  })
- const changes=sections.includes('profileChanges')?datedChanges.filter(row=>row.kind!=='goal'):[]
+ const changes=sections.includes('profileChanges')?datedChanges.filter(row=>!['goal','review'].includes(row.kind)):[]
  const goalChanges=sections.includes('goals')?datedChanges.filter(row=>row.kind==='goal'):[]
  const goalData = sections.includes('goals') ? await goalHome(env, actor) : null
  const goals = (goalData?.goals ?? []).filter(goal => before(goal.createdAt)).map(goal => ({
