@@ -20,5 +20,5 @@ export async function exportModuleHistory(env: Bindings, actor: Actor, sections:
   checkins: goal.checkins.filter(checkin => before(checkin.createdAt)),
   completion: goal.completion && before(goal.completion.completedAt) ? goal.completion : null,
  }))
- return { changes, goals, goalPeople: new Set(goalData?.people.map(person => person.id) ?? []) }
+ return { changes, goals, goalPeople: new Set(goalData?.readablePeople.map(person => person.id) ?? []) }
 }

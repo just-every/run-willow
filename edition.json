@@ -82,7 +82,8 @@
           "migrations/core/0066_custom_field_approvals.sql",
           "migrations/core/0067_level_builtin_reports.sql",
           "migrations/core/0068_level_settings.sql",
-          "migrations/core/0069_api_credentials.sql"
+          "migrations/core/0069_api_credentials.sql",
+          "migrations/core/0070_performance_field_rights.sql"
         ]
       }
     },

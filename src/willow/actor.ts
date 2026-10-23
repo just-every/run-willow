@@ -1,3 +1,4 @@
+import { performanceGrants, type PerformanceGrant } from './levels/performance'
 import { settingsGrants, type SettingsGrant } from './levels/settings'
 import { approvalGrants, type ApprovalGrant } from './levels/approvals'
 import { leaveGrants, type LeaveGrant } from './levels/leave'
@@ -57,6 +58,7 @@ export interface Actor {
   reports: Set<string>
   settingsGrants: SettingsGrant[]
   approvalGrants: ApprovalGrant[]
+  performanceFields: PerformanceGrant[]
   jobFields: JobGrant[]
   leaveFields: LeaveGrant[]
   compensationFields: CompensationGrant[]
@@ -95,8 +97,8 @@ export async function actorFor(env: Bindings, member: { id: string; email: strin
   if (member.owner) PERMISSIONS.filter(permission => permission !== 'eeo.individual').forEach(permission => permissions.add(permission))
   const date = today(await employerZone(env))
   const reports = new Set(member.personId ? (await all<{ person_id: string }>(env, `${CURRENT_TERMS} AND t.manager_person_id = ?`, date, member.personId)).map(row => row.person_id) : [])
-  const [jobFields, leaveFields, compensationFields, decisions, settings] = await Promise.all([jobGrants(env,member.id,member.personId,date), leaveGrants(env,member.id,member.personId,date), compensationGrants(env,member.id,member.personId,date), approvalGrants(env,member.id,member.personId,date), settingsGrants(env,member.id)])
-  return { ...member, permissions, reports, today: date, jobFields, leaveFields, compensationFields, approvalGrants: decisions, settingsGrants: settings, reportGrants: await reportGrants(env,member.id,member.personId,date), documentCategories: await documentGrants(env,member.id,member.personId,date), otherPersonal: await otherPersonalGrants(env, member.id, member.personId, date), followOwnChanges: await followsOwnChanges(env,member), scoped: member.owner ? [] : await scopedGrants(env, member.id, member.personId, date) }
+  const [performanceFields, jobFields, leaveFields, compensationFields, decisions, settings] = await Promise.all([performanceGrants(env,member.id,member.personId,date), jobGrants(env,member.id,member.personId,date), leaveGrants(env,member.id,member.personId,date), compensationGrants(env,member.id,member.personId,date), approvalGrants(env,member.id,member.personId,date), settingsGrants(env,member.id)])
+  return { ...member, permissions, reports, today: date, performanceFields, jobFields, leaveFields, compensationFields, approvalGrants: decisions, settingsGrants: settings, reportGrants: await reportGrants(env,member.id,member.personId,date), documentCategories: await documentGrants(env,member.id,member.personId,date), otherPersonal: await otherPersonalGrants(env, member.id, member.personId, date), followOwnChanges: await followsOwnChanges(env,member), scoped: member.owner ? [] : await scopedGrants(env, member.id, member.personId, date) }
 }
 
 export async function ensureMember(env: Bindings, email: string, name: string) {

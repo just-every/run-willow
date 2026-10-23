@@ -25,6 +25,7 @@ export async function proposedApprovalActors(env:Bindings,plan:Plan,data:Data,ac
   return {...actor,permissions,
    scoped:compiled.filter(({definition:d})=>d.scope.kind!=='everyone'&&d.permissions.length).map(({definition:d,members})=>({level:d.id,scope:d.scope,permissions:new Set(held(d.permissions)),people:members})),
    approvalGrants:compiled.filter(({definition:d})=>d.approvals.length).map(({definition:d,members})=>({level:d.id,scope:d.scope,keys:d.approvals as ApprovalKey[],members})),
+   performanceFields:compiled.map(({definition:d,members})=>({level:d.id,scope:d.scope,fields:d.performanceFields,members})),
    jobFields:compiled.map(({definition:d,members})=>({level:d.id,scope:d.scope,fields:d.jobFields,members})),
    leaveFields:compiled.map(({definition:d,members})=>({level:d.id,scope:d.scope,fields:d.leaveFields,members})),
    compensationFields:compiled.map(({definition:d,members})=>({level:d.id,scope:d.scope,fields:d.compensationFields,members})),

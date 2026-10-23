@@ -50,10 +50,10 @@ export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,docume
     await submit(form('level.apply'),'Apply reviewed change')
     assert.ok((await h.api('me',staff.managera.cookie)).permissions.includes('reports.read'))
     // ROLE-001's union must also be usable through WIL-02's existing form.
-    await page.getByLabel('Member').selectOption(staff.managera.member)
-    await page.getByLabel('About this person').selectOption(staff.employee.person)
-    await page.getByRole('button',{name:'Preview'}).click()
     const visibility=page.locator('section.card').filter({has:page.getByRole('heading',{name:'Preview what a member sees',exact:true})})
+    await visibility.getByLabel('Member',{exact:true}).selectOption(staff.managera.member)
+    await visibility.getByLabel('About this person',{exact:true}).selectOption(staff.employee.person)
+    await visibility.getByRole('button',{name:'Preview',exact:true}).click()
     const compensation=visibility.locator('tbody tr').filter({has:page.getByText('Compensation',{exact:true})})
     await compensation.getByText('No',{exact:true}).waitFor()
     assert.equal((await h.api(`preview?member=${staff.managera.member}&person=${staff.employee.person}`,owner)).facets.find(f=>f.facet==='pay').visible,false)

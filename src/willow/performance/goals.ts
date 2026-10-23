@@ -1,3 +1,4 @@
+import { readsPerformanceField } from '../levels/performance'
 // Goals and their evidence live independently of review cycles. Permission is
 // always today's scope; a former manager never inherits a historical grant.
 import type { Bindings } from '../../auth.server'
@@ -22,9 +23,11 @@ const scopedOwner = `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON lo
   AND t.status='active' AND t.effective_from=(SELECT MAX(n.effective_from) FROM wl_terms n
    WHERE n.period_id=p.id AND n.status='active' AND n.effective_from<=?) AND t.manager_person_id=m.person_id)))`
 
-function inScope(actor: Actor, person: string, manager: string | null) {
+function nativeScope(actor: Actor, person: string, manager: string | null) {
  return can(actor,'people.manage') || actor.personId===person || (!!actor.personId && actor.personId===manager)
 }
+
+const inScope=(actor:Actor,person:string,manager:string|null)=>nativeScope(actor,person,manager)||readsPerformanceField(actor,person,'goals')
 
 // Recheck manager scope inside the business batch, including a transfer which
 // commits after the page/read but before this write.
@@ -39,7 +42,7 @@ function scopeGuard(env: Bindings, actor: Actor, person: string) {
 async function scopedGoal(env: Bindings, actor: Actor, id: string) {
  const row=await one(env,`${currentManagers} SELECT g.*,m.manager_person_id FROM wl_goals g
  LEFT JOIN current_managers m ON m.person_id=g.person_id WHERE g.id=?2`,actor.today,id)
- insist(row && inScope(actor,row.person_id,row.manager_person_id),'not_found',404)
+ insist(row && nativeScope(actor,row.person_id,row.manager_person_id),'not_found',404)
  return row
 }
 
@@ -63,15 +66,16 @@ export async function goalHome(env: Bindings, actor: Actor) {
   JOIN wl_members m ON m.id=c.author WHERE c.goal_id IN (${[...ids].map(()=>'?').join(',')}) ORDER BY c.seq`,...ids) : []
  const activeActor=members.some(m=>m.id===actor.id)
  return {
-  people:people.filter(p=>inScope(actor,p.id,p.manager_person_id)).map(p=>({id:p.id,name:p.name})),
+  readablePeople:people.filter(p=>inScope(actor,p.id,p.manager_person_id)).map(p=>({id:p.id,name:p.name})),
+  people:people.filter(p=>nativeScope(actor,p.id,p.manager_person_id)).map(p=>({id:p.id,name:p.name})),
   members:members.map(m=>({id:m.id,name:m.name,personId:m.person_id,managesPeople:!!m.manages_people})),
   goals:scoped.map(g=>({id:g.id,personId:g.person_id,personName:g.person_name,title:g.title,
    milestones:json<string[]>(g.milestones_json,[]),dueDate:g.due_date,development:!!g.development,
    owner:g.owner_member,ownerName:g.owner_name,createdAt:g.created_at,
    checkins:checkins.filter(c=>c.goal_id===g.id).map(c=>({id:c.id,progress:c.progress,note:c.note,author:c.author,authorName:c.author_name,createdAt:c.created_at})),
    completion:g.evidence===null ? null : {evidence:g.evidence,completedBy:g.completed_by,completedAt:g.completed_at},
-   mayCheckin:g.evidence===null,
-   mayComplete:!!g.development && g.evidence===null && (can(actor,'people.manage') || (activeActor && g.owner_member===actor.id)),
+   mayCheckin:g.evidence===null && nativeScope(actor,g.person_id,g.manager_person_id),
+   mayComplete:!!g.development && g.evidence===null && nativeScope(actor,g.person_id,g.manager_person_id) && (can(actor,'people.manage') || (activeActor && g.owner_member===actor.id)),
   })),
  }
 }
@@ -85,7 +89,7 @@ export async function saveGoal(env: Bindings, actor: Actor, input: Input) {
  const owner=input.text('owner',{optional:!development}) || null
  const row=await one(env,`${currentManagers} SELECT p.id,m.manager_person_id FROM wl_people p
   LEFT JOIN current_managers m ON m.person_id=p.id WHERE p.id=?2`,actor.today,person)
- insist(row && inScope(actor,person,row.manager_person_id),'not_found',404)
+ insist(row && nativeScope(actor,person,row.manager_person_id),'not_found',404)
  const ownerParams=[owner,person,person,actor.today,actor.today,actor.today]
  if(owner) insist(await one(env,`SELECT 1 WHERE ${scopedOwner}`,...ownerParams),'invalid_owner')
  const id=newId()
