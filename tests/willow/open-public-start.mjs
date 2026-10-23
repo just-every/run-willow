@@ -98,7 +98,10 @@ async function run() {
     const location = (await api('location.create', { name: 'Austin office', timezone: 'America/Chicago' })).id
     const template = (await publishTemplate(h, undefined, { name: 'Employee onboarding', kind: 'joiner', taskTitle: ['Review employment record'], taskAssignee: ['hr'], taskDueDays: ['0'] })).id
     const departmentNames = ['Operations', 'Customer Success', 'Engineering', 'Finance', 'People', 'Sales']
-    const departments = await Promise.all(departmentNames.map(async name => (await api('department.create', { name })).id))
+    // Each settings write binds its reviewed authority to the audit snapshot.
+    // Populate this one employer in order, as the native forms do.
+    const departments = []
+    for (const name of departmentNames) departments.push((await api('department.create', { name })).id)
     const first = ['Amara', 'Noah', 'Sofia', 'Liam', 'Priya', 'Ethan', 'Zoe', 'Mateo'], last = ['Okafor', 'Williams', 'Garcia', 'Chen', 'Patel', 'Nguyen'], employees = []
     for (let index = 0; index < 48; index++) {
       const team = Math.floor(index / 8), name = `${first[index % 8]} ${last[(team + index % 8) % 6]}`
