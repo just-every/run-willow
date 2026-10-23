@@ -97,14 +97,23 @@ export async function harness({ bindings = {}, provider, persistTo, port: chosen
   try {
     let ready = false
     for (let attempt = 0; attempt < 240 && !ready; attempt++) {
-      try { ready = (await fetch(`${origin}/health`)).ok } catch { await new Promise(resolve => setTimeout(resolve, 250)) }
+      try {
+        const response = await fetch(`${origin}/health`, { headers: { connection: 'close' } })
+        ready = response.ok
+        await response.arrayBuffer()
+      } catch { await new Promise(resolve => setTimeout(resolve, 250)) }
     }
     assert.ok(ready, 'the Worker became healthy')
   } catch (error) { await close(); throw error }
 
+  // Each disposable Worker owns its sockets. Long actions (such as rendering
+  // scheduled reports for several recipients) can outlive another pooled
+  // socket's idle timeout. Reusing that half-closed socket races its FIN and
+  // resets the next assertion. Use a fresh HTTP connection, without retries: a
+  // failed request, including a write, must still fail the journey exactly once.
   const raw = (path, { cookie, body, form, method, ip } = {}) => fetch(origin + path, {
     method: method ?? (body !== undefined || form ? 'POST' : 'GET'), redirect: 'manual',
-    headers: { 'CF-Connecting-IP': ip ?? '127.0.0.1', ...(cookie ? { cookie } : {}), ...(body !== undefined || form ? { origin } : {}), ...(body !== undefined ? { 'content-type': 'application/json' } : {}) },
+    headers: { connection: 'close', 'CF-Connecting-IP': ip ?? '127.0.0.1', ...(cookie ? { cookie } : {}), ...(body !== undefined || form ? { origin } : {}), ...(body !== undefined ? { 'content-type': 'application/json' } : {}) },
     body: body !== undefined ? JSON.stringify(body) : form,
   })
 
