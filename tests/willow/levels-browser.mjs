@@ -2,6 +2,7 @@ import { bulkBrowserProof, delegatedBrowserProof } from './levels-bulk-browser.m
 import { personalBrowserProof, otherPersonalBrowserProof, documentCategoryBrowserProof, documentWriteBrowserProof, selectedReportBrowserProof } from './levels-personal-browser.mjs'
 import { scopeBrowserProof } from './levels-scope-browser.mjs'
 import assert from 'node:assert/strict'
+import { writeFile } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 import { evidenceDirectory } from './evidence.mjs'
 export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,documentRights,selectedReport) {
@@ -11,9 +12,9 @@ export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,docume
  const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
  try {
   const context=await browser.newContext({ignoreHTTPSErrors:true})
+  const page=await context.newPage()
   try {
    await context.addCookies(owner.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})))
-   const page=await context.newPage()
    const visit=async()=>assert.equal((await page.goto(h.origin+'/app/access')).status(),200)
    const form=name=>page.locator(`form[action="/app/do/${name}"]`)
    const submit=async(target,name)=>{
@@ -74,6 +75,10 @@ export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,docume
    if(delegated) await delegatedBrowserProof(browser,h,owner,staff,delegated)
    if(selectedReport) await selectedReportBrowserProof(browser,h,owner,staff,selectedReport)
    if(documentRights) {await documentCategoryBrowserProof(browser,h,owner,staff,documentRights);await documentWriteBrowserProof(browser,h,owner,staff,documentRights)}
+  } catch(error) {
+   await writeFile(`${evidenceDirectory}/access-failure.html`,await page.content())
+   await writeFile(`${evidenceDirectory}/access-failure.json`,JSON.stringify({url:page.url(),error:String(error)}))
+   throw error
   } finally {await context.close()}
  } finally {await browser.close()}
 }
