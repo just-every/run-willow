@@ -1,4 +1,5 @@
 // Authentication is independent from operator sessions. A supplied credential never falls through to cookies.
+import { V1_API_DOORS, match } from '../doors'
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
 import { WillowError, auditRead, commit, guard, insist, now, one, sha256Hex, stmt } from '../core'
@@ -12,15 +13,17 @@ export const CREDENTIAL_API_DOORS:[RegExp,string][]=[
  [/^builtin-reports$/,'builtinReports'],[/^builtin-reports\/[\w-]+$/,'builtinReport'],
 ]
 export function credentialDoor(request:Request):string|null {
+ if(request.method==='POST'&&['/api/willow/v1/changes','/api/willow/v1/webhooks'].includes(new URL(request.url).pathname))return 'v1Write'
  if(request.method!=='GET')return null
  const url=new URL(request.url),prefix='/api/willow/'
  if(!url.pathname.startsWith(prefix))return null
  const path=url.pathname.slice(prefix.length)
  // "me" is a human alias even on otherwise permitted person doors.
  if(path.split('/').includes('me'))return null
+ if(path.startsWith('v1/'))return match(V1_API_DOORS,path.slice(3))?.name??null
  return CREDENTIAL_API_DOORS.find(([pattern])=>pattern.test(path))?.[1]??null
 }
-const sourceSnapshot=async(env:Bindings)=>(await one<{seq:number}>(env,"SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit WHERE action NOT LIKE '%.read'"))!.seq
+const sourceSnapshot=async(env:Bindings)=>(await one<{seq:number}>(env,"SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download'"))!.seq
 const VALID=`c.revoked_at IS NULL AND c.expires_at>? AND l.version=c.level_version
  AND m.status='active' AND o.status='active' AND o.role='owner' AND o.version=c.issuer_version AND lower(o.email)=m.email`
 const ADMISSION=`FROM wl_api_credentials c JOIN wl_levels l ON l.id=c.level_id JOIN wl_members m ON m.id=c.issued_by JOIN oa_operators o ON o.id=c.issuer_operator`
@@ -55,7 +58,7 @@ export async function credentialActor(env:Bindings,request:Request):Promise<Acto
  try {
   await commit(env,[
    guard(env,'invalid_credential',`EXISTS(SELECT 1 ${ADMISSION} WHERE c.id=? AND ${VALID})`,row.id,time),
-   guard(env,'credential_source_changed',"(SELECT COALESCE(MAX(seq),0) FROM wl_audit WHERE action NOT LIKE '%.read')=?",snapshot),
+   guard(env,'credential_source_changed',"(SELECT COALESCE(MAX(seq),0) FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download')=?",snapshot),
    stmt(env,`INSERT INTO wl_api_credential_limits(credential_id,window,count) VALUES(?,?,1) ON CONFLICT(credential_id) DO UPDATE SET window=excluded.window,count=CASE WHEN wl_api_credential_limits.window=excluded.window THEN wl_api_credential_limits.count+1 ELSE 1 END`,row.id,window),
    stmt(env,'UPDATE wl_api_credentials SET last_used_at=? WHERE id=?',time,row.id),
   ],{actor:actor.id,action:'apiKey.read',subject:row.id,detail:{door}})
@@ -78,4 +81,16 @@ export async function assertCredentialCurrent(env:Bindings,actor:Actor) {
  if(!context)return
  if(!await credentialValid(env,context.id))return invalid(env,context.id)
  insist(await sourceSnapshot(env)===context.snapshot,'credential_source_changed',409)
+}
+
+/** Recompile non-person requesters at HR decision time; no member is impersonated. */
+export async function currentCredentialPrincipal(env:Bindings,id:string,instant?:number) {
+ const row=await one<CredentialRow>(env,'SELECT * FROM wl_api_credentials WHERE id=?',id)
+ if(!row||!await credentialValid(env,id))return invalid(env,id)
+ return compileCredentialPrincipal(env,row,await sourceSnapshot(env),instant)
+}
+export function credentialFence(env:Bindings,actor:Actor) {
+ const context=credentialContext(actor)
+ insist(context,'invalid_credential',401)
+ return guard(env,'access_changed',`EXISTS(SELECT 1 ${ADMISSION} WHERE c.id=? AND ${VALID}) AND (SELECT COALESCE(MAX(seq),0) FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download')=?`,context.id,now(),context.snapshot)
 }

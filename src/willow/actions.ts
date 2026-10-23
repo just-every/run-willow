@@ -1,4 +1,5 @@
 import { correctReview } from './performance/corrections'
+import { approveWebhook, replayWebhook, runWebhooksNow, disableWebhook } from './webhooks'
 import { issueCredential,rotateCredential,revokeCredential } from './api-credentials'
 import { resubmitCompensationRecord,resubmitCompensationDefinition } from './compensation/resubmit'
 import { editCompensationPay, proposeCompensationRecord } from './compensation/pay'
@@ -65,6 +66,7 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'webhook.disable':disableWebhook,'webhook.approve':approveWebhook,'webhook.replay':replayWebhook,'webhook.run':runWebhooksNow,
   'preboarding.send': createPacket, 'preboarding.withdraw': withdrawPacket,
   'hiring.selfId.invite': inviteApplicant, 'hiring.selfId.withdraw': revokeApplicantInvitation, 'hiring.close': closeApplication,
   'hiring.opening': createHiringOpening, 'hiring.team': setHiringTeam, 'hiring.candidate': addHiringCandidate, 'hiring.move': moveHiringCandidate, 'hiring.scorecard': scoreHiringCandidate, 'hiring.resume': addHiringResume,

@@ -1,3 +1,4 @@
+import { currentCredentialPrincipal } from '../api-credentials/authenticate'
 // A personal proposal contains exactly one validated field and its nullable value.
 import { otherPersonalFence } from '../levels/other-personal'
 import type { Bindings } from '../../auth.server'
@@ -31,9 +32,13 @@ export async function approvePersonalStatements(env: Bindings, reviewer: Actor, 
  const snapshot=(await one<{seq:number}>(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
  const member=await one(env,`SELECT m.id,m.email,m.name,m.person_id,o.role FROM wl_members m
   JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?`,row.requested_by)
- insist(member,'personal_approval_unavailable',403)
- const requester=await actorFor(env,{id:member.id,email:member.email,name:member.name,personId:member.person_id,owner:member.role==='owner',sessionId:reviewer.sessionId})
- const authority=member.person_id===row.person_id ? (insist((await selfWriteModes(env,requester))[field]==='approval','personal_approval_unavailable',403), []) : [await otherPersonalFence(env,requester,row.person_id,field,'approval')]
+ let requester:Actor
+ if(String(row.requested_by).startsWith('credential:'))requester=await currentCredentialPrincipal(env,String(row.requested_by).slice(11))
+ else {
+  insist(member,'personal_approval_unavailable',403)
+  requester=await actorFor(env,{id:member.id,email:member.email,name:member.name,personId:member.person_id,owner:member.role==='owner',sessionId:reviewer.sessionId})
+ }
+ const authority=requester.personId===row.person_id ? (insist((await selfWriteModes(env,requester))[field]==='approval','personal_approval_unavailable',403), []) : [await otherPersonalFence(env,requester,row.person_id,field,'approval')]
  return [...authority,
   guard(env,'stale','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',snapshot),
   guard(env,'stale','EXISTS(SELECT 1 FROM wl_people WHERE id=? AND revision=?)',row.person_id,row.source_revision),

@@ -22,6 +22,7 @@ const provider = side => async request => {
     if (body.subject === 'Willow: an update is ready') { if (side === 'source') sourceNotices++; else restoredNotices++ }
     return new Response(null, { status: 202 })
   }
+  if(new URL(request.url).hostname==='synthetic-willow-16100.example.com')return new Response(null,{status:204})
   modelCalls++
   throw new Error('No model call is authorized during restore')
 }
@@ -120,6 +121,11 @@ try {
   assert.ok(credential.token)
   const credentialRead = await fetch(origin + '/api/willow/people', { headers: { authorization: `Bearer ${credential.token}` } })
   assert.equal(credentialRead.status, 200, 'Source credential works and creates native rate-limit state')
+  const webhookKey=await api('apiKey.issue',owner,{name:'synthetic-willow-16101',level:credentialLevel.id,writeScopes:['webhooks.manage'],expiresAt:new Date(Date.now()+86400000).toISOString()})
+  const webhookResponse=await fetch(origin+'/api/willow/v1/webhooks',{method:'POST',headers:{authorization:'Bearer '+webhookKey.token,'content-type':'application/json'},body:JSON.stringify({endpoint:'https://synthetic-willow-16100.example.com/receive',fields:['name'],events:['employee.created']})})
+  assert.equal(webhookResponse.status,200)
+  const webhook=await webhookResponse.json()
+  await api('webhook.approve',owner,{webhook:webhook.data.id,consent:true})
   const customSnapshots = await archiveCustomFields(api, owner, s.employee.person)
   const leave = await api('leave.request', s.employee.cookie, { account: s.employee.account, startDate: day(3), endDate: day(3), reason: 'RESTORE-CONFIDENTIAL' })
   await api('leave.decide', owner, { request: leave.id, decision: 'approve' })
@@ -140,6 +146,9 @@ try {
   assert.deepEqual(sourceImportSettings.revokedKids, ['restore-revoked-key'])
   const pending = await f.join('restorequeue', { startDate: day(10) })
   const pendingCase = await api(`cases/${pending.case}`, owner)
+  await api('webhook.run',owner,{})
+  const webhookLog=await fetch(origin+'/api/willow/v1/webhooks/'+webhook.data.id+'/deliveries',{headers:{authorization:'Bearer '+webhookKey.token}})
+  assert.ok((await webhookLog.json()).deliveries.length>0,'Archive source holds an active hook and delivery custody')
   const payroll = await api('payroll.draft', owner, { periodStart: day(-120), periodEnd: day(20) })
   const noticeHistory = (await api('connections', owner)).history
   assert.ok(sourceNotices > 0)
@@ -152,11 +161,12 @@ try {
   const data = await readFile(join(source, 'exports/access.rer')), records = []
   for await (const record of readArchive(new ReadableStream({ start(c) { c.enqueue(data); c.close() } }))) records.push(record)
   const header = records[0]
+  assert.ok(!data.includes(Buffer.from(webhook.secret)),'Webhook signing authority never enters archive bytes')
   assert.ok(!data.includes(Buffer.from(credential.token)), 'Archive bytes never contain the generated bearer token')
-  for (const table of ['wl_api_credentials', 'wl_api_credential_limits']) assert.ok(!header.tables.some(item => item.name === table), `${table} is excluded from the archive inventory`)
+  for (const table of ['wl_api_credentials', 'wl_api_credential_limits','wl_webhooks','wl_webhook_deliveries']) assert.ok(!header.tables.some(item => item.name === table), `${table} is excluded from the archive inventory`)
   assert.ok(!header.tables.some(t => /^oa_/.test(t.name)), 'auth credentials, sessions and tokens excluded')
   const items = records.filter(r => r.kind === 'part').flatMap(r => r.items)
-  assert.ok(!items.some(item => ['wl_api_credentials', 'wl_api_credential_limits'].includes(item.table)), 'Credential custody and limits have no archived rows')
+  assert.ok(!items.some(item => ['wl_api_credentials', 'wl_api_credential_limits','wl_webhooks','wl_webhook_deliveries'].includes(item.table)), 'Credential custody and limits have no archived rows')
   for (const table of ['wl_eeo_answers', 'wl_eeo_recorded', 'wl_contractor_status']) assert.ok(items.some(item => item.table === table), `EEO-001: ${table} is in the owner archive`)
   // ROLE-001: portable authority is the exact union of direct and assigned grants.
   for (const member of members.filter(member => !member.owner)) {

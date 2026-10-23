@@ -1,0 +1,3 @@
+/* Keep icon hints inside the viewport and available on keyboard focus. */
+.control-tooltip { left:auto; right:0; transform:none; font-size:13px; }
+.bell:focus .control-tooltip { opacity:1; visibility:visible; transition:none; }

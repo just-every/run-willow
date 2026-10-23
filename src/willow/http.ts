@@ -1,3 +1,6 @@
+import { webhooksPage } from './ui/webhooks'
+import { versionedRead, versionedWrite } from './api'
+import { apiDescription } from './api-description'
 import { builtinReportsPage,builtinReportPage } from './ui/builtin-reports'
 import { builtinReportFile } from './reporting/builtin-files'
 import { credentialActor, isCredentialActor } from './api-credentials'
@@ -56,7 +59,7 @@ import { importPage, previewPage } from './ui/movein'
 import { directoryPage, personPage } from './ui/people'
 import { accessPage, customFieldsPage, employerPage, settingsPage } from './ui/settings'
 import { auditPage, batchPage, payrollPage, proposalPage, proposalsPage, reportsPage } from './ui/work'
-import { PAGE_DOORS, INVITATION_DOORS, match } from './doors'
+import { PAGE_DOORS, INVITATION_DOORS, PUBLIC_API_DOORS, match } from './doors'
 import { route } from './views'
 import { connectionsPage } from './ui/connections'
 import { progressPage } from './ui/progress'
@@ -84,16 +87,21 @@ export async function willowResponse(request: Request, original: Bindings): Prom
     if (invitation) return invitation
   }
   if (!api && url.pathname !== '/app' && !url.pathname.startsWith('/app/') && !match(INVITATION_DOORS,url.pathname)) return null
+  if(match(PUBLIC_API_DOORS,url.pathname)&&request.method==='GET')return json(apiDescription)
   let actor: Actor | null = null
   try {
     // Any Authorization header belongs to this boundary, including invalid credentials.
     // It must never fall through to a cookie session or a form action.
     actor = await credentialActor(env, request)
-    if (actor) return json(await credentialRead(env,actor,request,url))
+    if (actor) {
+      const result=url.pathname.startsWith('/api/willow/v1/')?(request.method==='POST'?await versionedWrite(env,actor,request,url):await versionedRead(env,actor,request,url)):await credentialRead(env,actor,request,url)
+      return result instanceof Response?result:json(result)
+    }
     if (request.method === 'POST' && request.headers.get('origin') !== env.AUTH_ORIGIN) return api ? json({ error: 'invalid_origin' }, 403) : new Response('Forbidden', { status: 403 })
     if (!['GET', 'HEAD', 'POST'].includes(request.method)) return new Response(null, { status: 405, headers: { allow: 'GET, HEAD, POST' } })
     actor = await currentActor(env, request)
     if (!actor) return api ? json({ error: 'authentication_required' }, 401) : Response.redirect(`${env.AUTH_ORIGIN}/signin?returnTo=${encodeURIComponent(url.pathname)}`, 303)
+    if(url.pathname.startsWith('/api/willow/v1/'))throw new WillowError('credential_required',401)
     if (api) return await apiResponse(env, actor, request, url)
     return await pageResponse(env, actor, request, url)
   } catch (error) {
@@ -161,6 +169,7 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  webhooks:(env,actor,_request,url)=>webhooksPage(env,actor,url),
   apiCredentials:(env,actor,_request,url)=>credentialsPage(env,actor,url),
   settingLocations:(env,actor,_request,url)=>settingAreaPage(env,actor,'locations',url),
   settingSchedules:(env,actor,_request,url)=>settingAreaPage(env,actor,'schedules',url),

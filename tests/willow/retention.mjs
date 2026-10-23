@@ -14,7 +14,7 @@ import { payrollErasure } from './retention-payroll.mjs'
 import { importErasure } from './retention-import.mjs'
 
 const directory = await mkdtemp(join(tmpdir(), 'willow-retention-'))
-const h = await harness({ persistTo: directory, scheduled: true })
+const h = await harness({ persistTo: directory, scheduled: true, provider: async () => new Response(null,{status:202}) })
 const years = (date, n) => { const d = new Date(`${date}T00:00:00Z`); d.setUTCFullYear(d.getUTCFullYear() + n); return d.toISOString().slice(0, 10) }
 try {
   assert.equal((await h.raw('/auth/bootstrap', { body: { token: h.vars.SETUP_TOKEN, displayName: 'Olive Owner' } })).status, 303)
@@ -34,7 +34,19 @@ try {
   assert.equal((await h.raw('/api/willow/retention', { cookie: s.ended.cookie })).status, 401)
 
   // A populated former worker: native records of every shape, a work state and a recorded departure.
+  const webhookLevel=await api('level.apply',{review:(await api('level.preview',{kind:'level',name:'synthetic-willow-16000',permissions:[]})).id})
+  const webhookKey=await api('apiKey.issue',{name:'synthetic-willow-16001',level:webhookLevel.id,writeScopes:['webhooks.manage'],expiresAt:new Date(Date.now()+86400000).toISOString()})
+  const webhookResponse=await fetch(h.origin+'/api/willow/v1/webhooks',{method:'POST',headers:{authorization:'Bearer '+webhookKey.token,'content-type':'application/json'},body:JSON.stringify({endpoint:'https://synthetic-willow-16002.example.com/receive',fields:['name'],events:['employee.created']})})
+  assert.equal(webhookResponse.status,200)
+  const webhook=await webhookResponse.json()
+  await api('webhook.approve',{webhook:webhook.data.id,consent:true})
   const quinn = await f.join('quinn'), q = quinn.person
+  await api('webhook.run',{})
+  const webhookLog=async()=>{
+   const response=await fetch(h.origin+'/api/willow/v1/webhooks/'+webhook.data.id+'/deliveries',{headers:{authorization:'Bearer '+webhookKey.token}})
+   assert.equal(response.status,200);return response.json()
+  }
+  assert.equal((await webhookLog()).deliveries.length,1,'A real employee delivery exists before erasure')
   const quinnMemberId = (await api('access.give', { person: q })).id
   const quinnCookie = await h.signIn('quinn@example.com', { requested: true })
   await h.api('eeo.self.write', quinnCookie, { raceEthnicity: 'asian', sex: 'female' })
@@ -122,6 +134,9 @@ try {
   assert.equal(item.people.disposition, 'held', 'identity stays while anything is held')
   assert.equal(item.audit.disposition, 'anonymized')
   assert.equal(item.sessions.disposition, 'erased')
+  assert.equal(item.webhook_deliveries.rows,1)
+  assert.equal(item.webhook_deliveries.disposition,'erased')
+  assert.ok(clean.copies.providers.some(row=>row.provider==='Webhook destination https://synthetic-willow-16002.example.com'&&row.copies===1))
   assert.ok(clean.summary.held > 0 && clean.summary.retained > 0 && clean.summary.erased > 0 && clean.summary.anonymized > 0)
   assert.ok(clean.copies.exports.statement.includes('may include'))
 
@@ -178,6 +193,7 @@ try {
   const sourceBefore = await rowCounts(directory)
   const erased = await api('erasure.confirm', { person: q, digest: final.digest })
   assert.equal(erased.status, 'confirmed')
+  assert.equal((await webhookLog()).deliveries.length,0,'Erasure removes native webhook delivery custody')
   assert.match(erased.label, /^Former person [0-9a-f]{8}$/)
   assert.equal((await api('erasure.confirm', { person: q, digest: final.digest }, 409)).error, 'erasure_request_required')
   await preview('owner', q, 404)
@@ -208,17 +224,17 @@ try {
   assert.ok(!JSON.stringify(receipt).match(new RegExp([q, quinnMember, 'quinn', 'Quinn'].join('|'))), 'the receipt holds no identifier')
   await browserEvidence(h, owner, [['receipt', `/app/retention/receipts/${erased.receipt}`], ['retained', '/app/retention/retained']])
   assert.equal(receipt.source, 'own_request')
-  assert.deepEqual(receipt.providerRequests.map(r => [r.provider, r.status, r.open]), [['Email notice provider', 'open', true]], 'the provider that received a notice gets a tracked deletion request')
+  assert.deepEqual(receipt.providerRequests.map(r => [r.provider, r.status, r.open]).sort(), [['Email notice provider', 'open', true],['Webhook destination https://synthetic-willow-16002.example.com','open',true]].sort(), 'Every outside recipient gets tracked deletion work')
   const providerWork = (await get('owner', 'work')).items.find(item => item.kind === 'provider-deletion')
   assert.ok(providerWork, 'the request is the owner\'s FLOW-002 work')
-  const requestId = receipt.providerRequests[0].id
+  const requestId = receipt.providerRequests.find(row=>row.provider==='Email notice provider').id
   await as('managera', 'erasure.provider', { request: requestId, outcome: 'deleted', evidence: 'x' }, 403)
   await api('erasure.provider', { request: requestId, outcome: 'failed' }, 400)
   await api('erasure.provider', { request: requestId, outcome: 'failed', evidence: 'provider API returned 503' })
-  assert.equal((await api(`erasure/receipts/${erased.receipt}`)).providerRequests[0].open, true, 'a failed provider deletion remains open')
+  assert.equal((await api(`erasure/receipts/${erased.receipt}`)).providerRequests.find(row=>row.id===requestId).open, true, 'a failed provider deletion remains open')
   assert.ok((await get('owner', 'work')).items.some(item => item.kind === 'provider-deletion'), 'and stays work')
   await api('erasure.provider', { request: requestId, outcome: 'retained', evidence: 'provider reply 12', reason: 'legal hold at the provider', expiry: day(90) })
-  assert.equal((await api(`erasure/receipts/${erased.receipt}`)).providerRequests[0].open, false)
+  assert.equal((await api(`erasure/receipts/${erased.receipt}`)).providerRequests.find(row=>row.id===requestId).open, false)
   await api('erasure.provider', { request: requestId, outcome: 'deleted', evidence: 'x' }, 409)
   await as('managera', `erasure/receipts/${erased.receipt}`, undefined, 403)
   const custodyRecords = (await api('retained')).records

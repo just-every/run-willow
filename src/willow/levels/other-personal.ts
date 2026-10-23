@@ -1,3 +1,5 @@
+import { credentialContext } from '../api-credentials/principal'
+import { currentCredentialPrincipal, credentialFence } from '../api-credentials/authenticate'
 // Personal rights about others contribute only within their own level's scope.
 import type { Bindings } from '../../auth.server'
 import { actorFor, canAbout, type Actor } from '../actor'
@@ -44,6 +46,12 @@ export const readsPersonalField=(actor: Actor,person: string,field: SelfField)=>
 
 /** Rebuild current authority after taking the watermark, then fence it in the native batch. */
 export async function otherPersonalFence(env: Bindings, actor: Actor, person: string, field: SelfField, mode: 'edit'|'approval') {
+ const credential=credentialContext(actor)
+ if(credential) {
+  const current=await currentCredentialPrincipal(env,credential.id)
+  insist(mode==='approval'&&credential.writeScopes.includes('personal.approval')&&otherPersonalMode(current,person,field)==='approval','personal_field_forbidden',403)
+  return credentialFence(env,current)
+ }
  const snapshot=(await one<{seq:number}>(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
  const member=await one(env,`SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?`,actor.id)
  insist(member,'forbidden',403)
