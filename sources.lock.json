@@ -276,7 +276,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "d2cff7fa0fdb3eaa3a3dea01d61ff36094b56fa6c7fe32bb6fa11298bdee90a0",
+      "sha256": "3eceee6d7a26b82df3c6025a265301754e7c7cea33cf6ac0950ae96a868597d3",
       "executable": false
     },
     "DEMO.md": {
@@ -3716,7 +3716,7 @@
       "executable": false
     },
     "src/willow/surveys/results.ts": {
-      "sha256": "73ec2c6b10c1a8ae5fba05b5116af51b228d144b1602ad364db23ee1c024de64",
+      "sha256": "a057e467179006e0f12771676606e5a81243c628d3fbf1f8e10d955b0f032910",
       "executable": false
     },
     "src/willow/surveys/setup.ts": {

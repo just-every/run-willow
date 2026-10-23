@@ -153,7 +153,7 @@ export async function surveyResults(env: Bindings, actor: Actor, id: string,
   const hr = can(actor, 'people.manage')
   const started = (await one<{ seq: number }>(env, WATERMARK))!.seq
   const survey = await one<Survey>(env, 'SELECT * FROM wl_surveys WHERE id=?', id)
-  insist(survey, 'survey_not_found', 404)
+  insist(survey, 'survey_not_found', hr ? 404 : 403)
   if (!hr) {
     insist(await readsSurveyThemes(env,actor,id), 'forbidden', 403)
   }
