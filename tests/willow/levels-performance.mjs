@@ -102,7 +102,7 @@ export async function performanceLevelProof(h, owner, {staff:s,join,today,day}) 
  await performanceReadBrowserProof(h,owner,cookie,s.invited.member,plan,level.id,cycle.id,goal.id,inside.person)
  await goalModeProof(h,owner,cookie,s,plan,level.id,inside,outside,today,day,join)
  await engagementThemeProof(h,owner,cookie,s,plan,level.id,inside,outside,survey.id,today,day)
- console.log(`ROLE-008 read slice: PASS — ${urls.length} public doors, explicit released-review and goal View, exact scope, real private inputs/HR notes/anonymous comments, named withholding, bundle parity, independent revocation and no write/work grant`)
+ console.log(`ROLE-008 read slice: PASS — ${urls.length} public doors, explicit released-review and goal View, exact scope, real private inputs, HR notes and anonymous comments, named withholding, bundle parity, independent revocation and no write or work grant`)
 }
 
 async function performanceReadBrowserProof(h,owner,cookie,member,plan,level,cycle,goal,person) {
@@ -234,7 +234,7 @@ async function goalModeProof(h,owner,cookie,s,plan,level,inside,outside,today,da
  for(const value of ['synthetic-willow-10037','synthetic-willow-10038','synthetic-willow-10039','synthetic-willow-10043'])assert.ok(!current.includes(value))
  await goalModeBrowserProof(h,owner,cookie,s.hr.cookie,plan,level,s.invited.member,inside.person,day)
  await mode('none')
- console.log('ROLE-008 goal modes: PASS — native scoped Edit, immutable HR-approved creation/check-ins/completion, exact current sources, selected reviewer routing/revocation, no self approval, moved/revoked/ended refusal and no provider handoff')
+ console.log('ROLE-008 goal modes: PASS — native scoped Edit, immutable HR-approved creation/check-ins/completion, exact current sources, selected reviewer routing and revocation, no self approval, moved, revoked or ended refusal and no provider handoff')
 }
 
 async function goalModeBrowserProof(h,owner,cookie,hrCookie,plan,level,member,person,day) {
@@ -340,7 +340,7 @@ async function engagementThemeProof(h,owner,cookie,s,plan,level,inside,outside,a
  assert.equal((await api(`surveys/${anonymous}/results`)).comments.length,5,'Native HR comment authority is retained')
  await engagementThemeBrowserProof(h,owner,cookie,scoped,named.id)
  await apply({...scoped,performanceFields:{self:{},others:{}}})
- console.log('ROLE-008 engagement themes: PASS — fixed-cohort scope, real named/anonymous response exclusions, page/JSON/CSV parity, current transfers and same-session revocation; no publication, ownership or HR-comment rights')
+ console.log('ROLE-008 engagement themes: PASS — fixed-cohort scope, real named and anonymous response exclusions, page, JSON and CSV parity, current transfers and same-session revocation; no publication, ownership or HR-comment rights')
 }
 
 async function engagementThemeBrowserProof(h,owner,cookie,plan,survey) {

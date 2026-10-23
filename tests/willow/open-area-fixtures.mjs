@@ -46,6 +46,9 @@ export async function openAreaFixtures(h, { owner, employees, today, day }) {
   const compliance = await openComplianceFixtures(api, { owner, employees, today, acceptInvitation: h.acceptInvitation })
   return {
     ...compliance,
+    builtinReport: `/app/reports/library/builtin-headcount?asOf=${today}`,
+    builtinReportCsv: `/app/reports/library/builtin-headcount.csv?asOf=${today}`,
+    builtinReportXlsx: `/app/reports/library/builtin-headcount.xlsx?asOf=${today}`,
     compensationEquity: `/app/compensation/equity?asOf=${today}&level=Service`,
     employeeCsv: '/app/exports/employees.csv?scope=organization&fields=name,jobTitle',
     employeeXlsx: '/app/exports/employees.xlsx?scope=organization&fields=name,jobTitle',
