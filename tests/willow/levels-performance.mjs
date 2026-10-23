@@ -251,7 +251,7 @@ async function goalModeBrowserProof(h,owner,cookie,hrCookie,plan,level,member,pe
    await admin.goto(h.origin+'/app/access')
    const editor=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:new RegExp('^'+plan.name+' ·')})}).first()
    await editor.locator('summary').click();await editor.getByLabel('Performance about others: Goals and check-ins',{exact:true}).selectOption('approval')
-   await submit(admin,editor,'Review level');await capture(admin,'approval-review',width)
+   await submit(admin,editor.locator('form'),'Review level');await capture(admin,'approval-review',width)
    await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
    await writer.goto(h.origin+'/app/goals')
    const create=writer.locator('form[action="/app/do/goal.create"]');await create.locator('..').locator('summary').click()

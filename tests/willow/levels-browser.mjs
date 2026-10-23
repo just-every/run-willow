@@ -18,14 +18,13 @@ export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,docume
    const visit=async()=>assert.equal((await page.goto(h.origin+'/app/access')).status(),200)
    const form=name=>page.locator(`form[action="/app/do/${name}"]`)
    const submit=async(target,name)=>{
-    await target.getByRole('button',{name,exact:true}).click()
-    await page.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'))
+    await Promise.all([page.waitForNavigation({waitUntil:'load'}),target.getByRole('button',{name,exact:true}).click()])
     assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())
    }
    for(const width of [1440,390]) {
     await page.setViewportSize({width,height:1000})
     const capture=async name=>{
-     await page.evaluate(()=>document.fonts.ready)
+     await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`ROLE-001 ${name} fits ${width}`)
      await page.screenshot({path:`${evidenceDirectory}/ROLE-001-${name}-${width}.png`,fullPage:true})
     }
@@ -124,7 +123,7 @@ export async function demoProof() {
      await page.setViewportSize({width,height:1000})
      for(const [name,path] of [['directory','/app/people'],['document',`/app/people/${owner.person}`]]) {
       assert.equal((await page.goto(h.origin+path)).status(),200)
-      await page.evaluate(()=>document.fonts.ready)
+      await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`Demo ${name} fits ${width}`)
       await page.screenshot({path:`${evidenceDirectory}/demo-${name}-${width}.png`,fullPage:true})
      }
