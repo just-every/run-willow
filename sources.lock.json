@@ -4212,7 +4212,7 @@
       "executable": false
     },
     "tests/willow/levels-performance.mjs": {
-      "sha256": "6dbc1c8fee4f02104d858995231ff1fcd311f9e4a5a2e0304c857220abc9f231",
+      "sha256": "e88ba4b36c150063001f3a50b9045541d68f3b7fbedbc3c6083499ac0e0ef84c",
       "executable": false
     },
     "tests/willow/levels-personal-browser.mjs": {

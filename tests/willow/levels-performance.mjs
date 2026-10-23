@@ -279,6 +279,7 @@ async function engagementThemeProof(h,owner,cookie,s,plan,level,inside,outside,a
  const insideMember=await api('access.give',{person:inside.person}),outsideMember=await api('access.give',{person:outside.person})
  const insideCookie=await h.signIn('synthetic-willow-10002@example.com',{requested:true})
  const create=async(member,name)=>api('survey.create',{name,kind:'pulse',mode:'named',deliveryDate:today,dueDate:day(7),members:[member],questions:[{key:'comment',label:'Named feedback',type:'text'}]})
+ await h.signIn('synthetic-willow-10003@example.com',{requested:true})
  const named=await create(insideMember.id,'synthetic-willow-10060 scoped named survey')
  const external=await create(outsideMember.id,'synthetic-willow-10061 outside survey')
  await h.api('survey.respond',insideCookie,{survey:named.id,answers:{comment:'synthetic-willow-10062 confidential named response'}})
@@ -318,6 +319,10 @@ async function engagementThemeProof(h,owner,cookie,s,plan,level,inside,outside,a
  // participation is still visible only to the same invited recipient.
  await apply({...scoped,scope:{kind:'everyone'},performanceFields:{self:{engagement:'view'},others:{engagement:'view'}}})
  assert.equal((await read(`surveys/${anonymous}/results`)).access,'themes')
+ const pending=await api('survey.create',{name:'synthetic-willow-10068 pending anonymous survey',kind:'pulse',mode:'anonymous',deliveryDate:today,dueDate:day(7),members:[s.invited,s.managera,s.managerb,s.employee,s.payroll].map(m=>m.member),questions:[{key:'score',label:'Score',type:'score'}]})
+ const work=(await read('work')).items.filter(item=>item.source.startsWith(`survey:${pending.id}:`))
+ assert.deepEqual(work.map(item=>item.source),[`survey:${pending.id}:${s.invited.member}`],'Whole-cohort themes never expose another recipient’s anonymous participation or reminders')
+ assert.ok(!(await read('work')).items.some(item=>item.source===`survey-review:${pending.id}`),'Theme View grants no HR result-review work')
  assert.deepEqual((await read(`surveys/${anonymous}`)).survey.own,{answered:true,declined:false})
  const secret=['synthetic-willow-10062','synthetic-willow-10020']
  for(const survey of [named.id,anonymous])for(const url of [`/api/willow/surveys/${survey}`,`/api/willow/surveys/${survey}/results`,`/app/surveys/${survey}`,`/app/surveys/${survey}/results`,`/app/surveys/${survey}.csv`]) {
