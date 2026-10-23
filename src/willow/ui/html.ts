@@ -86,7 +86,7 @@ const headers = {
   'content-security-policy': "default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; media-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
 }
 
-const STYLES = ['/fonts/fonts.css', '/rer-theme.css', '/willow-tokens.css', '/willow.css', '/willow-layouts.css', '/willow-progress.css', '/willow-connections.css']
+const STYLES = ['/fonts/fonts.css', '/rer-theme.css', '/willow-tokens.css', '/willow.css', '/willow-layouts.css', '/willow-progress.css', '/willow-connections.css','/willow-tooltips.css']
 
 // `wide` lets a page use the whole work area (In progress). Without the nav (first run) the shell is bare.
 export function page(title: string, actor: Actor | null, body: Html, { current = '', url, status = 200, showNav = true, wide = false }: { current?: string; url?: URL; status?: number; showNav?: boolean; wide?: boolean } = {}): Response {

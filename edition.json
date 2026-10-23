@@ -17,6 +17,8 @@
           "src/willow",
           "src/routes",
           "public/willow.css",
+          "public/willow-tooltips.css",
+          "public/willow-webhook-verifier.mjs",
           "migrations/core/0006_willow.sql",
           "tests/willow",
           "migrations/core/0008_connections.sql",
@@ -86,7 +88,9 @@
           "migrations/core/0070_performance_field_rights.sql",
           "migrations/core/0071_goal_approval_modes.sql",
           "migrations/core/0072_goal_approval_selection.sql",
-          "migrations/core/0073_engagement_theme_rights.sql"
+          "migrations/core/0073_engagement_theme_rights.sql",
+          "migrations/core/0074_api_write_scopes.sql",
+          "migrations/core/0075_webhooks.sql"
         ]
       }
     },

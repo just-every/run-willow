@@ -69,3 +69,17 @@ export const INVITATION_DOORS: [string,string][] = [
  ['^/preboarding/([A-Za-z0-9_-]+)$','preboarding'],
  ['^/applicant-self-id/([A-Za-z0-9_-]+)$','applicant'],
 ]
+
+/** Credential-only versioned reads; exercised as a complete library by the API journey. */
+export const V1_API_DOORS: [string,string][] = [
+ ['^webhooks$','v1Webhooks'],['^webhooks/([\\w-]+)/deliveries$','v1WebhookLog'],
+ ['^employees$','v1Employees'],['^employees/([\\w-]+)$','v1Employee'],
+ ['^organization$','v1Organization'],['^custom-fields$','v1CustomFields'],
+ ['^tables$','v1Tables'],['^tables/([a-z][a-z0-9_]*)$','v1Table'],
+ ['^balances$','v1Balances'],['^requests$','v1Requests'],['^calendar$','v1Calendar'],
+ ['^documents$','v1Documents'],['^documents/([\\w-]+)/download$','v1DocumentFile'],
+ ['^access-level$','v1AccessLevel'],
+]
+
+/** Public machine-readable documentation contains no employer data. */
+export const PUBLIC_API_DOORS:[string,string][]=[['^/api/willow/v1/openapi\\.json$','openapi']]

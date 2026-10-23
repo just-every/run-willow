@@ -15,10 +15,11 @@ import { builtinSelectionProof } from './levels-builtins.mjs'
 import { builtinBrowserProof } from './levels-builtins-browser.mjs'
 import { builtinCustodyProof } from './levels-builtins-custody.mjs'
 
+import { apiRosterProof } from './levels-settings-api.mjs'
 import { settingsSelectionProof, apiKeyProof } from './levels-settings.mjs'
 import { settingsBrowserProof } from './levels-settings-browser.mjs'
 
-const sections = { settingsSelection:settingsSelectionProof, apiKeys:apiKeyProof, settingsBrowser:settingsBrowserProof, pay: compensationPayProof, records: compensationRecordProof, definitions: compensationDefinitionProof, leave: leaveLevelProof,custody:compensationCustodyProof,browser:sectionBrowserProof, approvalPersonal:personalApprovalProof, approvalRouting:approvalRoutingProof, approvalBrowser:approvalBrowserProof, builtinSelection:builtinSelectionProof, builtinBrowser:builtinBrowserProof, builtinCustody:builtinCustodyProof }
+const sections = { apiRoster:apiRosterProof, settingsSelection:settingsSelectionProof, apiKeys:apiKeyProof, settingsBrowser:settingsBrowserProof, pay: compensationPayProof, records: compensationRecordProof, definitions: compensationDefinitionProof, leave: leaveLevelProof,custody:compensationCustodyProof,browser:sectionBrowserProof, approvalPersonal:personalApprovalProof, approvalRouting:approvalRoutingProof, approvalBrowser:approvalBrowserProof, builtinSelection:builtinSelectionProof, builtinBrowser:builtinBrowserProof, builtinCustody:builtinCustodyProof }
 const selected = process.argv.slice(2)
 assert.ok(selected.every(name => Object.hasOwn(sections, name)), 'Select a registered section proof')
 for (const name of selected.length ? selected : Object.keys(sections)) {

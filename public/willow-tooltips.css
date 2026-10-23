@@ -1,0 +1,5 @@
+/* Shared icon control hints: delayed on hover, immediate for keyboard focus. */
+.bell { position: relative; }
+.control-tooltip { position:absolute; top:calc(100% + 8px); right:0; z-index:20; width:max-content; max-width:180px; padding:6px 9px; border-radius:5px; background:#24362f; color:#fff; font-size:12px; font-weight:500; line-height:1.4; opacity:0; visibility:hidden; pointer-events:none; transition:opacity 0s linear,visibility 0s linear; }
+.bell:hover .control-tooltip { opacity:1; visibility:visible; transition-delay:.3s; }
+.bell:focus .control-tooltip { opacity:1; visibility:visible; transition-delay:0s; }
