@@ -1,4 +1,4 @@
-import { PERFORMANCE_FIELDS, type PerformanceRules } from './performance'
+import { PERFORMANCE_FIELDS, PERFORMANCE_RANK, type PerformanceRules } from './performance'
 import { SETTINGS_KEYS, holdsSetting, validateSettingsScope } from './settings'
 import { LEAVE_FIELDS, LEAVE_RANK, type LeaveRules } from './leave'
 import { COMPENSATION_FIELDS, COMPENSATION_RANK, type CompensationRules } from './compensation'
@@ -53,8 +53,9 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
    insist(read && (mode==='view'||actor.permissions.has('people.manage')||sources.some(grant=>CATEGORY_RANK[grant.rules[relation][category]??'none']>=CATEGORY_RANK[mode])),'delegation_ceiling',403)
   }
   for(const relation of ['self','others'] as const) for(const field of PERFORMANCE_FIELDS) {
-   if(definition.performanceFields[relation][field]!=='view') continue
-   insist(actor.permissions.has('people.manage') || actor.performanceFields.some(grant=>(relation==='self'||coversScope(grant.scope,definition.scope))&&grant.fields[relation][field]==='view'),'delegation_ceiling',403)
+   const mode=definition.performanceFields[relation][field]??'none'
+   if(mode==='none') continue
+   insist(actor.permissions.has('people.manage') || actor.performanceFields.some(grant=>(relation==='self'||coversScope(grant.scope,definition.scope))&&PERFORMANCE_RANK[grant.fields[relation][field]??'none']>=PERFORMANCE_RANK[mode]),'delegation_ceiling',403)
   }
   for(const relation of ['self','others'] as const) for(const field of JOB_FIELDS) {
    const mode=definition.jobFields[relation][field]??'none'
@@ -68,6 +69,7 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
    const explicit=actor.approvalGrants.some(grant=>grant.keys.includes(key as typeof grant.keys[number])&&coversScope(grant.scope,definition.scope))
    let native=false
    if(key==='leave') native=holdsScope('leave.manage')
+   else if(key==='self:goal') native=holdsScope('people.manage')
    else if(key.startsWith('self:')) native=holdsScope('people.manage')&&holdsScope('people.private')
    else if(key.startsWith('document:')) {
     const category=key.slice('document:'.length)

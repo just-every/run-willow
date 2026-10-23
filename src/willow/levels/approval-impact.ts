@@ -22,7 +22,7 @@ export async function approvalImpact(env:Bindings,_viewer:Actor,plan:Plan,data:A
  const afterActors=await proposedApprovalActors(env,plan,data,beforeActors)
  const names=new Map(people.map(person=>[person.id,displayName(person)]))
  const pending:Pending[]=[
-  ...self.map(row=>({source:`self-change:${row.id}`,key:selfApprovalKey(row),person:row.person_id,title:`${row.kind==='document'?'Document':row.kind==='customField'?'Custom field':'Personal'} change for ${names.get(row.person_id)}`,path:`/app/self-changes/${row.id}`,eligible:(actor:Actor)=>canDecideSelfChange(env,actor,row)})),
+  ...self.map(row=>({source:`self-change:${row.id}`,key:selfApprovalKey(row),person:row.person_id,title:`${row.kind==='goal'?'Goal':row.kind==='document'?'Document':row.kind==='customField'?'Custom field':'Personal'} change for ${names.get(row.person_id)}`,path:`/app/self-changes/${row.id}`,eligible:(actor:Actor)=>canDecideSelfChange(env,actor,row)})),
   ...leave.map(row=>({source:`leave:${row.id}`,key:'leave',person:row.person_id,title:`Leave request for ${names.get(row.person_id)}`,path:`/app/leave/${row.id}`,preferred:row.approver_member_id,eligible:(actor:Actor)=>mayDecideLeave(actor,row)})),
  ]
  for(const row of changes) {

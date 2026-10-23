@@ -1,3 +1,4 @@
+import { readsGoal } from '../performance/goals'
 // SELF-001 proposals remain exact projections; selection adds decisions, never field access.
 import { readsDocumentChange, reviewsDocumentChange, nativeReviewsDocumentChange } from '../document-write'
 import { readsPersonalField } from '../levels/other-personal'
@@ -21,6 +22,7 @@ function customPolicy(actor: Actor, row: Row) {
 }
 export function readsProposalField(actor: Actor,row: Row) {
  if(row.kind==='document') return readsDocumentChange(actor,row)
+ if(row.kind==='goal') return readsGoal(actor,row.person_id)
  if(row.kind==='customField') {const policy=customPolicy(actor,row);return !!policy && readsCustomField(actor,row.person_id,policy)}
  if(row.kind==='dependent') return actor.personId===row.person_id || canAbout(actor,'people.private',row.person_id)
  const field=row.kind==='legalName'?'legalName':row.row_id
@@ -31,12 +33,13 @@ export function reviewsChange(actor:Actor,row:Row):boolean {
  if(row.kind==='document') return reviewsDocumentChange(actor,row)
  if(!readsProposalField(actor,row)) return false
  const policy=row.kind==='customField'?customPolicy(actor,row):null
- const native=row.kind==='customField' ? !!policy&&writesCustomField(actor,policy) : reviewsSelfChanges(actor,row.person_id)
+ const native=row.kind==='goal' ? canAbout(actor,'people.manage',row.person_id) : row.kind==='customField' ? !!policy&&writesCustomField(actor,policy) : reviewsSelfChanges(actor,row.person_id)
  return native || hasApproval(actor,selfApprovalKey(row),row.person_id)
 }
 export function readsSelfChange(actor:Actor,row:Row):boolean {
  if(row.kind==='document') return readsDocumentChange(actor,row)
  if(!readsProposalField(actor,row)) return false
+ if(row.kind==='goal') return actor.personId===row.person_id||actor.id===row.requested_by||reviewsChange(actor,row)
  if(row.kind==='customField') return actor.personId===row.person_id || actor.id===row.requested_by || reviewsChange(actor,row)
  return actor.personId===row.person_id || canAbout(actor,'people.private',row.person_id) || (row.kind==='personal'&&row.requested_by===actor.id) || hasApproval(actor,selfApprovalKey(row),row.person_id)
 }
@@ -61,7 +64,7 @@ export async function currentSelfApprovalDeciders(env:Bindings,row:Row):Promise<
 }
 const project=(actor:Actor,r:Row)=>({id:r.id,personId:r.person_id,kind:r.kind,before:JSON.parse(r.before_json),after:JSON.parse(r.after_json),requestedBy:r.requested_by,requestedAt:r.requested_at,dueDate:r.due_date,owner:'Approver',status:r.outcome??'pending',
  decision:r.outcome?{by:r.decided_by,at:r.decided_at,comment:r.comment}:null,
- reconciliation:r.outcome==='approved'&&(actor.personId===r.person_id||actor.id===r.requested_by||(r.kind==='document'?nativeReviewsDocumentChange(actor,r):handlesSelfExceptions(actor,r.person_id)))?{status:r.reference?'resolved':'open',reference:r.reference,by:r.recorded_by,at:r.reconciled_at}:null})
+ reconciliation:r.kind!=='goal'&&r.outcome==='approved'&&(actor.personId===r.person_id||actor.id===r.requested_by||(r.kind==='document'?nativeReviewsDocumentChange(actor,r):handlesSelfExceptions(actor,r.person_id)))?{status:r.reference?'resolved':'open',reference:r.reference,by:r.recorded_by,at:r.reconciled_at}:null})
 export async function selfChanges(env:Bindings,actor:Actor) {
  const rows=(await all(env,`${SELF_CHANGE_SELECT} ORDER BY c.requested_at DESC,c.id`)).filter(row=>readsSelfChange(actor,row))
  if(rows.some(row=>row.person_id!==actor.personId))await auditRead(env,actor.id,'selfChange.private.read','list')
@@ -75,5 +78,5 @@ export async function selfChange(env:Bindings,actor:Actor,id:string) {
 }
 export async function selfExceptions(env:Bindings,actor:Actor) {
  insist(can(actor,'payroll.handoff')&&can(actor,'pay.read')||hasScopedGrant(actor,'people.manage')||can(actor,'people.manage')||reviewsSelfChanges(actor,''),'forbidden',403)
- return (await all(env,`${SELF_CHANGE_SELECT} WHERE d.outcome='approved' ORDER BY c.requested_at,c.id`)).filter(r=>r.kind==='document'?nativeReviewsDocumentChange(actor,r):handlesSelfExceptions(actor,r.person_id)).map(r=>({id:r.id,personId:r.person_id,kind:r.kind,dueDate:r.due_date,status:r.reference?'resolved':'open',reference:r.reference,owner:'Payroll / HR',next:'Review the approved revision in the authorized system; record a handoff reference. No provider confirmation is implied.'}))
+ return (await all(env,`${SELF_CHANGE_SELECT} WHERE d.outcome='approved' ORDER BY c.requested_at,c.id`)).filter(r=>r.kind!=='goal'&&(r.kind==='document'?nativeReviewsDocumentChange(actor,r):handlesSelfExceptions(actor,r.person_id))).map(r=>({id:r.id,personId:r.person_id,kind:r.kind,dueDate:r.due_date,status:r.reference?'resolved':'open',reference:r.reference,owner:'Payroll / HR',next:'Review the approved revision in the authorized system; record a handoff reference. No provider confirmation is implied.'}))
 }

@@ -1,3 +1,4 @@
+import { performanceMode } from '../levels/performance'
 // Required work carries no review answers, peer identities, ratings or notes.
 import type { Bindings } from '../../auth.server'
 import { can, employerZone } from '../actor'
@@ -29,7 +30,7 @@ export async function performanceWork(env: Bindings): Promise<WorkSource[]> {
   path:`/app/performance/${c.id}`,due:c.due_date,next:'Review inputs, calibrate human decisions and release the cycle',
   progress:'Cycle open',personId:null,visible:actor=>can(actor,'people.manage'),responsible:actor=>can(actor,'people.manage')})
  for(const g of development) {
-  const visible:WorkSource['visible']=actor=>can(actor,'people.manage') || actor.personId===g.person_id || (!!actor.personId && actor.personId===g.manager_person_id)
+  const visible:WorkSource['visible']=actor=>can(actor,'people.manage') || actor.personId===g.person_id || (!!actor.personId && actor.personId===g.manager_person_id) || (actor.id===g.owner_member&&['edit','approval'].includes(performanceMode(actor,g.person_id,'goals')))
   sources.push({key:`development:${g.id}`,kind:'development',title:'Complete development action',path:'/app/goals',
    due:g.due_date,preferred:g.owner_member,next:'Complete the development action and record evidence',progress:'Evidence pending',personId:g.person_id,
    visible,responsible:actor=>visible(actor) && (can(actor,'people.manage') || (actor.id===g.owner_member && g.owner_status==='active' && g.sign_in==='active'))})

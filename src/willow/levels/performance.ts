@@ -7,7 +7,8 @@ import { EVERYONE, levelScopes, scopeMembers, type Scope } from './scope'
 
 export const PERFORMANCE_FIELDS = ['reviews', 'goals'] as const
 export type PerformanceField = typeof PERFORMANCE_FIELDS[number]
-export type PerformanceMode = 'none' | 'view'
+export type PerformanceMode = 'none' | 'view' | 'approval' | 'edit'
+export const PERFORMANCE_RANK: Record<PerformanceMode,number> = {none:0,view:1,approval:2,edit:3}
 export interface PerformanceRules { self: Partial<Record<PerformanceField, PerformanceMode>>; others: Partial<Record<PerformanceField, PerformanceMode>> }
 export interface PerformanceGrant { level: string; fields: PerformanceRules; scope: Scope; members: Set<string> }
 export const PERFORMANCE_LABELS: Record<PerformanceField, string> = { reviews: 'Released reviews', goals: 'Goals and check-ins' }
@@ -24,8 +25,8 @@ export function readPerformanceRules(input: Input): PerformanceRules | undefined
   if (value === undefined) continue
   insist(value && typeof value === 'object' && !Array.isArray(value), 'invalid_performance_fields')
   for (const [field, mode] of Object.entries(value)) {
-   insist((PERFORMANCE_FIELDS as readonly string[]).includes(field) && (mode === 'none' || mode === 'view'), 'invalid_performance_fields')
-   rules[relation][field as PerformanceField] = mode
+   insist((PERFORMANCE_FIELDS as readonly string[]).includes(field) && typeof mode==='string' && Object.hasOwn(PERFORMANCE_RANK,mode) && (field==='goals'||mode==='none'||mode==='view'), 'invalid_performance_fields')
+   rules[relation][field as PerformanceField] = mode as PerformanceMode
   }
  }
  return rules
@@ -42,7 +43,12 @@ export async function performanceGrants(env: Bindings, member: string, person: s
   return { level, fields, scope, members: scope.kind === 'everyone' ? new Set<string>() : await scopeMembers(env, date, scope, person) }
  }))
 }
-export function readsPerformanceField(actor: Pick<Actor, 'personId' | 'performanceFields'>, person: string, field: PerformanceField): boolean {
+export function performanceMode(actor: Pick<Actor, 'personId' | 'performanceFields'>, person: string, field: PerformanceField): PerformanceMode {
  const self = person === actor.personId
- return actor.performanceFields.some(grant => (self || grant.scope.kind === 'everyone' || grant.members.has(person)) && grant.fields[self ? 'self' : 'others'][field] === 'view')
+ return actor.performanceFields.reduce<PerformanceMode>((best,grant)=>{
+  if(!self&&grant.scope.kind!=='everyone'&&!grant.members.has(person))return best
+  const mode=grant.fields[self?'self':'others'][field]??'none'
+  return PERFORMANCE_RANK[mode]>PERFORMANCE_RANK[best]?mode:best
+ },'none')
 }
+export const readsPerformanceField=(actor:Pick<Actor,'personId'|'performanceFields'>,person:string,field:PerformanceField)=>performanceMode(actor,person,field)!=='none'

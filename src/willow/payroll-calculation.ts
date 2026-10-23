@@ -77,7 +77,7 @@ export function calculatePayroll(sources: PayrollSourceRows, end: string) {
   const exceptions = lines.filter(line => !line.payrollId).map(line => ({ key: line.key, person: line.person, name: line.name, reason: 'No payroll identifier on the employment period' }))
   const resolvedSelf = new Set(sources.wl_self_reconciliation.map(r => r.change_id))
   const approvedSelf = new Set(sources.wl_self_decisions.filter(r => r.outcome === 'approved').map(r => r.change_id))
-  for (const revision of sources.wl_self_changes) if (approvedSelf.has(revision.id) && !resolvedSelf.has(revision.id)) {
+  for (const revision of sources.wl_self_changes) if (revision.kind!=='goal' && approvedSelf.has(revision.id) && !resolvedSelf.has(revision.id)) {
     const person = people.get(revision.person_id)!
     exceptions.push({ key: `self-change:${revision.id}`, person: revision.person_id, name: displayName(person), reason: `Approved ${revision.kind === 'legalName' ? 'legal name' : 'dependent'} revision: HR/downstream handoff required; private values remain with HR` })
   }

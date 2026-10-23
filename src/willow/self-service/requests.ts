@@ -1,3 +1,4 @@
+import { approveGoalStatements } from '../performance/goals'
 // SELF-001: proposed bytes never change. HR approval commits the native revision and outcome together.
 import { approveDocumentStatements, documentReviewAuthority, nativeReviewsDocumentChange } from '../document-write'
 import { liveApprovalActor } from '../levels/approvals'
@@ -65,7 +66,9 @@ export async function decideSelfChange(env: Bindings, actor: Actor, input: Input
  // A scoped reviewer is rechecked against fresh terms inside the write (ROLE-002).
  const statements=[guard(env,'already_decided','NOT EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=?)',id)]
  if(decision==='approve') {
-  if(row.kind==='customField') {
+  if(row.kind==='goal') {
+   statements.push(...await approveGoalStatements(env,actor,row))
+  } else if(row.kind==='customField') {
    statements.push(...await approveCustomFieldStatements(env,actor,row))
   } else if(row.kind==='document') {
    statements.push(...await approveDocumentStatements(env,actor,row))
@@ -93,6 +96,7 @@ export async function reconcileSelfChange(env: Bindings, actor: Actor, input: In
  const id=input.text('change'),reference=input.text('reference',{max:300})
  const change=await one(env,`${SELF_CHANGE_SELECT} WHERE c.id=?`,id)
  insist(change,'not_found',404)
+ insist(change.kind!=='goal','no_reconciliation_required',409)
  insist(change.kind==='document'?nativeReviewsDocumentChange(actor,change):handlesSelfExceptions(actor,change.person_id),'forbidden',403)
  await commit(env,[...(change.kind==='document'?await documentReviewAuthority(env,actor,change,{nativeOnly:true}):can(actor,'payroll.handoff')&&can(actor,'pay.read') ? [] : await scopeFence(env,actor,change.person_id,'people.manage','people.private')),guard(env,'not_open',"EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=? AND outcome='approved') AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation WHERE change_id=?)",id,id),stmt(env,'INSERT INTO wl_self_reconciliation VALUES (?,?,?,?)',id,reference,actor.id,now())],{actor:actor.id,action:'selfChange.reconcile',subject:id})
  return {id,status:'resolved'}
