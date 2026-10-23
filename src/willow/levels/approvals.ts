@@ -5,7 +5,7 @@ import { all, guard, insist, one } from '../core'
 import type { Input } from '../input'
 import { EVERYONE, levelScopes, scopeMembers, type Scope } from './scope'
 
-export type ApprovalKey = 'leave' | 'self:legalName' | 'self:personal' | 'self:dependent' | `document:${string}` | `custom:${string}` | `change:${'job' | 'compensation'}:${'hr' | 'payroll' | 'skip_manager'}`
+export type ApprovalKey = 'leave' | 'self:legalName' | 'self:personal' | 'self:dependent' | 'self:goal' | `document:${string}` | `custom:${string}` | `change:${'job' | 'compensation'}:${'hr' | 'payroll' | 'skip_manager'}`
 export interface ApprovalGrant { level: string; scope: Scope; keys: ApprovalKey[]; members: Set<string> }
 export interface ApprovalChoice { key: ApprovalKey; label: string }
 export interface ApprovalRow { level_id: string; approval: ApprovalKey }
@@ -15,6 +15,7 @@ export const FIXED_APPROVALS: readonly ApprovalChoice[] = [
  { key: 'self:legalName', label: 'Legal name changes' },
  { key: 'self:personal', label: 'Personal detail changes' },
  { key: 'self:dependent', label: 'Dependent changes' },
+ { key: 'self:goal', label: 'Goal changes' },
  ...(['job', 'compensation'] as const).flatMap(type => (['hr', 'payroll', 'skip_manager'] as const).map(role => ({ key: `change:${type}:${role}` as ApprovalKey, label: `${type === 'job' ? 'Job' : 'Compensation'} changes: ${role === 'hr' ? 'HR' : role === 'payroll' ? 'Payroll' : 'Manager’s manager'} step` }))),
 ]
 

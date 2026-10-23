@@ -24,7 +24,7 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
   WHERE o.email = ? AND o.role = 'owner' AND o.status = 'active' AND s.revoked_at IS NULL
   AND s.operator_version = o.version AND s.expires_at > ? ORDER BY s.created_at DESC, s.id LIMIT 1`, ownerEmail, Date.now())
  insist(session, 'demo_owner_session_required', 503)
- const actor: Actor = { id: member.id, sessionId: session.id, email: ownerEmail, name: 'Rowan Hale', owner: true, permissions: new Set(PERMISSIONS), personId: null, reports: new Set(), today: date, followOwnChanges: false, otherPersonal: [], reportGrants: [], documentCategories: [], settingsGrants: [], approvalGrants: [], jobFields: [], leaveFields: [], compensationFields: [], scoped: [] }
+ const actor: Actor = { id: member.id, sessionId: session.id, email: ownerEmail, name: 'Rowan Hale', owner: true, permissions: new Set(PERMISSIONS), personId: null, reports: new Set(), today: date, followOwnChanges: false, otherPersonal: [], reportGrants: [], documentCategories: [], settingsGrants: [], approvalGrants: [], performanceFields: [], jobFields: [], leaveFields: [], compensationFields: [], scoped: [] }
  const input = Input.of
  const stage = async (name: string, run: () => Promise<void>) => {
   if (await one(env, 'SELECT 1 FROM rer_demo WHERE name = ?', `willow:${name}`)) return

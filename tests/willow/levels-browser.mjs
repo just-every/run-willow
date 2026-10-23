@@ -2,6 +2,7 @@ import { bulkBrowserProof, delegatedBrowserProof } from './levels-bulk-browser.m
 import { personalBrowserProof, otherPersonalBrowserProof, documentCategoryBrowserProof, documentWriteBrowserProof, selectedReportBrowserProof } from './levels-personal-browser.mjs'
 import { scopeBrowserProof } from './levels-scope-browser.mjs'
 import assert from 'node:assert/strict'
+import { writeFile } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 import { evidenceDirectory } from './evidence.mjs'
 export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,documentRights,selectedReport) {
@@ -11,20 +12,19 @@ export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,docume
  const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
  try {
   const context=await browser.newContext({ignoreHTTPSErrors:true})
+  const page=await context.newPage()
   try {
    await context.addCookies(owner.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})))
-   const page=await context.newPage()
    const visit=async()=>assert.equal((await page.goto(h.origin+'/app/access')).status(),200)
    const form=name=>page.locator(`form[action="/app/do/${name}"]`)
    const submit=async(target,name)=>{
-    await target.getByRole('button',{name,exact:true}).click()
-    await page.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'))
+    await Promise.all([page.waitForNavigation({waitUntil:'load'}),target.getByRole('button',{name,exact:true}).click()])
     assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())
    }
    for(const width of [1440,390]) {
     await page.setViewportSize({width,height:1000})
     const capture=async name=>{
-     await page.evaluate(()=>document.fonts.ready)
+     await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`ROLE-001 ${name} fits ${width}`)
      await page.screenshot({path:`${evidenceDirectory}/ROLE-001-${name}-${width}.png`,fullPage:true})
     }
@@ -49,10 +49,10 @@ export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,docume
     await submit(form('level.apply'),'Apply reviewed change')
     assert.ok((await h.api('me',staff.managera.cookie)).permissions.includes('reports.read'))
     // ROLE-001's union must also be usable through WIL-02's existing form.
-    await page.getByLabel('Member').selectOption(staff.managera.member)
-    await page.getByLabel('About this person').selectOption(staff.employee.person)
-    await page.getByRole('button',{name:'Preview'}).click()
     const visibility=page.locator('section.card').filter({has:page.getByRole('heading',{name:'Preview what a member sees',exact:true})})
+    await visibility.getByLabel('Member',{exact:true}).selectOption(staff.managera.member)
+    await visibility.getByLabel('About this person',{exact:true}).selectOption(staff.employee.person)
+    await visibility.getByRole('button',{name:'Preview',exact:true}).click()
     const compensation=visibility.locator('tbody tr').filter({has:page.getByText('Compensation',{exact:true})})
     await compensation.getByText('No',{exact:true}).waitFor()
     assert.equal((await h.api(`preview?member=${staff.managera.member}&person=${staff.employee.person}`,owner)).facets.find(f=>f.facet==='pay').visible,false)
@@ -74,6 +74,10 @@ export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,docume
    if(delegated) await delegatedBrowserProof(browser,h,owner,staff,delegated)
    if(selectedReport) await selectedReportBrowserProof(browser,h,owner,staff,selectedReport)
    if(documentRights) {await documentCategoryBrowserProof(browser,h,owner,staff,documentRights);await documentWriteBrowserProof(browser,h,owner,staff,documentRights)}
+  } catch(error) {
+   await writeFile(`${evidenceDirectory}/access-failure.html`,await page.content())
+   await writeFile(`${evidenceDirectory}/access-failure.json`,JSON.stringify({url:page.url(),error:String(error)}))
+   throw error
   } finally {await context.close()}
  } finally {await browser.close()}
 }
@@ -119,7 +123,7 @@ export async function demoProof() {
      await page.setViewportSize({width,height:1000})
      for(const [name,path] of [['directory','/app/people'],['document',`/app/people/${owner.person}`]]) {
       assert.equal((await page.goto(h.origin+path)).status(),200)
-      await page.evaluate(()=>document.fonts.ready)
+      await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`Demo ${name} fits ${width}`)
       await page.screenshot({path:`${evidenceDirectory}/demo-${name}-${width}.png`,fullPage:true})
      }

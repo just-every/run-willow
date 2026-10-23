@@ -51,7 +51,7 @@ export async function employeeBundle(env: Bindings, actor: Actor, url: URL, requ
       }
       if (section === 'goals') {
         if (!history.goalPeople.has(person.id)) (record.withheldSections as string[]).push(section)
-        else record.goals = history.goals.filter(goal => goal.personId === person.id)
+        else {record.goals = history.goals.filter(goal => goal.personId === person.id);record.goalRequests=history.goalChanges.filter(change=>change.personId===person.id)}
       }
       if (section === 'tables') {
         record.tables = person.recordTables

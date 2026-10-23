@@ -1,3 +1,4 @@
+import { PERFORMANCE_FIELDS, PERFORMANCE_LABELS, readsPerformanceField } from './levels/performance'
 import { readsLeaveField, LEAVE_FIELDS, LEAVE_LABELS } from './levels/leave'
 import { readsCompensation, COMPENSATION_FIELDS, COMPENSATION_LABELS } from './levels/compensation'
 import { JOB_FIELDS, JOB_LABELS, readsJobHistoryField } from './levels/job'
@@ -115,6 +116,7 @@ export async function visibilityPreview(env: Bindings, actor: Actor, memberId: s
   const reportSelections=[...new Set(target.reportGrants.flatMap(grant=>grant.reports))].sort().map(id=>({id,name:readableReports.get(id)??null,withheldFromYou:!readableReports.has(id),reachesThisPerson:target.reportGrants.some(grant=>grant.reports.includes(id)&&grant.people.has(personId))}))
   return {
     member: { id: member.id, name: member.name, status: member.status, permissions: [...target.permissions] as Permission[], scoped: target.scoped.map(grant => ({ level: grant.level, permissions: [...grant.permissions].sort(), reachesThisPerson: grant.people.has(personId) })), managesThisPerson: target.reports.has(personId), isThisPerson: target.personId === personId },
+    performanceFields:PERFORMANCE_FIELDS.map(field=>({field,label:PERFORMANCE_LABELS[field],levelView:readsPerformanceField(target,personId,field)})),
     reportSelections,
     leaveFields:LEAVE_FIELDS.map(field=>({field,label:LEAVE_LABELS[field],visible:readsLeaveField(target,personId,field),withheldFromYou:readsLeaveField(target,personId,field)&&!readsLeaveField(actor,personId,field)})),
     compensationFields:COMPENSATION_FIELDS.map(field=>({field,label:COMPENSATION_LABELS[field],visible:readsCompensation(target,personId,field),withheldFromYou:readsCompensation(target,personId,field)&&!readsCompensation(actor,personId,field)})),

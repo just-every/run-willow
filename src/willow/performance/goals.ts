@@ -1,10 +1,11 @@
+import { performanceMode, readsPerformanceField, type PerformanceMode } from '../levels/performance'
 // Goals and their evidence live independently of review cycles. Permission is
 // always today's scope; a former manager never inherits a historical grant.
 import type { Bindings } from '../../auth.server'
-import { can, type Actor } from '../actor'
+import { actorFor, can, type Actor } from '../actor'
 import { all, commit, guard, insist, json, newId, now, one, stmt } from '../core'
-import { requireDate } from '../dates'
-import type { Input } from '../input'
+import { addDays, requireDate } from '../dates'
+import { Input } from '../input'
 
 const currentManagers = `WITH current_managers AS (
  SELECT p.person_id,t.manager_person_id FROM wl_periods p JOIN wl_terms t ON t.period_id=p.id
@@ -14,34 +15,15 @@ const currentManagers = `WITH current_managers AS (
 )`
 const activeMember = `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email
  WHERE m.id=? AND m.status='active' AND o.status='active')`
-const scopedOwner = `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email
- WHERE m.id=? AND m.status='active' AND o.status='active' AND (m.person_id=? OR o.role='owner'
- OR EXISTS(SELECT 1 FROM wl_effective_permissions permission WHERE permission.member_id=m.id AND permission.permission='people.manage')
- OR EXISTS(SELECT 1 FROM wl_periods p JOIN wl_terms t ON t.period_id=p.id
-  WHERE p.person_id=? AND p.start_date<=? AND (p.end_date IS NULL OR p.end_date>=?)
-  AND t.status='active' AND t.effective_from=(SELECT MAX(n.effective_from) FROM wl_terms n
-   WHERE n.period_id=p.id AND n.status='active' AND n.effective_from<=?) AND t.manager_person_id=m.person_id)))`
-
-function inScope(actor: Actor, person: string, manager: string | null) {
+function nativeScope(actor: Actor, person: string, manager: string | null) {
  return can(actor,'people.manage') || actor.personId===person || (!!actor.personId && actor.personId===manager)
 }
 
-// Recheck manager scope inside the business batch, including a transfer which
-// commits after the page/read but before this write.
-function scopeGuard(env: Bindings, actor: Actor, person: string) {
- return guard(env,'goal_scope_changed',`? OR EXISTS(SELECT 1 FROM wl_periods p JOIN wl_terms t ON t.period_id=p.id
- WHERE p.person_id=? AND p.start_date<=? AND (p.end_date IS NULL OR p.end_date>=?)
- AND t.status='active' AND t.effective_from=(SELECT MAX(n.effective_from) FROM wl_terms n
- WHERE n.period_id=p.id AND n.status='active' AND n.effective_from<=?) AND t.manager_person_id=?)`,
- can(actor,'people.manage') || actor.personId===person ? 1 : 0, person, actor.today, actor.today, actor.today, actor.personId)
-}
+const inScope=(actor:Actor,person:string,manager:string|null)=>nativeScope(actor,person,manager)||readsPerformanceField(actor,person,'goals')
 
-async function scopedGoal(env: Bindings, actor: Actor, id: string) {
- const row=await one(env,`${currentManagers} SELECT g.*,m.manager_person_id FROM wl_goals g
- LEFT JOIN current_managers m ON m.person_id=g.person_id WHERE g.id=?2`,actor.today,id)
- insist(row && inScope(actor,row.person_id,row.manager_person_id),'not_found',404)
- return row
-}
+export const goalMode=(actor:Actor,person:string,manager:string|null):PerformanceMode=>nativeScope(actor,person,manager)?'edit':performanceMode(actor,person,'goals')
+export const readsGoal=(actor:Actor,person:string)=>can(actor,'people.manage')||actor.personId===person||actor.reports.has(person)||readsPerformanceField(actor,person,'goals')
+const writesGoal=(actor:Actor,person:string,manager:string|null)=>['edit','approval'].includes(goalMode(actor,person,manager))
 
 export async function goalHome(env: Bindings, actor: Actor) {
  const [people, members, rows]=await Promise.all([
@@ -63,63 +45,111 @@ export async function goalHome(env: Bindings, actor: Actor) {
   JOIN wl_members m ON m.id=c.author WHERE c.goal_id IN (${[...ids].map(()=>'?').join(',')}) ORDER BY c.seq`,...ids) : []
  const activeActor=members.some(m=>m.id===actor.id)
  return {
-  people:people.filter(p=>inScope(actor,p.id,p.manager_person_id)).map(p=>({id:p.id,name:p.name})),
+  readablePeople:people.filter(p=>inScope(actor,p.id,p.manager_person_id)).map(p=>({id:p.id,name:p.name})),
+  people:people.filter(p=>writesGoal(actor,p.id,p.manager_person_id)).map(p=>({id:p.id,name:p.name})),
   members:members.map(m=>({id:m.id,name:m.name,personId:m.person_id,managesPeople:!!m.manages_people})),
   goals:scoped.map(g=>({id:g.id,personId:g.person_id,personName:g.person_name,title:g.title,
    milestones:json<string[]>(g.milestones_json,[]),dueDate:g.due_date,development:!!g.development,
    owner:g.owner_member,ownerName:g.owner_name,createdAt:g.created_at,
    checkins:checkins.filter(c=>c.goal_id===g.id).map(c=>({id:c.id,progress:c.progress,note:c.note,author:c.author,authorName:c.author_name,createdAt:c.created_at})),
    completion:g.evidence===null ? null : {evidence:g.evidence,completedBy:g.completed_by,completedAt:g.completed_at},
-   mayCheckin:g.evidence===null,
-   mayComplete:!!g.development && g.evidence===null && (can(actor,'people.manage') || (activeActor && g.owner_member===actor.id)),
+   mayCheckin:g.evidence===null && writesGoal(actor,g.person_id,g.manager_person_id),
+   checkinRequiresApproval:goalMode(actor,g.person_id,g.manager_person_id)==='approval',
+   completeRequiresApproval:goalMode(actor,g.person_id,g.manager_person_id)==='approval',
+   mayComplete:!!g.development && g.evidence===null && writesGoal(actor,g.person_id,g.manager_person_id) && (can(actor,'people.manage') || (activeActor && g.owner_member===actor.id)),
   })),
  }
 }
 
-export async function saveGoal(env: Bindings, actor: Actor, input: Input) {
- input.only(['returnTo','person','title','milestones','dueDate','development','owner'])
- const person=input.text('person'),title=input.text('title',{max:300})
- const due=requireDate(input.text('dueDate'),'invalid_dueDate'),development=input.flag('development')
- const milestones=input.list('milestones')
- insist(milestones.length<=30 && milestones.every(m=>m.length<=300),'invalid_milestones')
- const owner=input.text('owner',{optional:!development}) || null
- const row=await one(env,`${currentManagers} SELECT p.id,m.manager_person_id FROM wl_people p
-  LEFT JOIN current_managers m ON m.person_id=p.id WHERE p.id=?2`,actor.today,person)
- insist(row && inScope(actor,person,row.manager_person_id),'not_found',404)
- const ownerParams=[owner,person,person,actor.today,actor.today,actor.today]
- if(owner) insist(await one(env,`SELECT 1 WHERE ${scopedOwner}`,...ownerParams),'invalid_owner')
- const id=newId()
- await commit(env,[scopeGuard(env,actor,person),
-  ...(owner ? [guard(env,'goal_owner_scope_changed',scopedOwner,...ownerParams)] : []),
-  stmt(env,`INSERT INTO wl_goals(id,person_id,title,milestones_json,due_date,development,owner_member,created_by,created_at)
-   VALUES(?,?,?,?,?,?,?,?,?)`,id,person,title,JSON.stringify(milestones),due,development?1:0,owner,actor.id,now()),
- ],{actor:actor.id,action:'goal.create',subject:id,detail:{person,development}})
- return {id}
+type GoalOperation='create'|'checkin'|'complete'
+const SOURCE_SQL="SELECT json_array((SELECT COALESCE(MAX(seq),0) FROM wl_goal_checkins WHERE goal_id=?1),(SELECT COUNT(*) FROM wl_goal_completions WHERE goal_id=?1)) AS source"
+const goalSource=async(env:Bindings,id:string)=>String((await one(env,SOURCE_SQL,id))!.source)
+
+// Capture before rebuilding current rights, then fence both Willow authority
+// and Base identity in the same transaction as the native goal mutation.
+async function goalAuthority(env:Bindings,actor:Actor,requireSession:boolean) {
+ const snapshot=(await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
+ const member=await one(env,'SELECT m.*,o.id AS operator_id,o.version AS operator_version,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?',actor.id)
+ insist(member,'forbidden',403)
+ const current=await actorFor(env,{id:member.id,email:member.email,name:member.name,personId:member.person_id,owner:member.role==='owner',sessionId:actor.sessionId})
+ const guards=[guard(env,'goal_access_changed','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',snapshot),
+  guard(env,'goal_access_changed',"EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.person_id IS ? AND m.status='active' AND o.id=? AND o.role=? AND o.version=? AND o.status='active')",member.id,member.person_id,member.operator_id,member.role,member.operator_version)]
+ if(requireSession)guards.push(guard(env,'goal_access_changed',"EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id WHERE s.id=? AND s.operator_id=? AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?)",actor.sessionId,member.operator_id,Date.now()))
+ return {actor:current,guards}
 }
 
-export async function checkinGoal(env: Bindings, actor: Actor, input: Input) {
- input.only(['returnTo','goal','progress','note'])
- const id=input.text('goal'),progress=input.integer('progress',{min:0,max:100})!
- const note=input.text('note',{max:4000})
- const goal=await scopedGoal(env,actor,id),checkin=newId()
- await commit(env,[scopeGuard(env,actor,goal.person_id),
-  guard(env,'goal_completed','NOT EXISTS(SELECT 1 FROM wl_goal_completions WHERE goal_id=?)',id),
-  stmt(env,'INSERT INTO wl_goal_checkins(id,goal_id,author,progress,note,created_at) VALUES(?,?,?,?,?,?)',checkin,id,actor.id,progress,note,now()),
- ],{actor:actor.id,action:'goal.checkin',subject:id,detail:{checkin,progress}})
- return {id,checkin}
+async function prepareGoalMutation(env:Bindings,actor:Actor,input:Input,operation:GoalOperation,{approved=false,id:fixedId}:{approved?:boolean;id?:string}={}) {
+ const live=await goalAuthority(env,actor,!approved);actor=live.actor
+ const fields=operation==='create'?['returnTo','person','title','milestones','dueDate','development','owner']:operation==='checkin'?['returnTo','goal','progress','note']:['returnTo','goal','evidence']
+ input.only(fields)
+ const id=operation==='create'?fixedId??newId():input.text('goal')
+ const row=operation==='create'
+  ? await one(env,`${currentManagers} SELECT p.id AS person_id,m.manager_person_id FROM wl_people p LEFT JOIN current_managers m ON m.person_id=p.id WHERE p.id=?2`,actor.today,input.text('person'))
+  : await one(env,`${currentManagers} SELECT g.*,m.manager_person_id FROM wl_goals g LEFT JOIN current_managers m ON m.person_id=g.person_id WHERE g.id=?2`,actor.today,id)
+ insist(row&&writesGoal(actor,row.person_id,row.manager_person_id),'not_found',404)
+ insist(!await one(env,'SELECT 1 FROM wl_erasure_requests WHERE person_id=? AND receipt_id IS NOT NULL',row.person_id),'not_found',404)
+ const person=row.person_id,mode=goalMode(actor,person,row.manager_person_id),at=now()
+ const guards:D1PreparedStatement[]=[...live.guards,guard(env,'goal_person_erased','NOT EXISTS(SELECT 1 FROM wl_erasure_requests WHERE person_id=? AND receipt_id IS NOT NULL)',person)],changes:D1PreparedStatement[]=[]
+ let checkinId:string|undefined
+ let payload:Record<string,unknown>,before:Record<string,unknown>|null=null
+ const source=operation==='create'?'new':await goalSource(env,id)
+ if(operation==='create') {
+  const title=input.text('title',{max:300}),due=requireDate(input.text('dueDate'),'invalid_dueDate'),development=input.flag('development'),milestones=input.list('milestones')
+  insist(milestones.length<=30&&milestones.every(m=>m.length<=300),'invalid_milestones')
+  const owner=input.text('owner',{optional:!development})||null
+  if(owner) {
+   const member=await one(env,'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?',owner)
+   insist(member,'invalid_owner')
+   const ownerActor=await actorFor(env,{id:member.id,email:member.email,name:member.name,personId:member.person_id,owner:member.role==='owner',sessionId:''})
+   insist(writesGoal(ownerActor,person,row.manager_person_id),'invalid_owner')
+   guards.push(guard(env,'goal_owner_inactive',activeMember,owner))
+  }
+  payload={person,title,milestones,dueDate:due,development,owner:owner??''}
+  guards.push(guard(env,'stale','NOT EXISTS(SELECT 1 FROM wl_goals WHERE id=?)',id))
+  changes.push(stmt(env,`INSERT INTO wl_goals(id,person_id,title,milestones_json,due_date,development,owner_member,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?)`,id,person,title,JSON.stringify(milestones),due,development?1:0,owner,actor.id,at))
+ } else {
+  insist(!await one(env,'SELECT 1 FROM wl_goal_completions WHERE goal_id=?',id),'goal_completed',409)
+  before={title:row.title,milestones:JSON.parse(row.milestones_json),dueDate:row.due_date,development:!!row.development,owner:row.owner_member,source}
+  guards.push(guard(env,'goal_source_changed',`(${SOURCE_SQL.replace(' AS source','').replaceAll('?1','?')})=?`,id,id,source),guard(env,'goal_completed','NOT EXISTS(SELECT 1 FROM wl_goal_completions WHERE goal_id=?)',id))
+  if(operation==='checkin') {
+   const progress=input.integer('progress',{min:0,max:100})!,note=input.text('note',{max:4000}),checkin=newId()
+   payload={goal:id,progress,note};checkinId=checkin
+   changes.push(stmt(env,'INSERT INTO wl_goal_checkins(id,goal_id,author,progress,note,created_at) VALUES(?,?,?,?,?,?)',checkin,id,actor.id,progress,note,at))
+  } else {
+   const evidence=input.text('evidence',{max:4000});insist(evidence.length>=3,'invalid_evidence')
+   insist(row.development,'not_development')
+   insist(can(actor,'people.manage')||row.owner_member===actor.id,'forbidden',403)
+   payload={goal:id,evidence}
+   changes.push(stmt(env,'INSERT INTO wl_goal_completions(goal_id,evidence,completed_by,completed_at) VALUES(?,?,?,?)',id,evidence,actor.id,at))
+  }
+ }
+ return {id,person,mode,source,payload,before,guards,statements:[...guards,...changes],checkinId,action:operation==='create'?'goal.create':operation==='checkin'?'goal.checkin':'goal.complete'}
 }
 
-export async function finishDevelopment(env: Bindings, actor: Actor, input: Input) {
- input.only(['returnTo','goal','evidence'])
- const id=input.text('goal'),evidence=input.text('evidence',{max:4000})
- insist(evidence.length>=3,'invalid_evidence')
- const goal=await scopedGoal(env,actor,id)
- insist(goal.development,'not_development')
- insist(can(actor,'people.manage') || goal.owner_member===actor.id,'forbidden',403)
- await commit(env,[scopeGuard(env,actor,goal.person_id),
-  guard(env,'goal_owner_inactive',activeMember,actor.id),
-  guard(env,'goal_completed','NOT EXISTS(SELECT 1 FROM wl_goal_completions WHERE goal_id=?)',id),
-  stmt(env,'INSERT INTO wl_goal_completions(goal_id,evidence,completed_by,completed_at) VALUES(?,?,?,?)',id,evidence,actor.id,now()),
- ],{actor:actor.id,action:'goal.complete',subject:id})
- return {id}
+async function mutateGoal(env:Bindings,actor:Actor,input:Input,operation:GoalOperation) {
+ const prepared=await prepareGoalMutation(env,actor,input,operation)
+ if(prepared.mode==='approval') {
+  const id=newId()
+  // Validation and authority guards run now, but no goal statement publishes.
+  await commit(env,[...prepared.guards,
+   stmt(env,'INSERT INTO wl_self_changes(id,person_id,kind,row_id,before_json,after_json,source_revision,requested_by,requested_at,due_date) VALUES(?,?,?,?,?,?,?,?,?,?)',id,prepared.person,'goal',prepared.id,JSON.stringify(prepared.before),JSON.stringify({operation,payload:prepared.payload}),prepared.source,actor.id,now(),addDays(actor.today,7))],{actor:actor.id,action:'selfChange.request',subject:id,detail:{person:prepared.person,kind:'goal'}})
+  return {id,goal:prepared.id,status:'pending',notice:'Goal change requested. Track it in Personal changes.'}
+ }
+ await commit(env,prepared.statements,{actor:actor.id,action:prepared.action,subject:prepared.id,detail:{person:prepared.person}})
+ return {id:prepared.id,...prepared.checkinId?{checkin:prepared.checkinId}:{}}
+}
+export const saveGoal=(env:Bindings,actor:Actor,input:Input)=>mutateGoal(env,actor,input,'create')
+export const checkinGoal=(env:Bindings,actor:Actor,input:Input)=>mutateGoal(env,actor,input,'checkin')
+export const finishDevelopment=(env:Bindings,actor:Actor,input:Input)=>mutateGoal(env,actor,input,'complete')
+
+export async function approveGoalStatements(env:Bindings,reviewer:Actor,row:Record<string,any>) {
+ const after=JSON.parse(row.after_json)
+ insist(['create','checkin','complete'].includes(after.operation),'invalid_goal_proposal')
+ const member=await one(env,'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?',row.requested_by)
+ insist(member,'goal_requester_unavailable',403)
+ const requester=await actorFor(env,{id:member.id,email:member.email,name:member.name,personId:member.person_id,owner:member.role==='owner',sessionId:''})
+ const prepared=await prepareGoalMutation(env,requester,Input.of(after.payload),after.operation,{approved:true,id:row.row_id})
+ insist(prepared.person===row.person_id&&prepared.id===row.row_id,'invalid_goal_proposal')
+ insist(prepared.source===row.source_revision,'goal_source_changed',409)
+ return [...prepared.statements,stmt(env,'INSERT INTO wl_audit(at,actor,action,subject,detail) VALUES(?,?,?,?,?)',now(),requester.id,prepared.action,prepared.id,JSON.stringify({person:prepared.person,approval:row.id,approvedBy:reviewer.id}))]
 }

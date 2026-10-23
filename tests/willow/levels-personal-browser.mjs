@@ -11,13 +11,12 @@ export async function personalBrowserProof(browser,h,owner,staff) {
  try {
   const admin=await pageFor(owner), employee=await pageFor(staff.employee.cookie), hr=await pageFor(staff.hr.cookie)
   const capture=async(page,name,width)=>{
-   await page.evaluate(()=>document.fonts.ready)
+   await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`ROLE-001 ${name} fits ${width}`)
    await page.screenshot({path:`${evidenceDirectory}/ROLE-001-personal-${name}-${width}.png`,fullPage:true})
   }
   const submit=async(page,form,name)=>{
-   await form.getByRole('button',{name,exact:true}).click()
-   await page.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'))
+   await Promise.all([page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()])
    assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())
   }
   for(const width of [1440,390]) {
@@ -127,13 +126,12 @@ export async function otherPersonalBrowserProof(browser,h,owner,staff) {
  try {
   const admin=await pageFor(owner),reader=await pageFor(staff.managerb.cookie),hr=await pageFor(staff.hr.cookie)
   const capture=async(page,name,width)=>{
-   await page.evaluate(()=>document.fonts.ready)
+   await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name} fits ${width}`)
    await page.screenshot({path:`${evidenceDirectory}/ROLE-001-other-personal-${name}-${width}.png`,fullPage:true})
   }
   const submit=async(page,form,name)=>{
-   await form.getByRole('button',{name,exact:true}).click()
-   await page.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'))
+   await Promise.all([page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()])
    assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())
   }
   for(const width of [1440,390]) {
@@ -156,9 +154,10 @@ export async function otherPersonalBrowserProof(browser,h,owner,staff) {
    await submit(admin,assignment,'Review assignment')
    await capture(admin,'assignment-review',width)
    await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
-   await admin.getByLabel('Member',{exact:true}).selectOption(staff.managerb.member)
-   await admin.getByLabel('About this person',{exact:true}).selectOption(staff.employee.person)
-   await admin.getByRole('button',{name:'Preview',exact:true}).click()
+   const previewForm=admin.locator('form[action="/app/access"]')
+   await previewForm.getByLabel('Member',{exact:true}).selectOption(staff.managerb.member)
+   await previewForm.getByLabel('About this person',{exact:true}).selectOption(staff.employee.person)
+   await previewForm.getByRole('button',{name:'Preview',exact:true}).click()
    await capture(admin,'visibility-preview',width)
    await reader.goto(h.origin+`/app/people/${staff.employee.person}`)
    assert.equal(await reader.getByLabel('Date of birth',{exact:true}).count(),0)
@@ -230,13 +229,12 @@ export async function documentCategoryBrowserProof(browser,h,owner,staff,ids) {
  try {
   const admin=await pageFor(owner),reader=await pageFor(staff.managerb.cookie)
   const capture=async(page,name,width)=>{
-   await page.evaluate(()=>document.fonts.ready)
+   await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`document category ${name} fits ${width}`)
    await page.screenshot({path:`${evidenceDirectory}/ROLE-001-document-categories-${name}-${width}.png`,fullPage:true})
   }
   const submit=async(page,form,name)=>{
-   await form.getByRole('button',{name,exact:true}).click()
-   await page.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'))
+   await Promise.all([page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()])
    assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())
   }
   for(const width of [1440,390]) {
@@ -303,13 +301,12 @@ export async function documentWriteBrowserProof(browser,h,owner,staff,ids) {
  try {
   const admin=await pageFor(owner),employee=await pageFor(staff.employee.cookie),other=await pageFor(staff.managerb.cookie),hr=await pageFor(staff.hr.cookie)
   const capture=async(page,name,width)=>{
-   await page.evaluate(()=>document.fonts.ready)
+   await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`document write ${name} fits ${width}`)
    await page.screenshot({path:`${evidenceDirectory}/ROLE-001-document-writes-${name}-${width}.png`,fullPage:true})
   }
   const submit=async(page,form,name)=>{
-   await form.getByRole('button',{name,exact:true}).click()
-   await page.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'))
+   await Promise.all([page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()])
    assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())
   }
   for(const width of [1440,390]) {
@@ -398,8 +395,8 @@ export async function selectedReportBrowserProof(browser,h,owner,staff,ids) {
  const api=(path,body,status)=>h.api(path,owner,body,status),apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
  try {
   const admin=await pageFor(owner),reader=await pageFor(staff.managerb.cookie)
-  const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`selected report ${name} fits ${width}`);await page.screenshot({path:`${evidenceDirectory}/ROLE-001-selected-report-${name}-${width}.png`,fullPage:true})}
-  const submit=async(page,form,name)=>{await form.getByRole('button',{name,exact:true}).click();await page.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'));assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
+  const capture=async(page,name,width)=>{await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`selected report ${name} fits ${width}`);await page.screenshot({path:`${evidenceDirectory}/ROLE-001-selected-report-${name}-${width}.png`,fullPage:true})}
+  const submit=async(page,form,name)=>{await Promise.all([page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
   for(const width of [1440,390]) {
    for(const page of [admin,reader])await page.setViewportSize({width,height:1000})
    const today=new Date().toISOString().slice(0,10),mover=await api('mover.schedule',{period:staff.employee.period,effectiveFrom:today,locationId:ids.location,reason:'Selected report browser scope'})
@@ -420,9 +417,10 @@ export async function selectedReportBrowserProof(browser,h,owner,staff,ids) {
    await submit(admin,assignment,'Review assignment')
    await capture(admin,'assignment-review',width)
    await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
-   await admin.getByLabel('Member',{exact:true}).selectOption(staff.managerb.member)
-   await admin.getByLabel('About this person',{exact:true}).selectOption(staff.employee.person)
-   await admin.getByRole('button',{name:'Preview',exact:true}).click()
+   const previewForm=admin.locator('form[action="/app/access"]')
+   await previewForm.getByLabel('Member',{exact:true}).selectOption(staff.managerb.member)
+   await previewForm.getByLabel('About this person',{exact:true}).selectOption(staff.employee.person)
+   await previewForm.getByRole('button',{name:'Preview',exact:true}).click()
    await admin.getByRole('heading',{name:'Selected reports',exact:true}).waitFor()
    await capture(admin,'visibility-preview',width)
    await reader.goto(h.origin+'/app')

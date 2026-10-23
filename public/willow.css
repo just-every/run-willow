@@ -202,3 +202,9 @@ pre { margin: 0 0 12px; padding: 14px 18px; border: 1px solid var(--line); borde
   dl.facts { grid-template-columns: minmax(0, 40%) minmax(0, 1fr); }
 }
 @media print { .rail, .topbar, .no-print { display: none; } .shell { display: block; } body { background: #fff; } }
+
+/* Icon-only task link: delayed hover, immediate keyboard focus. */
+.bell { position: relative; }
+.control-tooltip { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); z-index: 30; padding: 6px 9px; border-radius: 5px; background: var(--ink, #242125); color: #fff; font-size: 12px; line-height: 1.4; white-space: nowrap; pointer-events: none; visibility: hidden; opacity: 0; transition: opacity 120ms ease, visibility 120ms; }
+.bell:hover .control-tooltip { visibility: visible; opacity: 1; transition-delay: 300ms; }
+.bell:focus-visible .control-tooltip { visibility: visible; opacity: 1; transition: none; }

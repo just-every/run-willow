@@ -1,3 +1,4 @@
+import { performanceLevelProof } from './levels-performance.mjs'
 // PERFORM-001: one journey through the real Worker, with mail faked only at its network edge.
 import assert from 'node:assert/strict'
 import { browserEvidence } from './performance-browser.mjs'
@@ -209,6 +210,7 @@ try {
   await hr('performance.note', { cycle: second.id, person: s.employee.person, note: 'Revoked HR cannot write', rating: 'Unapproved' }, 403)
   await api('member.permissions', { member: s.hr.member, permissions: ['people.manage'] })
   s.hr.cookie=await h.signIn('hr@example.com')
+  await performanceLevelProof(h,owner,{staff:s,join,today,day})
   await browserEvidence(h,owner,s,{cycle:cycle.id,person:s.employee.person,subjectCookie:s.employee.cookie})
   for(const cookie of [s.employee.cookie,s.managera.cookie,s.managerb.cookie,s.hr.cookie]) excludes(await as(cookie,`context/${s.employee.person}`),[...Object.values(answers),privateNote,'RELEASE-FIRST','RELEASE-CORRECTED','DEVELOPMENT-GOAL'])
   assert.deepEqual((await api(`people/${s.employee.person}`)).employment,employmentAfterTransfer,'PERFORM-001 reviews and goals never decide employment, promotion or compensation')

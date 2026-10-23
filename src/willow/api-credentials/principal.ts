@@ -45,6 +45,7 @@ export async function compileCredentialPrincipal(env:Bindings,row:CredentialRow,
   otherPersonal:[{level,scope,people,fields:fine(personal)}],
   documentCategories:[{level,scope,people,rules:{self:{},others:Object.fromEntries(documents.filter(rule=>rule.mode!=='none').map(rule=>[rule.category_id,'view' as const]))}}],
   reportGrants:reports.length?[{level,scope,people:members,reports:reports.map(report=>report.report_id)}]:[],
+  performanceFields:[],
   followOwnChanges:false,approvalGrants:[],settingsGrants:[],
  }
  principals.set(actor,{id:row.id,level,version:row.level_version,people,snapshot})

@@ -1,3 +1,4 @@
+import { PERFORMANCE_FIELDS, PERFORMANCE_RANK, type PerformanceRules } from './performance'
 import { SETTINGS_KEYS, holdsSetting, validateSettingsScope } from './settings'
 import { LEAVE_FIELDS, LEAVE_RANK, type LeaveRules } from './leave'
 import { COMPENSATION_FIELDS, COMPENSATION_RANK, type CompensationRules } from './compensation'
@@ -42,7 +43,7 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
  if(actor.owner) return
  const self=await selfWriteModes(env,actor)
  const [categories,customFields]=await Promise.all([all<{id:string;subject_reads:number}>(env,'SELECT id,subject_reads FROM wl_doc_categories'),all<{id:string;classification:string}>(env,'SELECT id,classification FROM wl_custom_fields')])
- const checkDefinition=(definition:{permissions:readonly string[];settings:readonly string[];approvals:string[];jobFields:JobRules;leaveFields:LeaveRules;compensationFields:CompensationRules;reports:string[];selfFields:Record<string,SelfMode>;otherFields:Record<string,OtherMode>;scope:Scope;followOwnChanges:boolean;documentCategories:DocumentRules})=>{
+ const checkDefinition=(definition:{permissions:readonly string[];settings:readonly string[];approvals:string[];performanceFields:PerformanceRules;jobFields:JobRules;leaveFields:LeaveRules;compensationFields:CompensationRules;reports:string[];selfFields:Record<string,SelfMode>;otherFields:Record<string,OtherMode>;scope:Scope;followOwnChanges:boolean;documentCategories:DocumentRules})=>{
   insist(definition.settings.every(key=>holdsSetting(actor,key as typeof SETTINGS_KEYS[number])),'delegation_ceiling',403)
   insist(!definition.permissions.some(p=>p==='access.admin'||p==='eeo.individual'),'owner_only_delegation',403)
   insist(definition.permissions.every(p=>actor.permissions.has(p as Permission) || actor.scoped.some(grant=>grant.permissions.has(p as Permission)&&coversScope(grant.scope,definition.scope))),'delegation_ceiling',403)
@@ -50,6 +51,11 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
    const sources=actor.documentCategories.filter(grant=>relation==='self'||coversScope(grant.scope,definition.scope))
    const read=actor.permissions.has('documents.private') || relation==='self' && !!actor.personId && !!categories.find(c=>c.id===category)?.subject_reads || sources.some(grant=>CATEGORY_RANK[grant.rules[relation][category]??'none']>0) || relation==='others' && actor.scoped.some(grant=>grant.permissions.has('documents.private')&&coversScope(grant.scope,definition.scope))
    insist(read && (mode==='view'||actor.permissions.has('people.manage')||sources.some(grant=>CATEGORY_RANK[grant.rules[relation][category]??'none']>=CATEGORY_RANK[mode])),'delegation_ceiling',403)
+  }
+  for(const relation of ['self','others'] as const) for(const field of PERFORMANCE_FIELDS) {
+   const mode=definition.performanceFields[relation][field]??'none'
+   if(mode==='none') continue
+   insist(actor.permissions.has('people.manage') || actor.performanceFields.some(grant=>(relation==='self'||coversScope(grant.scope,definition.scope))&&PERFORMANCE_RANK[grant.fields[relation][field]??'none']>=PERFORMANCE_RANK[mode]),'delegation_ceiling',403)
   }
   for(const relation of ['self','others'] as const) for(const field of JOB_FIELDS) {
    const mode=definition.jobFields[relation][field]??'none'
@@ -63,6 +69,7 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
    const explicit=actor.approvalGrants.some(grant=>grant.keys.includes(key as typeof grant.keys[number])&&coversScope(grant.scope,definition.scope))
    let native=false
    if(key==='leave') native=holdsScope('leave.manage')
+   else if(key==='self:goal') native=holdsScope('people.manage')
    else if(key.startsWith('self:')) native=holdsScope('people.manage')&&holdsScope('people.private')
    else if(key.startsWith('document:')) {
     const category=key.slice('document:'.length)
