@@ -145,7 +145,7 @@ async function performanceReadBrowserProof(h,owner,cookie,member,plan,level,cycl
 async function goalModeProof(h,owner,cookie,s,plan,level,inside,outside,today,day,join) {
  const api=(path,body,status)=>h.api(path,owner,body,status),write=(path,body,status)=>h.api(path,cookie,body,status),hr=(path,body,status)=>h.api(path,s.hr.cookie,body,status)
  const apply=async value=>api('level.apply',{review:(await api('level.preview',value)).id})
- const mode=async value=>apply({...plan,level,performanceFields:{self:{},others:{reviews:'view',goals:value}}})
+ const mode=async value=>apply({...plan,level,approvals:['self:goal'],performanceFields:{self:{},others:{reviews:'view',goals:value}}})
  const goalInput=title=>({person:inside.person,title,milestones:['Reviewed milestone'],dueDate:day(20),development:true,owner:s.invited.member})
  await mode('edit')
  const immediate=await write('goal.create',goalInput('synthetic-willow-10030 immediate goal'))
@@ -161,7 +161,9 @@ async function goalModeProof(h,owner,cookie,s,plan,level,inside,outside,today,da
  const proposed=await write('goal.create',goalInput('synthetic-willow-10033 approval goal'))
  assert.equal(proposed.status,'pending')
  assert.ok(!(await write('goals')).goals.some(g=>g.id===proposed.goal))
+ assert.ok((await api('levels')).levels.find(l=>l.id===level).approvals.includes('self:goal'))
  assert.equal((await write(`self-changes/${proposed.id}`)).kind,'goal')
+ assert.equal((await write(`self-changes/${proposed.id}`)).mayDecide,false,'Holding goal decisions never permits deciding your own proposal')
  await write('self.decide',{change:proposed.id,decision:'approve',comment:'Cannot approve own request'},403)
  assert.ok((await hr('work')).items.some(w=>w.source===`self-change:${proposed.id}`))
  await hr('self.decide',{change:proposed.id,decision:'approve',comment:'Human reviewed the exact proposed goal'})

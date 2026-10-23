@@ -84,7 +84,8 @@
           "migrations/core/0068_level_settings.sql",
           "migrations/core/0069_api_credentials.sql",
           "migrations/core/0070_performance_field_rights.sql",
-          "migrations/core/0071_goal_approval_modes.sql"
+          "migrations/core/0071_goal_approval_modes.sql",
+          "migrations/core/0072_goal_approval_selection.sql"
         ]
       }
     },
