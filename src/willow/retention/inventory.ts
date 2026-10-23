@@ -39,6 +39,7 @@ const cls = (key: ClassKey): Kind => ({ class: key })
 const s = (id: string, table: string, label: string, kind: Kind, from: string, extra: Partial<Store> = {}): Store => ({ id, table, label, kind, from: `${table} t WHERE ${from}`, ...extra })
 
 export const STORES: Store[] = [
+  s('webhook_deliveries','wl_webhook_deliveries','Outbound webhook delivery custody','erase','t.person_id = ?1',{ms:'t.created_at'}),
   s('people', 'wl_people', 'Legal name, preferred name, work email and employee number', 'identity', 't.id = ?1'),
   s('private', 'wl_person_private', 'Private contact details, address and date of birth', 'identity', 't.person_id = ?1'),
   s('periods', 'wl_periods', 'Employment periods', cls('payroll'), 't.person_id = ?1', { ms: 't.created_at', date: 't.end_date' }),
@@ -166,7 +167,7 @@ export const AUTHORED: [string, string][] = [
   ['wl_date_alerts', 'task_assignee'], ['wl_date_alerts', 'retired_by'], ['wl_date_alert_tasks', 'assignee'], ['wl_date_alert_tasks', 'closed_by'], ['wl_report_schedules', 'approved_by'],
   ['wl_protected_cases', 'created_by'], ['wl_protected_certifications', 'uploaded_by'], ['wl_protected_absences', 'recorded_by'], ['wl_leave_overrides', 'requested_by'], ['wl_leave_override_decisions', 'decided_by'],
   ['wl_company_preferences', 'updated_by'], ['wl_comp_cycles', 'approved_by'], ['wl_comp_cycles', 'published_by'], ['wl_comp_proposals', 'requested_by'], ['wl_review_inputs', 'author'], ['wl_review_notes', 'author'],
-  ['wl_review_summaries', 'created_by'], ['wl_review_withholdings', 'author'], ['wl_level_permissions', 'granted_by'], ['wl_self_changes', 'requested_by'], ['wl_self_decisions', 'decided_by'],
+  ['wl_review_summaries', 'created_by'], ['wl_review_withholdings', 'author'], ['wl_level_permissions', 'granted_by'], ['wl_webhooks','approved_by'], ['wl_self_changes', 'requested_by'], ['wl_self_decisions', 'decided_by'],
   ['wl_self_reconciliation', 'recorded_by'], ['wl_period_entities', 'set_by'], ['wl_permissions', 'granted_by'], ['wl_work_history', 'actor'], ['wl_audit', 'actor'], ['wl_work_schedule', 'owner'], ['wl_work_schedule', 'substitute'], ['wl_survey_plans', 'owner_member'], ['wl_provider_requests', 'recorded_by'], ['wl_provider_requests', 'assignee'],
 ]
 export const AUTHORED_STORES: Store[] = AUTHORED.map(([table, column]) => MEMBER_ROWS(table, column))

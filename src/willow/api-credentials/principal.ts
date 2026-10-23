@@ -12,15 +12,15 @@ import type { CredentialRow } from './store'
 
 // These native permissions carry read facets. Write/decision/admin doors remain unavailable.
 const READ_PERMISSIONS: readonly Permission[]=['people.manage','people.private','pay.read','leave.manage','documents.private','reports.read','payroll.handoff']
-export interface CredentialContext {id:string;level:string;version:number;people:Set<string>|null;snapshot:number}
+export interface CredentialContext {id:string;level:string;version:number;people:Set<string>|null;snapshot:number;writeScopes:string[]}
 const principals=new WeakMap<Actor,CredentialContext>()
 export const credentialContext=(actor:Actor)=>principals.get(actor)
 export const isCredentialActor=(actor:Actor)=>principals.has(actor)
 export const credentialPeople=(actor:Actor)=>principals.get(actor)?.people
 export const credentialPersonAllowed=(actor:Actor,person:string)=>!principals.has(actor)||principals.get(actor)!.people===null||principals.get(actor)!.people!.has(person)
 
-export async function compileCredentialPrincipal(env:Bindings,row:CredentialRow,snapshot:number):Promise<Actor> {
- const date=today(await employerZone(env)),scope=(await levelScopes(env)).get(row.level_id)
+export async function compileCredentialPrincipal(env:Bindings,row:CredentialRow,snapshot:number,instant?:number):Promise<Actor> {
+ const date=today(await employerZone(env),instant),scope=(await levelScopes(env)).get(row.level_id)
  insist(scope,'invalid_credential',401)
  // A non-person principal has no report hierarchy. Direct/indirect scopes therefore reach nobody.
  const members=scope.kind==='everyone'?new Set((await all<{id:string}>(env,'SELECT id FROM wl_people')).map(p=>p.id)):await scopeMembers(env,date,scope,null)
@@ -42,11 +42,11 @@ export async function compileCredentialPrincipal(env:Bindings,row:CredentialRow,
   jobFields:[{level,scope,members,fields:{self:{},others:fine(jobs)}}],
   leaveFields:[{level,scope,members,fields:{self:{},others:fine(leave)}}],
   compensationFields:[{level,scope,members,fields:{self:{},others:fine(compensation)}}],
-  otherPersonal:[{level,scope,people,fields:fine(personal)}],
+  otherPersonal:[{level,scope,people,fields:Object.fromEntries(personal.filter(rule=>rule.mode!=='none').map(rule=>[rule.field,JSON.parse(row.write_scopes).includes('personal.approval')&&rule.mode==='approval'?'approval':'view']))}],
   documentCategories:[{level,scope,people,rules:{self:{},others:Object.fromEntries(documents.filter(rule=>rule.mode!=='none').map(rule=>[rule.category_id,'view' as const]))}}],
   reportGrants:reports.length?[{level,scope,people:members,reports:reports.map(report=>report.report_id)}]:[],
   followOwnChanges:false,approvalGrants:[],settingsGrants:[],
  }
- principals.set(actor,{id:row.id,level,version:row.level_version,people,snapshot})
+ principals.set(actor,{id:row.id,level,version:row.level_version,people,snapshot,writeScopes:JSON.parse(row.write_scopes)})
  return actor
 }
