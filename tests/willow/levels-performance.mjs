@@ -527,3 +527,47 @@ async function reviewModeBrowserProof(h,owner,cookie,hrCookie,plan,level,cycle,p
   }
  } finally {for(const context of contexts)await context.close();await browser.close()}
 }
+
+export async function reviewMigrationProof() {
+ const {harness}=await import('./harness.mjs')
+ const person='synthetic-willow-10201',requester='synthetic-willow-10202'
+ const oldRequests=['pending','approved','rejected'].map((status,index)=>({id:`synthetic-willow-${10210+index}`,status,before:{legalName:person},after:{legalName:`synthetic-willow-${10220+index}`}}))
+ const sql=value=>"'"+String(value).replaceAll("'","''")+"'"
+ const fixture=[
+  `INSERT INTO oa_operators(id,email,display_name,role,status,created_at) VALUES('synthetic-willow-10200','synthetic-willow-10200@example.test','synthetic-willow-10200','owner','active',0);`,
+  `INSERT INTO oa_bootstrap(singleton,claim_id,claimed_at) VALUES(1,'synthetic-willow-10200',0);`,
+  `INSERT INTO wl_employer(singleton,name,timezone,country,currency,updated_at) VALUES(1,'synthetic-willow-10203','UTC','AU','AUD',0);`,
+  `INSERT INTO wl_people(id,legal_name,work_email,revision,created_at,updated_at) VALUES('${person}','${person}','${requester}@example.test','synthetic-willow-10204',0,0);`,
+  `INSERT INTO wl_person_private(person_id) VALUES('${person}');`,
+  `INSERT INTO oa_operators(id,email,display_name,role,status,created_at) VALUES('${requester}','${requester}@example.test','${requester}','member','active',0);`,
+  `INSERT INTO wl_members(id,email,name,person_id,status,created_at) VALUES('${requester}','${requester}@example.test','${requester}','${person}','active',0);`,
+  `INSERT INTO wl_levels(id,name) VALUES('synthetic-willow-10205','synthetic-willow-10205');`,
+  `INSERT INTO wl_member_levels(member_id,level_id,assigned_by,assigned_at) VALUES('${requester}','synthetic-willow-10205','synthetic-willow-10200',0);`,
+  `INSERT INTO wl_level_performance_fields(level_id,relation,field,mode) VALUES('synthetic-willow-10205','others','reviews','view');`,
+  ...oldRequests.flatMap(row=>[
+   `INSERT INTO wl_self_changes(id,person_id,kind,row_id,before_json,after_json,source_revision,requested_by,requested_at,due_date) VALUES('${row.id}','${person}','legalName',NULL,${sql(JSON.stringify(row.before))},${sql(JSON.stringify(row.after))},'synthetic-willow-10204','${requester}',0,'2099-01-01');`,
+   ...row.status==='pending'?[]:[`INSERT INTO wl_self_decisions VALUES('${row.id}','${row.status}','synthetic-willow-10200',1,'synthetic-willow-10230 retained decision');`],
+   ...row.status==='approved'?[`INSERT INTO wl_self_reconciliation VALUES('${row.id}','synthetic-willow-10231 retained handoff','synthetic-willow-10200',2);`]:[],
+  ]),
+ ].join('\n')
+ const h=await harness({bindings:{OWNER_EMAIL:'synthetic-willow-10200@example.test'},upgrade:{before:'0074_review_corrections.sql',sql:fixture,snapshot:'SELECT id FROM wl_self_changes ORDER BY id'}})
+ try {
+  assert.equal(h.upgradeSnapshot.length,3)
+  const owner=await h.signIn(h.vars.OWNER_EMAIL)
+  await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})
+  const changes=await h.api('self-changes',owner)
+  for(const prior of oldRequests) {
+   const current=changes.find(row=>row.id===prior.id)
+   assert.ok(current);assert.equal(current.status,prior.status)
+   assert.deepEqual(current.before,prior.before);assert.deepEqual(current.after,prior.after)
+   if(prior.status!=='pending')assert.equal(current.decision.comment,'synthetic-willow-10230 retained decision')
+   if(prior.status==='approved')assert.equal(current.reconciliation.reference,'synthetic-willow-10231 retained handoff')
+  }
+  const levels=await h.api('levels',owner),existing=levels.levels.find(row=>row.id==='synthetic-willow-10205')
+  assert.deepEqual(existing.performanceFields,{self:{},others:{reviews:'view'}})
+  await h.api('self.decide',owner,{change:oldRequests[0].id,decision:'approve',comment:'Apply preserved pending request'})
+  assert.equal((await h.api(`people/${person}`,owner)).legalName,oldRequests[0].after.legalName)
+  await h.api('self.decide',owner,{change:oldRequests[0].id,decision:'approve',comment:'No duplicate application'},409)
+  console.log('ROLE-008 migration: PASS — persisted pending requests remain actionable, decisions and handoffs survive, existing performance authority is unchanged')
+ } finally {await h.close()}
+}

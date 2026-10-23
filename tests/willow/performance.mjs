@@ -1,4 +1,4 @@
-import { performanceLevelProof } from './levels-performance.mjs'
+import { performanceLevelProof, reviewMigrationProof } from './levels-performance.mjs'
 // PERFORM-001: one journey through the real Worker, with mail faked only at its network edge.
 import assert from 'node:assert/strict'
 import { browserEvidence } from './performance-browser.mjs'
@@ -232,3 +232,5 @@ try {
 } finally {
   await h.close()
 }
+
+await reviewMigrationProof()

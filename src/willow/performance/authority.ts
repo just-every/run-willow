@@ -3,7 +3,7 @@ import { actorFor, type Actor } from '../actor'
 import { guard, insist, one } from '../core'
 
 // Capture before rebuilding current rights, then fence both Willow authority
-// and Base identity in the same transaction as the native goal mutation.
+// and Base identity in the same transaction as the native performance mutation.
 export async function performanceAuthority(env:Bindings,actor:Actor,requireSession:boolean) {
  const snapshot=(await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
  const member=await one(env,'SELECT m.*,o.id AS operator_id,o.version AS operator_version,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?',actor.id)
