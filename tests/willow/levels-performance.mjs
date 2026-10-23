@@ -542,7 +542,7 @@ export async function reviewMigrationProof() {
   `INSERT INTO oa_operators(id,email,display_name,role,status,created_at) VALUES('${requester}','${requester}@example.test','${requester}','member','active',0);`,
   `INSERT INTO wl_members(id,email,name,person_id,status,created_at) VALUES('${requester}','${requester}@example.test','${requester}','${person}','active',0);`,
   `INSERT INTO wl_levels(id,name) VALUES('synthetic-willow-10205','synthetic-willow-10205');`,
-  `INSERT INTO wl_member_levels(member_id,level_id,assigned_by,assigned_at) VALUES('${requester}','synthetic-willow-10205','synthetic-willow-10200',0);`,
+  `INSERT INTO wl_member_levels(member_id,level_id) VALUES('${requester}','synthetic-willow-10205');`,
   `INSERT INTO wl_level_performance_fields(level_id,relation,field,mode) VALUES('synthetic-willow-10205','others','reviews','view');`,
   ...oldRequests.flatMap(row=>[
    `INSERT INTO wl_self_changes(id,person_id,kind,row_id,before_json,after_json,source_revision,requested_by,requested_at,due_date) VALUES('${row.id}','${person}','legalName',NULL,${sql(JSON.stringify(row.before))},${sql(JSON.stringify(row.after))},'synthetic-willow-10204','${requester}',0,'2099-01-01');`,
@@ -563,8 +563,11 @@ export async function reviewMigrationProof() {
    if(prior.status!=='pending')assert.equal(current.decision.comment,'synthetic-willow-10230 retained decision')
    if(prior.status==='approved')assert.equal(current.reconciliation.reference,'synthetic-willow-10231 retained handoff')
   }
-  const levels=await h.api('levels',owner),existing=levels.levels.find(row=>row.id==='synthetic-willow-10205')
-  assert.deepEqual(existing.performanceFields,{self:{},others:{reviews:'view'}})
+  const reader=await h.signIn(`${requester}@example.test`)
+  const review=await h.api('performance.cycle',owner,{name:'synthetic-willow-10240',people:[person],dueDate:'2099-01-01',questions:{self:['Outcome'],peer:['Collaboration'],manager:['Development']}})
+  const summary=await h.api('performance.release',owner,{cycle:review.id,person,summary:'synthetic-willow-10241 retained read',rating:'Human rating'})
+  assert.ok((await h.api(`performance/${review.id}`,reader)).summaries.some(row=>row.id===summary.id))
+  await h.api('performance.correct',reader,{review:summary.id,summary:'No new write grant',rating:'Unapproved'},403)
   await h.api('self.decide',owner,{change:oldRequests[0].id,decision:'approve',comment:'Apply preserved pending request'})
   assert.equal((await h.api(`people/${person}`,owner)).legalName,oldRequests[0].after.legalName)
   await h.api('self.decide',owner,{change:oldRequests[0].id,decision:'approve',comment:'No duplicate application'},409)
