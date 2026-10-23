@@ -1,3 +1,4 @@
+import { readsSurveyThemes } from './authority'
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
 import { all, auditRead, insist, now, one, stmt } from '../core'
@@ -150,17 +151,11 @@ export async function surveyResults(env: Bindings, actor: Actor, id: string,
   insist(options && typeof options === 'object' && !Array.isArray(options) && Object.keys(options).length === 0,
     'survey_filters_not_allowed')
   const hr = can(actor, 'people.manage')
-  insist(hr || can(actor, 'reports.read'), 'forbidden', 403)
   const started = (await one<{ seq: number }>(env, WATERMARK))!.seq
   const survey = await one<Survey>(env, 'SELECT * FROM wl_surveys WHERE id=?', id)
   insist(survey, 'survey_not_found', 404)
   if (!hr) {
-    // A reports grant never expands a manager's scope. Test the whole fixed
-    // cohort, including former members and people who have not answered.
-    const scope = await one<{ total: number; outside: number }>(env, `SELECT COUNT(*) AS total,
-      COALESCE(SUM(CASE WHEN person_id IN (SELECT value FROM json_each(?)) THEN 0 ELSE 1 END),0) AS outside
-      FROM wl_survey_members WHERE survey_id=?`, JSON.stringify([...actor.reports]), id)
-    insist(scope && scope.total > 0 && scope.outside === 0, 'forbidden', 403)
+    insist(await readsSurveyThemes(env,actor,id), 'forbidden', 403)
   }
   const versions=new Map([[survey.id,survey.response_revision]])
   const plans = await publishedPlans(env, id)

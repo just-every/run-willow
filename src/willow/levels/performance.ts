@@ -5,13 +5,13 @@ import { all, insist } from '../core'
 import type { Input } from '../input'
 import { EVERYONE, levelScopes, scopeMembers, type Scope } from './scope'
 
-export const PERFORMANCE_FIELDS = ['reviews', 'goals'] as const
+export const PERFORMANCE_FIELDS = ['reviews', 'goals', 'engagement'] as const
 export type PerformanceField = typeof PERFORMANCE_FIELDS[number]
 export type PerformanceMode = 'none' | 'view' | 'approval' | 'edit'
 export const PERFORMANCE_RANK: Record<PerformanceMode,number> = {none:0,view:1,approval:2,edit:3}
 export interface PerformanceRules { self: Partial<Record<PerformanceField, PerformanceMode>>; others: Partial<Record<PerformanceField, PerformanceMode>> }
 export interface PerformanceGrant { level: string; fields: PerformanceRules; scope: Scope; members: Set<string> }
-export const PERFORMANCE_LABELS: Record<PerformanceField, string> = { reviews: 'Released reviews', goals: 'Goals and check-ins' }
+export const PERFORMANCE_LABELS: Record<PerformanceField, string> = { reviews: 'Released reviews', goals: 'Goals and check-ins', engagement: 'Published engagement themes' }
 export const PERFORMANCE_INPUTS = ['performanceFields', ...(['self', 'others'] as const).flatMap(relation => PERFORMANCE_FIELDS.map(field => `performanceMode.${relation}.${field}`))]
 export const emptyPerformanceRules = (): PerformanceRules => ({ self: {}, others: {} })
 

@@ -1,3 +1,4 @@
+import { readsSurveyThemes } from './authority'
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
 import { all, insist, json, one } from '../core'
@@ -7,8 +8,7 @@ export async function surveyList(env:Bindings,actor:Actor) {
  const surveys=await all<Survey>(env,'SELECT * FROM wl_surveys ORDER BY created_at DESC,id DESC'),items=[]
  for(const survey of surveys) {
   const membership=await one<SurveyMember>(env,'SELECT * FROM wl_survey_members WHERE survey_id=? AND member_id=?',survey.id,actor.id)
-  const cohort=can(actor,'reports.read')&&actor.reports.size?await all<{person_id:string}>(env,'SELECT person_id FROM wl_survey_members WHERE survey_id=?',survey.id):[]
-  const team=cohort.length>0&&cohort.every(m=>actor.reports.has(m.person_id))
+  const team=await readsSurveyThemes(env,actor,survey.id)
   if(!can(actor,'people.manage')&&!team&&!(membership&&survey.delivery_date<=actor.today))continue
   items.push({id:survey.id,name:survey.name,kind:survey.kind,mode:survey.mode,deliveryDate:survey.delivery_date,dueDate:survey.due_date,status:survey.status,own:membership?{answered:!!membership.answered,declined:!!membership.declined}:null,mayReadResults:can(actor,'people.manage')||team})
  }

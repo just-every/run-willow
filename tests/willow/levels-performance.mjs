@@ -63,7 +63,8 @@ export async function performanceLevelProof(h, owner, {staff:s,join,today,day}) 
  await read('performance.ack',{summary:released.id},404)
  await read(`surveys/${survey.id}/results`,undefined,403)
  const preview=await api(`preview?member=${s.invited.member}&person=${inside.person}`)
- assert.ok(preview.performanceFields.every(f=>f.levelView))
+ assert.ok(preview.performanceFields.filter(f=>f.field!=='engagement').every(f=>f.levelView))
+ assert.equal(preview.performanceFields.find(f=>f.field==='engagement').levelView,false)
  const forbidden=['synthetic-willow-10009','synthetic-willow-10010','synthetic-willow-10011','synthetic-willow-10013','synthetic-willow-10014','synthetic-willow-10015','synthetic-willow-10018','synthetic-willow-10020']
  const pathsFor=(pattern,name)=>{
   const path=pattern.replace(/^\^|\$$/g,'').replace(/\\\./g,'.')
@@ -100,6 +101,7 @@ export async function performanceLevelProof(h, owner, {staff:s,join,today,day}) 
  assert.ok(audit.some(e=>e.action==='level.level'&&e.actor===ownerId))
  await performanceReadBrowserProof(h,owner,cookie,s.invited.member,plan,level.id,cycle.id,goal.id,inside.person)
  await goalModeProof(h,owner,cookie,s,plan,level.id,inside,outside,today,day,join)
+ await engagementThemeProof(h,owner,cookie,s,plan,level.id,inside,outside,survey.id,today,day)
  console.log(`ROLE-008 read slice: PASS — ${urls.length} public doors, explicit released-review and goal View, exact scope, real private inputs/HR notes/anonymous comments, named withholding, bundle parity, independent revocation and no write/work grant`)
 }
 
@@ -267,6 +269,106 @@ async function goalModeBrowserProof(h,owner,cookie,hrCookie,plan,level,member,pe
    const completion=(await h.api('self-changes',cookie)).find(r=>r.kind==='goal'&&r.status==='pending'&&r.after.payload.evidence===`synthetic-willow-10051-${width}`)
    await hr.goto(h.origin+`/app/self-changes/${completion.id}`);const approve=hr.locator('form[action="/app/do/self.decide"]');await approve.getByLabel('Decision',{exact:true}).selectOption('approve');await approve.getByLabel('Comment',{exact:true}).fill('Reviewed the recorded completion evidence');await submit(hr,approve,'Record decision')
    await writer.goto(h.origin+'/app/goals');assert.ok((await writer.locator('body').textContent()).includes(`synthetic-willow-10051-${width}`));await capture(writer,'completed',width)
+  }
+ } finally {for(const context of contexts)await context.close();await browser.close()}
+}
+
+async function engagementThemeProof(h,owner,cookie,s,plan,level,inside,outside,anonymous,today,day) {
+ const api=(path,body,status)=>h.api(path,owner,body,status),read=(path,body,status)=>h.api(path,cookie,body,status)
+ const apply=async value=>api('level.apply',{review:(await api('level.preview',value)).id})
+ const insideMember=await api('access.give',{person:inside.person}),outsideMember=await api('access.give',{person:outside.person})
+ const insideCookie=await h.signIn('synthetic-willow-10002@example.com',{requested:true})
+ const create=async(member,name)=>api('survey.create',{name,kind:'pulse',mode:'named',deliveryDate:today,dueDate:day(7),members:[member],questions:[{key:'comment',label:'Named feedback',type:'text'}]})
+ const named=await create(insideMember.id,'synthetic-willow-10060 scoped named survey')
+ const external=await create(outsideMember.id,'synthetic-willow-10061 outside survey')
+ await h.api('survey.respond',insideCookie,{survey:named.id,answers:{comment:'synthetic-willow-10062 confidential named response'}})
+ const publish=async(survey,theme)=>api('survey.plan',{survey,theme,plan:'synthetic-willow-10063 published action',ownerMember:s.hr.member,dueDate:day(10)})
+ const action=await publish(named.id,'synthetic-willow-10064 scoped published theme')
+ await publish(external.id,'synthetic-willow-10065 outside theme')
+ await publish(anonymous,'synthetic-willow-10066 anonymous published theme')
+ const scoped={...plan,level,permissions:[],approvals:[],performanceFields:{self:{},others:{engagement:'view'}}}
+ await api('level.preview',{...scoped,performanceFields:{others:{engagement:'edit'}}},400)
+ await api('level.preview',{...scoped,performanceFields:{others:{engagement:'approval'}}},400)
+ const review=await api('level.preview',scoped)
+ assert.equal(review.impact.find(m=>m.member===s.invited.member).afterPerformance[0].fields.others.engagement,'view')
+ await api('level.apply',{review:review.id})
+ const result=await read(`surveys/${named.id}/results`)
+ assert.equal(result.access,'themes')
+ assert.equal(result.plans[0].id,action.id)
+ for(const key of ['aggregate','comparisons','namedAnswers','comments','members'])assert.ok(!Object.hasOwn(result,key),key+' is never selected for theme readers')
+ assert.equal((await read(`surveys/${named.id}`)).survey.own,null)
+ assert.equal((await read(`surveys/${named.id}`)).mayRespond,false)
+ assert.ok((await read('surveys')).items.some(item=>item.id===named.id&&item.mayReadResults))
+ assert.ok(!(await read('surveys')).items.some(item=>item.id===external.id))
+ await read(`surveys/${external.id}`,undefined,404)
+ await read(`surveys/${external.id}/results`,undefined,403)
+ await read(`surveys/${anonymous}/results`,undefined,403)
+ await read(`surveys/${named.id}/results?member=${insideMember.id}`,undefined,400)
+ await read('survey.plan',{survey:named.id,theme:'View is not Edit',plan:'No publication',ownerMember:s.invited.member,dueDate:day(10)},403)
+ await read('survey.plan.complete',{plan:action.id,evidence:'View is not ownership'},403)
+ await read('survey.comment.hide',{answer:'unknown',reason:'View is not HR'},403)
+ // Scope is evaluated over the whole cohort, even a member who has answered.
+ const location=await api('location.create',{name:'synthetic-willow-10067 moved survey subject',timezone:'UTC'})
+ const moved=await api('mover.schedule',{period:inside.period,effectiveFrom:today,locationId:location.id,reason:'Move fixed survey cohort outside read scope'})
+ await read(`surveys/${named.id}/results`,undefined,403)
+ assert.ok(!(await read('surveys')).items.some(item=>item.id===named.id))
+ await api('terms.cancel',{terms:moved.terms,reason:'Restore scoped survey proof'})
+ assert.equal((await read(`surveys/${named.id}/results`)).access,'themes')
+ // Everyone reach permits the anonymous survey's published themes only. Own
+ // participation is still visible only to the same invited recipient.
+ await apply({...scoped,scope:{kind:'everyone'},performanceFields:{self:{engagement:'view'},others:{engagement:'view'}}})
+ assert.equal((await read(`surveys/${anonymous}/results`)).access,'themes')
+ assert.deepEqual((await read(`surveys/${anonymous}`)).survey.own,{answered:true,declined:false})
+ const secret=['synthetic-willow-10062','synthetic-willow-10020']
+ for(const survey of [named.id,anonymous])for(const url of [`/api/willow/surveys/${survey}`,`/api/willow/surveys/${survey}/results`,`/app/surveys/${survey}`,`/app/surveys/${survey}/results`,`/app/surveys/${survey}.csv`]) {
+  const response=await h.raw(url,{cookie});assert.equal(response.status,200,url)
+  const text=await response.text();for(const value of secret)assert.ok(!text.includes(value),'Theme access never discloses named answers or anonymous comments through '+url)
+ }
+ const before=JSON.stringify((await api(`surveys/${anonymous}/results`)).aggregate)
+ await apply({...scoped,performanceFields:{self:{},others:{}}})
+ for(const survey of [named.id,anonymous]) {
+  await read(`surveys/${survey}/results`,undefined,403)
+  for(const url of [`/app/surveys/${survey}/results`,`/app/surveys/${survey}.csv`])assert.equal((await h.raw(url,{cookie})).status,403)
+ }
+ assert.equal((await read(`surveys/${anonymous}`)).survey.own.answered,true,'Field revocation preserves recipient-only participation')
+ assert.equal(JSON.stringify((await api(`surveys/${anonymous}/results`)).aggregate),before,'Theme reads and revocation preserve native protected aggregates')
+ assert.equal((await api(`surveys/${anonymous}/results`)).comments.length,5,'Native HR comment authority is retained')
+ await engagementThemeBrowserProof(h,owner,cookie,scoped,named.id)
+ await apply({...scoped,performanceFields:{self:{},others:{}}})
+ console.log('ROLE-008 engagement themes: PASS — fixed-cohort scope, real named/anonymous response exclusions, page/JSON/CSV parity, current transfers and same-session revocation; no publication, ownership or HR-comment rights')
+}
+
+async function engagementThemeBrowserProof(h,owner,cookie,plan,survey) {
+ if(process.env.WILLOW_PERFORMANCE_BROWSER!=='1')return
+ const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
+ const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+ const contexts=[]
+ const pageFor=async cookie=>{const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context);await context.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})));return context.newPage()}
+ const api=(path,body,status)=>h.api(path,owner,body,status)
+ const submit=async(page,form,name)=>{const action=await form.getAttribute('action');const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname===action&&r.request().method()==='POST'),page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.equal(response.status(),303);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
+ const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-engagement-${name}-${width}.png`,fullPage:true})}
+ try {
+  const admin=await pageFor(owner),reader=await pageFor(cookie)
+  for(const width of [1440,390]) {
+   for(const page of [admin,reader])await page.setViewportSize({width,height:1000})
+   await admin.goto(h.origin+'/app/access')
+   const editor=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:new RegExp('^'+plan.name+' ·')})}).first()
+   await editor.locator('summary').click();await editor.getByLabel('Performance about others: Published engagement themes',{exact:true}).selectOption('view')
+   await tooltipProof(admin);await capture(admin,'configure',width)
+   await submit(admin,editor.locator('form'),'Review level');await capture(admin,'review',width)
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   await reader.goto(h.origin+'/app/surveys');await tooltipProof(reader);await capture(reader,'list',width)
+   await reader.getByRole('link',{name:'synthetic-willow-10060 scoped named survey',exact:true}).click()
+   await reader.getByRole('link',{name:'Read protected results and themes',exact:true}).click()
+   assert.ok((await reader.locator('main').textContent()).includes('synthetic-willow-10064'))
+   for(const secret of ['synthetic-willow-10062','Named responses','Anonymous words'])assert.ok(!(await reader.locator('main').textContent()).includes(secret))
+   await tooltipProof(reader);await capture(reader,'published-themes',width)
+   const [download]=await Promise.all([reader.waitForEvent('download'),reader.getByRole('link',{name:'Download permitted results CSV',exact:true}).click()])
+   const chunks=[];for await(const chunk of await download.createReadStream())chunks.push(chunk)
+   const text=Buffer.concat(chunks).toString();assert.ok(text.includes('synthetic-willow-10064'));assert.ok(!text.includes('synthetic-willow-10062'))
+   await api('level.apply',{review:(await api('level.preview',{...plan,performanceFields:{self:{},others:{}}})).id})
+   assert.equal((await reader.goto(h.origin+`/app/surveys/${survey}/results`)).status(),403)
+   await reader.goto(h.origin+'/app/surveys');assert.equal(await reader.getByRole('link',{name:'synthetic-willow-10060 scoped named survey',exact:true}).count(),0);await tooltipProof(reader);await capture(reader,'revoked',width)
   }
  } finally {for(const context of contexts)await context.close();await browser.close()}
 }
