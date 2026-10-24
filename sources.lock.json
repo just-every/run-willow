@@ -3765,7 +3765,7 @@
       "executable": false
     },
     "src/willow/connections.ts": {
-      "sha256": "97d0f5c816266adc07d95521781e55cf23b507e90a9a0920dbaba0d01e1edaa3",
+      "sha256": "f39aeb06fdb77c4475425d287fca8993d75ed1691416bf9080dd54792913ea77",
       "executable": false
     },
     "src/willow/core.ts": {
@@ -4873,7 +4873,7 @@
       "executable": false
     },
     "tests/willow/journey.mjs": {
-      "sha256": "b58459deb4cc2f578db7051772231bb98bceb6ba19e98809aea15bf70057fa48",
+      "sha256": "60583a3c2558d431c86e57ea8ee05f1050c467b5f48eea02bb055832c6420c5d",
       "executable": false
     },
     "tests/willow/leave-policies-browser.mjs": {

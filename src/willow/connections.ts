@@ -68,7 +68,7 @@ export async function configureIdentity(env: Bindings, actor: Actor, input: Inpu
     if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && error.code.startsWith('oidc_')) throw new WillowError(error.code, 502)
     throw error
   }
-  await auth.setIdentitySettings(request, { idpSignIn: true })
+  if (operation === 'relink') await auth.setIdentitySettings(request, { idpSignIn: true })
   await commit(env, [stmt(env, 'INSERT INTO wl_connections(singleton,oidc,revision) VALUES(1,1,?) ON CONFLICT(singleton) DO UPDATE SET oidc=1,revision=excluded.revision', newId())], { actor: actor.id, action: `identity.${operation}`, subject: provider })
   return result
 }

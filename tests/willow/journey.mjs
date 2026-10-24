@@ -6,7 +6,7 @@
 // into a second fresh clone. Every person is invented.
 import assert from 'node:assert/strict'
 import { chromium } from '@playwright/test'
-import { access, chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { access, chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -17,6 +17,8 @@ import { evidenceDirectory } from './evidence.mjs'
 
 assert.equal(process.env.WILLOW_TEST_CHECKOUT, '1', 'Set WILLOW_TEST_CHECKOUT=1 only in a disposable fresh git clone')
 const root = process.cwd()
+const deploymentFile = join(root, 'deploy.json')
+const deploymentSource = await readFile(deploymentFile, 'utf8')
 await access(join(root, '.dev.vars')).then(() => { throw new Error('The journey needs an unconfigured fresh clone') }, error => { if (error.code !== 'ENOENT') throw error })
 const socket = createServer()
 await new Promise(resolve => socket.listen(0, '127.0.0.1', resolve))
@@ -225,6 +227,11 @@ try {
   assert.equal((await fetch(`${origin}/health`)).status, 200)
   assert.equal((await fetch(`${origin}/signin`)).status, 200)
   await server.stop(); server = null
+  // A valid test sender lets dry runs reach the missing-credential boundary.
+  const deployment = JSON.parse(deploymentSource)
+  const { domain } = JSON.parse(await readFile(join(root, 'deploy-site.json'), 'utf8'))
+  deployment.vars.MAIL_FROM = `Willow <synthetic-willow-1@${domain}>`
+  await writeFile(deploymentFile, JSON.stringify(deployment, null, 2) + '\n')
   // Dry runs build the artifact, then refuse when target secret bindings cannot be checked.
   const dryRun = await command(root, ['deploy', '--dry-run'], { expectedExit: 3 })
   assert.match(dryRun, /CLOUDFLARE_ACCOUNT_ID/)
@@ -235,9 +242,11 @@ try {
   const suppliedMail = await command(root, ['deploy', '--dry-run', '--env-file', 'exports/production-test.env'], { expectedExit: 3 })
   assert.match(suppliedMail, /CLOUDFLARE_ACCOUNT_ID/)
   assert.match(suppliedMail, /CLOUDFLARE_API_TOKEN/)
+  await writeFile(deploymentFile, deploymentSource)
   await restoreJourney({ root, target: join(scratch, 'target'), port })
 } finally {
   await browser?.close()
   await server?.stop().catch(() => {})
+  await writeFile(deploymentFile, deploymentSource)
   await rm(scratch, { recursive: true, force: true })
 }
