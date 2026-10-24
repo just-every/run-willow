@@ -4,6 +4,7 @@ import { apiDescription } from './api-description'
 import { builtinReportsPage,builtinReportPage } from './ui/builtin-reports'
 import { builtinReportFile } from './reporting/builtin-files'
 import { credentialActor, isCredentialActor } from './api-credentials'
+import { credentialResponse } from './api-credentials/authenticate'
 import { credentialRead } from './api-credentials/response'
 import type { CredentialMetadata } from './api-credentials/store'
 import { credentialsPage, issuedCredentialPage } from './ui/api-credentials'
@@ -87,7 +88,7 @@ export async function willowResponse(request: Request, original: Bindings): Prom
     if (invitation) return invitation
   }
   if (!api && url.pathname !== '/app' && !url.pathname.startsWith('/app/') && !match(INVITATION_DOORS,url.pathname)) return null
-  if(match(PUBLIC_API_DOORS,url.pathname)&&request.method==='GET')return json(apiDescription)
+  if(match(PUBLIC_API_DOORS,url.pathname)&&request.method==='GET'&&!request.headers.has('authorization'))return json(apiDescription)
   let actor: Actor | null = null
   try {
     // Any Authorization header belongs to this boundary, including invalid credentials.
@@ -95,7 +96,7 @@ export async function willowResponse(request: Request, original: Bindings): Prom
     actor = await credentialActor(env, request)
     if (actor) {
       const result=url.pathname.startsWith('/api/willow/v1/')?(request.method==='POST'?await versionedWrite(env,actor,request,url):await versionedRead(env,actor,request,url)):await credentialRead(env,actor,request,url)
-      return result instanceof Response?result:json(result)
+      return credentialResponse(request,result instanceof Response?result:json(result))
     }
     if (request.method === 'POST' && request.headers.get('origin') !== env.AUTH_ORIGIN) return api ? json({ error: 'invalid_origin' }, 403) : new Response('Forbidden', { status: 403 })
     if (!['GET', 'HEAD', 'POST'].includes(request.method)) return new Response(null, { status: 405, headers: { allow: 'GET, HEAD, POST' } })
@@ -106,7 +107,10 @@ export async function willowResponse(request: Request, original: Bindings): Prom
     return await pageResponse(env, actor, request, url)
   } catch (error) {
     const { code, status, detail } = failure(error)
-    if (api || request.headers.has('authorization') || actor&&isCredentialActor(actor)) return json({ error: code, ...(detail === undefined ? {} : { detail }) }, status)
+    if (api || request.headers.has('authorization') || actor&&isCredentialActor(actor)) {
+      const response=json({ error: code, ...(detail === undefined ? {} : { detail }) }, status)
+      return request.headers.has('authorization')?credentialResponse(request,response):response
+    }
     if (status === 404) return page('Not found', actor, h`<h1>Not found</h1><p>There is nothing here you can open.</p><p><a href="/app">Back to Willow</a></p>`, { status: 404 })
     return page('Something went wrong', actor, h`<h1>That did not work</h1><p>${code.replace(/_/g, ' ')}</p><p><a href="/app">Back to Willow</a></p>`, { status })
   }

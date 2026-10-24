@@ -6,6 +6,15 @@ import { WillowError, auditRead, commit, guard, insist, now, one, sha256Hex, stm
 import { compileCredentialPrincipal, credentialContext } from './principal'
 import type { CredentialRow } from './store'
 
+const limits=new WeakMap<Request,{count:number;reset:number}>()
+export function credentialResponse(request:Request,response:Response) {
+ const state=limits.get(request),reset=Math.max(0,Math.ceil(((state?.reset??(Math.floor(now()/60000)+1)*60000)-now())/1000))
+ const headers=new Headers(response.headers)
+ headers.set('RateLimit-Limit','120');headers.set('RateLimit-Remaining',String(Math.max(0,120-(state?.count??120))));headers.set('RateLimit-Reset',String(reset));headers.set('RateLimit-Policy','120;w=60')
+ if(response.status===429)headers.set('Retry-After',String(reset))
+ return new Response(response.body,{status:response.status,statusText:response.statusText,headers})
+}
+
 export const CREDENTIAL_API_DOORS:[RegExp,string][]=[
  [/^people$/,'people'],[/^people\/[\w-]+$/,'person'],[/^organization$/,'organization'],
  [/^custom-fields$/,'customFields'],[/^record-tables$/,'recordTables'],[/^record-tables\/[a-z][a-z0-9_]*$/,'recordReport'],
@@ -25,7 +34,7 @@ export function credentialDoor(request:Request):string|null {
 }
 const sourceSnapshot=async(env:Bindings)=>(await one<{seq:number}>(env,"SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download'"))!.seq
 const VALID=`c.revoked_at IS NULL AND c.expires_at>? AND l.version=c.level_version
- AND m.status='active' AND o.status='active' AND o.role='owner' AND o.version=c.issuer_version AND lower(o.email)=m.email`
+ AND m.status='active' AND o.status='active' AND (o.role='owner' OR (EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=m.id AND permission='access.admin') AND EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=m.id AND permission='people.manage'))) AND (c.needs_approval=0 OR c.approved_by IS NOT NULL) AND o.version=c.issuer_version AND lower(o.email)=m.email`
 const ADMISSION=`FROM wl_api_credentials c JOIN wl_levels l ON l.id=c.level_id JOIN wl_members m ON m.id=c.issued_by JOIN oa_operators o ON o.id=c.issuer_operator`
 async function invalid(env:Bindings,id:string|null):Promise<never> {
  if(id)await auditRead(env,`credential:${id}`,'apiKey.denied.read',id,{outcome:'invalid'})
@@ -46,14 +55,10 @@ export async function credentialActor(env:Bindings,request:Request):Promise<Acto
  const row=await one<CredentialRow>(env,'SELECT * FROM wl_api_credentials WHERE token_hash=?',await sha256Hex(bearer[1]))
  if(!row)return invalid(env,null)
  if(!await credentialValid(env,row.id)) {
-  if(row.revoked_at===null)await permanentlyInvalidate(env,row.id)
+  if(row.revoked_at===null&&!(row.needs_approval&&!row.approved_by))await permanentlyInvalidate(env,row.id)
   return invalid(env,row.id)
  }
  const door=credentialDoor(request)
- if(!door) {
-  await auditRead(env,`credential:${row.id}`,'apiKey.denied.read',row.id,{outcome:'door_forbidden'})
-  throw new WillowError('credential_read_only',403)
- }
  const snapshot=await sourceSnapshot(env),actor=await compileCredentialPrincipal(env,row,snapshot),time=now(),window=Math.floor(time/60_000)
  try {
   await commit(env,[
@@ -68,9 +73,14 @@ export async function credentialActor(env:Bindings,request:Request):Promise<Acto
   throw error
  }
  const limit=await one<{count:number}>(env,'SELECT count FROM wl_api_credential_limits WHERE credential_id=?',row.id)
+ limits.set(request,{count:limit!.count,reset:(window+1)*60000})
  if(limit!.count>120) {
   await auditRead(env,actor.id,'apiKey.rate_limited.read',row.id)
   throw new WillowError('credential_rate_limited',429)
+ }
+ if(!door) {
+  await auditRead(env,`credential:${row.id}`,'apiKey.denied.read',row.id,{outcome:'door_forbidden'})
+  throw new WillowError('credential_read_only',403)
  }
  return actor
 }

@@ -1,6 +1,6 @@
 import { correctReview } from './performance/corrections'
 import { approveWebhook, replayWebhook, runWebhooksNow, disableWebhook } from './webhooks'
-import { issueCredential,rotateCredential,revokeCredential } from './api-credentials'
+import { approveCredential,issueCredential,rotateCredential,revokeCredential } from './api-credentials'
 import { resubmitCompensationRecord,resubmitCompensationDefinition } from './compensation/resubmit'
 import { editCompensationPay, proposeCompensationRecord } from './compensation/pay'
 import { writeCompensationRecord } from './compensation/records'
@@ -98,7 +98,7 @@ export const actions: Record<string, Handler> = {
   'hold.place': placeHold, 'hold.release': releaseHold, 'hold.review': reviewHold,
   'erasure.request': openRequest, 'erasure.withdraw': withdrawRequest, 'erasure.confirm': confirmErasure, 'erasure.provider': recordProviderOutcome, 'retention.purge': confirmPurge,
   'self.request': proposeSelfChange,
-  'apiKey.issue':issueCredential,'apiKey.rotate':rotateCredential,'apiKey.revoke':revokeCredential,
+  'apiKey.approve':approveCredential,'apiKey.issue':issueCredential,'apiKey.rotate':rotateCredential,'apiKey.revoke':revokeCredential,
   'self.decide': decideSelfChange,
   'self.reconcile': reconcileSelfChange,
   'dateAlert.define': defineAlert,

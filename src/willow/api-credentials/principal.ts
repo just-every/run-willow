@@ -11,7 +11,7 @@ import { levelScopes, scopeMembers } from '../levels/scope'
 import type { CredentialRow } from './store'
 
 // These native permissions carry read facets. Write/decision/admin doors remain unavailable.
-const READ_PERMISSIONS: readonly Permission[]=['people.manage','people.private','pay.read','leave.manage','documents.private','reports.read','payroll.handoff']
+export const READ_PERMISSIONS: readonly Permission[]=['people.manage','people.private','pay.read','leave.manage','documents.private','reports.read','payroll.handoff']
 export interface CredentialContext {id:string;level:string;version:number;people:Set<string>|null;snapshot:number;writeScopes:string[]}
 const principals=new WeakMap<Actor,CredentialContext>()
 export const credentialContext=(actor:Actor)=>principals.get(actor)

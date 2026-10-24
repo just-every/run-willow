@@ -166,3 +166,53 @@ export async function settingsBrowserProof(h, owner, fx) {
   await browser.close()
  }
 }
+
+export async function delegatedCredentialBrowserProof(h,owner,delegate,second,level,expiresAt) {
+ if(process.env.WILLOW_LEVELS_BROWSER!=='1')return
+ const {chromium}=await import(pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href)
+ const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+ const contexts=[]
+ const open=async cookie=>{
+  const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context)
+  await context.addCookies(cookie.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})))
+  return context.newPage()
+ }
+ try {
+  const issuer=await open(delegate.cookie),approver=await open(second.cookie)
+  for(const [index,width] of [1440,390].entries()) {
+   for(const page of [issuer,approver])await page.setViewportSize({width,height:1000})
+   const capture=async(page,state,mask=[])=>{
+    await page.evaluate(()=>document.fonts.ready)
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),state+' fits '+width)
+    const bell=page.locator('.bell'),tip=page.getByRole('tooltip',{name:'Your tasks'})
+    await bell.hover();await page.waitForTimeout(150);assert.equal(await tip.isVisible(),false)
+    await tip.waitFor({state:'visible'});await page.mouse.move(0,0);await bell.focus();assert.equal(await tip.isVisible(),true)
+    await page.screenshot({path:evidenceDirectory+'/API-001-'+state+'-'+width+'.png',fullPage:true,mask})
+   }
+   assert.equal((await issuer.goto(h.origin+'/app/api-credentials')).status(),200)
+   const form=issuer.locator('form[action="/app/do/apiKey.issue"]'),name='synthetic-willow-'+(14130+index)
+   await form.locator('[name="name"]').fill(name);await form.locator('[name="level"]').selectOption(level);await form.locator('[name="expiresAt"]').fill(expiresAt)
+   await capture(issuer,'delegate-issue')
+   await Promise.all([issuer.waitForResponse(response=>new URL(response.url()).pathname==='/app/do/apiKey.issue'),form.getByRole('button').click()])
+   const token=await issuer.locator('#issued-api-token').textContent()
+   assert.ok(token)
+   await capture(issuer,'awaiting-approval',[issuer.locator('#issued-api-token')])
+   const row=(await h.api('api-credentials',owner)).find(row=>row.name===name)
+   assert.ok(row.approvalRequired&&!row.approvedBy)
+   const request=()=>fetch(h.origin+'/api/willow/people',{headers:{authorization:'Bearer '+token}})
+   assert.equal((await request()).status,401)
+   assert.equal((await approver.goto(h.origin+'/app/api-credentials')).status(),200)
+   const approval=approver.locator('form[action="/app/do/apiKey.approve"]').filter({has:approver.locator('input[name="credential"][value="'+row.id+'"]')})
+   await approval.locator('[name="reason"]').fill('synthetic-willow-14132')
+   await capture(approver,'independent-review')
+   await approval.getByRole('button').click();await approver.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'))
+   assert.ok(!new URL(approver.url()).searchParams.has('error'))
+   assert.equal((await request()).status,200)
+   await capture(approver,'approved')
+   await h.api('apiKey.revoke',delegate.cookie,{credential:row.id})
+   assert.equal((await request()).status,401)
+   await issuer.goto(h.origin+'/app/api-credentials');await capture(issuer,'revoked')
+  }
+ }finally{for(const context of contexts)await context.close();await browser.close()}
+ console.log('API-001 browser: PASS — delegate issue, one-time pending disclosure, independent review, activation and revocation with tooltips at 1440 and 390')
+}

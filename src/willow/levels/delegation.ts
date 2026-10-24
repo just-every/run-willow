@@ -31,7 +31,7 @@ export const levelSessionFence=(env: Bindings,actor: Actor)=>guard(env,'access_c
  WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?)`,actor.sessionId,actor.id,Date.now())
 
 /** Delegates hold employer-wide HR authority today, so any narrower level scope stays within their reach. */
-export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,data: Awaited<ReturnType<typeof levels>>) {
+export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,data: Awaited<ReturnType<typeof levels>>, credential = false) {
  requireLevelAdmin(actor)
  // Settings remain employer-wide even for owner-created and restored definitions.
  const definitions=plan.kind==='level' ? [plan] : (plan.kind==='revert' ? plan.assignments.flatMap(assignment=>assignment.levels) : plan.levels).map(id=>data.levels.find(level=>level.id===id)!)
@@ -121,6 +121,7 @@ export async function validateDelegation(env: Bindings,actor: Actor,plan: Plan,d
  }
  if(plan.kind==='level') {
   checkDefinition(plan)
+  if(credential) return
   const prior=data.levels.find(l=>l.id===plan.level)
   insist(!prior?.permissions.includes('eeo.individual'),'owner_only_delegation',403)
   for(const assignment of data.assignments.filter(a=>a.level_id===plan.level)) checkMember(assignment.member_id)

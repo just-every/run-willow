@@ -79,8 +79,7 @@ prevents execution. No key can approve its own request or acquire direct-edit
 or administration authority from this scope. Rotation preserves explicit scopes.
 Other write families remain unimplemented and API-002 remains partial.
 
-Errors return a value-free `error` code and optional refusal detail. Standard
-rate-limit headers and further OAuth credential types remain API-001 work.
+Errors return a value-free `error` code and optional refusal detail. OAuth credential types and further write families remain API-001 work.
 
 ## Permissioned webhooks
 
@@ -151,3 +150,31 @@ that an outside receiver erased its copy. Owner consent, stop and replay forms a
 proof at 1440 and 390. The native archive and erasure journeys prove excluded
 signing authority, removed delivery custody and tracked outside copies.
 Global subscriptions and complete future event sources remain unproved. API-003 remains partial.
+
+## Delegated key administration
+
+An explicit employer-wide access administrator (`access.admin` and
+`people.manage`) may issue a key through `apiKey.issue`. The bound level's
+carried read facets, field modes and structural scope must fit the issuer's
+current authority. Human self-service, decisions, individual EEO values and
+access administration never transfer to a key. Wider requests are refused and
+audited by actor and reason without credential material.
+
+A delegated key carrying pay, private-contact or document reads
+is shown once but remains inactive pending independent approval. The owner
+or a distinct access administrator who holds every carried right approves
+through `apiKey.approve` with `credential` and a nonempty `reason`. The native
+API credentials page provides the same review. Issuers cannot approve their
+own keys; rotation requires a fresh independent approval for sensitive keys.
+Delegates rotate or revoke only their own keys; the owner can manage any key.
+Authority or assignment changes and revisions of an issuer's assigned levels
+permanently revoke issued keys, including when the prior rights return before
+another API call. The entire credential row, including approval custody, stays
+excluded from archives.
+
+Every bearer response from the credential transport includes `RateLimit-Limit`,
+`RateLimit-Remaining`, `RateLimit-Reset` and `RateLimit-Policy`. The limit is
+120 calls per credential per fixed minute. Reset is seconds until the next
+window; exhausted requests return 429 with `Retry-After`. Refused credential
+doors count against the same limit and include the headers. Invalid or pending
+credentials report zero remaining authority.

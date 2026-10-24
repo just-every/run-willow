@@ -1,23 +1,45 @@
-// Owner-managed credential custody. Only the issuing response carries bearer bytes.
+// Administrator-managed credential custody. Only the issuing response carries bearer bytes.
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
-import { all, commit, guard, insist, newId, now, one, sha256Hex, stmt } from '../core'
+import { all, auditRead, commit, guard, insist, newId, now, one, sha256Hex, stmt, WillowError } from '../core'
 import type { Input } from '../input'
+import { currentLevelAdmin, validateDelegation } from '../levels/delegation'
+import { levels } from '../levels/store'
+import { READ_PERMISSIONS } from './principal'
 
 export interface CredentialRow {
  id:string; name:string; token_hash:string; level_id:string; level_version:number;
  issued_by:string; issuer_operator:string; issuer_version:number; issued_at:number; expires_at:number;
- last_used_at:number|null; revoked_at:number|null; revocation_reason:string|null; replaced_by:string|null; write_scopes:string;
+ last_used_at:number|null; revoked_at:number|null; revocation_reason:string|null; replaced_by:string|null; write_scopes:string; needs_approval:number; approved_by:string|null; approval_reason:string|null;
 }
-export const credentialMetadata=(row:CredentialRow)=>({id:row.id,name:row.name,level:row.level_id,levelVersion:row.level_version,issuedBy:row.issued_by,issuedAt:row.issued_at,expiresAt:row.expires_at,lastUsedAt:row.last_used_at,revokedAt:row.revoked_at,revocationReason:row.revocation_reason,replacedBy:row.replaced_by,readOnly:JSON.parse(row.write_scopes).length===0,writeScopes:JSON.parse(row.write_scopes) as string[]})
+export const credentialMetadata=(row:CredentialRow)=>({id:row.id,name:row.name,level:row.level_id,levelVersion:row.level_version,issuedBy:row.issued_by,issuedAt:row.issued_at,expiresAt:row.expires_at,lastUsedAt:row.last_used_at,revokedAt:row.revoked_at,revocationReason:row.revocation_reason,replacedBy:row.replaced_by,approvalRequired:!!row.needs_approval,approvedBy:row.approved_by,readOnly:JSON.parse(row.write_scopes).length===0,writeScopes:JSON.parse(row.write_scopes) as string[]})
 export type CredentialMetadata=ReturnType<typeof credentialMetadata>
 
-async function ownerAuthority(env:Bindings,actor:Actor) {
+const businessSnapshot=async(env:Bindings)=>(await one<{seq:number}>(env,"SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download'"))!.seq
+async function administratorAuthority(env:Bindings,actor:Actor) {
+ const snapshot=await businessSnapshot(env)
+ actor=await currentLevelAdmin(env,actor)
  const row=await one<{id:string;version:number}>(env,`SELECT o.id,o.version FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email)
- WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND o.role='owner' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?`,actor.sessionId,actor.id,now())
- insist(actor.owner&&row,'owner_required',403)
- return {row,fence:guard(env,'access_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email)
- WHERE s.id=? AND m.id=? AND m.status='active' AND o.id=? AND o.version=? AND o.status='active' AND o.role='owner' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?)`,actor.sessionId,actor.id,row.id,row.version,now())}
+ WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?`,actor.sessionId,actor.id,now())
+ insist(row,'access_administrator_required',403)
+ return {actor,row,fence:guard(env,'access_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email)
+ WHERE s.id=? AND m.id=? AND m.status='active' AND o.id=? AND o.version=? AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?) AND (SELECT COALESCE(MAX(seq),0) FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download')=?`,actor.sessionId,actor.id,row.id,row.version,now(),snapshot)}
+}
+async function credentialCeiling(env:Bindings,actor:Actor,id:string,writeScopes:string[]) {
+ const data=await levels(env,actor),level=data.levels.find(level=>level.id===id)
+ insist(level,'level_not_found',404)
+ // Only the facets a non-person principal can carry enter its issuance ceiling.
+ const view=(rules:Record<string,string>)=>Object.fromEntries(Object.entries(rules).map(([field,mode])=>[field,mode==='none'?'none':'view']))
+ const definition={...level,kind:'level' as const,level:id,permissions:level.permissions.filter(p=>READ_PERMISSIONS.includes(p)),settings:[],approvals:[],selfFields:{},followOwnChanges:false,performanceFields:{self:{},others:{}},
+  jobFields:{self:{},others:view(level.jobFields.others)},leaveFields:{self:{},others:view(level.leaveFields.others)},compensationFields:{self:{},others:view(level.compensationFields.others)},
+  otherFields:Object.fromEntries(Object.entries(level.otherFields).map(([field,mode])=>[field,writeScopes.includes('personal.approval')&&mode==='approval'?'approval':mode==='none'?'none':'view'])),
+  documentCategories:{self:{},others:view(level.documentCategories.others)}}
+ await validateDelegation(env,actor,definition as Parameters<typeof validateDelegation>[2],data,true)
+ const sensitive=level.permissions.some(p=>['pay.read','payroll.handoff','people.private','documents.private'].includes(p)) || Object.values(level.compensationFields.others).some(mode=>mode!=='none') || Object.entries(level.otherFields).some(([field,mode])=>!['legalName','preferredName'].includes(field)&&mode!=='none') || Object.values(level.documentCategories.others).some(mode=>mode!=='none')
+ return !actor.owner&&sensitive
+}
+async function audited<T>(env:Bindings,actor:Actor,operation:string,run:()=>Promise<T>) {
+ try{return await run()}catch(error){if(error instanceof WillowError)await auditRead(env,actor.id,'apiKey.denied.read',actor.id,{operation,reason:error.code});throw error}
 }
 function expiry(input:Input) {
  const value=input.text('expiresAt',{max:40})
@@ -26,41 +48,61 @@ function expiry(input:Input) {
  insist(Number.isSafeInteger(date)&&date>now()&&new Date(`${value.slice(0,10)}T00:00:00.000Z`).toISOString().slice(0,10)===value.slice(0,10),'invalid_expiresAt')
  return date
 }
-async function material(env:Bindings,actor:Actor,name:string,level:string,expiresAt:number,issuer:{id:string;version:number},writeScopes:string[]=[]) {
+async function material(env:Bindings,actor:Actor,name:string,level:string,expiresAt:number,issuer:{id:string;version:number},writeScopes:string[]=[],needsApproval=false) {
  const selected=await one<{id:string;version:number}>(env,'SELECT id,version FROM wl_levels WHERE id=?',level)
  insist(selected,'level_not_found',404)
  const id=newId(),bytes=crypto.getRandomValues(new Uint8Array(32)),token=`willow_key_${id.replaceAll('-','')}_${Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}`
- const row:CredentialRow={id,name,token_hash:await sha256Hex(token),level_id:level,level_version:selected.version,issued_by:actor.id,issuer_operator:issuer.id,issuer_version:issuer.version,issued_at:now(),expires_at:expiresAt,last_used_at:null,revoked_at:null,revocation_reason:null,replaced_by:null,write_scopes:JSON.stringify(writeScopes)}
+ const row:CredentialRow={id,name,token_hash:await sha256Hex(token),level_id:level,level_version:selected.version,issued_by:actor.id,issuer_operator:issuer.id,issuer_version:issuer.version,issued_at:now(),expires_at:expiresAt,last_used_at:null,revoked_at:null,revocation_reason:null,replaced_by:null,write_scopes:JSON.stringify(writeScopes),needs_approval:needsApproval?1:0,approved_by:null,approval_reason:null}
  insist(expiresAt>row.issued_at,'invalid_expiresAt')
- return {row,token,statements:[guard(env,'access_changed','EXISTS(SELECT 1 FROM wl_levels WHERE id=? AND version=?)',level,selected.version),stmt(env,`INSERT INTO wl_api_credentials(id,name,token_hash,level_id,level_version,issued_by,issuer_operator,issuer_version,issued_at,expires_at,write_scopes) VALUES(?,?,?,?,?,?,?,?,?,?,?)`,id,name,row.token_hash,level,selected.version,actor.id,issuer.id,issuer.version,row.issued_at,expiresAt,row.write_scopes)]}
+ return {row,token,statements:[guard(env,'access_changed','EXISTS(SELECT 1 FROM wl_levels WHERE id=? AND version=?)',level,selected.version),stmt(env,`INSERT INTO wl_api_credentials(id,name,token_hash,level_id,level_version,issued_by,issuer_operator,issuer_version,issued_at,expires_at,write_scopes,needs_approval) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`,id,name,row.token_hash,level,selected.version,actor.id,issuer.id,issuer.version,row.issued_at,expiresAt,row.write_scopes,row.needs_approval)]}
 }
 export async function issueCredential(env:Bindings,actor:Actor,input:Input) {
- input.only(['name','level','expiresAt','writeScopes','returnTo'])
- const writeScopes=input.provided('writeScopes')?input.json('writeScopes'):[]
- insist(Array.isArray(writeScopes)&&new Set(writeScopes).size===writeScopes.length&&writeScopes.every(scope=>['personal.approval','webhooks.manage'].includes(scope)),'invalid_write_scopes')
- const authority=await ownerAuthority(env,actor),prepared=await material(env,actor,input.text('name'),input.text('level'),expiry(input),authority.row,writeScopes as string[])
- await commit(env,[authority.fence,...prepared.statements],{actor:actor.id,action:'apiKey.issue',subject:prepared.row.id,detail:{level:prepared.row.level_id,expiresAt:prepared.row.expires_at}})
- return {...credentialMetadata(prepared.row),token:prepared.token}
+ return audited(env,actor,'issue',async()=>{
+  input.only(['name','level','expiresAt','writeScopes','returnTo'])
+  const writeScopes=input.provided('writeScopes')?input.json('writeScopes'):[]
+  insist(Array.isArray(writeScopes)&&new Set(writeScopes).size===writeScopes.length&&writeScopes.every(scope=>['personal.approval','webhooks.manage'].includes(scope)),'invalid_write_scopes')
+  const authority=await administratorAuthority(env,actor),level=input.text('level')
+  const needsApproval=await credentialCeiling(env,authority.actor,level,writeScopes as string[])
+  const prepared=await material(env,authority.actor,input.text('name'),level,expiry(input),authority.row,writeScopes as string[],needsApproval)
+  await commit(env,[authority.fence,...prepared.statements],{actor:actor.id,action:'apiKey.issue',subject:prepared.row.id,detail:{level,expiresAt:prepared.row.expires_at,needsApproval}})
+  return {...credentialMetadata(prepared.row),token:prepared.token}
+ })
+}
+export async function approveCredential(env:Bindings,actor:Actor,input:Input) {
+ return audited(env,actor,'approve',async()=>{
+  input.only(['credential','reason','returnTo'])
+  const authority=await administratorAuthority(env,actor),id=input.text('credential'),reason=input.text('reason',{max:400})
+  const row=await one<CredentialRow>(env,'SELECT * FROM wl_api_credentials WHERE id=?',id)
+  insist(row,'not_found',404)
+  insist(row.issued_by!==actor.id,'independent_approval_required',403)
+  insist(row.needs_approval&&!row.approved_by&&!row.revoked_at&&row.expires_at>now(),'credential_inactive',409)
+  await credentialCeiling(env,authority.actor,row.level_id,JSON.parse(row.write_scopes))
+  await commit(env,[authority.fence,guard(env,'access_changed',`EXISTS(SELECT 1 FROM wl_api_credentials c JOIN wl_levels l ON l.id=c.level_id JOIN oa_operators o ON o.id=c.issuer_operator JOIN wl_members m ON m.id=c.issued_by WHERE c.id=? AND c.revoked_at IS NULL AND c.approved_by IS NULL AND c.expires_at>? AND l.version=c.level_version AND o.version=c.issuer_version AND o.status='active' AND m.status='active' AND (o.role='owner' OR (EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=m.id AND permission='people.manage') AND EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=m.id AND permission='access.admin'))))`,id,now()),stmt(env,'UPDATE wl_api_credentials SET approved_by=?,approval_reason=? WHERE id=?',actor.id,reason,id)],{actor:actor.id,action:'apiKey.approve',subject:id,detail:{issuer:row.issued_by,reason}})
+  return {id,approved:true}
+ })
 }
 export async function listCredentials(env:Bindings,actor:Actor) {
- const authority=await ownerAuthority(env,actor)
+ const authority=await administratorAuthority(env,actor)
  const rows=await all<CredentialRow>(env,'SELECT * FROM wl_api_credentials ORDER BY issued_at DESC,id')
  await commit(env,[authority.fence],{actor:actor.id,action:'apiKey.list.read',subject:'credentials'})
  return rows.map(credentialMetadata)
 }
 export async function revokeCredential(env:Bindings,actor:Actor,input:Input) {
  input.only(['credential','returnTo'])
- const authority=await ownerAuthority(env,actor),id=input.text('credential'),row=await one<CredentialRow>(env,'SELECT * FROM wl_api_credentials WHERE id=?',id)
+ const authority=await administratorAuthority(env,actor),id=input.text('credential'),row=await one<CredentialRow>(env,'SELECT * FROM wl_api_credentials WHERE id=?',id)
  insist(row,'not_found',404)
+ insist(authority.actor.owner||row.issued_by===actor.id,'credential_owner_required',403)
  await commit(env,[authority.fence,stmt(env,"UPDATE wl_api_credentials SET revoked_at=COALESCE(revoked_at,?),revocation_reason=COALESCE(revocation_reason,'owner_revoked') WHERE id=?",now(),id)],{actor:actor.id,action:'apiKey.revoke',subject:id})
  return {id,revoked:true}
 }
 export async function rotateCredential(env:Bindings,actor:Actor,input:Input) {
  input.only(['credential','expiresAt','returnTo'])
- const authority=await ownerAuthority(env,actor),id=input.text('credential'),row=await one<CredentialRow>(env,'SELECT * FROM wl_api_credentials WHERE id=?',id)
+ const authority=await administratorAuthority(env,actor),id=input.text('credential'),row=await one<CredentialRow>(env,'SELECT * FROM wl_api_credentials WHERE id=?',id)
  insist(row,'not_found',404)
+ insist(authority.actor.owner||row.issued_by===actor.id,'credential_owner_required',403)
  insist(!row.revoked_at&&row.expires_at>now(),'credential_inactive',409)
- const prepared=await material(env,actor,row.name,row.level_id,expiry(input),authority.row,JSON.parse(row.write_scopes))
+ const needsApproval=await credentialCeiling(env,authority.actor,row.level_id,JSON.parse(row.write_scopes))
+ const prepared=await material(env,authority.actor,row.name,row.level_id,expiry(input),authority.row,JSON.parse(row.write_scopes),needsApproval)
  await commit(env,[authority.fence,guard(env,'stale','EXISTS(SELECT 1 FROM wl_api_credentials WHERE id=? AND revoked_at IS NULL AND expires_at>?)',id,now()),...prepared.statements,stmt(env,"UPDATE wl_api_credentials SET revoked_at=?,revocation_reason='rotated',replaced_by=? WHERE id=?",now(),prepared.row.id,id)],{actor:actor.id,action:'apiKey.rotate',subject:id,detail:{replacement:prepared.row.id}})
  return {...credentialMetadata(prepared.row),token:prepared.token}
 }
