@@ -208,9 +208,9 @@ export async function requestLeave(env: Bindings, actor: Actor, input: Input) {
   const limit = (await one<{ negative_limit_minutes: number }>(env, 'SELECT negative_limit_minutes FROM wl_policy_versions WHERE id = ?', account.policy_version_id))!.negative_limit_minutes
   const id = newId(), approver = await approverFor(env, account, start, actor.id)
   await commit(env, [
-    ...live.guards,
-    // The balance check and the reservation are one atomic batch: two requests cannot spend the same minutes.
+    // Competing reservations report the balance failure before the audit fence; all guards precede writes.
     guard(env, 'insufficient_balance', `${BALANCE} - ? >= ?`, account.id, calculation.minutes, -limit),
+    ...live.guards,
     guard(env, 'stale', "NOT EXISTS(SELECT 1 FROM wl_leave_requests WHERE person_id = ? AND status IN ('pending', 'approved') AND start_date <= ? AND end_date >= ?)", account.person_id, end, start),
     stmt(env, "INSERT INTO wl_leave_requests (id, account_id, person_id, start_date, end_date, minutes, calculation, approver_member_id, status, requested_by, requested_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)", id, account.id, account.person_id, start, end, calculation.minutes, JSON.stringify(calculation), approver, actor.id, now()),
     ...(reason ? [stmt(env, 'INSERT INTO wl_leave_reasons (request_id, reason) VALUES (?, ?)', id, reason)] : []),
