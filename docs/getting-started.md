@@ -2,13 +2,13 @@ Willow runs on your own computer with one command, and the same checkout can lat
 
 ## Get Willow and start it
 
-Willow uses rer, the Run Edit Run command, to install, start, back up and deploy it. Willow runs on macOS, Linux or Windows with WSL2; rer brings Node and pnpm and picks the exact versions the checkout pins. One line installs rer, clones Willow and starts it:
+Willow uses rer, the Run Edit Run command, to install, start, back up and deploy it. Willow runs on macOS, Linux or Windows with WSL2. Git is required; rer brings Node and pnpm. It uses the exact versions the checkout pins. One line installs rer, clones Willow into `run-willow` and starts it:
 
 ```sh
-npx -y @runeditrun/rer dev just-every/run-willow
+curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-willow
 ```
 
-Without Node, `curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-willow` does the same. To start it again later, run `cd run-willow && rer dev`.
+Already have Node 22 or later? `npx -y @runeditrun/rer dev just-every/run-willow` does the same. If the installer prints a line that puts `rer` on your PATH, run that line too. To start it again later, run the same line from the same folder, or `cd run-willow && rer dev`.
 
 The first start installs everything and can take a few minutes. When Willow is ready, `rer dev` prints `RER_READY` with the local address and `RER_OPEN`, a link that opens Willow signed in as the owner. Open that link on the same computer and keep it to yourself: it carries this checkout's private key.
 

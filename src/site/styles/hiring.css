@@ -10,6 +10,8 @@
 .terminal pre { margin: 18px 0 0; font: 500 16px/1.8 var(--font-mono); color: var(--terminal-text); white-space: pre-wrap; overflow-wrap: anywhere; }
 .terminal code { font: inherit; }
 .terminal .prompt { margin-right: .7em; color: #c9b3c5; }
+.terminal .comment { color: #c9b3c5; }
+.terminal .nw { white-space: nowrap; }
 .terminal .ok { color: #8fe3a8; }
 .import { position: relative; margin: -86px 0 0 15%; padding: 26px 28px 18px; }
 .import-title { font-size: 22px; font-weight: 600; letter-spacing: -.01em; }

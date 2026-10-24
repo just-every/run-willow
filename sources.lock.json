@@ -308,7 +308,7 @@
       "executable": false
     },
     "docs/getting-started.md": {
-      "sha256": "85ddc637db6db1c5643097856814d198bd2a242ae081b5063a9eed80a1a52c85",
+      "sha256": "ba803278284ebcbcd17572788127c84f9967c0f229b7010742c13d26297e4a51",
       "executable": false
     },
     "docs/leave.md": {
@@ -2828,7 +2828,7 @@
       "executable": false
     },
     "src/site/landing/sections/MoveIn.tsx": {
-      "sha256": "8a18d90e1b089e44c56dce9b421bb67b39f86e7c22f1440d915f340e66d5a2b0",
+      "sha256": "54f63739adcb6f50a1bec7063753c68912bba4b1c48576cb0d659d674aecfade",
       "executable": false
     },
     "src/site/landing/sections/Offer.tsx": {
@@ -2888,7 +2888,7 @@
       "executable": false
     },
     "src/site/styles/hiring.css": {
-      "sha256": "74540c905224202e5c64280f6e9deb20c31057ba217aee52c7e4a7dd9a744955",
+      "sha256": "1563a030037dedffbb452ff57a0228ad0809e04e951324c50354a2065d7b437f",
       "executable": false
     },
     "src/site/styles/landing.css": {
