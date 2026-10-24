@@ -73,3 +73,9 @@ receipt and health checks are defined there. Willow uses the pinned
 `@runeditrun/rer` package for these operations.
 Local validation does not prove hosted acceptance, provider delivery or remote
 health.
+
+## Hosted delivery package
+
+Run `pnpm run build`, then `pnpm delivery:spec` to regenerate the committed public deployment specification. `pnpm check:deployment-spec` refuses stale policy or build output. Package the real Worker with `node scripts/delivery/base/cli.mjs package --config packaging.json --output rer-package`; the artifact command in `packaging.json` emits the same delivery payload. These commands never deploy or publish a release.
+
+Hosted sign-in and fixed notices use the selected RER relay, Resend, SendGrid or Cloudflare provider. Assisted setup asks for that provider, a verified sender and its private credential; RER relay also needs its HTTPS relay URL. Managed hosting supplies its relay values privately. Local development retains the private development outbox. Missing provider configuration leaves delivery unavailable and never selects another provider.

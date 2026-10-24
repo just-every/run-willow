@@ -1,0 +1,5 @@
+{
+  "version": "0.1.0",
+  "date": "2026-10-14",
+  "publicReleaseNotes": "Willow 0.1.0 is the first public source release at https://github.com/just-every/run-willow. It includes a people register, effective-dated employment, private documents, an append-only leave ledger, joiner/mover/leaver work, access-scoped agent proposals, BambooHR file move-in, reviewed payroll file handoff and owner export/restore. Optional connections add fixed email notices, OIDC sign-in and checklist drafts from structural context. Payroll calculation, tax and payments remain with the payroll provider. Local tests use invented people and provider-edge fixtures; real owner exports, hosted provider delivery, payroll-account reconciliation, retention review and accessibility acceptance remain separate owner trials. Publishing the source does not deploy an installation or the run site."
+}

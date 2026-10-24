@@ -1,6 +1,6 @@
 {
   "name": "@people/willow",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "license": "MIT",
   "repository": {
@@ -41,7 +41,9 @@
     "test:restore-erasure": "node tests/willow/restore-erasure.mjs",
     "test:phase2-browser": "WILLOW_PHASE2_BROWSER=1 node tests/willow/phase2.mjs",
     "test:site": "rer build --site && node tests/willow/site.mjs",
-    "test:open-source": "node tests/willow/open-public-start.mjs"
+    "test:open-source": "node tests/willow/open-public-start.mjs",
+    "delivery:spec": "node scripts/build-deployment-spec.mjs",
+    "check:deployment-spec": "node scripts/build-deployment-spec.mjs --check"
   },
   "dependencies": {
     "@tanstack/react-router": "1.170.41",
@@ -54,7 +56,7 @@
     "@cloudflare/vite-plugin": "1.54.5",
     "@cloudflare/workers-types": "5.20260908.1",
     "@playwright/test": "1.56.1",
-    "@runeditrun/rer": "0.2.68",
+    "@runeditrun/rer": "0.2.79",
     "@types/node": "22.20.5",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",

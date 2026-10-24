@@ -14,11 +14,25 @@
       "migrations_dir": "migrations/core"
     }
   ],
-  "triggers": { "crons": ["*/15 * * * *"] },
+  "triggers": {
+    "crons": [
+      "*/15 * * * *"
+    ]
+  },
   "r2_buckets": [
     {
       "binding": "FILES",
       "bucket_name": "people-willow-files"
     }
-  ]
+  ],
+  "vars": {
+    "AUTH_LOCAL": "false",
+    "AUTH_ORIGIN": "",
+    "MAIL_PROVIDER": "",
+    "MAIL_FROM": "",
+    "MAIL_RELAY_URL": "",
+    "MAIL_ACCOUNT_ID": "",
+    "MODELS_ENDPOINT": "",
+    "OWNER_EMAIL": ""
+  }
 }
