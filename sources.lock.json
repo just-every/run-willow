@@ -4876,7 +4876,7 @@
       "executable": false
     },
     "tests/willow/harness.mjs": {
-      "sha256": "b5c0f4b8a9613e7ffabb67f4f89b44f39d11a654580f6468fea809c0818e3c7f",
+      "sha256": "4bacda5e6c813ee66ae3c089f420af1c73581e346786ec844e62095979c1d287",
       "executable": false
     },
     "tests/willow/hiring-browser.mjs": {

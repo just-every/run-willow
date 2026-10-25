@@ -60,6 +60,11 @@ export async function harness({ bindings = {}, provider, persistTo, port: chosen
   } catch (error) {
     if (!persistTo) await rm(directory, { recursive: true, force: true })
     throw error
+  } finally {
+    // Wrangler keeps its scratch (.wrangler/tmp) beside the emitted Worker's
+    // config; the artifact producer refuses that folder, so leave dist/server
+    // as rer build wrote it, even when migration setup fails.
+    await rm('dist/server/.wrangler', { recursive: true, force: true })
   }
   const links = new Map()
   let mf, mfOptions, convertOptions
