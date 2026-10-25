@@ -674,7 +674,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "4139109979d0c41f13bdb8791fd7332c3cc79a78937262845a40497458b0395f",
+      "sha256": "b34029205e1af5a39ec1be70a384350e3966a466e2982ab75da6fe074a5d2ccf",
       "executable": false
     },
     ".gitignore": {
@@ -4942,7 +4942,7 @@
       "executable": false
     },
     "tests/willow/levels-browser.mjs": {
-      "sha256": "38daec57e2906607acebaf03d83f59c64adda630bc18b309858b5e7cb6e4fc88",
+      "sha256": "8437f6a53555bfde239e1fea39da3040534a2279dc03fb0a280e9d4b56395a68",
       "executable": false
     },
     "tests/willow/levels-builtins-browser.mjs": {
@@ -5066,7 +5066,7 @@
       "executable": false
     },
     "tests/willow/levels.mjs": {
-      "sha256": "5162fd84583cc1d6eab1455a54ba12acd0911e51cd9c58a2c6ad297800067d1c",
+      "sha256": "cbd0829e36cca11a61e1cd296690be4f694aad528bc8f1906f607249f889433f",
       "executable": false
     },
     "tests/willow/open-area-fixtures.mjs": {

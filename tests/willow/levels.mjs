@@ -10,6 +10,11 @@ import { browserEvidence, demoProof } from './levels-browser.mjs'
 import { scopeProof, transferProof } from './levels-scope.mjs'
 import { scopeKindsProof } from './levels-scope-kinds.mjs'
 import { decisionProof } from './levels-scope-decisions.mjs'
+const shard=process.env.WILLOW_VERIFY_SHARD
+assert.ok(!shard||['browser-access','browser-scope','browser-job'].includes(shard),'Select a registered access journey shard')
+const access=!shard||shard==='browser-access'
+const scope=!shard||shard==='browser-scope'
+if(access||scope) {
 const h=await harness()
 try {
  assert.equal((await h.raw('/auth/bootstrap',{body:{token:h.vars.SETUP_TOKEN,displayName:'Olive Owner'}})).status,303)
@@ -32,6 +37,7 @@ try {
   assert.equal(text.includes('8123456')||text.includes('81234.56'),pay,'Compensation follows the current union')
   assert.equal(text.includes('PRIVATE-employee'),contact,'Private contact follows the current union')
  }
+ if(access) {
  await as('hr','levels',undefined,403)
  await as('managera','level.preview',{kind:'level',name:'Escalation',permissions:['pay.read']},403)
  await as('hr','level.preview',{kind:'assignment',member:s.hr.member,levels:[]},403)
@@ -91,25 +97,31 @@ try {
  const awaitOwnerId=(await api('me')).id
  const audit=await api('audit')
  assert.ok(audit.some(e=>e.action==='level.level'&&e.actor===(awaitOwnerId)))
- const personal=await personalFieldProof(h,owner,s)
- const bulk=await bulkLevelProof(h,owner,s,join)
- const scoped=await scopeProof(h,owner,fx)
- await transferProof(h,scoped)
- await decisionProof(h,owner,scoped)
- await scopeKindsProof(h,owner,fx)
- const delegated=await delegatedLevelProof(h,owner,s)
- await otherPersonalProof(h,owner,s)
- const documentRights=await documentCategoryProof(h,owner,s)
- await documentWriteProof(h,owner,s,documentRights)
- const selectedReport=await selectedReportProof(h,owner,fx)
- console.log('ROLE-002 scopes: PASS — everyone, direct, direct and indirect, location, department, employment type, custom field and combined group scopes reach exactly their people through every registered door, control members, dated transfers on each side of the effective date, scoped writes rechecked, invalid scopes refused and batch revert')
- await browserEvidence(h,owner,s,bulk,scoped,delegated,documentRights,selectedReport)
- console.log('ROLE-001: PASS — exact union, explicit bounded administration and reviewed changes, stale/replay refusal, same-session revocation and ended-access clearing (personal self-write modes and immutable HR routing proved; other field/section rights remain partial)')
+ }
+ const personal=access?await personalFieldProof(h,owner,s):undefined
+ const bulk=scope?await bulkLevelProof(h,owner,s,join):undefined
+ const scoped=scope?await scopeProof(h,owner,fx):undefined
+ if(scope) {
+  await transferProof(h,scoped)
+  await decisionProof(h,owner,scoped)
+  await scopeKindsProof(h,owner,fx)
+  console.log('ROLE-002 scopes: PASS — everyone, direct, direct and indirect, location, department, employment type, custom field and combined group scopes reach exactly their people through every registered door, control members, dated transfers on each side of the effective date, scoped writes rechecked, invalid scopes refused and batch revert')
+ }
+ const delegated=access?await delegatedLevelProof(h,owner,s):undefined
+ if(access) await otherPersonalProof(h,owner,s)
+ const documentRights=access?await documentCategoryProof(h,owner,s):undefined
+ if(access) await documentWriteProof(h,owner,s,documentRights)
+ const selectedReport=access?await selectedReportProof(h,owner,fx):undefined
+ await browserEvidence(h,owner,s,bulk,scoped,delegated,documentRights,selectedReport,{access})
+ if(access) console.log('ROLE-001: PASS — exact union, explicit bounded administration and reviewed changes, stale/replay refusal, same-session revocation and ended-access clearing (personal self-write modes and immutable HR routing proved; other field/section rights remain partial)')
 } finally { await h.close() }
+}
 
+if(!shard||shard==='browser-job') {
 await demoProof()
 
 await migrationProof()
 
 await jobLevelProof()
 
+}

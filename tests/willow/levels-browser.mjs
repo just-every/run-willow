@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { writeFile } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 import { evidenceDirectory } from './evidence.mjs'
-export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,documentRights,selectedReport) {
+export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,documentRights,selectedReport,{access=true}={}) {
  if(process.env.WILLOW_LEVELS_BROWSER!=='1') return
  assert.ok(process.platform!=='darwin'||process.env.WILLOW_PLAYWRIGHT_PATH)
  const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
@@ -21,7 +21,7 @@ export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,docume
     await Promise.all([page.waitForNavigation({waitUntil:'load'}),target.getByRole('button',{name,exact:true}).click()])
     assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())
    }
-   for(const width of [1440,390]) {
+   if(access) for(const width of [1440,390]) {
     await page.setViewportSize({width,height:1000})
     const capture=async name=>{
      await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
@@ -67,10 +67,10 @@ export async function browserEvidence(h,owner,staff,bulk,scoped,delegated,docume
     assert.ok(!(await h.api('me',staff.managera.cookie)).permissions.includes('reports.read'))
     await capture('revoked-end-state')
    }
-   await bulkBrowserProof(page,h,owner,bulk)
-   await personalBrowserProof(browser,h,owner,staff)
-   await scopeBrowserProof(browser,h,owner,scoped)
-   await otherPersonalBrowserProof(browser,h,owner,staff)
+   if(bulk) await bulkBrowserProof(page,h,owner,bulk)
+   if(access) await personalBrowserProof(browser,h,owner,staff)
+   if(scoped) await scopeBrowserProof(browser,h,owner,scoped)
+   if(access) await otherPersonalBrowserProof(browser,h,owner,staff)
    if(delegated) await delegatedBrowserProof(browser,h,owner,staff,delegated)
    if(selectedReport) await selectedReportBrowserProof(browser,h,owner,staff,selectedReport)
    if(documentRights) {await documentCategoryBrowserProof(browser,h,owner,staff,documentRights);await documentWriteBrowserProof(browser,h,owner,staff,documentRights)}

@@ -166,10 +166,16 @@ jobs:
       - run: pnpm run test:restore-erasure
 
   browser-journeys:
+    name: browser-journeys (${{ matrix.shard }})
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [browser-access, browser-scope, browser-job, browser-phase2]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       CI: 'true'
+      WILLOW_VERIFY_SHARD: ${{ matrix.shard }}
       WRANGLER_SEND_METRICS: 'false'
     steps:
       - name: Set external evidence directory
@@ -186,15 +192,32 @@ jobs:
       - run: pnpm exec rer install
       - run: pnpm exec vite build
       - run: pnpm exec playwright install --with-deps chromium
-      - run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
-      - run: pnpm run test:phase2-browser
+      - if: matrix.shard != 'browser-phase2'
+        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
+      - if: matrix.shard == 'browser-phase2'
+        run: pnpm run test:phase2-browser
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: willow-browser-pages
+          name: willow-browser-pages-${{ matrix.shard }}
           path: ${{ runner.temp }}/willow-evidence/*.png
 
   section-journeys:
+    name: section-journeys (${{ matrix.shard }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: api
+            sections: apiRoster
+          - shard: credentials
+            sections: settingsSelection apiKeys settingsBrowser
+          - shard: sections
+            sections: pay records definitions leave custody browser
+          - shard: approvals
+            sections: approvalPersonal approvalRouting approvalBrowser
+          - shard: builtins
+            sections: builtinSelection builtinBrowser builtinCustody
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -219,10 +242,11 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/willow-playwright" --no-save playwright@1.64.1
           node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install --with-deps chromium
           printf 'WILLOW_PLAYWRIGHT_PATH=%s/willow-playwright/node_modules/playwright/index.mjs\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-      - run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs
-      - run: node tests/willow/webhooks.mjs
+      - run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs ${{ matrix.sections }}
+      - if: matrix.shard == 'api'
+        run: node tests/willow/webhooks.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: willow-section-pages
+          name: willow-section-pages-${{ matrix.shard }}
           path: ${{ runner.temp }}/willow-evidence/*.png
