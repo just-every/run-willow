@@ -222,3 +222,38 @@ export async function delegatedCredentialBrowserProof(h,owner,delegate,second,le
  }finally{for(const context of contexts)await context.close();await browser.close()}
  console.log('API-001 browser: PASS — delegate issue, one-time pending disclosure, independent review, activation and revocation with tooltips at 1440 and 390')
 }
+
+export async function oauthConsentBrowserProof(h,owner,params) {
+ if(process.env.WILLOW_LEVELS_BROWSER!=='1')return
+ const {chromium}=await import(pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href)
+ const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+ const context=await browser.newContext({ignoreHTTPSErrors:true})
+ try {
+  await context.addCookies(owner.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})))
+  for(const width of [1440,390]) for(const decision of ['deny','approve']) {
+   // A separate page owns each outbound navigation, including a synthetic partner's terminal load.
+   const page=await context.newPage()
+   try {
+    await page.setViewportSize({width,height:1000})
+    assert.equal((await page.goto(h.origin+'/app/oauth/authorize?'+new URLSearchParams(params))).status(),200)
+    await page.evaluate(()=>document.fonts.ready)
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
+    const bell=page.locator('.bell'),tip=page.getByRole('tooltip',{name:'Your tasks'})
+    await bell.hover();await page.waitForTimeout(150);assert.equal(await tip.isVisible(),false)
+    await tip.waitFor({state:'visible'});await page.mouse.move(0,0);await bell.focus();assert.equal(await tip.isVisible(),true)
+    if(decision==='deny')await page.screenshot({path:evidenceDirectory+'/API-001-consent-'+width+'.png',fullPage:true})
+    await page.getByLabel('Consent reason').fill('synthetic-willow-14433')
+    await page.route('https://partner.example.test/**',route=>route.fulfill({status:200,body:'Partner callback received'}))
+    const navigation=page.waitForRequest(request=>new URL(request.url()).hostname==='partner.example.test').catch(()=>null)
+    const submitted=page.waitForResponse(response=>new URL(response.url()).pathname==='/app/oauth/authorize'&&response.request().method()==='POST')
+    await page.getByRole('button',{name:decision==='deny'?'Deny access':'Install app'}).click()
+    const result=await submitted;assert.equal(result.status(),303,'Consent submission: '+(result.status()===303?'redirect':await result.text()))
+    const callback=await navigation;assert.ok(callback,'The registered callback is reached')
+    const destination=new URL(callback.url());assert.equal(destination.searchParams.get('state'),params.state)
+    if(decision==='deny'){assert.equal(destination.searchParams.get('error'),'access_denied');assert.equal(destination.searchParams.has('code'),false)}
+    else {assert.ok(destination.searchParams.get('code'));assert.equal(destination.searchParams.has('error'),false)}
+   }finally{await page.close()}
+  }
+ }finally{await context.close();await browser.close()}
+ console.log('API-001 browser consent: PASS — explicit installation and denial, registered destination, reason and icon tooltips at 1440 and 390')
+}

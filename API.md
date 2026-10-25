@@ -67,7 +67,7 @@ checks and a download audit. It does not expose pending document proposals.
 
 ## Approval requests
 
-Keys are read-only by default. The owner can explicitly supply
+Keys are read-only by default. An owner or eligible access administrator can explicitly supply
 `writeScopes: ["personal.approval"]` to the existing `apiKey.issue` JSON action.
 This permits only `POST /api/willow/v1/changes` with `person`, `field` and `value`.
 The bound level must give that exact personal field Edit with approval for that
@@ -77,9 +77,31 @@ the existing queue and decision door. The decision rechecks the live key,
 level, field mode, scope and native person revision. Revocation before approval
 prevents execution. No key can approve its own request or acquire direct-edit
 or administration authority from this scope. Rotation preserves explicit scopes.
-Other write families remain unimplemented and API-002 remains partial.
+Job and compensation requests use the separate native employment-change transport below. Further module write families remain API-002 work.
 
-Errors return a value-free `error` code and optional refusal detail. Authorization-code grants and further write families remain API-001 work.
+Errors return a value-free `error` code and optional refusal detail.
+
+### Native job and compensation requests
+
+Issue a credential with `job.approval`, `compensation.approval`, or both.
+`POST /api/willow/v1/employment-changes` accepts `person`, `effectiveFrom`,
+`reason`, and the same native job or pay fields as `change.request`. Job fields
+include title, department, location, manager, schedule, employment type and
+status, FTE and employment dates. Pay uses `payBasis` and `payAmount`, or
+`payIncreasePercent`. The published OpenAPI description lists the exact inputs.
+A mixed request requires both scopes. Unknown inputs and fields outside the
+level's current authority are refused; out-of-scope people return 404.
+
+The response contains only a pending ID and status. HR reviews it in the native
+employee-change queue and uses the existing FLOW-004 chain. An app remains a
+non-person requester identified as `credential:<id>`; it never becomes the
+issuer or employee and cannot approve or decide. Even a level's direct Edit
+mode produces a human approval request. Native validation, dated terms,
+source revisions and workflow steps remain unchanged. Final approval rechecks
+the credential's current scope, modes, expiry, issuer and independent approval.
+Revocation before approval refuses execution. Existing human requests and their
+append-only event history survive the forward migration.
+
 
 ## Permissioned webhooks
 
@@ -243,5 +265,15 @@ continues to read. Any change to approver authority permanently ends the approva
 Changing the level, including widening scope or rights, ends existing credentials;
 new issuance stays inactive until fresh approval. Secrets, codes and all token
 custody are excluded from archives. A restore accepts none of the source authority.
-A conventional partner browser consent endpoint and further write transports remain
-in API-001's Gap.
+Partners may instead open `/app/oauth/authorize` with `response_type=code`,
+`client_id`, exact `redirect_uri`, `code_challenge`,
+`code_challenge_method=S256`, `state`, and optional exact granted `scope`.
+The signed-in employer access administrator reviews the app, level rights,
+population, expiry and partner destination. A required reason accompanies
+Install app or Deny access. No GET installs an app or issues a code. Approval
+uses the same bounded and audited grant as the JSON action; denial returns
+`error=access_denied` and unchanged state to the registered destination.
+Malformed requests and unregistered destinations fail locally. The consent
+page permits form navigation only to Willow and the registered partner origin;
+it contains no third-party code and sends no referrer. Independent sensitive
+approval still governs every resource request after installation.

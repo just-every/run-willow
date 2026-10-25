@@ -1,3 +1,4 @@
+import { requestChange } from './change-requests/requests'
 import { registerWebhook, webhookList, webhookLog } from './webhooks'
 import { publishedDocumentVersion } from './document-publication'
 import { proposeSelfChange } from './self-service/requests'
@@ -122,6 +123,13 @@ export async function versionedRead(env:Bindings,actor:Actor,request:Request,url
 /** The initial write scope can request approval only; HR executes the unchanged native proposal. */
 export async function versionedWrite(env:Bindings,actor:Actor,request:Request,url:URL) {
  if(url.pathname===PREFIX+'webhooks')return registerWebhook(env,actor,await Input.from(request))
+ if(url.pathname===PREFIX+'employment-changes') {
+  const input=await Input.from(request)
+  input.only(['person','effectiveFrom','reason','jobTitle','departmentId','locationId','managerPersonId','scheduleId','employmentType','employmentStatus','fte','startDate','endDate','payBasis','payAmount','payIncreasePercent'])
+  insist(credentialPersonAllowed(actor,input.text('person')),'not_found',404)
+  const result=await requestChange(env,actor,input)
+  return {apiVersion:'1',data:{id:result.id,status:result.status}}
+ }
  insist(url.pathname===PREFIX+'changes','credential_read_only',403)
  const context=credentialContext(actor)!
  insist(context.writeScopes.includes('personal.approval'),'credential_read_only',403)

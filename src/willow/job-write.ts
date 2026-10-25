@@ -1,3 +1,5 @@
+import { credentialContext, credentialPersonAllowed } from './api-credentials/principal'
+import { currentCredentialPrincipal, credentialFence } from './api-credentials/authenticate'
 // One exact field per native edit. No synthetic actor or broad permission grant.
 import type { Bindings } from '../auth.server'
 import { actorFor, canAbout, type Actor } from './actor'
@@ -15,6 +17,10 @@ export const jobField = (value: string): JobField => {
 
 /** Rebuild live authority and fence all subsequent writes against concurrent grants or movers. */
 export async function liveJobActor(env: Bindings, actor: Pick<Actor, 'id' | 'sessionId'>) {
+ if(actor.id.startsWith('credential:')) {
+  const current=await currentCredentialPrincipal(env,actor.id.slice(11))
+  return {actor:current,fence:credentialFence(env,current)}
+ }
  const snapshot = (await one<{ seq: number }>(env, 'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
  const member = await one(env, 'SELECT m.*, o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?', actor.id)
  insist(member, 'forbidden', 403)
@@ -25,6 +31,13 @@ export async function liveJobActor(env: Bindings, actor: Pick<Actor, 'id' | 'ses
 /** The existing manager/HR path may request pay; fine job rights never confer that path. */
 export function requireJobRequest(actor: Actor, person: string, fields: JobField[], pay: boolean, payField:'pay'|'history'='pay') {
  insist(actor.personId !== person, 'own_terms', 403)
+ const credential=credentialContext(actor)
+ if(credential) {
+  insist(credentialPersonAllowed(actor,person),'not_found',404)
+  insist((!fields.length||credential.writeScopes.includes('job.approval'))&&(!pay||credential.writeScopes.includes('compensation.approval')),'credential_read_only',403)
+  insist(fields.every(field=>canRequestJobField(actor,person,field))&&(!pay||canRequestCompensation(actor,person,payField)),'forbidden',403)
+  return
+ }
  const native = canAbout(actor, 'people.manage', person) || actor.reports.has(person)
  insist(native || ((pay||fields.length>0) && (!pay||canRequestCompensation(actor,person,payField)) && fields.every(field => canRequestJobField(actor, person, field))), 'forbidden', 403)
 }

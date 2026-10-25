@@ -32,7 +32,7 @@ async function readable(env: Bindings, actor: Actor, row: Row) {
 }
 
 export async function changeRequests(env: Bindings, actor: Actor) {
-  const rows = await all(env, 'SELECT r.*, p.legal_name, p.preferred_name, m.name AS requester FROM wl_change_requests r JOIN wl_people p ON p.id = r.person_id JOIN wl_members m ON m.id = r.requested_by ORDER BY r.updated_at DESC')
+  const rows = await all(env, `SELECT r.*, p.legal_name, p.preferred_name, COALESCE(c.name,m.name,'Unavailable requester') AS requester FROM wl_change_requests r JOIN wl_people p ON p.id = r.person_id LEFT JOIN wl_members m ON m.id = r.requested_by LEFT JOIN wl_api_credentials c ON r.requested_by='credential:'||c.id ORDER BY r.updated_at DESC`)
   const items = []
   for (const row of rows) {
     if (!await readable(env, actor, row)) {
@@ -86,6 +86,7 @@ export async function changeRequest(env: Bindings, actor: Actor, id: string) {
   const salaryOnly = !!plan.pay && !typed && !Object.keys(plan.fields).length && !plan.employmentType && plan.fte === undefined && !plan.employmentStatus && !Object.keys(plan.dates ?? {}).length
   const typedReadable = plan.compensationRecord ? readsCompensation(actor,row.person_id,plan.compensationRecord.kind) : plan.compensationDefinition ? readsCompensation(actor,row.person_id,plan.compensationDefinition.kind) : true
   const typedEditable = typedReadable && (plan.compensationRecord ? canRequestCompensation(actor,row.person_id,plan.compensationRecord.kind) : plan.compensationDefinition ? canRequestCompensationDefinition(actor,row.person_id,plan.compensationDefinition.kind) : salaryOnly ? canRequestCompensation(actor,row.person_id,plan.payField ?? 'pay') && (pays || plan.pay!.mode === 'percent') : true)
+  if(String(row.requested_by).startsWith('credential:')) { const credential=await one(env,'SELECT name FROM wl_api_credentials WHERE id=?',String(row.requested_by).slice(11));members.set(row.requested_by,credential?.name??'Unavailable credential') }
   const requester = actor.id === row.requested_by
   const editCompensation = requester && typedEditable ? plan.compensationRecord ? { kind: 'record' as const, values: plan.compensationRecord } : plan.compensationDefinition ? { kind: 'definition' as const, values: plan.compensationDefinition } : salaryOnly ? { kind: 'pay' as const, values: { pay: plan.pay!, effectiveFrom: plan.effectiveFrom } } : undefined : undefined
   return {

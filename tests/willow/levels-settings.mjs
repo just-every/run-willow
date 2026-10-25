@@ -375,7 +375,7 @@ async function oauthClientProof(h,owner,fx) {
  console.log('API-001 OAuth clients: PASS — bounded non-person reads, delegated ceiling and approval, one-time secret, client rotation and revocation, permanent authority loss, expiry, shared rate limit and value-free audit')
 }
 
-async function authorizationCodeProof() {
+export async function authorizationCodeProof() {
  const {harness}=await import('./harness.mjs'),{fixture}=await import('./regression-fixture.mjs')
  const h=await harness()
  try {
@@ -413,6 +413,30 @@ async function authorizationCodeProof() {
   for(const path of doors){const res=await fetch(h.origin+path,{headers:{authorization:'Bearer '+token,cookie:owner}});assert.equal(res.status,status,path);const body=await res.text();if(status!==200)assert.ok(!body.includes('synthetic-willow-14405')&&!body.includes('synthetic-willow-14403'));else if(path.endsWith('/download'))assert.equal(body,'synthetic-willow-14405');else assert.ok(body.includes('synthetic-willow-14403'),path)}
  }
  const client=await issue(),key=await issue('key')
+ const consentParams={response_type:'code',client_id:client.id,redirect_uri:redirectUri,code_challenge:codeChallenge,code_challenge_method:'S256',state:'synthetic-willow-14430'}
+ const consentPath='/app/oauth/authorize?'+new URLSearchParams(consentParams)
+ const consent=async(cookie,changes={},method='GET',status=200)=>{
+  const query=new URLSearchParams({...consentParams,...changes})
+  const res=await fetch(h.origin+'/app/oauth/authorize'+(method==='GET'?'?'+query:''),{method,redirect:'manual',headers:{cookie,origin:h.origin,...(method==='POST'?{'content-type':'application/x-www-form-urlencoded'}:{})},...(method==='POST'?{body:query}:{})})
+  assert.equal(res.status,status,'partner browser consent');assert.match(res.headers.get('cache-control'),/(?:^|,)\s*no-store(?:,|$)/);return res
+ }
+ assert.equal((await fetch(h.origin+consentPath,{redirect:'manual'})).status,303)
+ await consent(fx.staff.employee.cookie,{},'GET',403)
+ await consent(owner,{redirect_uri:'https://other.example.test/callback'},'GET',401)
+ await consent(owner,{code_challenge_method:'plain'},'GET',400)
+ await consent(owner,{scope:'people.write'},'GET',400)
+ const preview=await consent(owner);assert.ok((await preview.text()).includes('synthetic-willow-14408'))
+ const denied=await consent(owner,{decision:'deny',reason:'synthetic-willow-14431'},'POST',303)
+ assert.equal(new URL(denied.headers.get('location')).searchParams.get('error'),'access_denied')
+ assert.equal(new URL(denied.headers.get('location')).searchParams.get('state'),consentParams.state)
+ const crossOrigin=await fetch(h.origin+'/app/oauth/authorize',{method:'POST',headers:{cookie:owner,origin:'https://other.example.test','content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...consentParams,decision:'approve',reason:'synthetic-willow-14432'}),redirect:'manual'})
+ assert.equal(crossOrigin.status,403)
+ const consented=await consent(owner,{decision:'approve',reason:'synthetic-willow-14432'},'POST',303)
+ const consentCode=new URL(consented.headers.get('location')).searchParams.get('code')
+ const consentToken=await exchange(client,codeBody(consentCode));await read(consentToken.access_token,401)
+ await exchange(client,codeBody(consentCode),400)
+ const browserConsent=await import('./levels-settings-browser.mjs');await browserConsent.oauthConsentBrowserProof(h,owner,consentParams)
+
  await authorize(client,{},fx.staff.employee.cookie,403)
  await authorize(client,{redirectUri:'https://other.example.test/callback' },owner,401)
  await authorize(client,{codeChallengeMethod:'plain'},owner,400)

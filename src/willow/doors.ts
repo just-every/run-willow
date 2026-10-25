@@ -30,6 +30,7 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/oauth/authorize$','oauthConsent'],
   ['^/app/settings/webhooks$','webhooks'],
   ['^/app/api-credentials$','apiCredentials'],['^/app/settings/locations$','settingLocations'],['^/app/settings/schedules$','settingSchedules'],['^/app/settings/document-categories$','settingCategories'],['^/app/settings/payroll-connections$','settingPayroll'],['^/app/settings/sign-in$','settingSecurity'],['^/app/settings/retention$','settingRetention'],
   ['^/app/reports/library$', 'builtinReports'], ['^/app/reports/library/([\\w-]+)\\.csv$', 'builtinReportCsv'], ['^/app/reports/library/([\\w-]+)\\.xlsx$', 'builtinReportXlsx'], ['^/app/reports/library/([\\w-]+)$', 'builtinReport'],

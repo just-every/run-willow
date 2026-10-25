@@ -34,14 +34,15 @@ export async function compileCredentialPrincipal(env:Bindings,row:CredentialRow,
   all<{report_id:string}>(env,'SELECT report_id FROM wl_level_builtin_reports WHERE level_id=?',row.level_id),
  ])
  const rights=new Set(permissions.map(p=>p.permission).filter(p=>READ_PERMISSIONS.includes(p)))
- const fine=<T extends string>(rules:{field:T;mode:string}[])=>Object.fromEntries(rules.filter(rule=>rule.mode!=='none').map(rule=>[rule.field,'view'])) as Partial<Record<T,'view'>>
+ const writeScopes=JSON.parse(row.write_scopes) as string[]
+ const fine=<T extends string>(rules:{field:T;mode:string}[],scope?:string)=>Object.fromEntries(rules.filter(rule=>rule.mode!=='none').map(rule=>[rule.field,scope&&writeScopes.includes(scope)&&['approval','edit'].includes(rule.mode)?'approval':'view'])) as Partial<Record<T,'view'|'approval'>>
  const level=row.level_id,people=scope.kind==='everyone'?null:members
  const actor:Actor={id:`credential:${row.id}`,sessionId:'',email:'',name:row.name,owner:false,personId:null,reports:new Set(),today:date,
   permissions:scope.kind==='everyone'?rights:new Set(),
   scoped:scope.kind==='everyone'?[]:[{level,scope,permissions:rights,people:members}],
-  jobFields:[{level,scope,members,fields:{self:{},others:fine(jobs)}}],
+  jobFields:[{level,scope,members,fields:{self:{},others:fine(jobs,'job.approval')}}],
   leaveFields:[{level,scope,members,fields:{self:{},others:fine(leave)}}],
-  compensationFields:[{level,scope,members,fields:{self:{},others:fine(compensation)}}],
+  compensationFields:[{level,scope,members,fields:{self:{},others:fine(compensation,'compensation.approval')}}],
   otherPersonal:[{level,scope,people,fields:Object.fromEntries(personal.filter(rule=>rule.mode!=='none').map(rule=>[rule.field,JSON.parse(row.write_scopes).includes('personal.approval')&&rule.mode==='approval'?'approval':'view']))}],
   documentCategories:[{level,scope,people,rules:{self:{},others:Object.fromEntries(documents.filter(rule=>rule.mode!=='none').map(rule=>[rule.category_id,'view' as const]))}}],
   reportGrants:reports.length?[{level,scope,people:members,reports:reports.map(report=>report.report_id)}]:[],

@@ -1,3 +1,4 @@
+import { oauthConsentPage } from './ui/oauth-consent'
 import { oauthTokenResponse } from './api-credentials/oauth'
 import { webhooksPage } from './ui/webhooks'
 import { versionedRead, versionedWrite } from './api'
@@ -104,6 +105,7 @@ export async function willowResponse(request: Request, original: Bindings): Prom
     if (!['GET', 'HEAD', 'POST'].includes(request.method)) return new Response(null, { status: 405, headers: { allow: 'GET, HEAD, POST' } })
     actor = await currentActor(env, request)
     if (!actor) return api ? json({ error: 'authentication_required' }, 401) : Response.redirect(`${env.AUTH_ORIGIN}/signin?returnTo=${encodeURIComponent(url.pathname)}`, 303)
+    if(url.pathname==='/app/oauth/authorize')return await oauthConsentPage(env,actor,request,url)
     if(url.pathname.startsWith('/api/willow/v1/'))throw new WillowError('credential_required',401)
     if (api) return await apiResponse(env, actor, request, url)
     return await pageResponse(env, actor, request, url)

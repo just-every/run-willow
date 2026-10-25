@@ -8,19 +8,26 @@ import { administratorAuthority, credentialCeiling, type CredentialRow } from '.
 
 const response=(body:unknown,status=200)=>Response.json(body,{status,headers:{'cache-control':'no-store','pragma':'no-cache','x-content-type-options':'nosniff'}})
 const opaque=(kind:string)=>'willow_'+kind+'_'+crypto.randomUUID().replaceAll('-','')+'_'+Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('')
-const scopes=(row:CredentialRow)=>['level.read',...JSON.parse(row.write_scopes) as string[]].sort().join(' ')
+export const oauthScopes=(row:CredentialRow)=>['level.read',...JSON.parse(row.write_scopes) as string[]].sort().join(' ')
 const challenge=async(verifier:string)=>btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','')
+
+/** Validate locally before displaying consent or allowing a redirect to a partner. */
+export async function oauthConsent(env:Bindings,actor:Actor,input:Input) {
+ const authority=await administratorAuthority(env,actor),id=input.text('client'),redirectUri=input.text('redirectUri',{max:1000}),pkce=input.text('codeChallenge')
+ insist(input.text('codeChallengeMethod')==='S256'&&/^[A-Za-z0-9_-]{43}$/.test(pkce),'invalid_code_challenge')
+ input.text('state',{max:500})
+ const row=await one<CredentialRow>(env,"SELECT * FROM wl_api_credentials WHERE id=? AND credential_type='oauth_client'",id)
+ insist(row&&row.redirect_uri===redirectUri&&await credentialValid(env,id,true),'invalid_client',401)
+ await credentialCeiling(env,authority.actor,row.level_id,JSON.parse(row.write_scopes))
+ return {authority,row}
+}
 
 /** Explicit employer installation consent; never employee impersonation or automatic outbound navigation. */
 export async function authorizeOAuth(env:Bindings,actor:Actor,input:Input) {
  input.only(['client','redirectUri','codeChallenge','codeChallengeMethod','state','reason'])
- const authority=await administratorAuthority(env,actor),id=input.text('client'),redirectUri=input.text('redirectUri',{max:1000}),pkce=input.text('codeChallenge'),state=input.text('state',{max:500}),reason=input.text('reason',{max:400})
- insist(input.text('codeChallengeMethod')==='S256'&&/^[A-Za-z0-9_-]{43}$/.test(pkce),'invalid_code_challenge')
- const row=await one<CredentialRow>(env,"SELECT * FROM wl_api_credentials WHERE id=? AND credential_type='oauth_client'",id)
- insist(row&&row.redirect_uri===redirectUri&&await credentialValid(env,id,true),'invalid_client',401)
- await credentialCeiling(env,authority.actor,row.level_id,JSON.parse(row.write_scopes))
+ const {authority,row}=await oauthConsent(env,actor,input),id=row.id,redirectUri=input.text('redirectUri'),pkce=input.text('codeChallenge'),state=input.text('state',{max:500}),reason=input.text('reason',{max:400})
  const code=opaque('code'),expiresAt=Math.min(now()+300000,row.expires_at)
- await commit(env,[authority.fence,credentialGrantFence(env,id,true),stmt(env,'DELETE FROM wl_oauth_codes WHERE expires_at<=?',now()),stmt(env,'INSERT INTO wl_oauth_codes(code_hash,client_id,redirect_uri,challenge,expires_at) VALUES(?,?,?,?,?)',await sha256Hex(code),id,redirectUri,pkce,expiresAt)],{actor:actor.id,action:'oauth.authorize',subject:id,detail:{requester:row.issued_by,installer:actor.id,level:row.level_id,version:row.level_version,rights:scopes(row),reason}})
+ await commit(env,[authority.fence,credentialGrantFence(env,id,true),stmt(env,'DELETE FROM wl_oauth_codes WHERE expires_at<=?',now()),stmt(env,'INSERT INTO wl_oauth_codes(code_hash,client_id,redirect_uri,challenge,expires_at) VALUES(?,?,?,?,?)',await sha256Hex(code),id,redirectUri,pkce,expiresAt)],{actor:actor.id,action:'oauth.authorize',subject:id,detail:{requester:row.issued_by,installer:actor.id,level:row.level_id,version:row.level_version,rights:oauthScopes(row),reason}})
  const redirect=new URL(redirectUri);redirect.searchParams.set('code',code);redirect.searchParams.set('state',state)
  return {redirectUri:redirect.href,expiresAt}
 }
@@ -53,7 +60,7 @@ export async function oauthTokenResponse(env:Bindings,request:Request):Promise<R
  try {
   await recordCredentialUse(env,row,request,'oauthToken',pending)
   if(!['client_credentials','authorization_code','refresh_token'].includes(grant??''))return fail('unsupported_grant_type')
-  const granted=scopes(row)
+  const granted=oauthScopes(row)
   if(form.has('scope')&&form.get('scope')!.split(' ').sort().join(' ')!==granted)return fail('invalid_scope')
   const time=now(),expiresAt=Math.min(time+3600000,row.expires_at),statements=[credentialGrantFence(env,row.id,pending)]
   if(grant==='authorization_code'){
