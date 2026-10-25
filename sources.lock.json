@@ -1806,7 +1806,7 @@
       "executable": false
     },
     "src/mail.server.mjs": {
-      "sha256": "ada490a287e0b34b8058d246b551664b88e6c019235fb33a32185a899b3e5395",
+      "sha256": "08ea037f5a77de5a5b5342d0c91d400ee2f5af2a384ab6b1eb490f3883ae6e44",
       "executable": false
     },
     "src/modules/d1-transport/index.d.mts": {
