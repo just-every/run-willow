@@ -1,3 +1,4 @@
+import { levels } from '../levels/store'
 import { holdsSetting,requireSetting } from '../levels/settings'
 import { levelPanel } from './levels'
 import { policyRuleFields, policyRuleSummary } from './leave-policy'
@@ -12,7 +13,7 @@ import { PERMISSIONS, PERMISSION_LABELS, PRESETS, can, requireOwner, type Actor 
 import { WEEKDAYS, employer, settings } from '../employer'
 import { policies } from '../leave'
 import { ASSIGNEES, REQUIRED_FIELDS, templates } from '../lifecycle'
-import { members, visibilityPreview } from '../members'
+import { defaultAccess, members, visibilityPreview } from '../members'
 import { insist } from '../core'
 import { directory } from '../profile'
 import { workflowReviewPanel } from './workflow-review'
@@ -75,12 +76,15 @@ export async function customFieldsPage(env: Bindings, actor: Actor, url: URL) {
 }
 
 export async function accessPage(env: Bindings, actor: Actor, request: Request, url: URL) {
+  const defaultPolicy=actor.owner?await defaultAccess(env):null
+  const levelChoices=actor.owner?await levels(env,actor):null
   const list = await members(env, actor, request)
   const people = await directory(env, actor)
   const previewMember = url.searchParams.get('member'), previewPerson = url.searchParams.get('person')
   const preview = previewMember && previewPerson ? await visibilityPreview(env, actor, previewMember, previewPerson) : null
   const body = h`<h1>Access</h1><p class="lead">Every permission is explicit. Managing someone shows you their work details and leave dates, never their pay, private contact details or confidential reasons.</p>
 ${await levelPanel(env,actor,url)}
+${actor.owner&&levelChoices?h`<section class="card"><h2>Default portal access</h2><p>New access receives this exact reviewed level. Changing the level pauses new grants until you approve it again. Invitations below are an explicit action for current employees.</p>${form('access.default','/app/access',[select('Default level','level',levelChoices.levels.map(level=>({value:level.id,label:level.name})),defaultPolicy?.level_id??'',{required:false,blank:'No default level'}),field('Approval reason','reason')],'Save default level')}${form('access.bulk','/app/access',[checks('Invite current employees','people',people.map(person=>({value:person.id,label:person.name}))),field('Invitation reason','reason')],'Invite selected employees')}</section>`:''}
 <section class="card"><h2>Members</h2>${table(['Member', 'Sign-in', 'Permissions', ''], list.map(member => [h`${person(member.name)}<br><span class="muted">${member.email}</span>`, member.status === 'ended' ? tag('ended') : member.signIn ?? '—',
     member.owner ? tag('Owner (everything)') : member.permissions.length ? member.permissions.map((permission: string) => PERMISSION_LABELS[permission as keyof typeof PERMISSION_LABELS] ?? permission).join('; ') : tag('None (employee)'),
     actor.owner && !member.owner && member.status === 'active' ? h`<details><summary>Change</summary>${form('member.permissions', '/app/access', [hidden('member', member.id), checks('Permissions', 'permissions', PERMISSIONS.map(value => ({ value, label: PERMISSION_LABELS[value] })), member.permissions)], 'Save permissions', { secondary: true })}<p class="muted">Bundles: HR = ${PRESETS.hr.join(', ')}; payroll = ${PRESETS.payroll.join(', ')}; IT = ${PRESETS.it.join(', ')}.</p></details>` : '']))}</section>

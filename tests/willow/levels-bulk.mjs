@@ -236,5 +236,98 @@ export async function delegatedLevelProof(h,owner,s) {
  assert.equal((await h.raw('/app/access',{cookie:s.hr.cookie})).status,200,'HR keeps the existing member/visibility page, without named-level controls')
  await hr('levels',undefined,403)
  console.log('ROLE-003 delegated levels: PASS — explicit HR grant, exact ceilings, no self/owner/EEO/re-delegation escalation, audited refusals, reviewed bulk assignment, independent pay approval and current-rights revocation')
+ await defaultAccessProof(h,owner,s)
  return {delegation:delegation.id,pay:pay.id,payCeiling:privatePay.id,originalHR,originalManager,originalTarget,hrBundle}
+}
+
+// Default grants and explicit invitations share the existing access flow.
+export async function defaultAccessProof(h,owner,s) {
+ const api=(path,body,status)=>h.api(path,owner,body,status)
+ const apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
+ const defaults=await apply({kind:'level',name:'synthetic-willow-14700',permissions:[],selfFields:{phone:'view'}})
+ await h.api('access.default',s.hr.cookie,{level:defaults.id,reason:'synthetic-willow-14701'},403)
+ await api('access.default',{level:defaults.id,reason:'synthetic-willow-14702'})
+ const template=(await api('templates')).find(row=>row.kind==='joiner'&&row.status==='active')
+ const settings=await api('settings')
+ const people=[]
+ for(let index=0;index<50;index++) {
+  const row=await api('joiner.start',{template:template.id,legalName:'synthetic-willow-147'+index,workEmail:'synthetic-willow-147'+index+'@example.test',startDate:'2000-01-01',employmentType:'full_time',jobTitle:'synthetic-willow-14703',scheduleId:settings.schedules[0].id,payBasis:'unknown'})
+  people.push(row.person)
+ }
+ const former=await api('joiner.start',{template:template.id,legalName:'synthetic-willow-14704',workEmail:'synthetic-willow-14704@example.test',startDate:'2000-01-01',employmentType:'full_time',jobTitle:'synthetic-willow-14703',scheduleId:settings.schedules[0].id,payBasis:'unknown'})
+ const formerView=await api('people/'+former.person)
+ await api('leaver.start',{template:(await api('templates')).find(row=>row.kind==='leaver'&&row.status==='active').id,period:former.period,revision:formerView.employment[0].revision,endDate:'2000-02-01',reason:'synthetic-willow-14713'})
+ const result=await api('access.bulk',{people:[...people,former.person],reason:'synthetic-willow-14705'})
+ assert.ok(result.invited.length>0)
+ assert.ok(result.deferred.length>0,'Base invitation limits defer the remaining selection without rollback')
+ assert.equal(result.invited.length+result.deferred.length,50)
+ assert.deepEqual(result.skipped,[former.person])
+ const assignments=(await api('levels')).assignments
+ const members=await api('members')
+ for(const person of result.invited) {
+  const member=members.find(row=>row.person===person)
+  assert.equal(member.signIn,'invited')
+  assert.deepEqual(assignments.filter(row=>row.member_id===member.id).map(row=>row.level_id),[defaults.id])
+ }
+ assert.ok(!members.some(row=>row.person===former.person))
+ assert.ok(result.deferred.every(person=>!members.some(row=>row.person===person)))
+ const repeat=await api('access.bulk',{people:[...people,former.person],reason:'synthetic-willow-14706'})
+ assert.deepEqual(repeat.invited,[])
+ assert.equal(repeat.skipped.length,result.invited.length+1)
+ assert.deepEqual(repeat.deferred,result.deferred)
+ const denied=await h.api('access.give',s.hr.cookie,{person:result.deferred[0]},403)
+ assert.equal(denied.error,'access_administrator_required')
+ const originalHR=(await api('levels')).assignments.filter(row=>row.member_id===s.hr.member).map(row=>row.level_id)
+ const delegate=await apply({kind:'level',name:'synthetic-willow-14714',permissions:['access.admin','pay.read']})
+ const payDefault=await apply({kind:'level',name:'synthetic-willow-14715',permissions:['pay.read']})
+ await apply({kind:'assignment',member:s.hr.member,levels:[...originalHR,delegate.id]})
+ await api('access.default',{level:payDefault.id,reason:'synthetic-willow-14716'})
+ assert.equal((await h.api('access.give',s.hr.cookie,{person:result.deferred[0]},403)).error,'independent_approval_required')
+ assert.ok((await api('audit')).some(row=>row.action==='access.denied'&&row.actor===s.hr.member&&JSON.parse(row.detail).reason==='independent_approval_required'))
+ assert.ok(!(await api('members')).some(row=>row.person===result.deferred[0]))
+ await apply({kind:'assignment',member:s.hr.member,levels:originalHR})
+ await api('access.default',{level:defaults.id,reason:'synthetic-willow-14717'})
+ const first=members.find(row=>row.person===people[0])
+ const cookie=await h.signIn(first.email,{requested:true})
+ assert.deepEqual((await h.api('me',cookie)).permissions,[])
+ const own=await h.api('people/'+people[0],cookie)
+ await h.api('person.update',cookie,{person:people[0],revision:own.revision,phone:'synthetic-willow-14707'},403)
+ const revised=await apply({kind:'level',level:defaults.id,name:'synthetic-willow-14700',permissions:[],selfFields:{phone:'approval'}})
+ assert.equal((await api('access.bulk',{people:[s.invited.person],reason:'synthetic-willow-14708'},409)).error,'default_level_changed')
+ await api('access.default',{level:defaults.id,reason:'synthetic-willow-14709'})
+ const audit=await api('audit')
+ assert.equal(audit.filter(row=>row.action==='access.give'&&people.includes(row.subject)).length,result.invited.length)
+ if(process.env.WILLOW_LEVELS_BROWSER==='1') {
+  const {pathToFileURL}=await import('node:url'),{evidenceDirectory}=await import('./evidence.mjs')
+  const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
+  const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+  try {
+   const context=await browser.newContext({ignoreHTTPSErrors:true})
+   await context.addCookies(owner.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})))
+   const page=await context.newPage()
+   for(const width of [1440,390]) {
+    await page.setViewportSize({width,height:1000})
+    await page.goto(h.origin+'/app/access')
+    const form=page.locator('form[action="/app/do/access.default"]')
+    await form.locator('[name="level"]').selectOption(defaults.id)
+    await form.locator('[name="reason"]').fill('synthetic-willow-14710')
+    await form.getByRole('button',{name:'Save default level'}).click()
+    await page.waitForURL(url=>url.searchParams.has('notice'))
+    assert.equal(await page.locator('form[action="/app/do/access.default"] [name="level"]').inputValue(),defaults.id)
+    const bulk=page.locator('form[action="/app/do/access.bulk"]')
+    await bulk.locator('input[name="people"]').first().check()
+    await bulk.locator('[name="reason"]').fill('synthetic-willow-14711')
+    await bulk.getByRole('button',{name:'Invite selected employees'}).click()
+    await page.waitForURL(url=>url.searchParams.has('notice'))
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
+    const bell=page.locator('.bell'),tip=page.getByRole('tooltip',{name:'Your tasks'})
+    await bell.hover();await page.waitForTimeout(150);assert.equal(await tip.isVisible(),false);await tip.waitFor({state:'visible'})
+    await page.mouse.move(0,0);await bell.focus();assert.equal(await tip.isVisible(),true)
+    await page.screenshot({path:evidenceDirectory+'/ROLE-003-default-access-'+width+'.png',fullPage:true})
+   }
+   await context.close()
+  }finally{await browser.close()}
+ }
+ await api('access.default',{level:'',reason:'synthetic-willow-14712'})
+ console.log('ROLE-003 defaults: PASS — owner consent, exact default version, 50-person selection with bounded rate deferral, former exclusion, idempotent retry and native forms')
 }

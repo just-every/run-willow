@@ -277,3 +277,17 @@ Malformed requests and unregistered destinations fail locally. The consent
 page permits form navigation only to Willow and the registered partner origin;
 it contains no third-party code and sends no referrer. Independent sensitive
 approval still governs every resource request after installation.
+
+Native time-off requests use `POST /api/willow/v1/requests` with the explicit
+`leave.approval` issuance scope. Send `account`, `startDate`, `endDate`, and an
+optional confidential `reason`. The level must allow requests about that
+person; direct Edit becomes a pending human decision. The response contains
+`apiVersion` and `data` with `id`, `minutes`, `status: pending`, and `approver`.
+The native policy, schedule on each requested date, overlap checks and guarded
+balance reservation apply. Only a human routed approver or eligible leave
+administrator decides through Willow. Approval rechecks current credential
+validity, level and population; revoked requests cannot execute. HR can decline
+a pending request to release its reservation even after the credential ends.
+Keys and both OAuth grants use the same route. Credentials cannot decide,
+cancel approved leave or change balances directly. The served OpenAPI includes
+request and success and refusal schemas for this route.

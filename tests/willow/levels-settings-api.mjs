@@ -202,6 +202,61 @@ export async function apiRosterProof(h,owner,fx) {
  for(const credential of [readOnly,jobOnly,payOnly])assert.ok(!JSON.stringify(writeAudit).includes(credential.token))
  console.log('API-001 native write scopes: PASS — key and both OAuth grants, exact field and population ceilings, native validation, human approval and effective dating, no credential decisions, revoked requester refusal and secret-free audit')
 
+ // One broader native family: dated leave reservation and human approval.
+ const leaveLevel=await apply({kind:'level',name:'synthetic-willow-14800',permissions:[],scope:{kind:'group',dimensions:{location:[location.id]}},leaveFields:{self:{},others:{requests:'edit',balances:'view',ledger:'view',calendar:'view'}}})
+ const leaveIssue=(scopes,credentialType='key')=>api('apiKey.issue',{name:'synthetic-willow-14801',level:leaveLevel.id,writeScopes:scopes,credentialType,expiresAt:new Date(Date.now()+86400000).toISOString(),...(credentialType==='oauth_client'?{redirectUri:'https://partner.example.test/callback'}:{})})
+ const leaveWrite=async(token,body,status=200)=>{
+  const response=await fetch(h.origin+'/api/willow/v1/requests',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify(body)})
+  assert.equal(response.status,status,await response.clone().text())
+  assert.ok(response.headers.has('RateLimit-Limit'))
+  const result=await response.json();check(spec.paths['/requests'].post.responses[String(status)].content['application/json'].schema,result);return result.data
+ }
+ const half=await api('schedule.create',{name:'synthetic-willow-14802',mon:'4',tue:'4',wed:'4',thu:'4',fri:'4',sat:'4',sun:'4'})
+ const employment=(await api('people/'+second.person)).employment.find(row=>row.id===second.period)
+ await api('mover.schedule',{period:second.period,revision:employment.revision,effectiveFrom:'2099-01-01',scheduleId:half.id,reason:'synthetic-willow-14803'})
+ const readonlyLeave=await leaveIssue([]),leaveKey=await leaveIssue(['leave.approval'])
+ const leaveBody={account,startDate:'2098-12-31',endDate:'2099-01-01',reason:'synthetic-willow-14804'}
+ await leaveWrite(readonlyLeave.token,leaveBody,403)
+ await leaveWrite(leaveKey.token,{...leaveBody,startDate:'2099-99-99'},400)
+ await leaveWrite(leaveKey.token,{...leaveBody,decision:'approve'},400)
+ const outsideAccount=await fx.account(distant.period)
+ await leaveWrite(leaveKey.token,{...leaveBody,account:outsideAccount},404)
+ const nativeQuote=await api('quote?account='+account+'&startDate=2098-12-31&endDate=2099-01-01')
+ const leavePending=await leaveWrite(leaveKey.token,leaveBody)
+ assert.equal(leavePending.minutes,720)
+ assert.equal(leavePending.minutes,nativeQuote.minutes)
+ assert.ok((await h.api('approvals',fx.staff.hr.cookie)).some(row=>row.id===leavePending.id))
+ const pendingLeave=await api('leave/'+leavePending.id)
+ assert.equal(pendingLeave.status,'pending')
+ assert.deepEqual(pendingLeave.calculation.days.map(row=>row.minutes),[480,240])
+ assert.deepEqual(pendingLeave.ledger.map(row=>[row.kind,row.minutes,row.effective_date]),[['reservation',-720,'2098-12-31']])
+ await leaveWrite(leaveKey.token,leaveBody,409)
+ await leaveWrite(leaveKey.token,{account,startDate:'2099-01-02',endDate:'2099-12-31'},409)
+ const cannotDecide=await fetch(h.origin+'/api/willow/leave.decide',{method:'POST',headers:{authorization:'Bearer '+leaveKey.token,'content-type':'application/json',cookie:owner},body:JSON.stringify({request:leavePending.id,decision:'approve'})})
+ assert.equal(cannotDecide.status,403);await cannotDecide.arrayBuffer()
+ await apiBrowserProof(h,owner,fx.staff.hr.cookie,leavePending.id,'/app/leave/'+leavePending.id,leaveLevel.id,'leave.approval')
+ await h.api('leave.decide',fx.staff.hr.cookie,{request:leavePending.id,decision:'approve'})
+ const approvedLeave=await api('leave/'+leavePending.id)
+ assert.equal(approvedLeave.status,'approved')
+ assert.deepEqual(approvedLeave.ledger.filter(row=>row.kind==='use').map(row=>[row.minutes,row.effective_date]),[[-720,'2098-12-31']])
+ for(const [index,grant] of ['client_credentials','authorization_code'].entries()) {
+  const client=await leaveIssue(['leave.approval'],'oauth_client')
+  const verifier='synthetic-willow-14805-'.repeat(3),{createHash}=await import('node:crypto')
+  const authorization=grant==='authorization_code'?await api('oauth.authorize',{client:client.id,redirectUri:client.redirectUri,codeChallenge:createHash('sha256').update(verifier).digest('base64url'),codeChallengeMethod:'S256',state:'synthetic-willow-14806',reason:'synthetic-willow-14807'}):null
+  const exchanged=await fetch(h.origin+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(client.id+':'+client.token).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:grant,...(authorization?{code:new URL(authorization.redirectUri).searchParams.get('code'),redirect_uri:client.redirectUri,code_verifier:verifier}:{})})})
+  assert.equal(exchanged.status,200);const token=(await exchanged.json()).access_token
+  const submitted=await leaveWrite(token,{account,startDate:'2099-01-0'+(index+3),endDate:'2099-01-0'+(index+3)})
+  assert.equal(submitted.minutes,240)
+  await h.api('leave.decide',fx.staff.hr.cookie,{request:submitted.id,decision:'approve'})
+ }
+ const stoppedLeave=await leaveWrite(leaveKey.token,{account,startDate:'2099-01-05',endDate:'2099-01-05'})
+ await api('apiKey.revoke',{credential:leaveKey.id})
+ await h.api('leave.decide',fx.staff.hr.cookie,{request:stoppedLeave.id,decision:'approve'},401)
+ assert.equal((await api('leave/'+stoppedLeave.id)).status,'pending')
+ await h.api('leave.decide',fx.staff.hr.cookie,{request:stoppedLeave.id,decision:'decline'})
+ assert.ok((await api('audit')).some(row=>row.action==='leave.request'&&row.actor==='credential:'+leaveKey.id))
+ console.log('API-002 leave writes: PASS — explicit scopes, bounded population, dated native schedules and ledger, human approval, both OAuth grants and revoked-requester refusal')
+
  // An opted-in key proposes exactly one native personal field; it never changes records directly.
  const approvalLevel=await apply({kind:'level',name:'synthetic-willow-14012',permissions:[],otherFields:{phone:'approval'},scope:{kind:'group',dimensions:{location:[location.id]}}})
  const approvalKey=await api('apiKey.issue',{name:'synthetic-willow-14013',level:approvalLevel.id,writeScopes:['personal.approval'],expiresAt:new Date(Date.now()+86400000).toISOString()})
@@ -233,14 +288,14 @@ export async function apiRosterProof(h,owner,fx) {
  console.log('API-002 versioned reads: PASS — published schemas, exact level fields and scope, full cursor traversal, unique hire and transfer increments, tamper and cross-key refusal, stale pages, scope-loss reset and immediate revocation')
 }
 
-async function apiBrowserProof(h,owner,hr,pending,changePath,writeLevel) {
+async function apiBrowserProof(h,owner,hr,pending,changePath,writeLevel,writeScope='job.approval') {
  if(process.env.WILLOW_LEVELS_BROWSER!=='1')return
  const {pathToFileURL}=await import('node:url')
  const {evidenceDirectory}=await import('./evidence.mjs')
  const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
  const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
  try {
-  for(const [cookie,path,state] of [[owner,'/app/api-credentials','credentials'],[hr,changePath??'/app/self-changes/'+pending,changePath?'pending-employment-approval':'pending-approval']]) {
+  for(const [cookie,path,state] of [[owner,'/app/api-credentials','credentials'],[hr,changePath??'/app/self-changes/'+pending,changePath?(changePath.startsWith('/app/leave/')?'pending-leave-approval':'pending-employment-approval'):'pending-approval']]) {
    const context=await browser.newContext({ignoreHTTPSErrors:true})
    await context.addCookies(cookie.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})))
    const page=await context.newPage()
@@ -251,11 +306,11 @@ async function apiBrowserProof(h,owner,hr,pending,changePath,writeLevel) {
      const form=page.locator('form[action="/app/do/apiKey.issue"]')
      await form.locator('[name="name"]').fill('synthetic-willow-14520-'+width)
      await form.locator('[name="level"]').selectOption(writeLevel)
-     await form.locator('[name="writeScopes"]').selectOption('["job.approval"]')
+     await form.locator('[name="writeScopes"]').selectOption(JSON.stringify([writeScope]))
      await form.getByRole('button',{name:'Issue credential'}).click()
      assert.ok(await page.locator('#issued-api-token').textContent())
      const issued=(await h.api('api-credentials',owner)).find(row=>row.name==='synthetic-willow-14520-'+width)
-     assert.deepEqual(issued.writeScopes,['job.approval'])
+     assert.deepEqual(issued.writeScopes,[writeScope])
      await h.api('apiKey.revoke',owner,{credential:issued.id})
      await page.goto(h.origin+path)
     }

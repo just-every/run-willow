@@ -26,7 +26,7 @@ const parameters=[
 const operation=(schema:unknown,extra:unknown[]=[])=>({security:[{bearerKey:[]}],parameters:[...parameters,...extra],responses:responses(schema)})
 const record={type:'object',required:['id'],properties:{id:{type:'string'}},additionalProperties:true}
 export const apiDescription={
- openapi:'3.1.0',info:{title:'Willow employee API',version:'1.0.0',description:'Credential-only version 1. See API.md for cursor lifetime, withheld fields, scope loss and native projections. Read-only keys refuse writes. Explicit write scopes submit personal, job or compensation changes through native human approval; credentials never decide or directly edit.'},
+ openapi:'3.1.0',info:{title:'Willow employee API',version:'1.0.0',description:'Credential-only version 1. See API.md for cursor lifetime, withheld fields, scope loss and native projections. Read-only keys refuse writes. Explicit write scopes submit personal, job, compensation or leave changes through native human approval; credentials never decide or directly edit.'},
  servers:[{url:'/api/willow/v1'}],
  components:{securitySchemes:{bearerKey:{type:'http',scheme:'bearer'}},schemas:{Employee:employee,EmployeePage:page(employee),RecordPage:page(record),Error:error,EmployeeResponse:{type:'object',required:['apiVersion','data','withheld'],properties:{apiVersion:{const:'1'},data:employee,withheld:{type:'array',items:{type:'string'}}},additionalProperties:false},RecordResponse:{type:'object',required:['apiVersion','data'],properties:{apiVersion:{const:'1'},data:{type:'object'}},additionalProperties:false}}},
  paths:{
@@ -42,7 +42,7 @@ export const apiDescription={
   '/custom-fields':{get:operation(page(customFieldSchema))},
   '/tables':{get:operation(page(recordTableSchema))},
   ...Object.fromEntries(['organization'].map(path=>['/'+path,{get:operation({$ref:'#/components/schemas/RecordPage'})}])),
-  '/balances':{get:operation(page(balance))},'/requests':{get:operation(page(timeoffRequest))},'/calendar':{get:operation(page(absence))},'/documents':{get:operation(page(document))},
+  '/balances':{get:operation(page(balance))},'/requests':{get:operation(page(timeoffRequest)),post:{security:[{bearerKey:[]}],requestBody:{required:true,content:content({type:'object',required:['account','startDate','endDate'],properties:{account:{type:'string'},startDate:{type:'string'},endDate:{type:'string'},reason:{type:'string',maxLength:2000}},additionalProperties:false})},responses:responses({type:'object',required:['apiVersion','data'],properties:{apiVersion:{const:'1'},data:{type:'object',required:['id','minutes','status','approver'],properties:{id:{type:'string'},minutes:{type:'integer',minimum:1},status:{const:'pending'},approver:{type:['string','null']}},additionalProperties:false}},additionalProperties:false})}},'/calendar':{get:operation(page(absence))},'/documents':{get:operation(page(document))},
   '/tables/{key}':{get:operation({type:'object',required:['apiVersion','data'],properties:{apiVersion:{const:'1'},data:recordTableReport},additionalProperties:false},[{name:'key',in:'path',required:true,schema:{type:'string'}}])},
   '/access-level':{get:operation({$ref:'#/components/schemas/RecordResponse'})},
   '/documents/{id}/download':{get:{security:[{bearerKey:[]}],parameters:[{name:'id',in:'path',required:true,schema:{type:'string'}}],responses:{...responses({}),200:{description:'Native access-checked document bytes',content:{'*/*':{schema:{type:'string',format:'binary'}}}}}}},

@@ -1,3 +1,5 @@
+import { credentialContext, credentialPersonAllowed } from './api-credentials/principal'
+import { credentialFence } from './api-credentials/authenticate'
 import { validateRules, writeRuleStatement, readRules, accruePolicy, policyEligibility, calculationsFor } from './leave-policy'
 import { policyRulesInput } from './leave-policy-input'
 // Flows 7, 8 and 9: owner-approved leave policies, accounts with signed-off
@@ -200,6 +202,11 @@ export async function requestLeave(env: Bindings, actor: Actor, input: Input) {
   const live = await liveLeaveActor(env, actor)
   actor = live.actor
   const account = await signedOff(env, input.text('account', { max: 100 }))
+  const credential=credentialContext(actor)
+  if(credential) {
+    insist(credentialPersonAllowed(actor,account.person_id),'not_found',404)
+    insist(credential.writeScopes.includes('leave.approval'),'credential_read_only',403)
+  }
   insist(canRequestLeave(actor, account.person_id), Object.values(leaveReadFields(actor, account.person_id)).some(Boolean) ? 'forbidden' : 'not_found', Object.values(leaveReadFields(actor, account.person_id)).some(Boolean) ? 403 : 404)
   const start = requireDate(input.text('startDate', { max: 10 }), 'invalid_startDate'), end = requireDate(input.text('endDate', { max: 10 }), 'invalid_endDate')
   const calculation = await calculate(env, account, start, end)
@@ -227,6 +234,7 @@ async function requestRow(env: Bindings, id: string) {
 
 /** The routed approver decides; a leave manager may decide any request except their own. */
 export function mayDecideLeave(actor: Actor, request: Row) {
+  if (credentialContext(actor)) return false
   if (request.requested_by === actor.id || request.person_id === actor.personId) return false
   return request.approver_member_id === actor.id || canAbout(actor, 'leave.manage', request.person_id) || hasApproval(actor, 'leave', request.person_id)
 }
@@ -250,7 +258,11 @@ export async function decideLeave(env: Bindings, actor: Actor, input: Input) {
   insist(decision === 'approve' || decision === 'decline', 'invalid_decision')
   const note = input.text('note', { optional: true, max: 500 }) || null
   const approved = decision === 'approve'
-  if (approved) insist(canRequestLeave(await currentLeaveMember(env, request.requested_by), request.person_id), 'leave_access_changed', 403)
+  if (approved) {
+    const requester=await currentLeaveMember(env, request.requested_by)
+    insist(canRequestLeave(requester, request.person_id), 'leave_access_changed', 403)
+    if(credentialContext(requester)) live.guards.push(credentialFence(env,requester))
+  }
   await commit(env, [
     ...live.guards,
     ...await scopeGuard(env, actor, request.person_id, request.approver_member_id === actor.id || hasApproval(actor, 'leave', request.person_id)),

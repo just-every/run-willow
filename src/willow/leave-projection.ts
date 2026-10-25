@@ -1,3 +1,4 @@
+import { currentCredentialPrincipal, credentialFence } from './api-credentials/authenticate'
 // Current-authority leave writes and small projections shared by the native doors.
 import type { Bindings } from '../auth.server'
 import { actorFor, type Actor } from './actor'
@@ -6,6 +7,10 @@ import { levelSessionFence } from './levels/delegation'
 import { readsLeaveField, type LeaveField } from './levels/leave'
 
 export async function liveLeaveActor(env: Bindings, actor: Pick<Actor, 'id' | 'sessionId'>) {
+ if(actor.id.startsWith('credential:')) {
+  const current=await currentCredentialPrincipal(env,actor.id.slice(11))
+  return {actor:current,guards:[credentialFence(env,current)]}
+ }
  const snapshot = (await one<{ seq: number }>(env, 'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
  const member = await one(env, 'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?', actor.id)
  insist(member, 'forbidden', 403)
@@ -15,6 +20,7 @@ export async function liveLeaveActor(env: Bindings, actor: Pick<Actor, 'id' | 's
 
 /** A requester recheck uses current identity/levels, not the deciding owner's session. */
 export async function currentLeaveMember(env: Bindings, id: string) {
+ if(id.startsWith('credential:'))return currentCredentialPrincipal(env,id.slice(11))
  const member = await one(env, 'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?', id)
  insist(member, 'access_ended', 403)
  return actorFor(env, { id: member.id, email: member.email, name: member.name, owner: member.role === 'owner', personId: member.person_id, sessionId: '' })

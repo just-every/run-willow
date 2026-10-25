@@ -1,3 +1,5 @@
+import { currentLevelAdmin, delegatedPayReview, validateDelegation, levelSessionFence } from './levels/delegation'
+import { levels } from './levels/store'
 import { PERFORMANCE_FIELDS, PERFORMANCE_LABELS, readsPerformanceField } from './levels/performance'
 import { readsLeaveField, LEAVE_FIELDS, LEAVE_LABELS } from './levels/leave'
 import { readsCompensation, COMPENSATION_FIELDS, COMPENSATION_LABELS } from './levels/compensation'
@@ -13,8 +15,8 @@ import { readsTable } from './record-tables/schema'
 import { operatorAuth, type Bindings } from '../auth.server'
 import { PERMISSIONS, actorFor, requireOwner, requirePermission, type Actor, type Permission } from './actor'
 import { FACET_LABELS, facets, readsCategory, type Facet } from './access'
-import { all, commit, insist, newId, now, one, stmt } from './core'
-import type { Input } from './input'
+import { all, auditRead, commit, guard, insist, newId, now, one, stmt, WillowError } from './core'
+import { Input } from './input'
 import { effectiveFieldDefinitions } from './custom-fields/store'
 import { readsCustomField } from './custom-fields/read'
 import { personView } from './profile'
@@ -51,25 +53,106 @@ export async function setPermissions(env: Bindings, actor: Actor, input: Input, 
   return { id: member.id, permissions }
 }
 
-/** Gives a person sign-in access to Willow through their work email, with no permissions. */
-export async function giveAccess(env: Bindings, actor: Actor, input: Input, request: Request) {
+export async function defaultAccess(env: Bindings) {
+  return one<{level_id:string;level_version:number}>(env,'SELECT level_id,level_version FROM wl_default_access WHERE singleton=1')
+}
+
+export async function configureDefaultAccess(env: Bindings, actor: Actor, input: Input) {
+  requireOwner(actor)
+  input.only(['level','reason','returnTo'])
+  const level=input.text('level',{optional:true}), reason=input.text('reason',{max:400})
+  const snapshot=(await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
+  const definition=level ? await one(env,'SELECT id,version FROM wl_levels WHERE id=?',level) : null
+  insist(!level||definition,'level_not_found',404)
+  await commit(env,[levelSessionFence(env,actor),guard(env,'access_changed','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',snapshot),
+    stmt(env,'DELETE FROM wl_default_access'),
+    ...(definition?[stmt(env,'INSERT INTO wl_default_access VALUES(1,?,?,?,?,?)',definition.id,definition.version,actor.id,reason,now())]:[])],
+    {actor:actor.id,action:'access.default',subject:level||'none',detail:{version:definition?.version??null,reason}})
+  return {level:level||null}
+}
+
+/** Explicit owner consent only; repeat submissions never send another invitation. */
+export async function bulkGiveAccess(env: Bindings, actor: Actor, input: Input, request: Request) {
+  requireOwner(actor)
+  input.only(['people','reason','returnTo'])
+  const people=[...new Set(input.list('people'))], reason=input.text('reason',{max:400})
+  insist(people.length>0&&people.length<=100,'invalid_people')
+  const eligible:string[]=[], skipped:string[]=[]
+  for(const id of people) {
+    const person=await one(env,'SELECT work_email FROM wl_people WHERE id=?',id)
+    insist(person,'person_not_found',404)
+    const active=await one(env,'SELECT 1 FROM wl_periods WHERE person_id=? AND start_date<=? AND (end_date IS NULL OR end_date>=?)',id,actor.today,actor.today)
+    if(!active){skipped.push(id);continue}
+    insist(person.work_email,'work_email_required')
+    const member=await one(env,'SELECT person_id,status FROM wl_members WHERE email=?',person.work_email)
+    insist(!member||!member.person_id||member.person_id===id,'email_linked_elsewhere',409)
+    if(member?.status==='active'&&member.person_id){skipped.push(id);continue}
+    eligible.push(id)
+  }
+  // Validate the exact default before the first outward invitation.
+  await defaultAccessGrant(env,actor)
+  const invited:string[]=[], deferred:string[]=[]
+  for(const [index,person] of eligible.entries()) {
+    try {await giveAccess(env,actor,Input.of({person}),request,true);invited.push(person)}
+    catch(error) {
+      if(!(error&&typeof error==='object'&&'code' in error&&error.code==='rate_limited'))throw error
+      deferred.push(...eligible.slice(index));break
+    }
+  }
+  await commit(env,[],{actor:actor.id,action:'access.bulk',subject:actor.id,detail:{invited,skipped,deferred,reason}})
+  return {invited,skipped,deferred,notice:deferred.length?`${invited.length} invited; ${skipped.length} skipped. ${deferred.length} deferred by the sign-in invitation limit. Wait 15 minutes, then submit the selection again; existing access is skipped.`:`${invited.length} invited; ${skipped.length} skipped.`}
+
+}
+
+async function defaultAccessGrant(env: Bindings, actor: Actor) {
+  const policy=await defaultAccess(env)
+  if(!policy)return null
+  const definition=await one(env,'SELECT version FROM wl_levels WHERE id=?',policy.level_id)
+  insist(definition?.version===policy.level_version,'default_level_changed',409)
+  if(!actor.owner) try {
+    const current=await currentLevelAdmin(env,actor),data=await levels(env,current)
+    const selected=data.levels.find(level=>level.id===policy.level_id)!
+    const plan={...selected,kind:'level' as const,level:selected.id}
+    await validateDelegation(env,current,plan,data,true)
+    insist(!await delegatedPayReview(env,current,plan,data),'independent_approval_required',403)
+  } catch(error) {
+    if(error instanceof WillowError) await auditRead(env,actor.id,'access.denied',actor.id,{reason:error.code})
+    throw error
+  }
+  return policy
+}
+
+/** Gives a person sign-in access to Willow through their work email, assigning the owner-approved default when configured. */
+export async function giveAccess(env: Bindings, actor: Actor, input: Input, request: Request, currentOnly=false) {
   requirePermission(actor, 'people.manage')
   const person = await one(env, 'SELECT id, legal_name, preferred_name, work_email FROM wl_people WHERE id = ?', input.text('person', { max: 100 }))
   insist(person, 'person_not_found', 404)
   insist(person.work_email, 'work_email_required')
+  const activeSql='EXISTS(SELECT 1 FROM wl_periods WHERE person_id=? AND start_date<=? AND (end_date IS NULL OR end_date>=?))'
+  if(currentOnly) insist(await one(env,'SELECT 1 WHERE '+activeSql,person.id,actor.today,actor.today),'not_current_employee',409)
+  const snapshot=(await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
+  const policy=await defaultAccessGrant(env,actor)
   const email = person.work_email as string, name = person.preferred_name || person.legal_name
   const member = await one(env, 'SELECT * FROM wl_members WHERE email = ?', email)
   insist(!member || !member.person_id || member.person_id === person.id, 'email_linked_elsewhere', 409)
   insist(!member || member.status !== 'active' || !member.person_id, 'already_has_access', 409)
   const auth = operatorAuth(env), operator = await operatorByEmail(env, request, email)
-  if (!operator) await auth.invite(request, { email, displayName: name, role: 'member', returnTo: '/app' })
+  insist(!policy||operator?.role!=='owner','owner_access_fixed',409)
+  const administrator=policy && !!await one(env,"SELECT 1 FROM wl_level_permissions p JOIN wl_levels s ON s.id=p.level_id WHERE p.level_id=? AND p.permission='people.manage' AND s.scope_kind='everyone'",policy.level_id)
+  const role=administrator?'admin':'member'
+  if (!operator) await auth.invite(request, { email, displayName: name, role, returnTo: '/app' })
   else if (operator.status === 'inactive') await auth.setOperatorStatus(request, operator.id, 'active')
   const id = member?.id ?? newId()
   await commit(env, [
+    levelSessionFence(env,actor),
+    guard(env,'access_changed','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',snapshot),
+    ...(currentOnly?[guard(env,'not_current_employee',activeSql,person.id,actor.today,actor.today)]:[]),
     member
       ? stmt(env, "UPDATE wl_members SET person_id = ?, status = 'active' WHERE id = ?", person.id, id)
       : stmt(env, "INSERT INTO wl_members (id, email, name, person_id, status, created_at) VALUES (?, ?, ?, ?, 'active', ?)", id, email, name, person.id, now()),
-  ], { actor: actor.id, action: 'access.give', subject: person.id, detail: { member: id, invited: !operator } })
+    ...(operator&&policy?[stmt(env,"UPDATE oa_operators SET role=? WHERE id=? AND role!='owner'",role,operator.id)]:[]),
+    ...(policy?[stmt(env,'INSERT OR IGNORE INTO wl_member_levels(member_id,level_id) VALUES(?,?)',id,policy.level_id)]:[]),
+  ], { actor: actor.id, action: 'access.give', subject: person.id, detail: { member: id, invited: !operator, defaultLevel:policy?.level_id??null } })
   return { id, person: person.id, email }
 }
 

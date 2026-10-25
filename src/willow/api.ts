@@ -1,3 +1,4 @@
+import { requestLeave } from './leave'
 import { requestChange } from './change-requests/requests'
 import { registerWebhook, webhookList, webhookLog } from './webhooks'
 import { publishedDocumentVersion } from './document-publication'
@@ -123,6 +124,12 @@ export async function versionedRead(env:Bindings,actor:Actor,request:Request,url
 /** The initial write scope can request approval only; HR executes the unchanged native proposal. */
 export async function versionedWrite(env:Bindings,actor:Actor,request:Request,url:URL) {
  if(url.pathname===PREFIX+'webhooks')return registerWebhook(env,actor,await Input.from(request))
+ if(url.pathname===PREFIX+'requests') {
+  const input=await Input.from(request)
+  input.only(['account','startDate','endDate','reason'])
+  const result=await requestLeave(env,actor,input)
+  return {apiVersion:'1',data:result}
+ }
  if(url.pathname===PREFIX+'employment-changes') {
   const input=await Input.from(request)
   input.only(['person','effectiveFrom','reason','jobTitle','departmentId','locationId','managerPersonId','scheduleId','employmentType','employmentStatus','fte','startDate','endDate','payBasis','payAmount','payIncreasePercent'])
