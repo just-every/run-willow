@@ -191,7 +191,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
       - run: pnpm exec vite build
-      - run: pnpm exec playwright install --with-deps --only-shell chromium
+      - run: pnpm exec playwright install --only-shell chromium
       - if: matrix.shard != 'browser-phase2'
         run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
       - if: matrix.shard == 'browser-phase2'
@@ -242,7 +242,7 @@ jobs:
       - name: Install current section browser
         run: |
           npm install --prefix "$RUNNER_TEMP/willow-playwright" --no-save playwright@1.64.1
-          node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install --with-deps --only-shell chromium
+          node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install --only-shell chromium
           printf 'WILLOW_PLAYWRIGHT_PATH=%s/willow-playwright/node_modules/playwright/index.mjs\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs ${{ matrix.sections }}
       - if: matrix.shard == 'api'
