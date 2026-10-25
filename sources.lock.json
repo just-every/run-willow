@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "people/willow",
-  "manifest": "48b9fae4a9b61cca8280379f9d61feb5345a7d6a1f78fbfbbffbfcfa9eed1c4b",
+  "manifest": "5ab1d14115528692eeea5930ea655c087c556cdee1236d4e98fe4bc1c58450be",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -91,7 +91,8 @@
           "migrations/core/0073_engagement_theme_rights.sql",
           "migrations/core/0075_api_write_scopes.sql",
           "migrations/core/0076_webhooks.sql",
-          "migrations/core/0077_delegated_api_credentials.sql"
+          "migrations/core/0077_delegated_api_credentials.sql",
+          "migrations/core/0078_oauth_clients.sql"
         ]
       },
       "baseline": null
@@ -681,7 +682,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "45753e0783edc01e25da72cfa4cc4d98d22573e4e2eea4d1bf672402f96451b0",
+      "sha256": "64fec2e31180357cd5f3ec011f069e547486a55a101ab0699198ead55366c381",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -693,7 +694,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "ac4a641cae8557abe146df6f791cdbb02c9566138ccea25a5febc42fcb5f6645",
+      "sha256": "5724d641a2f17349e1a6f5677a9140b65c19194c04db1652c86ab1437081c099",
       "executable": false
     },
     "base-copies.json": {
@@ -709,7 +710,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "8a72da5b4dc88ffbb94f0cb9410607b571549eec9b8120b8b44dcac09f7f9446",
+      "sha256": "744d1e8ea78a24f97d932429b6d552d28c22506327d8781f08708573b200b649",
       "executable": false
     },
     "DEMO.md": {
@@ -765,7 +766,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "48b9fae4a9b61cca8280379f9d61feb5345a7d6a1f78fbfbbffbfcfa9eed1c4b",
+      "sha256": "5ab1d14115528692eeea5930ea655c087c556cdee1236d4e98fe4bc1c58450be",
       "executable": false
     },
     "EXPORTING.md": {
@@ -789,7 +790,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "c4a006b04a3e29a694575b12a67661784bbd93aa98d03b570649febf51ca1f21",
+      "sha256": "a8fda18ff9683b4103bcc4a01dcb99b997d5536c240264c1daa92a74791e0110",
       "executable": false
     },
     "migrations/base-copies.json": {
@@ -1106,6 +1107,10 @@
     },
     "migrations/core/0077_delegated_api_credentials.sql": {
       "sha256": "fabe91dce8ba59ed6978691493eb6f6f31673131a9dc25dbf98782fa9ebe88eb",
+      "executable": false
+    },
+    "migrations/core/0078_oauth_clients.sql": {
+      "sha256": "343ae4d80b86f29b286b969605b84f6375cde4a27dcc278c46d458d4f950b5d1",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -1629,7 +1634,7 @@
       "executable": false
     },
     "scripts/installer/portability.mjs": {
-      "sha256": "af27675f4f239282e17120329ee4ff9808c24fdbeace7ae70a037b408d8e693a",
+      "sha256": "61df1e64bb531e1144e77c36f9bda556224c3a538c8888d6e936e788ac9f5aa3",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -3641,7 +3646,7 @@
       "executable": false
     },
     "src/willow/api-credentials/authenticate.ts": {
-      "sha256": "528fabe5da9e74f8c90dd94b65bdbb669c2856af8259761eb6f90449f1d37b36",
+      "sha256": "fc16d6c035c454bf6c1753a2e1f415b025415a8c52250038a813ed726472c566",
       "executable": false
     },
     "src/willow/api-credentials/cursor.ts": {
@@ -3650,6 +3655,10 @@
     },
     "src/willow/api-credentials/index.ts": {
       "sha256": "9343f89ff4e56a1baa8e1b41438bf21d2229174f6628562b06ea9cec30e32b5e",
+      "executable": false
+    },
+    "src/willow/api-credentials/oauth.ts": {
+      "sha256": "b984458df08a267457f4f5058961665e3bd7f7a637342d681a07457bd9efab21",
       "executable": false
     },
     "src/willow/api-credentials/principal.ts": {
@@ -3661,7 +3670,7 @@
       "executable": false
     },
     "src/willow/api-credentials/store.ts": {
-      "sha256": "2a2a7d7e8a3cd0c7e4735033f4aebd5bda96f2ad0c454d948c3815c33d25a517",
+      "sha256": "e4a06892aea319409c4687118aca148b4844658b2fcfd014f26b0469ab37b497",
       "executable": false
     },
     "src/willow/api-description.ts": {
@@ -3969,7 +3978,7 @@
       "executable": false
     },
     "src/willow/http.ts": {
-      "sha256": "ecc238d986f23007c952c178e67d8fa15916641758dace8553f15141ee892bea",
+      "sha256": "ca6d366561072f16df5017a3e57a205b54956f5bf4569e0dadf67c0da8c9ae97",
       "executable": false
     },
     "src/willow/input.ts": {
@@ -4389,7 +4398,7 @@
       "executable": false
     },
     "src/willow/retention/inventory.ts": {
-      "sha256": "8dd7b0c2b3171bc89be1399eb7e6f4cfd28bda74e936134062c02a84d964d59a",
+      "sha256": "3d38487ee4dfc956a7928398f4740b1682e3accb827a02a9e7da295aa9eba00a",
       "executable": false
     },
     "src/willow/retention/journal.d.ts": {
@@ -4485,7 +4494,7 @@
       "executable": false
     },
     "src/willow/ui/api-credentials.ts": {
-      "sha256": "42c03f0f3a555c998cd4fcb2bcd7ff0f0ae9992c523770febd6354aae7f607bc",
+      "sha256": "13ceb102b6343ef523a50d1ccc86a02d6b461c587f98236e706ef3db061ad3a9",
       "executable": false
     },
     "src/willow/ui/approval-impact.ts": {
@@ -5013,11 +5022,11 @@
       "executable": false
     },
     "tests/willow/levels-settings-browser.mjs": {
-      "sha256": "4ea7bbdc5086772f835cdf542dae1f2ee678880b938266348cdedd82e64bc25b",
+      "sha256": "aaf3bb3404fae3387076e34a58c67a269531779d5375453d46f1bf7c058db274",
       "executable": false
     },
     "tests/willow/levels-settings.mjs": {
-      "sha256": "9ece820e34019710065a0cd6a5667966513ecc14cfc476c6e60eca5fc9759f64",
+      "sha256": "030381a6db55bfc84baaedacf6cd38ec3bd923bd4c5ab352aaad021d35a17901",
       "executable": false
     },
     "tests/willow/levels.mjs": {
@@ -5085,7 +5094,7 @@
       "executable": false
     },
     "tests/willow/restore-access.mjs": {
-      "sha256": "89d394e334f5adf9671d591223789d53a90eb4094293b5f9251fe0ab17c406d2",
+      "sha256": "1f0a118a619430a4cc8a9cac9e47b84e405d625bc83cd30764495dfadd70cf98",
       "executable": false
     },
     "tests/willow/restore-archive-fixture.mjs": {

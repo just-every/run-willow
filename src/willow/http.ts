@@ -1,3 +1,4 @@
+import { oauthTokenResponse } from './api-credentials/oauth'
 import { webhooksPage } from './ui/webhooks'
 import { versionedRead, versionedWrite } from './api'
 import { apiDescription } from './api-description'
@@ -82,6 +83,7 @@ function failure(error: unknown): { code: string; status: number; detail?: unkno
 export async function willowResponse(request: Request, original: Bindings): Promise<Response | null> {
   const env = runtimeBindings(original)
   const url = new URL(request.url)
+  if(url.pathname==='/api/willow/oauth/token')return oauthTokenResponse(env,request)
   const api = url.pathname.startsWith('/api/willow/')
   if (!request.headers.has('authorization')) {
     const invitation = await invitationResponse(env,request,url)

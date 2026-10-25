@@ -40,7 +40,7 @@ async function invalid(env:Bindings,id:string|null):Promise<never> {
  if(id)await auditRead(env,`credential:${id}`,'apiKey.denied.read',id,{outcome:'invalid'})
  throw new WillowError('invalid_credential',401)
 }
-async function credentialValid(env:Bindings,id:string) {
+export async function credentialValid(env:Bindings,id:string) {
  return !!await one(env,`SELECT c.id ${ADMISSION} WHERE c.id=? AND ${VALID}`,id,now())
 }
 async function permanentlyInvalidate(env:Bindings,id:string) {
@@ -50,23 +50,37 @@ async function permanentlyInvalidate(env:Bindings,id:string) {
 export async function credentialActor(env:Bindings,request:Request):Promise<Actor|null> {
  const header=request.headers.get('authorization')
  if(header===null)return null
- const bearer=/^Bearer (willow_key_[a-f0-9]{32}_[a-f0-9]{64})$/i.exec(header)
+ const bearer=/^Bearer ((?:willow_key|willow_access)_[a-f0-9]{32}_[a-f0-9]{64})$/i.exec(header)
  if(!bearer)return invalid(env,null)
- const row=await one<CredentialRow>(env,'SELECT * FROM wl_api_credentials WHERE token_hash=?',await sha256Hex(bearer[1]))
+ const hash=await sha256Hex(bearer[1])
+ const row=bearer[1].startsWith('willow_access_')
+  ?await one<CredentialRow>(env,"SELECT c.* FROM wl_oauth_tokens t JOIN wl_api_credentials c ON c.id=t.client_id WHERE t.token_hash=? AND t.expires_at>? AND c.credential_type='oauth_client'",hash,now())
+  :await one<CredentialRow>(env,"SELECT * FROM wl_api_credentials WHERE token_hash=? AND credential_type='key'",hash)
  if(!row)return invalid(env,null)
  if(!await credentialValid(env,row.id)) {
   if(row.revoked_at===null&&!(row.needs_approval&&!row.approved_by))await permanentlyInvalidate(env,row.id)
   return invalid(env,row.id)
  }
  const door=credentialDoor(request)
- const snapshot=await sourceSnapshot(env),actor=await compileCredentialPrincipal(env,row,snapshot),time=now(),window=Math.floor(time/60_000)
+ const snapshot=await recordCredentialUse(env,row,request,door)
+ const actor=await compileCredentialPrincipal(env,row,snapshot)
+ if(!door) {
+  await auditRead(env,`credential:${row.id}`,'apiKey.denied.read',row.id,{outcome:'door_forbidden'})
+  throw new WillowError('credential_read_only',403)
+ }
+ return actor
+}
+
+/** Token exchange and resource calls share one client rate budget and audit identity. */
+export async function recordCredentialUse(env:Bindings,row:CredentialRow,request:Request,door:string|null) {
+ const snapshot=await sourceSnapshot(env),time=now(),window=Math.floor(time/60_000)
  try {
   await commit(env,[
    guard(env,'invalid_credential',`EXISTS(SELECT 1 ${ADMISSION} WHERE c.id=? AND ${VALID})`,row.id,time),
    guard(env,'credential_source_changed',"(SELECT COALESCE(MAX(seq),0) FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download')=?",snapshot),
    stmt(env,`INSERT INTO wl_api_credential_limits(credential_id,window,count) VALUES(?,?,1) ON CONFLICT(credential_id) DO UPDATE SET window=excluded.window,count=CASE WHEN wl_api_credential_limits.window=excluded.window THEN wl_api_credential_limits.count+1 ELSE 1 END`,row.id,window),
    stmt(env,'UPDATE wl_api_credentials SET last_used_at=? WHERE id=?',time,row.id),
-  ],{actor:actor.id,action:'apiKey.read',subject:row.id,detail:{door}})
+  ],{actor:`credential:${row.id}`,action:'apiKey.read',subject:row.id,detail:{door}})
  }catch(error) {
   // wl_guard deliberately collapses unknown guard names; inspect current admission before mapping to 401.
   if(error instanceof WillowError&&!await credentialValid(env,row.id))return invalid(env,row.id)
@@ -75,14 +89,10 @@ export async function credentialActor(env:Bindings,request:Request):Promise<Acto
  const limit=await one<{count:number}>(env,'SELECT count FROM wl_api_credential_limits WHERE credential_id=?',row.id)
  limits.set(request,{count:limit!.count,reset:(window+1)*60000})
  if(limit!.count>120) {
-  await auditRead(env,actor.id,'apiKey.rate_limited.read',row.id)
+  await auditRead(env,`credential:${row.id}`,'apiKey.rate_limited.read',row.id)
   throw new WillowError('credential_rate_limited',429)
  }
- if(!door) {
-  await auditRead(env,`credential:${row.id}`,'apiKey.denied.read',row.id,{outcome:'door_forbidden'})
-  throw new WillowError('credential_read_only',403)
- }
- return actor
+ return snapshot
 }
 
 /** Call after the real native projection and before returning bytes. Read audits do not invalidate it. */

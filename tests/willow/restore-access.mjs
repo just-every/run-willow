@@ -118,6 +118,11 @@ try {
   const credentialReview = await api('level.preview', owner, { kind: 'level', name: 'synthetic-willow-restore-credential', permissions: [], scope: { kind: 'everyone' } })
   const credentialLevel = await api('level.apply', owner, { review: credentialReview.id })
   const credential = await api('apiKey.issue', owner, { name: 'synthetic-willow-restore-key', level: credentialLevel.id, expiresAt: new Date(Date.now() + 86400000).toISOString() })
+  const oauthClient=await api('apiKey.issue',owner,{name:'synthetic-willow-restore-oauth',level:credentialLevel.id,expiresAt:new Date(Date.now()+86400000).toISOString(),credentialType:'oauth_client'})
+  const exchange=base=>fetch(base+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(oauthClient.id+':'+oauthClient.token).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials'})
+  const oauthResponse=await exchange(origin);assert.equal(oauthResponse.status,200)
+  const oauthToken=(await oauthResponse.json()).access_token
+  assert.equal((await fetch(origin+'/api/willow/people',{headers:{authorization:'Bearer '+oauthToken}})).status,200)
   assert.ok(credential.token)
   const credentialRead = await fetch(origin + '/api/willow/people', { headers: { authorization: `Bearer ${credential.token}` } })
   assert.equal(credentialRead.status, 200, 'Source credential works and creates native rate-limit state')
@@ -163,10 +168,11 @@ try {
   const header = records[0]
   assert.ok(!data.includes(Buffer.from(webhook.secret)),'Webhook signing authority never enters archive bytes')
   assert.ok(!data.includes(Buffer.from(credential.token)), 'Archive bytes never contain the generated bearer token')
-  for (const table of ['wl_api_credentials', 'wl_api_credential_limits','wl_webhooks','wl_webhook_deliveries']) assert.ok(!header.tables.some(item => item.name === table), `${table} is excluded from the archive inventory`)
+  for(const secret of [oauthClient.token,oauthToken])assert.ok(!data.includes(Buffer.from(secret)),'OAuth authority never enters archive bytes')
+  for (const table of ['wl_api_credentials', 'wl_api_credential_limits','wl_oauth_tokens','wl_webhooks','wl_webhook_deliveries']) assert.ok(!header.tables.some(item => item.name === table), `${table} is excluded from the archive inventory`)
   assert.ok(!header.tables.some(t => /^oa_/.test(t.name)), 'auth credentials, sessions and tokens excluded')
   const items = records.filter(r => r.kind === 'part').flatMap(r => r.items)
-  assert.ok(!items.some(item => ['wl_api_credentials', 'wl_api_credential_limits','wl_webhooks','wl_webhook_deliveries'].includes(item.table)), 'Credential custody and limits have no archived rows')
+  assert.ok(!items.some(item => ['wl_api_credentials', 'wl_api_credential_limits','wl_oauth_tokens','wl_webhooks','wl_webhook_deliveries'].includes(item.table)), 'Credential custody and limits have no archived rows')
   for (const table of ['wl_eeo_answers', 'wl_eeo_recorded', 'wl_contractor_status']) assert.ok(items.some(item => item.table === table), `EEO-001: ${table} is in the owner archive`)
   // ROLE-001: portable authority is the exact union of direct and assigned grants.
   for (const member of members.filter(member => !member.owner)) {
@@ -230,6 +236,8 @@ try {
   await confirm(restored, newOwner)
   const after = apiAt(restored)
   assert.equal((await fetch(restored + '/api/willow/people', { headers: { authorization: `Bearer ${credential.token}` } })).status, 401, 'A source bearer credential cannot authenticate after restore')
+  assert.equal((await exchange(restored)).status,401,'Source OAuth client cannot exchange after restore')
+  assert.equal((await fetch(restored+'/api/willow/people',{headers:{authorization:'Bearer '+oauthToken}})).status,401,'Source OAuth token cannot read after restore')
   assert.deepEqual(await after('api-credentials', newOwner), [], 'Restored owner credential metadata starts empty')
   await after('me', s.employee.cookie, undefined, 401)
   assert.notEqual((await request(restored, '/auth/confirm', undefined, { token })).status, 303, 'source token cannot confirm at destination')

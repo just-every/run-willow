@@ -2,7 +2,7 @@
 
 The machine-readable OpenAPI 3.1 description is published at
 `/api/willow/v1/openapi.json`. All other version 1 routes require an
-employer-issued bearer key. Cookie sessions do not substitute for a key.
+employer-issued bearer key or OAuth access token. Cookie sessions do not substitute for a credential.
 Use HTTPS and keep keys in the integrating tool's protected credential store.
 The versioned transport is additive; the existing session API is unchanged.
 Merge, Finch, Kombo and other partner tools can consume this description;
@@ -79,7 +79,7 @@ prevents execution. No key can approve its own request or acquire direct-edit
 or administration authority from this scope. Rotation preserves explicit scopes.
 Other write families remain unimplemented and API-002 remains partial.
 
-Errors return a value-free `error` code and optional refusal detail. OAuth credential types and further write families remain API-001 work.
+Errors return a value-free `error` code and optional refusal detail. Authorization-code grants and further write families remain API-001 work.
 
 ## Permissioned webhooks
 
@@ -178,3 +178,36 @@ Every bearer response from the credential transport includes `RateLimit-Limit`,
 window; exhausted requests return 429 with `Retry-After`. Refused credential
 doors count against the same limit and include the headers. Invalid or pending
 credentials report zero remaining authority.
+
+## OAuth client credentials
+
+On API credentials, choose **OAuth client credentials**, a name, level and expiry.
+The JSON twin is `apiKey.issue` with `credentialType: "oauth_client"` and the
+same name, level, expiry and optional `writeScopes` as a key. The returned `id`
+is the client ID and `token` is the one-time client secret. Listings return only
+metadata. Clients inherit the same delegated rights and scope ceiling and
+independent sensitive-right approval. A pending client cannot obtain tokens.
+
+Send `POST /api/willow/oauth/token` with HTTP Basic authentication using the
+client ID and secret, and an `application/x-www-form-urlencoded` body containing
+`grant_type=client_credentials`. A client secret cannot authenticate resource
+requests. The response contains `access_token`, `token_type: "Bearer"`,
+`expires_in` and `scope`. Use that access token as the bearer credential on the
+same API doors. No employee is impersonated and no refresh token is issued.
+
+Tokens last at most one hour and never beyond the client's expiry. The fixed
+granted scope is `level.read` plus the write scopes selected at issuance. Omit
+`scope` at exchange, or supply that exact space-separated set; narrower or wider
+sets return `invalid_scope`. Each request still checks the current level's
+fields, modes and population. The existing personal approval and webhook
+scopes retain their native checks and consent obligations.
+
+Token exchange and resource calls share the client's rate budget and standard
+rate-limit headers. Audit events identify the client without storing either
+secret or access token. Rotate, revoke and approve clients with the existing
+credential actions. Rotation changes both the client ID and secret and ends all
+old tokens at once; sensitive delegated rotation requires approval again.
+Issuer authority loss or level change permanently ends the client and its
+tokens. Client secrets and token hashes are excluded from native archives;
+restoring an archive requires fresh client issuance. Partner authorization-code
+grants remain unimplemented.

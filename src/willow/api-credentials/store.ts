@@ -8,11 +8,11 @@ import { levels } from '../levels/store'
 import { READ_PERMISSIONS } from './principal'
 
 export interface CredentialRow {
- id:string; name:string; token_hash:string; level_id:string; level_version:number;
+ id:string; name:string; credential_type:'key'|'oauth_client'; token_hash:string; level_id:string; level_version:number;
  issued_by:string; issuer_operator:string; issuer_version:number; issued_at:number; expires_at:number;
  last_used_at:number|null; revoked_at:number|null; revocation_reason:string|null; replaced_by:string|null; write_scopes:string; needs_approval:number; approved_by:string|null; approval_reason:string|null;
 }
-export const credentialMetadata=(row:CredentialRow)=>({id:row.id,name:row.name,level:row.level_id,levelVersion:row.level_version,issuedBy:row.issued_by,issuedAt:row.issued_at,expiresAt:row.expires_at,lastUsedAt:row.last_used_at,revokedAt:row.revoked_at,revocationReason:row.revocation_reason,replacedBy:row.replaced_by,approvalRequired:!!row.needs_approval,approvedBy:row.approved_by,readOnly:JSON.parse(row.write_scopes).length===0,writeScopes:JSON.parse(row.write_scopes) as string[]})
+export const credentialMetadata=(row:CredentialRow)=>({id:row.id,name:row.name,credentialType:row.credential_type,level:row.level_id,levelVersion:row.level_version,issuedBy:row.issued_by,issuedAt:row.issued_at,expiresAt:row.expires_at,lastUsedAt:row.last_used_at,revokedAt:row.revoked_at,revocationReason:row.revocation_reason,replacedBy:row.replaced_by,approvalRequired:!!row.needs_approval,approvedBy:row.approved_by,readOnly:JSON.parse(row.write_scopes).length===0,writeScopes:JSON.parse(row.write_scopes) as string[]})
 export type CredentialMetadata=ReturnType<typeof credentialMetadata>
 
 const businessSnapshot=async(env:Bindings)=>(await one<{seq:number}>(env,"SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download'"))!.seq
@@ -48,22 +48,24 @@ function expiry(input:Input) {
  insist(Number.isSafeInteger(date)&&date>now()&&new Date(`${value.slice(0,10)}T00:00:00.000Z`).toISOString().slice(0,10)===value.slice(0,10),'invalid_expiresAt')
  return date
 }
-async function material(env:Bindings,actor:Actor,name:string,level:string,expiresAt:number,issuer:{id:string;version:number},writeScopes:string[]=[],needsApproval=false) {
+async function material(env:Bindings,actor:Actor,name:string,level:string,expiresAt:number,issuer:{id:string;version:number},writeScopes:string[]=[],needsApproval=false,credentialType:CredentialRow['credential_type']='key') {
  const selected=await one<{id:string;version:number}>(env,'SELECT id,version FROM wl_levels WHERE id=?',level)
  insist(selected,'level_not_found',404)
- const id=newId(),bytes=crypto.getRandomValues(new Uint8Array(32)),token=`willow_key_${id.replaceAll('-','')}_${Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}`
- const row:CredentialRow={id,name,token_hash:await sha256Hex(token),level_id:level,level_version:selected.version,issued_by:actor.id,issuer_operator:issuer.id,issuer_version:issuer.version,issued_at:now(),expires_at:expiresAt,last_used_at:null,revoked_at:null,revocation_reason:null,replaced_by:null,write_scopes:JSON.stringify(writeScopes),needs_approval:needsApproval?1:0,approved_by:null,approval_reason:null}
+ const id=newId(),bytes=crypto.getRandomValues(new Uint8Array(32)),token=`${credentialType==='key'?'willow_key':'willow_client'}_${id.replaceAll('-','')}_${Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}`
+ const row:CredentialRow={id,name,credential_type:credentialType,token_hash:await sha256Hex(token),level_id:level,level_version:selected.version,issued_by:actor.id,issuer_operator:issuer.id,issuer_version:issuer.version,issued_at:now(),expires_at:expiresAt,last_used_at:null,revoked_at:null,revocation_reason:null,replaced_by:null,write_scopes:JSON.stringify(writeScopes),needs_approval:needsApproval?1:0,approved_by:null,approval_reason:null}
  insist(expiresAt>row.issued_at,'invalid_expiresAt')
- return {row,token,statements:[guard(env,'access_changed','EXISTS(SELECT 1 FROM wl_levels WHERE id=? AND version=?)',level,selected.version),stmt(env,`INSERT INTO wl_api_credentials(id,name,token_hash,level_id,level_version,issued_by,issuer_operator,issuer_version,issued_at,expires_at,write_scopes,needs_approval) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`,id,name,row.token_hash,level,selected.version,actor.id,issuer.id,issuer.version,row.issued_at,expiresAt,row.write_scopes,row.needs_approval)]}
+ return {row,token,statements:[guard(env,'access_changed','EXISTS(SELECT 1 FROM wl_levels WHERE id=? AND version=?)',level,selected.version),stmt(env,`INSERT INTO wl_api_credentials(id,name,token_hash,level_id,level_version,issued_by,issuer_operator,issuer_version,issued_at,expires_at,write_scopes,needs_approval,credential_type) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,id,name,row.token_hash,level,selected.version,actor.id,issuer.id,issuer.version,row.issued_at,expiresAt,row.write_scopes,row.needs_approval,credentialType)]}
 }
 export async function issueCredential(env:Bindings,actor:Actor,input:Input) {
  return audited(env,actor,'issue',async()=>{
-  input.only(['name','level','expiresAt','writeScopes','returnTo'])
+  input.only(['name','level','expiresAt','writeScopes','credentialType','returnTo'])
+  const credentialType=input.text('credentialType',{optional:true})||'key'
+  insist(credentialType==='key'||credentialType==='oauth_client','invalid_credential_type')
   const writeScopes=input.provided('writeScopes')?input.json('writeScopes'):[]
   insist(Array.isArray(writeScopes)&&new Set(writeScopes).size===writeScopes.length&&writeScopes.every(scope=>['personal.approval','webhooks.manage'].includes(scope)),'invalid_write_scopes')
   const authority=await administratorAuthority(env,actor),level=input.text('level')
   const needsApproval=await credentialCeiling(env,authority.actor,level,writeScopes as string[])
-  const prepared=await material(env,authority.actor,input.text('name'),level,expiry(input),authority.row,writeScopes as string[],needsApproval)
+  const prepared=await material(env,authority.actor,input.text('name'),level,expiry(input),authority.row,writeScopes as string[],needsApproval,credentialType)
   await commit(env,[authority.fence,...prepared.statements],{actor:actor.id,action:'apiKey.issue',subject:prepared.row.id,detail:{level,expiresAt:prepared.row.expires_at,needsApproval}})
   return {...credentialMetadata(prepared.row),token:prepared.token}
  })
@@ -102,7 +104,7 @@ export async function rotateCredential(env:Bindings,actor:Actor,input:Input) {
  insist(authority.actor.owner||row.issued_by===actor.id,'credential_owner_required',403)
  insist(!row.revoked_at&&row.expires_at>now(),'credential_inactive',409)
  const needsApproval=await credentialCeiling(env,authority.actor,row.level_id,JSON.parse(row.write_scopes))
- const prepared=await material(env,authority.actor,row.name,row.level_id,expiry(input),authority.row,JSON.parse(row.write_scopes),needsApproval)
+ const prepared=await material(env,authority.actor,row.name,row.level_id,expiry(input),authority.row,JSON.parse(row.write_scopes),needsApproval,row.credential_type)
  await commit(env,[authority.fence,guard(env,'stale','EXISTS(SELECT 1 FROM wl_api_credentials WHERE id=? AND revoked_at IS NULL AND expires_at>?)',id,now()),...prepared.statements,stmt(env,"UPDATE wl_api_credentials SET revoked_at=?,revocation_reason='rotated',replaced_by=? WHERE id=?",now(),prepared.row.id,id)],{actor:actor.id,action:'apiKey.rotate',subject:id,detail:{replacement:prepared.row.id}})
  return {...credentialMetadata(prepared.row),token:prepared.token}
 }

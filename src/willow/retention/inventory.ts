@@ -185,7 +185,7 @@ export const OUT_OF_SCOPE = new Map<string, string>([
   ...NONE('restricted custody of records already removed from every live table: owner-read only, purged by rule', 'wl_retained_records'),
   ...NONE('value-free erasure receipts and the post-commit blob work list: counts, labels and content digests only', 'wl_erasure_receipts', 'wl_erasure_blobs'),
   ...NONE('in-batch precondition scratch rows, emptied by every commit', 'wl_guard'),
-  ...NONE('non-portable API authentication hashes and rate counters, never employee records', 'wl_api_credentials', 'wl_api_credential_limits'),
+  ...NONE('non-portable API authentication hashes and rate counters, never employee records', 'wl_api_credentials', 'wl_api_credential_limits', 'wl_oauth_tokens'),
   ...NONE('identity-provider and installation state with no person data', 'oa_auth_settings', 'oa_bootstrap', 'oa_domain_rules', 'oa_first_run', 'oa_identity_provider_health', 'oa_identity_providers', 'oa_limits', 'oa_logout_events', 'oa_oidc_limits', 'oa_oidc_transactions', 'wl_identity_token_health', 'oc_idp_grants', 'oc_owner_claims', 'rer_dependency_codes', 'rer_dependency_installation', 'rer_dependency_keys', 'rer_dependency_link', 'rer_dependency_pending', 'rer_mail_development_outbox'),
   ...NONE('archive import lease: transfer job id, expiry timestamp and random request holder only; no person data', 'rer_portability_import_leases'),
   ...NONE('archive journal and portability state: counts, epochs and digests only', 'rer_portability_epochs', 'rer_portability_guard', 'rer_portability_jobs', 'rer_portability_journal', 'rer_portability_owned', 'rer_portability_parts', 'rer_portability_segments', 'rer_portability_state'),

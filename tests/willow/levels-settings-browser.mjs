@@ -179,7 +179,7 @@ export async function delegatedCredentialBrowserProof(h,owner,delegate,second,le
  }
  try {
   const issuer=await open(delegate.cookie),approver=await open(second.cookie)
-  for(const [index,width] of [1440,390].entries()) {
+  for(const [index,width] of [1440,390].entries()) for(const credentialType of ['key','oauth_client']) {
    for(const page of [issuer,approver])await page.setViewportSize({width,height:1000})
    const capture=async(page,state,mask=[])=>{
     await page.evaluate(()=>document.fonts.ready)
@@ -187,11 +187,11 @@ export async function delegatedCredentialBrowserProof(h,owner,delegate,second,le
     const bell=page.locator('.bell'),tip=page.getByRole('tooltip',{name:'Your tasks'})
     await bell.hover();await page.waitForTimeout(150);assert.equal(await tip.isVisible(),false)
     await tip.waitFor({state:'visible'});await page.mouse.move(0,0);await bell.focus();assert.equal(await tip.isVisible(),true)
-    await page.screenshot({path:evidenceDirectory+'/API-001-'+state+'-'+width+'.png',fullPage:true,mask})
+    await page.screenshot({path:evidenceDirectory+'/API-001-'+credentialType+'-'+state+'-'+width+'.png',fullPage:true,mask})
    }
    assert.equal((await issuer.goto(h.origin+'/app/api-credentials')).status(),200)
-   const form=issuer.locator('form[action="/app/do/apiKey.issue"]'),name='synthetic-willow-'+(14130+index)
-   await form.locator('[name="name"]').fill(name);await form.locator('[name="level"]').selectOption(level);await form.locator('[name="expiresAt"]').fill(expiresAt)
+   const form=issuer.locator('form[action="/app/do/apiKey.issue"]'),name='synthetic-willow-'+(14130+index+(credentialType==='key'?0:100))
+   await form.locator('[name="credentialType"]').selectOption(credentialType);await form.locator('[name="name"]').fill(name);await form.locator('[name="level"]').selectOption(level);await form.locator('[name="expiresAt"]').fill(expiresAt)
    await capture(issuer,'delegate-issue')
    await Promise.all([issuer.waitForResponse(response=>new URL(response.url()).pathname==='/app/do/apiKey.issue'),form.getByRole('button').click()])
    const token=await issuer.locator('#issued-api-token').textContent()
@@ -199,7 +199,9 @@ export async function delegatedCredentialBrowserProof(h,owner,delegate,second,le
    await capture(issuer,'awaiting-approval',[issuer.locator('#issued-api-token')])
    const row=(await h.api('api-credentials',owner)).find(row=>row.name===name)
    assert.ok(row.approvalRequired&&!row.approvedBy)
-   const request=()=>fetch(h.origin+'/api/willow/people',{headers:{authorization:'Bearer '+token}})
+   let accessToken=token
+   const exchange=()=>fetch(h.origin+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(row.id+':'+token).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials'})
+   const request=()=>credentialType==='oauth_client'&&accessToken===token?exchange():fetch(h.origin+'/api/willow/people',{headers:{authorization:'Bearer '+accessToken}})
    assert.equal((await request()).status,401)
    assert.equal((await approver.goto(h.origin+'/app/api-credentials')).status(),200)
    const approval=approver.locator('form[action="/app/do/apiKey.approve"]').filter({has:approver.locator('input[name="credential"][value="'+row.id+'"]')})
@@ -207,10 +209,14 @@ export async function delegatedCredentialBrowserProof(h,owner,delegate,second,le
    await capture(approver,'independent-review')
    await approval.getByRole('button').click();await approver.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'))
    assert.ok(!new URL(approver.url()).searchParams.has('error'))
+   if(credentialType==='oauth_client') {
+    const response=await exchange();assert.equal(response.status,200);accessToken=(await response.json()).access_token
+   }
    assert.equal((await request()).status,200)
    await capture(approver,'approved')
    await h.api('apiKey.revoke',delegate.cookie,{credential:row.id})
    assert.equal((await request()).status,401)
+   if(credentialType==='oauth_client')assert.equal((await exchange()).status,401)
    await issuer.goto(h.origin+'/app/api-credentials');await capture(issuer,'revoked')
   }
  }finally{for(const context of contexts)await context.close();await browser.close()}

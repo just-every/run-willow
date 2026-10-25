@@ -105,6 +105,7 @@ export async function settingsSelectionProof(h, owner, fx) {
 }
 
 export async function apiKeyProof(h, owner, fx) {
+ await oauthClientProof(h,owner,fx)
  await delegatedCredentialProof(h,owner,fx)
  const api = (path, body, status) => h.api(path, owner, body, status)
  const apply = async plan => api('level.apply', { review: (await api('level.preview', plan)).id })
@@ -286,4 +287,88 @@ async function delegatedCredentialProof(h,owner,fx) {
  delegate.cookie=await h.signIn('managerb@example.com')
  second.cookie=await h.signIn('ended@example.com')
  console.log('API-001 delegated keys: PASS — rights and structural scope ceilings, independent sensitive approval, no self approval, bounded rotation, permanent authority loss, value-free audit and rate-limit headers')
+}
+
+async function oauthClientProof(h,owner,fx) {
+ const api=(path,body,status)=>h.api(path,owner,body,status)
+ const apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
+ const expiresAt=new Date(Date.now()+86400000).toISOString()
+ const location=await api('location.create',{name:'synthetic-willow-14300',timezone:'UTC'})
+ const near=await fx.join('synthetic-willow-14301',{locationId:location.id,phone:'synthetic-willow-14302'})
+ const far=await fx.join('synthetic-willow-14303',{phone:'synthetic-willow-14304'})
+ const plan={kind:'level',name:'synthetic-willow-14305',permissions:[],otherFields:{phone:'view'},scope:{kind:'group',dimensions:{location:[location.id]}}}
+ const level=await apply(plan)
+ const issue=(name,cookie=owner,selected=level.id,expiry=expiresAt)=>h.api('apiKey.issue',cookie,{name,level:selected,expiresAt:expiry,credentialType:'oauth_client'})
+ const exchange=async(client,status=200,body='grant_type=client_credentials',secret=client.token)=>{
+  const response=await fetch(h.origin+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(client.id+':'+secret).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body})
+  assert.equal(response.status,status,'OAuth exchange')
+  assert.equal(response.headers.get('cache-control'),'no-store')
+  assert.ok(response.headers.has('RateLimit-Remaining'))
+  if(status===401)assert.match(response.headers.get('www-authenticate'),/^Basic /)
+  return response.json()
+ }
+ const read=async(token,path='/api/willow/people',status=200)=>{
+  const response=await fetch(h.origin+path,{headers:{authorization:'Bearer '+token,cookie:owner}})
+  assert.equal(response.status,status,path)
+  assert.ok(response.headers.has('RateLimit-Reset'))
+  return response
+ }
+ const client=await issue('synthetic-willow-14306')
+ assert.equal(client.credentialType,'oauth_client')
+ await read(client.token,'/api/willow/people',401)
+ await exchange(client,401,undefined,'synthetic-willow-14307')
+ assert.equal((await exchange(client,400,'grant_type=authorization_code')).error,'unsupported_grant_type')
+ assert.equal((await exchange(client,400,'grant_type=client_credentials&scope=people.write')).error,'invalid_scope')
+ const token=await exchange(client)
+ assert.equal(token.token_type,'Bearer');assert.equal(token.scope,'level.read')
+ assert.ok(token.expires_in>0&&token.expires_in<=3600)
+ assert.deepEqual((await (await read(token.access_token)).json()).map(row=>row.id),[near.person])
+ assert.equal((await (await read(token.access_token,'/api/willow/people/'+near.person)).json()).private.phone,'synthetic-willow-14302')
+ await read(token.access_token,'/api/willow/people/'+far.person,404)
+ for(const door of ['/app/people','/api/willow/me','/api/willow/settings','/api/willow/eeo/people'])await read(token.access_token,door,403)
+ const rotated=await api('apiKey.rotate',{credential:client.id,expiresAt})
+ assert.equal(rotated.credentialType,'oauth_client')
+ await exchange(client,401);await read(token.access_token,'/api/willow/people',401)
+ const secondToken=await exchange(rotated)
+ await api('apiKey.revoke',{credential:rotated.id})
+ await exchange(rotated,401);await read(secondToken.access_token,'/api/willow/people',401)
+ // Delegates inherit the same carried-right ceiling and independent sensitive approval.
+ const delegate=fx.staff.managerb,original=(await api('levels')).assignments.filter(row=>row.member_id===delegate.member).map(row=>row.level_id)
+ const administration=await apply({kind:'level',name:'synthetic-willow-14308',permissions:['people.manage','access.admin']})
+ const assign=levels=>apply({kind:'assignment',member:delegate.member,levels})
+ await assign([administration.id]);delegate.cookie=await h.signIn('managerb@example.com')
+ await h.api('apiKey.issue',delegate.cookie,{name:'synthetic-willow-14309',level:level.id,expiresAt,credentialType:'oauth_client'},403)
+ await assign([administration.id,level.id])
+ const pending=await issue('synthetic-willow-14310',delegate.cookie)
+ assert.equal(pending.approvalRequired,true)
+ await exchange(pending,401)
+ await h.api('apiKey.approve',delegate.cookie,{credential:pending.id,reason:'synthetic-willow-14311'},403)
+ await api('apiKey.approve',{credential:pending.id,reason:'synthetic-willow-14312'})
+ const approved=await exchange(pending)
+ await read(approved.access_token)
+ await assign([administration.id]);await assign([administration.id,level.id])
+ await exchange(pending,401);await read(approved.access_token,'/api/willow/people',401)
+ await assign(original);delegate.cookie=await h.signIn('managerb@example.com')
+ const edited=await issue('synthetic-willow-14313'),editedToken=await exchange(edited)
+ await apply({...plan,level:level.id,name:'synthetic-willow-14314'})
+ await apply({...plan,level:level.id})
+ await exchange(edited,401);await read(editedToken.access_token,'/api/willow/people',401)
+ const short=await issue('synthetic-willow-14315',owner,level.id,new Date(Date.now()+5000).toISOString()),shortToken=await exchange(short)
+ assert.ok(shortToken.expires_in<=5)
+ await new Promise(resolve=>setTimeout(resolve,5100))
+ await exchange(short,401);await read(shortToken.access_token,'/api/willow/people',401)
+ const limited=await issue('synthetic-willow-14316'),limitedToken=await exchange(limited)
+ let response
+ for(let i=0;i<241;i++){response=await fetch(h.origin+'/api/willow/people',{headers:{authorization:'Bearer '+limitedToken.access_token}});await response.arrayBuffer();if(response.status===429)break;assert.equal(response.status,200)}
+ assert.equal(response.status,429)
+ assert.equal(response.headers.get('RateLimit-Remaining'),'0')
+ assert.ok(response.headers.has('Retry-After'))
+ await exchange(limited,429)
+ const listing=await api('api-credentials'),audit=await api('audit')
+ assert.ok(listing.find(row=>row.id===limited.id).lastUsedAt)
+ assert.ok(audit.some(row=>row.actor==='credential:'+limited.id&&row.action==='oauth.token.read'))
+ for(const secret of [client.token,rotated.token,pending.token,edited.token,short.token,limited.token,token.access_token,secondToken.access_token,approved.access_token,editedToken.access_token,shortToken.access_token,limitedToken.access_token]){
+  assert.ok(!JSON.stringify(listing).includes(secret)&&!JSON.stringify(audit).includes(secret))
+ }
+ console.log('API-001 OAuth clients: PASS — bounded non-person reads, delegated ceiling and approval, one-time secret, client rotation and revocation, permanent authority loss, expiry, shared rate limit and value-free audit')
 }
