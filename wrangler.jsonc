@@ -32,7 +32,6 @@
     "MAIL_FROM": "",
     "MAIL_RELAY_URL": "",
     "MAIL_ACCOUNT_ID": "",
-    "MODELS_ENDPOINT": "",
-    "OWNER_EMAIL": ""
+    "MODELS_ENDPOINT": ""
   }
 }

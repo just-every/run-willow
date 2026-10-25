@@ -789,7 +789,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "5ddcb7382871fad2d65fc3fcd211be3c81d59157e26930dbf6a586dc46e4584a",
+      "sha256": "c4a006b04a3e29a694575b12a67661784bbd93aa98d03b570649febf51ca1f21",
       "executable": false
     },
     "migrations/base-copies.json": {
@@ -1125,7 +1125,7 @@
       "executable": false
     },
     "packaging.json": {
-      "sha256": "0e3bb6d45dbfbf80e2cf117157af4674372b5573a3cf5822aade732fd2d34251",
+      "sha256": "c03be03d8578191c2edc291479390eab82c54d84d98273071c4b840f24d5aa61",
       "executable": false
     },
     "pnpm-lock.yaml": {
@@ -1513,7 +1513,7 @@
       "executable": false
     },
     "scripts/delivery/base/packaging.json": {
-      "sha256": "0e3bb6d45dbfbf80e2cf117157af4674372b5573a3cf5822aade732fd2d34251",
+      "sha256": "c03be03d8578191c2edc291479390eab82c54d84d98273071c4b840f24d5aa61",
       "executable": false
     },
     "scripts/delivery/base/paths.mjs": {
@@ -5169,7 +5169,7 @@
       "executable": false
     },
     "wrangler.jsonc": {
-      "sha256": "f8c07c5f461646182fef5f47749310218d185cacad38b01a2a3e82e3cbca8c84",
+      "sha256": "db19bdc9b3750fcc343b3eecc81a95da23bf35356dd6f00d944a50e5823fcc64",
       "executable": false
     }
   }
