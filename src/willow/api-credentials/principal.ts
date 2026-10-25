@@ -3,6 +3,7 @@ import type { Bindings } from '../../auth.server'
 import { employerZone, type Actor, type Permission } from '../actor'
 import { all, insist } from '../core'
 import { today } from '../dates'
+import type { CategoryMode } from '../levels/documents'
 import type { JobField } from '../levels/job'
 import type { LeaveField } from '../levels/leave'
 import type { CompensationField } from '../levels/compensation'
@@ -44,7 +45,7 @@ export async function compileCredentialPrincipal(env:Bindings,row:CredentialRow,
   leaveFields:[{level,scope,members,fields:{self:{},others:fine(leave,'leave.approval')}}],
   compensationFields:[{level,scope,members,fields:{self:{},others:fine(compensation,'compensation.approval')}}],
   otherPersonal:[{level,scope,people,fields:Object.fromEntries(personal.filter(rule=>rule.mode!=='none').map(rule=>[rule.field,JSON.parse(row.write_scopes).includes('personal.approval')&&rule.mode==='approval'?'approval':'view']))}],
-  documentCategories:[{level,scope,people,rules:{self:{},others:Object.fromEntries(documents.filter(rule=>rule.mode!=='none').map(rule=>[rule.category_id,'view' as const]))}}],
+  documentCategories:[{level,scope,people,rules:{self:{},others:Object.fromEntries(documents.filter(rule=>rule.mode!=='none').map(rule=>[rule.category_id,writeScopes.includes('documents.approval')&&['approval','edit'].includes(rule.mode)?'approval' as CategoryMode:'view' as CategoryMode]))}}],
   reportGrants:reports.length?[{level,scope,people:members,reports:reports.map(report=>report.report_id)}]:[],
   performanceFields:[],
   followOwnChanges:false,approvalGrants:[],settingsGrants:[],

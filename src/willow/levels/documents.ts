@@ -1,4 +1,5 @@
 // ROLE-001: additive category reads, independently about self and others.
+import { isCredentialActor } from '../api-credentials/principal'
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
 import { all, insist } from '../core'
@@ -36,7 +37,7 @@ export async function documentGrants(env: Bindings,member:string,person:string|n
 export const documentCategoryGrant=(actor:Actor,person:string,category:string)=>actor.documentCategories.some(grant=>actor.personId===person ? CATEGORY_RANK[grant.rules.self[category]??'none']>0 : CATEGORY_RANK[grant.rules.others[category]??'none']>0&&(!grant.people||grant.people.has(person)))
 export const anyDocumentCategoryGrant=(actor:Actor,person:string)=>actor.documentCategories.some(grant=>actor.personId===person ? Object.values(grant.rules.self).some(mode=>CATEGORY_RANK[mode]>0) : Object.values(grant.rules.others).some(mode=>CATEGORY_RANK[mode]>0)&&(!grant.people||grant.people.has(person)))
 export function documentMode(actor:Actor,person:string,category:string):CategoryMode {
- if(can(actor,'people.manage')) return 'edit'
+ if(!isCredentialActor(actor)&&can(actor,'people.manage')) return 'edit'
  const modes=actor.documentCategories.filter(grant=>actor.personId===person || !grant.people || grant.people.has(person)).map(grant=>(actor.personId===person?grant.rules.self:grant.rules.others)[category]??'none')
  return modes.reduce<CategoryMode>((best,mode)=>CATEGORY_RANK[mode]>CATEGORY_RANK[best]?mode:best,'none')
 }

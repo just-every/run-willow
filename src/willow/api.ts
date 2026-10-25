@@ -1,3 +1,4 @@
+import { proposeDocument } from './document-write'
 import { proposeRecordRow } from './record-tables/proposals'
 import { proposeCustomField } from './custom-fields/proposals'
 import { requestLeave } from './leave'
@@ -126,6 +127,10 @@ export async function versionedRead(env:Bindings,actor:Actor,request:Request,url
 /** The initial write scope can request approval only; HR executes the unchanged native proposal. */
 export async function versionedWrite(env:Bindings,actor:Actor,request:Request,url:URL) {
  if(url.pathname===PREFIX+'webhooks')return registerWebhook(env,actor,await Input.from(request))
+ if(url.pathname===PREFIX+'document-changes') {
+  insist(credentialContext(actor)!.writeScopes.includes('documents.approval'),'credential_read_only',403)
+  return {apiVersion:'1',data:await proposeDocument(env,actor,await Input.from(request))}
+ }
  if(url.pathname===PREFIX+'table-changes') {
   return {apiVersion:'1',data:await proposeRecordRow(env,actor,await Input.from(request))}
  }

@@ -324,3 +324,26 @@ credentials, scope, table definition and row history. Creation, edits and remova
 append native dated versions; earlier dates and removed-row history remain
 readable to authorized readers. Revoked or stale requests cannot execute, and
 HR can still reject them. Keys and both OAuth grants share the same route.
+
+
+### Native document requests
+
+Issue `documents.approval` to submit
+`POST /api/willow/v1/document-changes`. A new document names `person`,
+`category`, `title` and `file` with `filename` and `base64`. A revision names
+`document`, its current `revision` and the replacement `file`. The bound level
+must grant Edit with approval or Edit for that category and current population;
+either mode submits a pending human decision. Native file validation and
+pending-version custody apply. The response contains `apiVersion` and `data`
+with the pending request `id`, `document`, `version` and `status`.
+
+Only a distinct authorized human publishes the exact reviewed bytes through
+the existing HR queue. Pending versions stay out of ordinary document metadata,
+record history and versioned downloads. Publication takes the human decision's
+recorded time, so historical reads before publication exclude the new version.
+Revisions preserve earlier published bytes. Current credential, category,
+population and document revision are rechecked at approval; stale revisions,
+revocation and withdrawal of independent approval prevent execution.
+Delegated OAuth clients remain inactive until the existing independent
+sensitive-rights approval succeeds. Keys and both OAuth grants share these
+rules. This scope grants no direct publication or decision authority.

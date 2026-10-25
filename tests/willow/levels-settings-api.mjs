@@ -367,6 +367,75 @@ export async function apiRosterProof(h,owner,fx) {
  await h.api('self.decide',fx.staff.hr.cookie,{change:stoppedTable.id,decision:'reject',comment:'synthetic-willow-15012'})
  console.log('API-002 table writes: PASS — scoped keys and both OAuth grants, typed native HR approval, dated creation and edit and removal, preserved history, stale rows and revoked-requester refusal')
 
+ // Document proposals publish only after native human approval at its recorded time.
+ const docLevel=await apply({kind:'level',name:'synthetic-willow-15100',permissions:[],documentCategories:{self:{},others:{[category.id]:'edit'}},scope:{kind:'group',dimensions:{location:[location.id]}}})
+ const docIssue=(credentialType='key')=>api('apiKey.issue',{name:'synthetic-willow-15101',level:docLevel.id,writeScopes:['documents.approval'],credentialType,expiresAt:new Date(Date.now()+86400000).toISOString(),...(credentialType==='oauth_client'?{redirectUri:'https://partner.example.test/callback'}:{})})
+ const docWrite=async(token,body,status=200)=>{
+  const response=await fetch(h.origin+'/api/willow/v1/document-changes',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify(body)})
+  assert.equal(response.status,status,await response.clone().text());assert.ok(response.headers.has('RateLimit-Limit'))
+  const result=await response.json();check(spec.paths['/document-changes'].post.responses[String(status)].content['application/json'].schema,result);return result.data
+ }
+ const docKey=await docIssue(),docTokens=[{token:docKey.token,id:docKey.id}]
+ for(const grant of ['client_credentials','authorization_code']) {
+  const client=await docIssue('oauth_client'),verifier='synthetic-willow-15102-'.repeat(3),{createHash}=await import('node:crypto')
+  const authorization=grant==='authorization_code'?await api('oauth.authorize',{client:client.id,redirectUri:client.redirectUri,codeChallenge:createHash('sha256').update(verifier).digest('base64url'),codeChallengeMethod:'S256',state:'synthetic-willow-15103',reason:'synthetic-willow-15104'}):null
+  const exchanged=await fetch(h.origin+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(client.id+':'+client.token).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:grant,...(authorization?{code:new URL(authorization.redirectUri).searchParams.get('code'),redirect_uri:client.redirectUri,code_verifier:verifier}:{})})})
+  assert.equal(exchanged.status,200);docTokens.push({token:(await exchanged.json()).access_token,id:client.id})
+ }
+ const docBody={person:second.person,category:category.id,title:'synthetic-willow-15105',file}
+ await docWrite(key.token,docBody,403)
+ await docWrite(docKey.token,{...docBody,person:distant.person},404)
+ const forbiddenCategory=await api('category.create',{name:'synthetic-willow-15106'})
+ await docWrite(docKey.token,{...docBody,category:forbiddenCategory.id},403)
+ await docWrite(docKey.token,{...docBody,file:{...file,base64:'not base64'}},400)
+ await docWrite(docKey.token,{...docBody,effectiveFrom:'2099-01-01'},400)
+ for(const [index,credential] of docTokens.entries()) {
+  const pending=await docWrite(credential.token,{...docBody,title:docBody.title+'-'+index})
+  assert.ok((await h.api('self-changes',fx.staff.hr.cookie)).some(row=>row.id===pending.id&&row.kind==='document'&&row.status==='pending'&&row.requestedBy==='credential:'+credential.id))
+  const documents=async()=>(await get('employees/'+second.person+'?fields=documents',200,credential.token)).data.documents
+  assert.ok(!(await documents()).some(row=>row.id===pending.document))
+  await get('documents/'+pending.version+'/download',404,credential.token)
+  if(index===0)await apiBrowserProof(h,owner,fx.staff.hr.cookie,pending.id,undefined,docLevel.id,'documents.approval')
+  await h.api('self.decide',fx.staff.hr.cookie,{change:pending.id,decision:'approve',comment:'synthetic-willow-15107'})
+  const decision=await h.api('self-changes/'+pending.id,fx.staff.hr.cookie),published=(await documents()).find(row=>row.id===pending.document)
+  assert.equal(published.versions[0].publishedAt,decision.decision.at);assert.ok(published.versions[0].publishedAt>=published.versions[0].uploadedAt)
+  const beforePublication=new Date(published.versions[0].publishedAt-86400000).toISOString().slice(0,10)
+  assert.ok(!(await get('employees/'+second.person+'?fields=documents&asOf='+beforePublication,200,credential.token)).data.documents.some(row=>row.id===pending.document))
+  const download=await fetch(h.origin+'/api/willow/v1/documents/'+pending.version+'/download',{headers:{authorization:'Bearer '+credential.token}})
+  assert.equal(download.status,200);assert.equal(await download.text(),'synthetic-willow-14023')
+  const replacement={filename:'synthetic-willow-15108.txt',base64:Buffer.from('synthetic-willow-15109').toString('base64')}
+  await docWrite(credential.token,{document:pending.document,revision:'synthetic-willow-15110',file:replacement},409)
+  const revision=await docWrite(credential.token,{document:pending.document,revision:published.revision,file:replacement})
+  assert.equal((await documents()).find(row=>row.id===pending.document).versions.length,1)
+  await h.api('self.decide',fx.staff.hr.cookie,{change:revision.id,decision:'approve',comment:'synthetic-willow-15111'})
+  assert.equal((await documents()).find(row=>row.id===pending.document).versions.length,2)
+  const revised=await fetch(h.origin+'/api/willow/v1/documents/'+revision.version+'/download',{headers:{authorization:'Bearer '+credential.token}})
+  assert.equal(revised.status,200);assert.equal(await revised.text(),'synthetic-willow-15109')
+ }
+ // The new write transport also inherits pending OAuth and independent document approval.
+ const originalHR=(await api('levels')).assignments.filter(row=>row.member_id===fx.staff.hr.member).map(row=>row.level_id)
+ const accessAdmin=await apply({kind:'level',name:'synthetic-willow-15112',permissions:['access.admin']})
+ await apply({kind:'assignment',member:fx.staff.hr.member,levels:[...originalHR,accessAdmin.id]})
+ const delegated=await h.api('apiKey.issue',fx.staff.hr.cookie,{name:'synthetic-willow-15113',level:docLevel.id,writeScopes:['documents.approval'],credentialType:'oauth_client',redirectUri:'https://partner.example.test/callback',expiresAt:new Date(Date.now()+86400000).toISOString()})
+ assert.equal(delegated.approvalRequired,true)
+ const verifier='synthetic-willow-15114-'.repeat(3),{createHash}=await import('node:crypto')
+ const authorization=await api('oauth.authorize',{client:delegated.id,redirectUri:delegated.redirectUri,codeChallenge:createHash('sha256').update(verifier).digest('base64url'),codeChallengeMethod:'S256',state:'synthetic-willow-15115',reason:'synthetic-willow-15116'})
+ const exchange=await fetch(h.origin+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(delegated.id+':'+delegated.token).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'authorization_code',code:new URL(authorization.redirectUri).searchParams.get('code'),redirect_uri:delegated.redirectUri,code_verifier:verifier})})
+ assert.equal(exchange.status,200);const delegatedToken=(await exchange.json()).access_token
+ await docWrite(delegatedToken,docBody,401)
+ await h.api('apiKey.approve',fx.staff.hr.cookie,{credential:delegated.id,reason:'synthetic-willow-15117'},403)
+ await api('apiKey.approve',{credential:delegated.id,reason:'synthetic-willow-15118'})
+ const delegatedPending=await docWrite(delegatedToken,docBody)
+ await api('apiKey.revoke',{credential:delegated.id,reason:'synthetic-willow-15119'})
+ await h.api('self.decide',fx.staff.hr.cookie,{change:delegatedPending.id,decision:'approve',comment:'synthetic-willow-15120'},401)
+ await h.api('self.decide',fx.staff.hr.cookie,{change:delegatedPending.id,decision:'reject',comment:'synthetic-willow-15121'})
+ await docWrite(delegatedToken,docBody,401)
+ await apply({kind:'assignment',member:fx.staff.hr.member,levels:originalHR})
+ const stoppedDoc=await docWrite(docKey.token,docBody)
+ await api('apiKey.revoke',{credential:docKey.id})
+ await h.api('self.decide',fx.staff.hr.cookie,{change:stoppedDoc.id,decision:'approve',comment:'synthetic-willow-15122'},401)
+ console.log('API-002 document writes: PASS — keys and both OAuth grants, exact category and population, native pending bytes, human publication time, historical reads and revisions, delegated pending OAuth and independent approval, withdrawal and revoked-requester refusal')
+
  // An opted-in key proposes exactly one native personal field; it never changes records directly.
  const approvalLevel=await apply({kind:'level',name:'synthetic-willow-14012',permissions:[],otherFields:{phone:'approval'},scope:{kind:'group',dimensions:{location:[location.id]}}})
  const approvalKey=await api('apiKey.issue',{name:'synthetic-willow-14013',level:approvalLevel.id,writeScopes:['personal.approval'],expiresAt:new Date(Date.now()+86400000).toISOString()})
