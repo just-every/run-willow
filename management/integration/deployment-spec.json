@@ -514,7 +514,6 @@
     "MODELS_ENDPOINT": ""
   },
   "secretNames": [
-    "OWNER_EMAIL",
     "SESSION_SECRET",
     "SETUP_TOKEN"
   ],

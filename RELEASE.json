@@ -60,7 +60,13 @@
     "migrations/core/0071_goal_approval_modes.sql",
     "migrations/core/0072_goal_approval_selection.sql",
     "migrations/core/0073_engagement_theme_rights.sql",
-    "migrations/core/0074_review_corrections.sql"
+    "migrations/core/0074_review_corrections.sql",
+    "migrations/core/0075_api_write_scopes.sql",
+    "migrations/core/0076_webhooks.sql",
+    "migrations/core/0077_delegated_api_credentials.sql",
+    "migrations/core/0078_oauth_clients.sql",
+    "migrations/core/0079_credential_approval_authority.sql",
+    "migrations/core/0080_oauth_authorization_code.sql"
   ],
   "breaking": false,
   "agentUpdateInstructions": "Keep the existing project identity and private owner data. Retain an export made with the prior release, apply only forward migrations with rer setup, and configure hosted email before inviting members."

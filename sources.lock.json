@@ -792,7 +792,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "db6eb3c04fe9c75daabaf88a32dfd8dde9c5baf61ff6666a1171fd1adbde1c0c",
+      "sha256": "bbdd47bd16c0c5ce02e92cf51fcc8ebb171b7b5243819aa07c10888048ffa37f",
       "executable": false
     },
     "migrations/base-copies.json": {
@@ -1140,7 +1140,7 @@
       "executable": false
     },
     "packaging.json": {
-      "sha256": "c03be03d8578191c2edc291479390eab82c54d84d98273071c4b840f24d5aa61",
+      "sha256": "0e3bb6d45dbfbf80e2cf117157af4674372b5573a3cf5822aade732fd2d34251",
       "executable": false
     },
     "pnpm-lock.yaml": {
@@ -1452,7 +1452,7 @@
       "executable": false
     },
     "RELEASE.json": {
-      "sha256": "4541c90bd0e293c03fa0a85b314f2dbf8c2a494c812bbb7adb9a814f6b44cbdc",
+      "sha256": "d4243d8e1f1789c8353ad8bff9f7b1592a2eac0b9bd0b09cc9db812c992a20fa",
       "executable": false
     },
     "rer-project.json": {
@@ -1528,7 +1528,7 @@
       "executable": false
     },
     "scripts/delivery/base/packaging.json": {
-      "sha256": "c03be03d8578191c2edc291479390eab82c54d84d98273071c4b840f24d5aa61",
+      "sha256": "0e3bb6d45dbfbf80e2cf117157af4674372b5573a3cf5822aade732fd2d34251",
       "executable": false
     },
     "scripts/delivery/base/paths.mjs": {
