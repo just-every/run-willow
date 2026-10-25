@@ -684,7 +684,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "6c4b467fcdacc774cff207b181b513678d0b63aa865949e6bb70479364d20f53",
+      "sha256": "1d76f835e72c791f2639a374c17016c5311b549ad4fc481921e1aee7c805ac5b",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -696,7 +696,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "03bf39bc94d23bf95ac9b330f2b709ad42e3334667cec876c016f7fe9c856353",
+      "sha256": "a0906621cdbf3ae78d129a6089befc24be8c1fba733cfa7428a9d9b593a5cf5e",
       "executable": false
     },
     "base-copies.json": {
@@ -712,7 +712,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "c80a8f07960feaa2a0f76544f99f8981b056bba5c8da958a08824ef03683ca8c",
+      "sha256": "851acc60793e5c874e85ccf34e1f53d8d0dd7deb73b6c6cc94a82425780b6272",
       "executable": false
     },
     "DEMO.md": {
@@ -5040,7 +5040,7 @@
       "executable": false
     },
     "tests/willow/levels-settings.mjs": {
-      "sha256": "4466d5b4c27fd6c2a7991062dce009fd83a698007c5a2e6dd1e4ac093c1c0298",
+      "sha256": "ffaa9d0c9b2f782b240bef89d48c2a52a7289090a431d7dd5613dbcc7576efc4",
       "executable": false
     },
     "tests/willow/levels.mjs": {

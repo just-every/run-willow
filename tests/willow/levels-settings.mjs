@@ -461,6 +461,19 @@ async function authorizationCodeProof() {
  await apply({...plan,level:level.id,scope:{kind:'everyone'},documentCategories:{self:{},others:{[category.id]:'view',[extra.id]:'view'}}})
  await read(freshTokens.access_token,401)
  const widerRights=await issue();assert.equal(widerRights.approvalRequired,true);assert.equal(widerRights.approvedBy,null)
+ const extraDocument=await api('document.add',{person:person.person,category:extra.id,title:'synthetic-willow-14423',file:{filename:'synthetic-willow-14424.txt',base64:Buffer.from('synthetic-willow-14425').toString('base64')}})
+ const widerTokens=await exchange(widerRights,codeBody(await codeFor(widerRights)))
+ await read(widerTokens.access_token,401)
+ await h.api('apiKey.approve',approver.cookie,{credential:widerRights.id,reason:'synthetic-willow-14426'})
+ await read(widerTokens.access_token,200)
+ for(const path of ['/api/willow/people/'+person.person,'/api/willow/v1/employees?fields=documents','/api/willow/v1/employees/'+person.person+'?fields=documents','/api/willow/v1/documents','/api/willow/v1/documents/'+extraDocument.version+'/download']) {
+  const response=await fetch(h.origin+path,{headers:{authorization:'Bearer '+widerTokens.access_token,cookie:owner}})
+  assert.equal(response.status,200,path)
+  const content=await response.text()
+  if(path.endsWith('/download'))assert.equal(content,'synthetic-willow-14425')
+  else assert.ok(content.includes('synthetic-willow-14423'),'Fresh independent approval admits the newly carried document category')
+ }
+
  await assign(issuer,issuerPrior);await assign(approver,approverPrior)
  issuer.cookie=await h.signIn('managerb@example.com');approver.cookie=await h.signIn('ended@example.com')
  console.log('API-001 partner grants: PASS — S256, exact redirect, one-use code and refresh, preapproval refusal and same-token activation, every current document read door, independent carried-right approval, bound audit, immediate revocation, approver demotion and scope widening')

@@ -22,7 +22,7 @@ return 404. Keys cannot read individual EEO records or impersonate a person.
 
 `employment` contains the permission-filtered native employment and job history.
 `customFields`, `recordTables`, `leave` and `documents` select their native
-projections. Requesting a field never grants access to it.
+projections. Requesting a field never grants access to it. The published schemas describe typed custom-field definitions and validation rules, effective values and correction history, plus record-table columns, versions, current rows and removed-row history. Decimal values remain exact strings; boolean false and optional null values retain their native types. Table reports use the same typed values and current credential population.
 
 ## Pagination and incremental sync
 
