@@ -136,6 +136,10 @@ export async function giveAccess(env: Bindings, actor: Actor, input: Input, requ
   const member = await one(env, 'SELECT * FROM wl_members WHERE email = ?', email)
   insist(!member || !member.person_id || member.person_id === person.id, 'email_linked_elsewhere', 409)
   insist(!member || member.status !== 'active' || !member.person_id, 'already_has_access', 409)
+  if(policy&&!actor.owner&&member) {
+    const reason=member.id===actor.id?'delegation_target_fixed':await one(env,"SELECT 1 FROM wl_effective_permissions WHERE member_id=? AND permission='eeo.individual'",member.id)?'owner_only_delegation':null
+    if(reason){await auditRead(env,actor.id,'access.denied',actor.id,{reason});insist(false,reason,403)}
+  }
   const auth = operatorAuth(env), operator = await operatorByEmail(env, request, email)
   insist(!policy||operator?.role!=='owner','owner_access_fixed',409)
   const administrator=policy && !!await one(env,"SELECT 1 FROM wl_level_permissions p JOIN wl_levels s ON s.id=p.level_id WHERE p.level_id=? AND p.permission='people.manage' AND s.scope_kind='everyone'",policy.level_id)
