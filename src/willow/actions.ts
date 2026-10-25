@@ -1,3 +1,4 @@
+import { authorizeOAuth } from './api-credentials/oauth'
 import { correctReview } from './performance/corrections'
 import { approveWebhook, replayWebhook, runWebhooksNow, disableWebhook } from './webhooks'
 import { approveCredential,issueCredential,rotateCredential,revokeCredential } from './api-credentials'
@@ -98,7 +99,7 @@ export const actions: Record<string, Handler> = {
   'hold.place': placeHold, 'hold.release': releaseHold, 'hold.review': reviewHold,
   'erasure.request': openRequest, 'erasure.withdraw': withdrawRequest, 'erasure.confirm': confirmErasure, 'erasure.provider': recordProviderOutcome, 'retention.purge': confirmPurge,
   'self.request': proposeSelfChange,
-  'apiKey.approve':approveCredential,'apiKey.issue':issueCredential,'apiKey.rotate':rotateCredential,'apiKey.revoke':revokeCredential,
+  'oauth.authorize':authorizeOAuth,'apiKey.approve':approveCredential,'apiKey.issue':issueCredential,'apiKey.rotate':rotateCredential,'apiKey.revoke':revokeCredential,
   'self.decide': decideSelfChange,
   'self.reconcile': reconcileSelfChange,
   'dateAlert.define': defineAlert,

@@ -181,12 +181,12 @@ credentials report zero remaining authority.
 
 ## OAuth client credentials
 
-On API credentials, choose **OAuth client credentials**, a name, level and expiry.
+On API credentials, choose **OAuth client**, a name, level and expiry.
 The JSON twin is `apiKey.issue` with `credentialType: "oauth_client"` and the
 same name, level, expiry and optional `writeScopes` as a key. The returned `id`
 is the client ID and `token` is the one-time client secret. Listings return only
 metadata. Clients inherit the same delegated rights and scope ceiling and
-independent sensitive-right approval. A pending client cannot obtain tokens.
+independent sensitive-right approval. A pending client cannot obtain client-credentials tokens. Partner grants may issue inert tokens before approval; these return 401 on resource doors until independent approval, then the same token works.
 
 Send `POST /api/willow/oauth/token` with HTTP Basic authentication using the
 client ID and secret, and an `application/x-www-form-urlencoded` body containing
@@ -209,5 +209,39 @@ credential actions. Rotation changes both the client ID and secret and ends all
 old tokens at once; sensitive delegated rotation requires approval again.
 Issuer authority loss or level change permanently ends the client and its
 tokens. Client secrets and token hashes are excluded from native archives;
-restoring an archive requires fresh client issuance. Partner authorization-code
-grants remain unimplemented.
+restoring an archive requires fresh client issuance. Approver access changes also permanently end approved credentials and all child tokens.
+
+## Employer-installed partner authorization
+
+Register an exact HTTPS `redirectUri` when issuing an OAuth client. It is immutable;
+changing it requires fresh issuance. The client remains a non-person app. There is
+no employee impersonation or employee self-service grant.
+
+An owner or eligible access administrator explicitly installs the partner through
+`POST /api/willow/oauth.authorize` with their ordinary session and same-origin
+header. The JSON body names `client`, `redirectUri`, `codeChallenge`,
+`codeChallengeMethod: "S256"`, `state` and an audited `reason`. The administrator
+must currently hold all carried rights and scope. The response returns a private
+`redirectUri` containing the code and unchanged state; Willow sends no outbound
+request. The integrating tool validates state and handles the callback.
+
+Exchange the code at the existing token endpoint with HTTP Basic client authentication,
+`grant_type=authorization_code`, `code`, exact `redirect_uri` and `code_verifier`.
+Only S256 proof keys are supported. Codes expire within five minutes and are consumed
+atomically once. The response also supplies a refresh token. Exchange it with
+`grant_type=refresh_token` and `refresh_token`; each successful refresh consumes
+and replaces it. Refresh tokens expire within 30 days and never beyond client expiry.
+A repeated, mismatched or expired code or refresh is refused. Scope is fixed to
+`level.read` and the explicit issuance write scopes throughout every grant.
+
+Delegated document reads require independent approval by an owner or eligible
+access administrator who holds every carried right. Requesters never approve
+their own credential. Approval audit receipts name requester, approver, reason,
+read and write rights, document categories, structural scope and level revision.
+The approver can withdraw approval with `apiKey.revoke`; no already issued token
+continues to read. Any change to approver authority permanently ends the approval.
+Changing the level, including widening scope or rights, ends existing credentials;
+new issuance stays inactive until fresh approval. Secrets, codes and all token
+custody are excluded from archives. A restore accepts none of the source authority.
+A conventional partner browser consent endpoint and further write transports remain
+in API-001's Gap.

@@ -191,7 +191,7 @@ export async function delegatedCredentialBrowserProof(h,owner,delegate,second,le
    }
    assert.equal((await issuer.goto(h.origin+'/app/api-credentials')).status(),200)
    const form=issuer.locator('form[action="/app/do/apiKey.issue"]'),name='synthetic-willow-'+(14130+index+(credentialType==='key'?0:100))
-   await form.locator('[name="credentialType"]').selectOption(credentialType);await form.locator('[name="name"]').fill(name);await form.locator('[name="level"]').selectOption(level);await form.locator('[name="expiresAt"]').fill(expiresAt)
+   await form.locator('[name="credentialType"]').selectOption(credentialType);if(credentialType==='oauth_client')await form.locator('[name="redirectUri"]').fill('https://partner.example.test/callback');await form.locator('[name="name"]').fill(name);await form.locator('[name="level"]').selectOption(level);await form.locator('[name="expiresAt"]').fill(expiresAt)
    await capture(issuer,'delegate-issue')
    await Promise.all([issuer.waitForResponse(response=>new URL(response.url()).pathname==='/app/do/apiKey.issue'),form.getByRole('button').click()])
    const token=await issuer.locator('#issued-api-token').textContent()

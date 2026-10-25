@@ -124,7 +124,7 @@ async function apiResponse(env: Bindings, actor: Actor, request: Request, url: U
     const action = actions[path]
     if (!action) throw new WillowError('not_found', 404)
     const result = await action(env, actor, await Input.from(request), request)
-    if (path === 'apiKey.issue' || path === 'apiKey.rotate') return json(result)
+    if (path === 'apiKey.issue' || path === 'apiKey.rotate' || path === 'oauth.authorize') return json(result)
     await reconcileRecipients(env,actor.today)
     const notices = await notifyAction(env, path, result)
     return json(notices ? { ...(result as any), notices } : result)

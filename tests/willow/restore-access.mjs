@@ -118,10 +118,18 @@ try {
   const credentialReview = await api('level.preview', owner, { kind: 'level', name: 'synthetic-willow-restore-credential', permissions: [], scope: { kind: 'everyone' } })
   const credentialLevel = await api('level.apply', owner, { review: credentialReview.id })
   const credential = await api('apiKey.issue', owner, { name: 'synthetic-willow-restore-key', level: credentialLevel.id, expiresAt: new Date(Date.now() + 86400000).toISOString() })
-  const oauthClient=await api('apiKey.issue',owner,{name:'synthetic-willow-restore-oauth',level:credentialLevel.id,expiresAt:new Date(Date.now()+86400000).toISOString(),credentialType:'oauth_client'})
+  const oauthClient=await api('apiKey.issue',owner,{name:'synthetic-willow-restore-oauth',level:credentialLevel.id,expiresAt:new Date(Date.now()+86400000).toISOString(),credentialType:'oauth_client',redirectUri:'https://partner.example.test/callback'})
   const exchange=base=>fetch(base+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(oauthClient.id+':'+oauthClient.token).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials'})
   const oauthResponse=await exchange(origin);assert.equal(oauthResponse.status,200)
   const oauthToken=(await oauthResponse.json()).access_token
+  const verifier='synthetic-willow-restore-proof-'.repeat(3)
+  const {createHash}=await import('node:crypto')
+  const consent=await api('oauth.authorize',owner,{client:oauthClient.id,redirectUri:'https://partner.example.test/callback',codeChallenge:createHash('sha256').update(verifier).digest('base64url'),codeChallengeMethod:'S256',state:'synthetic-willow-restore-state',reason:'synthetic-willow-restore-consent'})
+  const code=new URL(consent.redirectUri).searchParams.get('code')
+  const partnerResponse=await fetch(origin+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(oauthClient.id+':'+oauthClient.token).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'authorization_code',code,redirect_uri:'https://partner.example.test/callback',code_verifier:verifier})})
+  assert.equal(partnerResponse.status,200)
+  const partner=await partnerResponse.json()
+
   assert.equal((await fetch(origin+'/api/willow/people',{headers:{authorization:'Bearer '+oauthToken}})).status,200)
   assert.ok(credential.token)
   const credentialRead = await fetch(origin + '/api/willow/people', { headers: { authorization: `Bearer ${credential.token}` } })
@@ -168,11 +176,11 @@ try {
   const header = records[0]
   assert.ok(!data.includes(Buffer.from(webhook.secret)),'Webhook signing authority never enters archive bytes')
   assert.ok(!data.includes(Buffer.from(credential.token)), 'Archive bytes never contain the generated bearer token')
-  for(const secret of [oauthClient.token,oauthToken])assert.ok(!data.includes(Buffer.from(secret)),'OAuth authority never enters archive bytes')
-  for (const table of ['wl_api_credentials', 'wl_api_credential_limits','wl_oauth_tokens','wl_webhooks','wl_webhook_deliveries']) assert.ok(!header.tables.some(item => item.name === table), `${table} is excluded from the archive inventory`)
+  for(const secret of [oauthClient.token,oauthToken,code,partner.access_token,partner.refresh_token])assert.ok(!data.includes(Buffer.from(secret)),'OAuth authority never enters archive bytes')
+  for (const table of ['wl_api_credentials', 'wl_api_credential_limits','wl_oauth_tokens','wl_oauth_codes','wl_oauth_refresh','wl_webhooks','wl_webhook_deliveries']) assert.ok(!header.tables.some(item => item.name === table), `${table} is excluded from the archive inventory`)
   assert.ok(!header.tables.some(t => /^oa_/.test(t.name)), 'auth credentials, sessions and tokens excluded')
   const items = records.filter(r => r.kind === 'part').flatMap(r => r.items)
-  assert.ok(!items.some(item => ['wl_api_credentials', 'wl_api_credential_limits','wl_oauth_tokens','wl_webhooks','wl_webhook_deliveries'].includes(item.table)), 'Credential custody and limits have no archived rows')
+  assert.ok(!items.some(item => ['wl_api_credentials', 'wl_api_credential_limits','wl_oauth_tokens','wl_oauth_codes','wl_oauth_refresh','wl_webhooks','wl_webhook_deliveries'].includes(item.table)), 'Credential custody and limits have no archived rows')
   for (const table of ['wl_eeo_answers', 'wl_eeo_recorded', 'wl_contractor_status']) assert.ok(items.some(item => item.table === table), `EEO-001: ${table} is in the owner archive`)
   // ROLE-001: portable authority is the exact union of direct and assigned grants.
   for (const member of members.filter(member => !member.owner)) {
@@ -237,6 +245,9 @@ try {
   const after = apiAt(restored)
   assert.equal((await fetch(restored + '/api/willow/people', { headers: { authorization: `Bearer ${credential.token}` } })).status, 401, 'A source bearer credential cannot authenticate after restore')
   assert.equal((await exchange(restored)).status,401,'Source OAuth client cannot exchange after restore')
+  assert.equal((await fetch(restored+'/api/willow/people',{headers:{authorization:'Bearer '+partner.access_token}})).status,401,'Source partner access token cannot read after restore')
+  assert.equal((await fetch(restored+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(oauthClient.id+':'+oauthClient.token).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:partner.refresh_token})})).status,401,'Source partner refresh cannot exchange after restore')
+
   assert.equal((await fetch(restored+'/api/willow/people',{headers:{authorization:'Bearer '+oauthToken}})).status,401,'Source OAuth token cannot read after restore')
   assert.deepEqual(await after('api-credentials', newOwner), [], 'Restored owner credential metadata starts empty')
   await after('me', s.employee.cookie, undefined, 401)

@@ -105,6 +105,7 @@ export async function settingsSelectionProof(h, owner, fx) {
 }
 
 export async function apiKeyProof(h, owner, fx) {
+ await authorizationCodeProof()
  await oauthClientProof(h,owner,fx)
  await delegatedCredentialProof(h,owner,fx)
  const api = (path, body, status) => h.api(path, owner, body, status)
@@ -230,7 +231,8 @@ async function delegatedCredentialProof(h,owner,fx) {
  await assign(second,[administration.id,privateLevel.id])
  await h.api('apiKey.approve',second.cookie,{credential:rotated.id,reason:'synthetic-willow-14116'})
  await bearer(rotated.token)
- await h.api('apiKey.revoke',second.cookie,{credential:rotated.id},403)
+ await h.api('apiKey.revoke',second.cookie,{credential:rotated.id,reason:'synthetic-willow-14149'})
+ await bearer(rotated.token,'/api/willow/people',401)
  const browser=await import('./levels-settings-browser.mjs')
  await browser.delegatedCredentialBrowserProof(h,owner,delegate,second,privateLevel.id,expiresAt)
  // Loss and restoration without any intervening key request cannot resurrect it.
@@ -317,7 +319,7 @@ async function oauthClientProof(h,owner,fx) {
  assert.equal(client.credentialType,'oauth_client')
  await read(client.token,'/api/willow/people',401)
  await exchange(client,401,undefined,'synthetic-willow-14307')
- assert.equal((await exchange(client,400,'grant_type=authorization_code')).error,'unsupported_grant_type')
+ assert.equal((await exchange(client,400,'grant_type=authorization_code')).error,'invalid_grant')
  assert.equal((await exchange(client,400,'grant_type=client_credentials&scope=people.write')).error,'invalid_scope')
  const token=await exchange(client)
  assert.equal(token.token_type,'Bearer');assert.equal(token.scope,'level.read')
@@ -371,4 +373,96 @@ async function oauthClientProof(h,owner,fx) {
   assert.ok(!JSON.stringify(listing).includes(secret)&&!JSON.stringify(audit).includes(secret))
  }
  console.log('API-001 OAuth clients: PASS — bounded non-person reads, delegated ceiling and approval, one-time secret, client rotation and revocation, permanent authority loss, expiry, shared rate limit and value-free audit')
+}
+
+async function authorizationCodeProof() {
+ const {harness}=await import('./harness.mjs'),{fixture}=await import('./regression-fixture.mjs')
+ const h=await harness()
+ try {
+ assert.equal((await h.raw('/auth/bootstrap',{body:{token:h.vars.SETUP_TOKEN,displayName:'synthetic-willow-14421'}})).status,303)
+ const owner=await h.signIn(h.vars.OWNER_EMAIL)
+ assert.equal((await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})).status,303)
+ const fx=await fixture(h,owner)
+ const api=(path,body,status)=>h.api(path,owner,body,status)
+ const apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
+ const expiresAt=new Date(Date.now()+86400000).toISOString(),redirectUri='https://partner.example.test/callback'
+ const location=await api('location.create',{name:'synthetic-willow-14400',timezone:'UTC'})
+ const person=await fx.join('synthetic-willow-14401',{locationId:location.id})
+ const category=await api('category.create',{name:'synthetic-willow-14402'})
+ const document=await api('document.add',{person:person.person,category:category.id,title:'synthetic-willow-14403',file:{filename:'synthetic-willow-14404.txt',base64:Buffer.from('synthetic-willow-14405').toString('base64')}})
+ const administration=await apply({kind:'level',name:'synthetic-willow-14406',permissions:['people.manage','access.admin']})
+ const plan={kind:'level',name:'synthetic-willow-14407',permissions:[],documentCategories:{self:{},others:{[category.id]:'view'}},scope:{kind:'group',dimensions:{location:[location.id]}}}
+ const level=await apply(plan),issuer=fx.staff.managerb,approver=fx.staff.ended
+ const originals=await api('levels'),prior=member=>originals.assignments.filter(row=>row.member_id===member.member).map(row=>row.level_id)
+ const issuerPrior=prior(issuer),approverPrior=prior(approver)
+ const assign=(member,levels)=>apply({kind:'assignment',member:member.member,levels})
+ await assign(issuer,[administration.id,level.id]);await assign(approver,[administration.id])
+ issuer.cookie=await h.signIn('managerb@example.com');approver.cookie=await h.signIn('ended@example.com')
+ const issue=async(type='oauth_client')=>h.api('apiKey.issue',issuer.cookie,{name:'synthetic-willow-14408',level:level.id,expiresAt,credentialType:type,...(type==='oauth_client'?{redirectUri}:{})})
+ const exchange=async(client,body,status=200)=>{
+  const res=await fetch(h.origin+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(client.id+':'+client.token).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)})
+  assert.equal(res.status,status,'partner token exchange');return res.json()
+ }
+ const verifier='synthetic-willow-14409-'.repeat(3)
+ const {createHash}=await import('node:crypto'),codeChallenge=createHash('sha256').update(verifier).digest('base64url')
+ const authorize=async(client,changes={},cookie=owner,status=200)=>h.api('oauth.authorize',cookie,{client:client.id,redirectUri,codeChallenge,codeChallengeMethod:'S256',state:'synthetic-willow-14410',reason:'synthetic-willow-14411',...changes},status)
+ const codeFor=async client=>new URL((await authorize(client)).redirectUri).searchParams.get('code')
+ const codeBody=code=>({grant_type:'authorization_code',code,redirect_uri:redirectUri,code_verifier:verifier})
+ const doors=['/api/willow/people/'+person.person,'/api/willow/v1/employees?fields=documents','/api/willow/v1/employees/'+person.person+'?fields=documents','/api/willow/v1/documents','/api/willow/v1/documents/'+document.version+'/download']
+ const read=async(token,status)=>{
+  for(const path of doors){const res=await fetch(h.origin+path,{headers:{authorization:'Bearer '+token,cookie:owner}});assert.equal(res.status,status,path);const body=await res.text();if(status!==200)assert.ok(!body.includes('synthetic-willow-14405')&&!body.includes('synthetic-willow-14403'));else if(path.endsWith('/download'))assert.equal(body,'synthetic-willow-14405');else assert.ok(body.includes('synthetic-willow-14403'),path)}
+ }
+ const client=await issue(),key=await issue('key')
+ await authorize(client,{},fx.staff.employee.cookie,403)
+ await authorize(client,{redirectUri:'https://other.example.test/callback' },owner,401)
+ await authorize(client,{codeChallengeMethod:'plain'},owner,400)
+ await exchange(client,{grant_type:'client_credentials'},401)
+ const code=await codeFor(client),body=codeBody(code)
+ await exchange(client,{...body,code_verifier:'synthetic-willow-14412'.repeat(3)},400)
+ await exchange(client,{...body,redirect_uri:'https://other.example.test/callback'},400)
+ const tokens=await exchange(client,body)
+ await exchange(client,body,400)
+ const refreshed=await exchange(client,{grant_type:'refresh_token',refresh_token:tokens.refresh_token})
+ await exchange(client,{grant_type:'refresh_token',refresh_token:tokens.refresh_token},400)
+ for(const token of [key.token,tokens.access_token,refreshed.access_token])await read(token,401)
+ for(const credential of [key,client]) {
+  await h.api('apiKey.approve',issuer.cookie,{credential:credential.id,reason:'synthetic-willow-14413'},403)
+  await h.api('apiKey.approve',approver.cookie,{credential:credential.id,reason:'synthetic-willow-14414'},403)
+ }
+ await assign(approver,[administration.id,level.id])
+ for(const credential of [key,client])await h.api('apiKey.approve',approver.cookie,{credential:credential.id,reason:'synthetic-willow-14415'})
+ for(const token of [key.token,tokens.access_token,refreshed.access_token])await read(token,200)
+ const active=await exchange(client,{grant_type:'refresh_token',refresh_token:refreshed.refresh_token});await read(active.access_token,200)
+ const clientCredentials=await exchange(client,{grant_type:'client_credentials'});await read(clientCredentials.access_token,200)
+ const browser=await import('./levels-settings-browser.mjs');await browser.delegatedCredentialBrowserProof(h,owner,issuer,approver,level.id,expiresAt)
+ const audit=await api('audit')
+ for(const credential of [key,client]){
+  const receipt=JSON.parse(audit.find(row=>row.action==='apiKey.approve'&&row.subject===credential.id).detail)
+  assert.equal(receipt.requester,issuer.member);assert.equal(receipt.approver,approver.member);assert.equal(receipt.reason,'synthetic-willow-14415');assert.deepEqual(receipt.scope,plan.scope);assert.equal(receipt.documentCategories[category.id],'view')
+ }
+ for(const secret of [key.token,client.token,code,...Object.values(tokens),active.access_token,active.refresh_token].filter(value=>typeof value==='string'&&value.startsWith('willow_')))assert.ok(!JSON.stringify(audit).includes(secret)&&!JSON.stringify(await api('api-credentials')).includes(secret))
+ // Immediate approval withdrawal also ends already issued access and refresh tokens.
+ await h.api('apiKey.revoke',approver.cookie,{credential:client.id,reason:'synthetic-willow-14416'})
+ await read(active.access_token,401);await read(clientCredentials.access_token,401);await exchange(client,{grant_type:'refresh_token',refresh_token:active.refresh_token},401)
+ const demoted=await issue();await h.api('apiKey.approve',approver.cookie,{credential:demoted.id,reason:'synthetic-willow-14417'})
+ const demotedToken=await exchange(demoted,codeBody(await codeFor(demoted)));await read(demotedToken.access_token,200)
+ await assign(approver,[administration.id]);await read(key.token,401);await read(demotedToken.access_token,401)
+ await exchange(demoted,{grant_type:'refresh_token',refresh_token:demotedToken.refresh_token},401)
+ await assign(approver,[administration.id,level.id]);await read(key.token,401);await read(demotedToken.access_token,401)
+ const widenedKey=await issue('key');await h.api('apiKey.approve',approver.cookie,{credential:widenedKey.id,reason:'synthetic-willow-14422'});await read(widenedKey.token,200)
+ const widened=await issue();await h.api('apiKey.approve',approver.cookie,{credential:widened.id,reason:'synthetic-willow-14418'})
+ const widenedToken=await exchange(widened,codeBody(await codeFor(widened)))
+ await apply({...plan,level:level.id,scope:{kind:'everyone'}})
+ await read(widenedToken.access_token,401);await read(widenedKey.token,401)
+ const fresh=await issue();assert.equal(fresh.approvedBy,null);assert.equal(fresh.approvalRequired,true)
+ const freshTokens=await exchange(fresh,codeBody(await codeFor(fresh)));await read(freshTokens.access_token,401)
+ await h.api('apiKey.approve',approver.cookie,{credential:fresh.id,reason:'synthetic-willow-14419'});await read(freshTokens.access_token,200)
+ const extra=await api('category.create',{name:'synthetic-willow-14420'})
+ await apply({...plan,level:level.id,scope:{kind:'everyone'},documentCategories:{self:{},others:{[category.id]:'view',[extra.id]:'view'}}})
+ await read(freshTokens.access_token,401)
+ const widerRights=await issue();assert.equal(widerRights.approvalRequired,true);assert.equal(widerRights.approvedBy,null)
+ await assign(issuer,issuerPrior);await assign(approver,approverPrior)
+ issuer.cookie=await h.signIn('managerb@example.com');approver.cookie=await h.signIn('ended@example.com')
+ console.log('API-001 partner grants: PASS — S256, exact redirect, one-use code and refresh, preapproval refusal and same-token activation, every current document read door, independent carried-right approval, bound audit, immediate revocation, approver demotion and scope widening')
+ }finally{await h.close()}
 }

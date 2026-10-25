@@ -33,15 +33,16 @@ export function credentialDoor(request:Request):string|null {
  return CREDENTIAL_API_DOORS.find(([pattern])=>pattern.test(path))?.[1]??null
 }
 const sourceSnapshot=async(env:Bindings)=>(await one<{seq:number}>(env,"SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download'"))!.seq
-const VALID=`c.revoked_at IS NULL AND c.expires_at>? AND l.version=c.level_version
- AND m.status='active' AND o.status='active' AND (o.role='owner' OR (EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=m.id AND permission='access.admin') AND EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=m.id AND permission='people.manage'))) AND (c.needs_approval=0 OR c.approved_by IS NOT NULL) AND o.version=c.issuer_version AND lower(o.email)=m.email`
+const BASE_VALID=`c.revoked_at IS NULL AND c.expires_at>? AND l.version=c.level_version
+ AND m.status='active' AND o.status='active' AND (o.role='owner' OR (EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=m.id AND permission='access.admin') AND EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=m.id AND permission='people.manage'))) AND o.version=c.issuer_version AND lower(o.email)=m.email`
+const VALID=BASE_VALID+` AND (c.needs_approval=0 OR (c.approved_by IS NOT NULL AND EXISTS(SELECT 1 FROM wl_members a JOIN oa_operators ao ON ao.id=c.approver_operator AND lower(ao.email)=a.email WHERE a.id=c.approved_by AND a.status='active' AND ao.status='active' AND ao.version=c.approver_version AND (ao.role='owner' OR (EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=a.id AND permission='access.admin') AND EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=a.id AND permission='people.manage'))))))`
 const ADMISSION=`FROM wl_api_credentials c JOIN wl_levels l ON l.id=c.level_id JOIN wl_members m ON m.id=c.issued_by JOIN oa_operators o ON o.id=c.issuer_operator`
 async function invalid(env:Bindings,id:string|null):Promise<never> {
  if(id)await auditRead(env,`credential:${id}`,'apiKey.denied.read',id,{outcome:'invalid'})
  throw new WillowError('invalid_credential',401)
 }
-export async function credentialValid(env:Bindings,id:string) {
- return !!await one(env,`SELECT c.id ${ADMISSION} WHERE c.id=? AND ${VALID}`,id,now())
+export async function credentialValid(env:Bindings,id:string,allowPending=false) {
+ return !!await one(env,`SELECT c.id ${ADMISSION} WHERE c.id=? AND ${allowPending?BASE_VALID:VALID}`,id,now())
 }
 async function permanentlyInvalidate(env:Bindings,id:string) {
  // The write is conditional so a concurrent owner revocation retains its original cause.
@@ -72,11 +73,11 @@ export async function credentialActor(env:Bindings,request:Request):Promise<Acto
 }
 
 /** Token exchange and resource calls share one client rate budget and audit identity. */
-export async function recordCredentialUse(env:Bindings,row:CredentialRow,request:Request,door:string|null) {
+export async function recordCredentialUse(env:Bindings,row:CredentialRow,request:Request,door:string|null,allowPending=false) {
  const snapshot=await sourceSnapshot(env),time=now(),window=Math.floor(time/60_000)
  try {
   await commit(env,[
-   guard(env,'invalid_credential',`EXISTS(SELECT 1 ${ADMISSION} WHERE c.id=? AND ${VALID})`,row.id,time),
+   guard(env,'invalid_credential',`EXISTS(SELECT 1 ${ADMISSION} WHERE c.id=? AND ${allowPending?BASE_VALID:VALID})`,row.id,time),
    guard(env,'credential_source_changed',"(SELECT COALESCE(MAX(seq),0) FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download')=?",snapshot),
    stmt(env,`INSERT INTO wl_api_credential_limits(credential_id,window,count) VALUES(?,?,1) ON CONFLICT(credential_id) DO UPDATE SET window=excluded.window,count=CASE WHEN wl_api_credential_limits.window=excluded.window THEN wl_api_credential_limits.count+1 ELSE 1 END`,row.id,window),
    stmt(env,'UPDATE wl_api_credentials SET last_used_at=? WHERE id=?',time,row.id),
@@ -114,3 +115,5 @@ export function credentialFence(env:Bindings,actor:Actor) {
  insist(context,'invalid_credential',401)
  return guard(env,'access_changed',`EXISTS(SELECT 1 ${ADMISSION} WHERE c.id=? AND ${VALID}) AND (SELECT COALESCE(MAX(seq),0) FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download')=?`,context.id,now(),context.snapshot)
 }
+
+export const credentialGrantFence=(env:Bindings,id:string,allowPending=false)=>guard(env,'access_changed',`EXISTS(SELECT 1 ${ADMISSION} WHERE c.id=? AND ${allowPending?BASE_VALID:VALID})`,id,now())
