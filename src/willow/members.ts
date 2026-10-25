@@ -146,8 +146,12 @@ export async function giveAccess(env: Bindings, actor: Actor, input: Input, requ
   const role=administrator?'admin':'member'
   if (!operator) await auth.invite(request, { email, displayName: name, role, returnTo: '/app' })
   else if (operator.status === 'inactive') await auth.setOperatorStatus(request, operator.id, 'active')
+  const target=await one(env,'SELECT id,version,role FROM oa_operators WHERE lower(email)=?',email)
+  insist(target,'access_changed',409)
+  insist(!policy||target.role!=='owner','owner_access_fixed',409)
   const id = member?.id ?? newId()
   await commit(env, [
+    guard(env,'access_changed','EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND role=?)',target.id,target.version,target.role),
     levelSessionFence(env,actor),
     guard(env,'access_changed','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',snapshot),
     ...(currentOnly?[guard(env,'not_current_employee',activeSql,person.id,actor.today,actor.today)]:[]),
