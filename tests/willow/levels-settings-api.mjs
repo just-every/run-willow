@@ -18,6 +18,25 @@ export async function apiRosterProof(h,owner,fx) {
  const file={filename:'synthetic-willow-14022.txt',base64:Buffer.from('synthetic-willow-14023').toString('base64')}
  const document=await api('document.add',{person:second.person,category:category.id,title:'synthetic-willow-14024',file})
  const outsideDocument=await api('document.add',{person:distant.person,category:category.id,title:'synthetic-willow-14025',file})
+ // Populate every native field type and table history before validating the published transport.
+ const typed=[['text',{maxLength:80},'synthetic-willow-14030'],['number',{min:'0',max:'100'},'12.34567890123456789'],['date',{},day(-1)],['boolean',{},false],['select',{options:[{value:'one',label:'synthetic-willow-14031'}]},'one']]
+ const customValues={}
+ for(const [index,[type,validation,value]] of typed.entries()) {
+  const field='synthetic_willow_'+(14030+index)
+  await api('customField.define',{definition:{key:field,label:field,classification:'general',type,validation,effectiveFrom:day(-30),required:false,employeeRead:false,managerRead:false,retired:false}})
+  customValues[field]=value
+ }
+ const privateField='synthetic_willow_14040'
+ await api('customField.define',{definition:{key:privateField,label:privateField,classification:'hr',type:'text',validation:{maxLength:80},effectiveFrom:day(-30),required:false,employeeRead:false,managerRead:false,retired:false}})
+ await api('customField.write',{person:second.person,effectiveFrom:day(-10),values:{...customValues,[privateField]:'synthetic-willow-14041'}})
+ await api('customField.write',{person:second.person,effectiveFrom:day(-2),values:{synthetic_willow_14030:'synthetic-willow-14042'}})
+ const columns=typed.map(([type,validation],index)=>({key:'col_'+index,label:'synthetic-willow-'+(14050+index),type,validation,required:false}))
+ const table=await api('recordTable.define',{key:'synthetic_willow_14050',classification:'general',label:'synthetic-willow-14050',columns})
+ const tableValues=Object.fromEntries(typed.map(([, ,value],index)=>['col_'+index,value]))
+ const tableRow=await api('recordRow.write',{person:second.person,table:table.id,effectiveFrom:day(-10),values:tableValues})
+ await api('recordRow.write',{person:second.person,table:table.id,row:tableRow.id,effectiveFrom:day(-2),remove:true})
+ await api('recordRow.write',{person:second.person,table:table.id,effectiveFrom:day(-1),values:tableValues})
+ await api('recordRow.write',{person:distant.person,table:table.id,values:{...tableValues,col_0:'synthetic-willow-14055'}})
  const plan={kind:'level',name:'synthetic-willow-14005',permissions:['people.manage','leave.manage'],documentCategories:{self:{},others:{[category.id]:'view'}},scope:{kind:'group',dimensions:{location:[location.id]}}}
  const level=await apply(plan)
  const key=await api('apiKey.issue',{name:'synthetic-willow-14006',level:level.id,expiresAt:new Date(Date.now()+86400000).toISOString()})
@@ -84,6 +103,24 @@ export async function apiRosterProof(h,owner,fx) {
  assert.equal(reset.resetRequired,true)
  assert.ok(!JSON.stringify(reset.data).includes(near.person))
  for(const path of ['organization','custom-fields','tables','balances','requests','calendar','documents','access-level', ['tables','education'].join('/')])await get(path)
+ const customMetadata=await get('custom-fields')
+ assert.equal(customMetadata.data.filter(field=>Object.hasOwn(customValues,field.key)).length,5)
+ assert.ok(!JSON.stringify(customMetadata).includes(privateField))
+ const populated=(await get('employees/'+second.person+'?fields=customFields,recordTables')).data
+ assert.equal(populated.customFields.fields.length,5)
+ for(const field of populated.customFields.fields)assert.equal(field.value,field.key==='synthetic_willow_14030'?'synthetic-willow-14042':customValues[field.key])
+ assert.equal(populated.customFields.fields.find(field=>field.key==='synthetic_willow_14030').history.length,2)
+ assert.ok(!JSON.stringify(populated).includes('synthetic-willow-14041'))
+ const projected=populated.recordTables.tables.find(item=>item.id===table.id)
+ assert.deepEqual(projected.rows[0].values,tableValues)
+ assert.equal(projected.formerRows[0].history.length,2)
+ const tableReport=await get('tables/'+table.key)
+ assert.deepEqual(tableReport.data.rows.map(row=>row.personId),[second.person])
+ assert.deepEqual(tableReport.data.rows[0].values,tableValues)
+ assert.ok(!JSON.stringify(tableReport).includes('synthetic-willow-14055'))
+ const historical=(await get('employees/'+second.person+'?fields=customFields,recordTables&asOf='+day(-5))).data
+ assert.equal(historical.customFields.fields.find(field=>field.key==='synthetic_willow_14030').value,customValues.synthetic_willow_14030)
+ assert.equal(historical.recordTables.tables.find(item=>item.id===table.id).rows[0].id,tableRow.id)
  assert.ok((await get('balances')).data.some(row=>row.id===account&&Number.isInteger(row.balanceMinutes)))
  assert.ok((await get('requests')).data.some(row=>row.id===request.id))
  assert.ok((await get('calendar')).data.some(row=>row.personId===second.person&&row.startDate===day(2)))

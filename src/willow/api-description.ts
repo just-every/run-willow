@@ -1,3 +1,4 @@
+import { customFieldSchema, customFieldProjection, recordTableSchema, recordTableProjection, recordTableReport } from './api-record-schemas'
 // OpenAPI 3.1 uses JSON Schema for the public versioned transport.
 const reference={type:['object','null'],required:['id'],properties:{id:{type:'string'},name:{type:'string'}},additionalProperties:false}
 const nullableText={type:['string','null']}
@@ -12,7 +13,7 @@ const employee={type:'object',required:['id'],properties:{
  id:{type:'string'},name:{type:'string'},legalName:{type:'string'},preferredName:{type:['string','null']},workEmail:{type:['string','null']},revision:{type:'string'},asOf:{type:'string'},status:{enum:['active','upcoming','former','none']},selectedPeriod:{type:['string','null']},
  current:{type:['object','null'],properties:{id:{type:'string'},effectiveFrom:{type:'string'},scheduled:{type:'boolean'},jobTitle:{type:['string','null']},department:reference,location:reference,manager:reference,fte:{type:['number','null']},schedule},additionalProperties:false},
  employment,employeeNumber:{type:['string','null']},private:{type:'object',properties:{phone:{type:['string','null']},personal_email:{type:['string','null']},address:{type:['string','null']},date_of_birth:{type:['string','null']},emergency_contact:{type:['string','null']}},additionalProperties:false},
- pay:{type:'boolean'},compensation:{type:'object'},compensationFields:{type:'object',additionalProperties:{type:'boolean'}},compensationRecords:{type:'object'},jobFields:{type:'object',additionalProperties:{type:'boolean'}},customFields:{type:'object'},recordTables:{type:'object'},leave:{type:['object','array']},cases:{type:'array'},documents:{type:'array'},facets:{type:'array',items:{type:'string'}},withheld:{type:'array',items:{type:'string'}},
+ pay:{type:'boolean'},compensation:{type:'object'},compensationFields:{type:'object',additionalProperties:{type:'boolean'}},compensationRecords:{type:'object'},jobFields:{type:'object',additionalProperties:{type:'boolean'}},customFields:customFieldProjection,recordTables:recordTableProjection,leave:{type:['object','array']},cases:{type:'array'},documents:{type:'array'},facets:{type:'array',items:{type:'string'}},withheld:{type:'array',items:{type:'string'}},
 },additionalProperties:false}
 const page=(item:unknown)=>({type:'object',required:['apiVersion','data','nextCursor','syncCursor','resetRequired'],properties:{apiVersion:{const:'1'},data:{type:'array',items:item},nextCursor:{type:['string','null']},syncCursor:{type:['string','null']},resetRequired:{type:'boolean'}},additionalProperties:false})
 const error={type:'object',required:['error'],properties:{error:{type:'string'},detail:{}},additionalProperties:false}
@@ -37,9 +38,11 @@ export const apiDescription={
   '/changes':{post:{security:[{bearerKey:[]}],requestBody:{required:true,content:content({type:'object',required:['person','field','value'],properties:{person:{type:'string'},field:{enum:['legalName','preferredName','personal_email','phone','address','date_of_birth','emergency_contact']},value:{type:['string','null']}},additionalProperties:false})},responses:responses({type:'object',required:['apiVersion','data'],properties:{apiVersion:{const:'1'},data:{type:'object',required:['id','status'],properties:{id:{type:'string'},status:{const:'pending'}},additionalProperties:false}},additionalProperties:false})}},
   '/employees':{get:operation({$ref:'#/components/schemas/EmployeePage'})},
   '/employees/{id}':{get:operation({$ref:'#/components/schemas/EmployeeResponse'},[{name:'id',in:'path',required:true,schema:{type:'string'}}])},
-  ...Object.fromEntries(['organization','custom-fields','tables'].map(path=>['/'+path,{get:operation({$ref:'#/components/schemas/RecordPage'})}])),
+  '/custom-fields':{get:operation(page(customFieldSchema))},
+  '/tables':{get:operation(page(recordTableSchema))},
+  ...Object.fromEntries(['organization'].map(path=>['/'+path,{get:operation({$ref:'#/components/schemas/RecordPage'})}])),
   '/balances':{get:operation(page(balance))},'/requests':{get:operation(page(timeoffRequest))},'/calendar':{get:operation(page(absence))},'/documents':{get:operation(page(document))},
-  '/tables/{key}':{get:operation({$ref:'#/components/schemas/RecordResponse'},[{name:'key',in:'path',required:true,schema:{type:'string'}}])},
+  '/tables/{key}':{get:operation({type:'object',required:['apiVersion','data'],properties:{apiVersion:{const:'1'},data:recordTableReport},additionalProperties:false},[{name:'key',in:'path',required:true,schema:{type:'string'}}])},
   '/access-level':{get:operation({$ref:'#/components/schemas/RecordResponse'})},
   '/documents/{id}/download':{get:{security:[{bearerKey:[]}],parameters:[{name:'id',in:'path',required:true,schema:{type:'string'}}],responses:{...responses({}),200:{description:'Native access-checked document bytes',content:{'*/*':{schema:{type:'string',format:'binary'}}}}}}},
  }
