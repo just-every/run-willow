@@ -140,3 +140,27 @@ identity token and decides whether to issue any session.
 ## Provider billing
 
 Willow has no license-key, seat or paid-plan requirement. Connections names the configured email and identity providers and the model endpoint host before their activation controls. Any service fees are billed by those providers directly; Cloudflare bills Cloudflare hosting. Local development mail has no delivery charge. Endpoint paths, query strings and runtime keys are never included in the disclosure.
+
+
+## Policy and workflow assistants
+
+In Connections, the owner enables each assistant capability separately, chooses
+OpenAI and a supported GPT-4.1 model, sets the maximum USD spend per run, and
+selects included policies alone or policies plus permitted numeric leave inputs.
+The default is disabled. HR includes approved policy versions in Settings;
+ordinary reader permissions still limit each answer. Questions reduce to supported
+leave topics locally. Workflow requests use the sentence format shown in Proposals.
+No raw request, employee name, pay, private record or task title crosses the model
+edge. A request makes at most one call, bounded before sending by UTF-8 input size,
+output-token limit and the supported model rate. There are no automatic retries.
+
+Willow retains only call metadata, with minimized subject custody when numeric
+leave inputs were sent. Prompts and policy answers are transient. Calls request
+`store=false`; standard provider abuse-monitoring retention may last up to 30 days
+and requires the owner's explicit consent. Disabling the assistant invalidates
+pending reviews. Restored installations need fresh consent. DATA-002 tracks
+provider deletion requests for minimized leave inputs.
+
+[OpenAI model documentation](https://developers.openai.com/api/docs/models/gpt-4.1-nano)
+and [OpenAI data controls](https://developers.openai.com/api/docs/guides/your-data)
+describe the provider settings and rates used here (checked 26 October 2026).

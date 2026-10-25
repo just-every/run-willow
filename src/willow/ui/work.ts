@@ -1,3 +1,4 @@
+import { aiWorkflowSection } from './ai-workflows'
 import { excludesText } from '../retention/excluded'
 import { selfExceptions } from '../self-service/view'
 import { modelDraftSection } from './model-drafts'
@@ -64,7 +65,7 @@ ${tables.length ? h`<section class="card"><h2>Record tables</h2>${table(['Table'
 
 export async function proposalsPage(env: Bindings, actor: Actor, url: URL) {
   const list = await proposals(env, actor)
-  const drafts = await modelDraftSection(env, actor, url)
+  const drafts = h`${await modelDraftSection(env, actor, url)}${await aiWorkflowSection(env,actor,url)}`
   const body = h`<h1>Proposals</h1><p>Your own agent (or a colleague) can prepare a joiner or a mover through Willow’s JSON API. Nothing changes until you approve the exact plan here; a plan whose records changed since must be prepared again.</p>${drafts}
 <section class="card">${list.length ? table(['Proposed', 'Kind', 'Summary', 'By', 'Status'], list.map(item => [formatDate(new Date(item.proposedAt).toISOString().slice(0, 10)), KIND_LABELS[item.kind] ?? item.kind, h`<a href="/app/proposals/${item.id}">${item.summary}</a>`, item.agent, tag(item.status)])) : h`<p class="muted">No proposals yet.</p>`}</section>`
   return page('Proposals', actor, body, { current: '/app/proposals', url })

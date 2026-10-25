@@ -1,3 +1,6 @@
+import { createAiWorkflowDraft, publishAiWorkflow, workflowStepApprove, previewAiWorkflow } from './ai-workflows'
+import { configureAi } from './ai-provider'
+import { includeAiPolicy, policyAnswer } from './ai-policy'
 import { authorizeOAuth } from './api-credentials/oauth'
 import { correctReview } from './performance/corrections'
 import { approveWebhook, replayWebhook, runWebhooksNow, disableWebhook } from './webhooks'
@@ -67,6 +70,8 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'workflow.step.approve': workflowStepApprove, 'workflow.preview': previewAiWorkflow, 'workflow.draft': createAiWorkflowDraft, 'workflow.publish': publishAiWorkflow,
+  'ai.configure': configureAi, 'ai.policy.include': includeAiPolicy, 'policy.answer': policyAnswer,
   'webhook.disable':disableWebhook,'webhook.approve':approveWebhook,'webhook.replay':replayWebhook,'webhook.run':runWebhooksNow,
   'preboarding.send': createPacket, 'preboarding.withdraw': withdrawPacket,
   'hiring.selfId.invite': inviteApplicant, 'hiring.selfId.withdraw': revokeApplicantInvitation, 'hiring.close': closeApplication,

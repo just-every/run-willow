@@ -1,3 +1,4 @@
+import { workflowAuthorityGuard } from './ai-workflows-source'
 // Reviews are bound to the exact audited business snapshot. Any intervening write
 // requires a fresh preview; publishing never silently changes an existing case.
 import type { Bindings } from '../auth.server'
@@ -55,6 +56,7 @@ export async function publishTemplate(env: Bindings, actor: Actor, input: Input)
   const review = await readReview(env, actor, input.text('review'), 'publication')
   const template = (await one(env, 'SELECT * FROM wl_templates WHERE id=?', review.template_id))!
   await commit(env, [
+    workflowAuthorityGuard(env,actor),
     ...reviewGuards(env, actor, review),
     guard(env, 'template_not_draft', "EXISTS(SELECT 1 FROM wl_templates WHERE id=? AND publication='draft')", template.id),
     stmt(env, "UPDATE wl_templates SET status='retired' WHERE family_id=? AND status='active'", template.family_id),

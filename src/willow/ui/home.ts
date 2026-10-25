@@ -36,7 +36,7 @@ ${gettingStarted ? h`<section class="card get-started"><h2>Get started</h2><ol c
 }
 
 export async function tasksPage(env: Bindings, actor: Actor, url: URL) {
-  return page('Tasks', actor, h`<h1>Your tasks</h1><section class="card">${taskList(await myTasks(env, actor), actor.today)}</section>${await followupPanel(env, actor)}`, { current: '/app', url })
+  return page('Tasks', actor, h`<h1>Your tasks</h1>${can(actor,'it.tasks') || can(actor,'payroll.handoff') ? h`<p><a href="/app/workflow-approvals">Review workflow step approvals</a></p>` : ''}<section class="card">${taskList(await myTasks(env, actor), actor.today)}</section>${await followupPanel(env, actor)}`, { current: '/app', url })
 }
 
 export async function casePage(env: Bindings, actor: Actor, id: string, url: URL) {

@@ -1,3 +1,5 @@
+import { aiWorkflows, aiWorkflow, aiWorkflowApprovals } from './ai-workflows'
+import { aiControls } from './ai-provider'
 import { listCredentials } from './api-credentials'
 import { settingAreaData } from './ui/settings-areas'
 import { builtinReports,runBuiltinReport } from './reporting/builtins'
@@ -67,6 +69,7 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  aiControls, aiWorkflowApprovals, aiWorkflows, aiWorkflow:(env,actor,_request,id)=>aiWorkflow(env,actor,id),
   apiCredentials:listCredentials,
   settingLocations:(env,actor)=>settingAreaData(env,actor,'locations'),settingSchedules:(env,actor)=>settingAreaData(env,actor,'schedules'),settingCategories:(env,actor)=>settingAreaData(env,actor,'document-categories'),settingPayroll:(env,actor)=>settingAreaData(env,actor,'payroll-connections'),settingSecurity:(env,actor)=>settingAreaData(env,actor,'sign-in'),settingRetention:(env,actor)=>settingAreaData(env,actor,'retention'),
   preboarding: packets, eeoPreboarding: (env,actor,_request,id)=>packetRecord(env,actor,id),

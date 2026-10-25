@@ -4,10 +4,23 @@ export const genericColumns = ['provider_employee_id','employee_number','name','
 export function providerFixture() {
   const { privateKey, publicKey } = generateKeyPairSync('rsa', {modulusLength:2048})
   const jwk = {...publicKey.export({format:'jwk'}),kid:'test-key',alg:'RS256',use:'sig'}
-  const edge = { mode:'valid', mail:'accepted', oidc:'valid', email:'employee@example.com', nonce:'', calls:[], messages:[] }
+  const edge = { mode:'valid', workflowMode:'valid', mail:'accepted', oidc:'valid', email:'employee@example.com', nonce:'', calls:[], messages:[] }
   const json = (body,status=200) => new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}})
   edge.fetch = async request => {
     const url = new URL(request.url)
+    if (url.hostname === 'api.openai.com') {
+      const body = await request.json(); edge.calls.push({body,headers:Object.fromEntries(request.headers)})
+      assertWorkflowFeature(request)
+      if (edge.workflowMode === 'failed') return json({error:'PRIVATE-PROVIDER-ERROR'},503)
+      if (edge.workflowMode === 'redirect') return new Response(null,{status:302,headers:{location:'https://must-not-receive-credentials.example.test/'}})
+      const output = JSON.parse(body.messages[1].content)
+      if (edge.workflowMode === 'uncited') output.source.id = 'synthetic-willow-3301'
+      if (edge.workflowMode === 'cycle') output.steps[0].dependencies = [2]
+      if (edge.workflowMode === 'mapping') output.steps[0].connectorSource = 2
+      if (edge.workflowMode === 'injected') output.steps[0].permissions = ['people.manage']
+      const content = edge.workflowMode === 'invalid' ? 'invalid-json' : JSON.stringify(output)
+      return json({id:'synthetic-willow-3302',usage:{prompt_tokens:100,completion_tokens:100},choices:[{message:{content}}]})
+    }
     if (url.hostname === 'models.example.test') {
       const body = await request.json(); edge.calls.push({body,headers:Object.fromEntries(request.headers)})
       if (edge.mode === 'redirect') return new Response(null,{status:302,headers:{location:'https://must-not-receive-credentials.example.test/'}})
@@ -39,5 +52,8 @@ export function providerFixture() {
     throw new Error(`Unexpected provider request to ${url.hostname}`)
   }
   return edge
+}
+function assertWorkflowFeature(request) {
+  if (request.headers.get('x-models-feature') !== 'willow-workflow-draft') throw new Error('Unexpected AI capability at workflow fixture edge')
 }
 export const oidcProviders = [{id:'google',preset:'google',clientId:'willow-test',clientSecret:'test-client-secret',tokenAuthMethod:'client_secret_basic'}]

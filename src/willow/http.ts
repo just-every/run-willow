@@ -1,3 +1,6 @@
+import { aiWorkflowApprovalPage } from './ui/ai-workflows'
+import { policyAssistantPage } from './ui/ai-policy'
+import { policyAnswer } from './ai-policy'
 import { oauthConsentPage } from './ui/oauth-consent'
 import { oauthTokenResponse } from './api-credentials/oauth'
 import { webhooksPage } from './ui/webhooks'
@@ -152,6 +155,7 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
     const returnTo = safeReturnTo(input.text('returnTo', { optional: true, max: 300 }) || '/app', '/app')
     try {
       const result = await action(env, actor, input, request) as { id?: string; notice?: string } | null
+      if (name === 'policy.answer') return policyAssistantPage(env,actor,url,result as unknown as Awaited<ReturnType<typeof policyAnswer>>)
       if (name === 'apiKey.issue' || name === 'apiKey.rotate') return issuedCredentialPage(actor,result as CredentialMetadata&{token:string})
       await reconcileRecipients(env,actor.today)
       const notices = await notifyAction(env, name!, result)
@@ -239,6 +243,8 @@ const pages: Record<string, Page> = {
   dates: (env, actor, _request, url) => datesPage(env, actor, url),
   changes: (env, actor, _request, url) => changeRequestsPage(env, actor, url),
   change: (env, actor, _request, url, id) => url.searchParams.has('attachment') ? changeAttachment(env, actor, id, url.searchParams.get('attachment')!) : changeRequestPage(env, actor, id, url),
+  workflowApprovals:(env,actor,_request,url)=>aiWorkflowApprovalPage(env,actor,url),
+  policyAssistant: (env,actor,_request,url)=>policyAssistantPage(env,actor,url),
   connections: (env, actor, _request, url) => connectionsPage(env, actor, url),
   home: (env, actor, _request, url) => homePage(env, actor, url),
   progress: (env, actor, _request, url) => progressPage(env, actor, url),

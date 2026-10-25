@@ -14,7 +14,11 @@ import { payrollErasure } from './retention-payroll.mjs'
 import { importErasure } from './retention-import.mjs'
 
 const directory = await mkdtemp(join(tmpdir(), 'willow-retention-'))
-const h = await harness({ persistTo: directory, scheduled: true, provider: async () => new Response(null,{status:202}) })
+const h = await harness({ persistTo: directory, scheduled: true, bindings:{MODELS_ENDPOINT:'https://api.openai.com/v1/chat/completions',MODELS_KEY:'synthetic-willow-17001'}, provider: async request => {
+  if(new URL(request.url).hostname!=='api.openai.com')return new Response(null,{status:202})
+  const body=await request.json(),context=JSON.parse(body.messages[1].content),source=context.policies[0]
+  return Response.json({id:'synthetic-willow-17002',choices:[{message:{content:JSON.stringify({claims:[{text:source.summary,quote:source.summary,versionId:source.id}],needsHr:true})}}]})
+} })
 const years = (date, n) => { const d = new Date(`${date}T00:00:00Z`); d.setUTCFullYear(d.getUTCFullYear() + n); return d.toISOString().slice(0, 10) }
 try {
   assert.equal((await h.raw('/auth/bootstrap', { body: { token: h.vars.SETUP_TOKEN, displayName: 'Olive Owner' } })).status, 303)
@@ -62,6 +66,10 @@ try {
   await as('hr', 'customField.write', { person: q, effectiveFrom: day(-1), values: { badge: 'synthetic-willow-3' } })
   await as('hr', 'recordRow.write', { person: q, table: 'certifications', effectiveFrom: day(-1), values: { name: 'Forklift', issuer: 'Board', number: 'FL-9', issued_on: day(-300), expires_on: day(40) } })
   const quinnAccount = await f.account(quinn.period)
+  await api('ai.configure',{enabled:true,policies:true,workflows:false,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard'})
+  const policyVersion=(await api('policies'))[0].versions.find(version=>version.status==='approved')
+  await api('ai.policy.include',{version:policyVersion.id,included:true})
+  assert.equal((await h.api('policy.answer',quinnCookie,{question:'What is my PTO balance?'})).status,'answered')
   const oakland = await api('location.create', { name: 'Oakland', timezone: 'UTC', workState: 'CA' })
   await api('mover.schedule', { period: quinn.period, effectiveFrom: day(-50), locationId: oakland.id, reason: 'Moved' })
   await h.api('goal.create', quinnCookie, { person: q, title: 'synthetic-willow-6', milestones: ['Start'], dueDate: day(60), development: true, owner: quinnMemberId })
@@ -136,6 +144,7 @@ try {
   assert.equal(item.sessions.disposition, 'erased')
   assert.equal(item.webhook_deliveries.rows,1)
   assert.equal(item.webhook_deliveries.disposition,'erased')
+  assert.ok(clean.copies.providers.some(row=>row.provider==='OpenAI (minimized leave inputs)'&&row.copies===1),'A real minimized policy call is declared for provider deletion')
   assert.ok(clean.copies.providers.some(row=>row.provider==='Webhook destination https://synthetic-willow-16002.example.com'&&row.copies===1))
   assert.ok(clean.summary.held > 0 && clean.summary.retained > 0 && clean.summary.erased > 0 && clean.summary.anonymized > 0)
   assert.ok(clean.copies.exports.statement.includes('may include'))
@@ -224,7 +233,7 @@ try {
   assert.ok(!JSON.stringify(receipt).match(new RegExp([q, quinnMember, 'quinn', 'Quinn'].join('|'))), 'the receipt holds no identifier')
   await browserEvidence(h, owner, [['receipt', `/app/retention/receipts/${erased.receipt}`], ['retained', '/app/retention/retained']])
   assert.equal(receipt.source, 'own_request')
-  assert.deepEqual(receipt.providerRequests.map(r => [r.provider, r.status, r.open]).sort(), [['Email notice provider', 'open', true],['Webhook destination https://synthetic-willow-16002.example.com','open',true]].sort(), 'Every outside recipient gets tracked deletion work')
+  assert.deepEqual(receipt.providerRequests.map(r => [r.provider, r.status, r.open]).sort(), [['Email notice provider', 'open', true],['OpenAI (minimized leave inputs)','open',true],['Webhook destination https://synthetic-willow-16002.example.com','open',true]].sort(), 'Every outside recipient gets tracked deletion work')
   const providerWork = (await get('owner', 'work')).items.find(item => item.kind === 'provider-deletion')
   assert.ok(providerWork, 'the request is the owner\'s FLOW-002 work')
   const requestId = receipt.providerRequests.find(row=>row.provider==='Email notice provider').id

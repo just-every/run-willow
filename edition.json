@@ -96,7 +96,10 @@
           "migrations/core/0079_credential_approval_authority.sql",
           "migrations/core/0080_oauth_authorization_code.sql",
           "migrations/core/0081_credential_change_requests.sql",
-          "migrations/core/0082_default_access.sql"
+          "migrations/core/0082_default_access.sql",
+          "migrations/core/0084_ai_provider.sql",
+          "migrations/core/0085_ai_workflows.sql",
+          "migrations/core/0086_ai_workflow_step_approvals.sql"
         ]
       }
     },

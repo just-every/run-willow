@@ -3,6 +3,9 @@
 // entry, so a new door cannot be added without being crawled.
 // Patterns are relative to /api/willow/ (API) or absolute (pages).
 export const API_DOORS: [string, string][] = [
+  ['^ai-workflow-approvals$','aiWorkflowApprovals'],
+  ['^ai-workflows$','aiWorkflows'], ['^ai-workflows/([\\w-]+)$','aiWorkflow'],
+  ['^ai-controls$','aiControls'],
   ['^api-credentials$','apiCredentials'],['^setting-areas/locations$','settingLocations'],['^setting-areas/schedules$','settingSchedules'],['^setting-areas/document-categories$','settingCategories'],['^setting-areas/payroll-connections$','settingPayroll'],['^setting-areas/sign-in$','settingSecurity'],['^setting-areas/retention$','settingRetention'],
   ['^preboarding$', 'preboarding'], ['^eeo/preboarding/([\\w-]+)$', 'eeoPreboarding'],
   ['^eeo/applicants$', 'eeoApplicants'], ['^eeo/applicants/([\\w-]+)$', 'eeoApplicant'],
@@ -30,6 +33,8 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/workflow-approvals$','workflowApprovals'],
+  ['^/app/policy-assistant$','policyAssistant'],
   ['^/app/oauth/authorize$','oauthConsent'],
   ['^/app/settings/webhooks$','webhooks'],
   ['^/app/api-credentials$','apiCredentials'],['^/app/settings/locations$','settingLocations'],['^/app/settings/schedules$','settingSchedules'],['^/app/settings/document-categories$','settingCategories'],['^/app/settings/payroll-connections$','settingPayroll'],['^/app/settings/sign-in$','settingSecurity'],['^/app/settings/retention$','settingRetention'],

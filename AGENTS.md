@@ -61,7 +61,7 @@ Rules that hold everywhere:
 - Payroll calculation, tax and payments stay with the payroll provider; Willow
   hands off changes. External account and device work is never claimed done
   without the assignee's evidence.
-- Optional model calls use only the structural context in `model-drafts.ts`. Never pass a person projection, free-form prompt, template/task name, pay, document, absence reason or evidence. No simulated output in application code.
+- WIL-20 model calls use only the structural context in `model-drafts.ts`. Separately owner-enabled policy answers use HR-included approved policy clauses and permitted numeric leave inputs; assistant workflow calls use normalized structural requests. Raw questions and requests never leave Willow. Never pass a person projection, free-form prompt, template or task name, pay, document, absence reason or evidence. No simulated output in application code.
 - Connection secrets live only in runtime bindings. Fixed email notices never include free text. Provider failures must not roll back committed business work.
 - Payroll exports require a complete owner mapping and preview; preserve both source and mapping transaction fences and freeze reviewed file bytes. See WIL-18–21 and CONNECTIONS.md.
 

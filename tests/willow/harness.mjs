@@ -18,7 +18,7 @@ export async function freePort() {
   return port
 }
 
-export async function harness({ bindings = {}, provider, persistTo, port: chosenPort, scheduled = false, upgrade } = {}) {
+export async function harness({ bindings = {}, transientBindings = {}, provider, persistTo, port: chosenPort, scheduled = false, upgrade } = {}) {
   // The fake provider edge runs beside the real production Worker on local TLS.
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
   const port = chosenPort ?? await freePort()
@@ -49,15 +49,17 @@ export async function harness({ bindings = {}, provider, persistTo, port: chosen
     const stagedConfig = join(directory, 'upgrade-wrangler.json')
     await writeFile(stagedConfig, JSON.stringify({ name: config.name, compatibility_date: config.compatibility_date, d1_databases: [{ ...database, migrations_dir: staged }] }))
     const local = ['DB', '--local', '--persist-to', directory, '--config', stagedConfig, '--env-file', join(directory, 'local.env')]
-    execFileSync(process.execPath, [wrangler, 'd1', 'migrations', 'apply', ...local], { stdio: 'ignore', env })
+    execFileSync(process.execPath, [wrangler, 'd1', 'migrations', 'apply', ...local], { stdio: 'pipe', env })
     const fixture = join(directory, 'upgrade-fixture.sql')
     await writeFile(fixture, upgrade.sql)
-    execFileSync(process.execPath, [wrangler, 'd1', 'execute', ...local, '--file', fixture], { stdio: 'ignore', env })
+    execFileSync(process.execPath, [wrangler, 'd1', 'execute', ...local, '--file', fixture], { stdio: 'pipe', env })
     const result = execFileSync(process.execPath, [wrangler, 'd1', 'execute', ...local, '--command', upgrade.snapshot, '--json'], { encoding: 'utf8', env })
     upgradeSnapshot = JSON.parse(result).flatMap(item => item.results)
    }
-   execFileSync(process.execPath, [wrangler, 'd1', 'migrations', 'apply', 'DB', '--local', '--persist-to', directory, '--config', 'dist/server/wrangler.json', '--env-file', join(directory, 'local.env')], { stdio: 'ignore', env })
+   execFileSync(process.execPath, [wrangler, 'd1', 'migrations', 'apply', 'DB', '--local', '--persist-to', directory, '--config', 'dist/server/wrangler.json', '--env-file', join(directory, 'local.env')], { stdio: 'pipe', env })
   } catch (error) {
+    const diagnostics = error.stderr?.toString() || error.stdout?.toString()
+    if (diagnostics) console.error(diagnostics)
     if (!persistTo) await rm(directory, { recursive: true, force: true })
     throw error
   } finally {
@@ -76,7 +78,7 @@ export async function harness({ bindings = {}, provider, persistTo, port: chosen
     const files = ['index.js', ...(await readdir('dist/server/assets')).filter(f=>f.endsWith('.js')).map(f=>'assets/'+f)]
     mfOptions = { unsafeTriggerHandlers: scheduled, name: 'willow-test', modulesRoot: resolve('dist/server'), modules: files.map(f=>({type:'ESModule',path:resolve('dist/server',f)})),
       compatibilityDate: '2026-09-08', compatibilityFlags: ['nodejs_compat'],
-      bindings: vars, d1Databases: { DB: 'local-willow-only' }, r2Buckets: { FILES: 'people-willow-files' },
+      bindings: { ...vars, ...transientBindings }, d1Databases: { DB: 'local-willow-only' }, r2Buckets: { FILES: 'people-willow-files' },
       resourcePersistencePath: join(directory, 'v3'),
       outboundService: async request => {
         if (new URL(request.url).hostname === 'api.sendgrid.com') {
@@ -161,7 +163,7 @@ export async function harness({ bindings = {}, provider, persistTo, port: chosen
   }
 
   const redacted = () => ''
-  return { origin, vars, raw, outstanding, upgradeSnapshot, setBindings: async changes => { assert.ok(mf); Object.assign(vars, changes); await mf.setOptions(convertOptions({...mfOptions,bindings:vars})) },  api, submit, signIn, close, output: redacted }
+  return { origin, vars, raw, outstanding, upgradeSnapshot, setBindings: async changes => { assert.ok(mf); Object.assign(vars, changes); await mf.setOptions(convertOptions({...mfOptions,bindings:{...vars,...transientBindings}})) },  api, submit, signIn, close, output: redacted }
 }
 
 export const file = (filename, content, type = 'application/octet-stream') => ({ filename, base64: Buffer.from(content).toString('base64'), type })

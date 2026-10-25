@@ -7,6 +7,7 @@ for(const args of [['check'],['verify-base','--offline'],['verify-base','--recor
 run('pnpm',['run','build'])
 run('pnpm',['run','typecheck'])
 if(!shard||shard==='core')for(const script of ['test:email-link','test:flows','test:phase2'])run('pnpm',['run',script])
+if(!shard||shard==='core')run('node',['tests/willow/ai-policy.mjs'])
 if(!shard||shard.startsWith('records-'))run('node',['tests/willow/regressions.mjs',...(shard?[shard]:[])])
 // CI's browser-journeys job already exercises the entire access suite with browsers.
 if(!shard)for(const path of ['tests/willow/levels.mjs','tests/willow/levels-sections.mjs'])run('node',[path])
