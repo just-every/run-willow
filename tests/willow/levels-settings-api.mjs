@@ -257,6 +257,66 @@ export async function apiRosterProof(h,owner,fx) {
  assert.ok((await api('audit')).some(row=>row.action==='leave.request'&&row.actor==='credential:'+leaveKey.id))
  console.log('API-002 leave writes: PASS — explicit scopes, bounded population, dated native schedules and ledger, human approval, both OAuth grants and revoked-requester refusal')
 
+ // Custom-field values reuse the page validator and immutable native HR queue.
+ const customIssue=(scopes,credentialType='key')=>api('apiKey.issue',{name:'synthetic-willow-14900',level:level.id,writeScopes:scopes,credentialType,expiresAt:new Date(Date.now()+86400000).toISOString(),...(credentialType==='oauth_client'?{redirectUri:'https://partner.example.test/callback'}:{})})
+ const customWrite=async(token,body,status=200)=>{
+  const response=await fetch(h.origin+'/api/willow/v1/custom-field-changes',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify(body)})
+  assert.equal(response.status,status,await response.clone().text());assert.ok(response.headers.has('RateLimit-Limit'))
+  const result=await response.json();check(spec.paths['/custom-field-changes'].post.responses[String(status)].content['application/json'].schema,result);return result.data
+ }
+ const customKey=await customIssue(['custom-fields.approval'])
+ const definitions=(await get('custom-fields')).data
+ const textField=definitions.find(field=>field.key==='synthetic_willow_14030').id
+ const customBody={person:second.person,field:textField,effectiveFrom:'2097-01-01',value:'synthetic-willow-14901'}
+ await customWrite(key.token,customBody,403)
+ await customWrite(customKey.token,{...customBody,person:distant.person},404)
+ await customWrite(customKey.token,{...customBody,value:'x'.repeat(81)},400)
+ await customWrite(customKey.token,{...customBody,effectiveFrom:'2097-99-99'},400)
+ await customWrite(customKey.token,{...customBody,field:definitions.find(field=>field.key==='synthetic_willow_14031').id,value:'1e8'},400)
+ await customWrite(customKey.token,{...customBody,field:(await api('people/'+second.person)).customFields.fields.find(field=>field.key===privateField).id},403)
+ await customWrite(customKey.token,{...customBody,decision:'approve'},400)
+ const customTokens=[{token:customKey.token,id:customKey.id}]
+ for(const grant of ['client_credentials','authorization_code']) {
+  const client=await customIssue(['custom-fields.approval'],'oauth_client')
+  const verifier='synthetic-willow-14902-'.repeat(3),{createHash}=await import('node:crypto')
+  const authorization=grant==='authorization_code'?await api('oauth.authorize',{client:client.id,redirectUri:client.redirectUri,codeChallenge:createHash('sha256').update(verifier).digest('base64url'),codeChallengeMethod:'S256',state:'synthetic-willow-14903',reason:'synthetic-willow-14904'}):null
+  const exchanged=await fetch(h.origin+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(client.id+':'+client.token).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:grant,...(authorization?{code:new URL(authorization.redirectUri).searchParams.get('code'),redirect_uri:client.redirectUri,code_verifier:verifier}:{})})})
+  assert.equal(exchanged.status,200);customTokens.push({token:(await exchanged.json()).access_token,id:client.id})
+ }
+ for(const [index,credential] of customTokens.entries()) {
+  const effectiveFrom='2097-01-0'+(index+1)
+  const values=['synthetic-willow-14910-'+index,String(23+index)+'.4567890123456789','2097-02-0'+(index+1),index%2===0,index%2===0?null:'one']
+  for(const [fieldIndex,value] of values.entries()) {
+   const field=definitions.find(field=>field.key==='synthetic_willow_'+(14030+fieldIndex))
+   const before=(await get('employees/'+second.person+'?fields=customFields&asOf='+effectiveFrom)).data.customFields.fields.find(item=>item.id===field.id).value
+   const pending=await customWrite(credential.token,{person:second.person,field:field.id,effectiveFrom,value})
+   const queue=await h.api('self-changes',fx.staff.hr.cookie)
+   assert.ok(queue.some(row=>row.id===pending.id&&row.status==='pending'&&row.requestedBy==='credential:'+credential.id))
+   assert.equal((await get('employees/'+second.person+'?fields=customFields&asOf='+effectiveFrom)).data.customFields.fields.find(item=>item.id===field.id).value,before)
+   if(index===0&&fieldIndex===0)await apiBrowserProof(h,owner,fx.staff.hr.cookie,pending.id,undefined,level.id,'custom-fields.approval')
+   const denied=await fetch(h.origin+'/api/willow/self.decide',{method:'POST',headers:{authorization:'Bearer '+credential.token,'content-type':'application/json',cookie:owner},body:JSON.stringify({change:pending.id,decision:'approve'})})
+   assert.equal(denied.status,403);await denied.arrayBuffer()
+   await h.api('self.decide',fx.staff.hr.cookie,{change:pending.id,decision:'approve',comment:'synthetic-willow-14905'})
+   const updated=(await get('employees/'+second.person+'?fields=customFields&asOf='+effectiveFrom)).data.customFields.fields.find(item=>item.id===field.id)
+   assert.equal(updated.value,value);assert.ok(updated.history.some(row=>row.value===value&&row.effectiveFrom===effectiveFrom))
+  }
+ }
+ assert.equal((await get('employees/'+second.person+'?fields=customFields&asOf=2096-12-31')).data.customFields.fields.find(field=>field.id===textField).value,'synthetic-willow-14042')
+ const correction=await customWrite(customKey.token,{...customBody,effectiveFrom:'2097-01-03',value:'synthetic-willow-14920'})
+ await h.api('self.decide',fx.staff.hr.cookie,{change:correction.id,decision:'approve',comment:'synthetic-willow-14921'})
+ const corrected=(await get('employees/'+second.person+'?fields=customFields&asOf=2097-01-03')).data.customFields.fields.find(field=>field.id===textField)
+ assert.equal(corrected.value,'synthetic-willow-14920');assert.ok(corrected.history[0].correctsId)
+ const staleCustom=await customWrite(customKey.token,{...customBody,effectiveFrom:'2097-01-04',value:'synthetic-willow-14922'})
+ await api('customField.write',{person:second.person,effectiveFrom:'2097-01-04',values:{[textField]:'synthetic-willow-14923'}})
+ await h.api('self.decide',fx.staff.hr.cookie,{change:staleCustom.id,decision:'approve',comment:'synthetic-willow-14924'},409)
+ const stoppedCustom=await customWrite(customKey.token,{...customBody,effectiveFrom:'2097-01-05',value:'synthetic-willow-14925'})
+ await api('apiKey.revoke',{credential:customKey.id})
+ await h.api('self.decide',fx.staff.hr.cookie,{change:stoppedCustom.id,decision:'approve',comment:'synthetic-willow-14926'},401)
+ await h.api('self.decide',fx.staff.hr.cookie,{change:stoppedCustom.id,decision:'reject',comment:'synthetic-willow-14927'})
+ assert.ok(!(await api('people/'+second.person)).customFields.fields.find(field=>field.id===textField).history.some(row=>row.value==='synthetic-willow-14925'))
+ const customAudit=await api('audit');assert.ok(customAudit.some(row=>row.action==='selfChange.request'&&row.actor==='credential:'+customKey.id));assert.ok(!JSON.stringify(customAudit).includes(customKey.token))
+ console.log('API-002 custom-field writes: PASS — native five-type validation, scoped keys and both OAuth grants, pending human approval, dated values and corrections, stale revision and revoked-requester refusal')
+
  // An opted-in key proposes exactly one native personal field; it never changes records directly.
  const approvalLevel=await apply({kind:'level',name:'synthetic-willow-14012',permissions:[],otherFields:{phone:'approval'},scope:{kind:'group',dimensions:{location:[location.id]}}})
  const approvalKey=await api('apiKey.issue',{name:'synthetic-willow-14013',level:approvalLevel.id,writeScopes:['personal.approval'],expiresAt:new Date(Date.now()+86400000).toISOString()})

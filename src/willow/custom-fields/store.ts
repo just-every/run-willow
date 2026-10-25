@@ -1,3 +1,5 @@
+import { credentialContext, credentialPersonAllowed } from '../api-credentials/principal'
+import { canAbout } from '../actor'
 import { liveSettingsActor } from '../levels/settings-authority'
 import type { Bindings } from '../../auth.server'
 import { can, requirePermission, type Actor } from '../actor'
@@ -43,8 +45,11 @@ export async function listFieldDefinitions(env: Bindings, actor: Actor, asOf = a
   return fieldSchemas(env, asOf)
 }
 
-export const writesCustomField = (actor: Actor, field: Pick<CustomField, 'classification'>) =>
-  can(actor, 'people.manage') && (field.classification === 'general' || can(actor, field.classification === 'hr' ? 'people.private' : 'pay.read'))
+export const writesCustomField = (actor: Actor, field: Pick<CustomField, 'classification'>, person?: string) => {
+  const credential = credentialContext(actor)
+  const permitted = (permission: 'people.manage' | 'people.private' | 'pay.read') => credential && person ? canAbout(actor, permission, person) : can(actor, permission)
+  return (!credential || !!person && credentialPersonAllowed(actor, person) && credential.writeScopes.includes('custom-fields.approval')) && permitted('people.manage') && (field.classification === 'general' || permitted(field.classification === 'hr' ? 'people.private' : 'pay.read'))
+}
 
 /** HTML controls carry explicit keys, preserving optional clears and boolean false. */
 export function customValuesInput(input: import('../input').Input): unknown {
@@ -61,8 +66,8 @@ export function customValuesInput(input: import('../input').Input): unknown {
 /** Guards are separate: callers put both arrays into the same business commit. No person lookup permits native creation earlier in that batch. */
 export async function customValueStatements(env: Bindings, actor: Actor, personId: string, rawValues: unknown,
   effectiveFrom: string, { requireAll = true, approvedFields }: { requireAll?: boolean; approvedFields?: ReadonlySet<string> } = {}) {
-  if (!approvedFields) requirePermission(actor, 'people.manage')
-  const writable = (field: Pick<CustomField, 'id' | 'classification'>) => approvedFields ? approvedFields.has(field.id) : writesCustomField(actor, field)
+  if (!approvedFields && !credentialContext(actor)) requirePermission(actor, 'people.manage')
+  const writable = (field: Pick<CustomField, 'id' | 'classification'>) => approvedFields ? approvedFields.has(field.id) : writesCustomField(actor, field, personId)
   insist(isISODate(effectiveFrom), 'invalid_field_date')
   insist(rawValues !== null && typeof rawValues === 'object' && !Array.isArray(rawValues), 'invalid_field_values')
   const schemas = await fieldSchemas(env, effectiveFrom), submitted = rawValues as Record<string, unknown>

@@ -291,3 +291,20 @@ a pending request to release its reservation even after the credential ends.
 Keys and both OAuth grants use the same route. Credentials cannot decide,
 cancel approved leave or change balances directly. The served OpenAPI includes
 request and success and refusal schemas for this route.
+
+
+### Native custom-field value requests
+
+Issue the explicit `custom-fields.approval` scope to submit
+`POST /api/willow/v1/custom-field-changes` with `person`, the stable `field`
+identifier, `effectiveFrom` and typed `value`. The level needs native people
+management and the field's own sensitivity right for that person. The native
+validator preserves exact decimal strings, booleans, dates, select values and
+optional nulls. The response returns `apiVersion` and pending `data` with `id`
+and `status`; it changes no employee value until a distinct authorized human
+approves in the existing HR queue. The decision rechecks current credential,
+population, sensitivity, definition and value history. Dated versions and
+same-date corrections use the native history. Revoked credentials and stale
+proposals cannot execute; HR can still reject them. Keys and both OAuth grants
+share this route. Read-only credentials cannot submit it, and credentials never
+decide changes or alter field definitions.

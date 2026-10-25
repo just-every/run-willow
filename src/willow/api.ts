@@ -1,3 +1,4 @@
+import { proposeCustomField } from './custom-fields/proposals'
 import { requestLeave } from './leave'
 import { requestChange } from './change-requests/requests'
 import { registerWebhook, webhookList, webhookLog } from './webhooks'
@@ -124,6 +125,13 @@ export async function versionedRead(env:Bindings,actor:Actor,request:Request,url
 /** The initial write scope can request approval only; HR executes the unchanged native proposal. */
 export async function versionedWrite(env:Bindings,actor:Actor,request:Request,url:URL) {
  if(url.pathname===PREFIX+'webhooks')return registerWebhook(env,actor,await Input.from(request))
+ if(url.pathname===PREFIX+'custom-field-changes') {
+  const input=await Input.from(request)
+  input.only(['person','field','effectiveFrom','value'])
+  insist(credentialPersonAllowed(actor,input.text('person')),'not_found',404)
+  insist(credentialContext(actor)!.writeScopes.includes('custom-fields.approval'),'credential_read_only',403)
+  return {apiVersion:'1',data:await proposeCustomField(env,actor,input)}
+ }
  if(url.pathname===PREFIX+'requests') {
   const input=await Input.from(request)
   input.only(['account','startDate','endDate','reason'])

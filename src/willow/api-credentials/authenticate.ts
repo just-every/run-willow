@@ -22,7 +22,7 @@ export const CREDENTIAL_API_DOORS:[RegExp,string][]=[
  [/^builtin-reports$/,'builtinReports'],[/^builtin-reports\/[\w-]+$/,'builtinReport'],
 ]
 export function credentialDoor(request:Request):string|null {
- if(request.method==='POST'&&['/api/willow/v1/changes','/api/willow/v1/employment-changes','/api/willow/v1/requests','/api/willow/v1/webhooks'].includes(new URL(request.url).pathname))return 'v1Write'
+ if(request.method==='POST'&&['/api/willow/v1/custom-field-changes','/api/willow/v1/changes','/api/willow/v1/employment-changes','/api/willow/v1/requests','/api/willow/v1/webhooks'].includes(new URL(request.url).pathname))return 'v1Write'
  if(request.method!=='GET')return null
  const url=new URL(request.url),prefix='/api/willow/'
  if(!url.pathname.startsWith(prefix))return null
