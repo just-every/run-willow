@@ -64,7 +64,7 @@ export async function issueCredential(env:Bindings,actor:Actor,input:Input) {
   const redirectUri=input.text('redirectUri',{optional:true,max:1000})||null
   if(redirectUri){let uri:URL;try{uri=new URL(redirectUri)}catch{throw new WillowError('invalid_redirect_uri',400)};insist(credentialType==='oauth_client'&&uri.protocol==='https:'&&!uri.username&&!uri.password&&!uri.hash,'invalid_redirect_uri')}
   const writeScopes=input.provided('writeScopes')?input.json('writeScopes'):[]
-  insist(Array.isArray(writeScopes)&&new Set(writeScopes).size===writeScopes.length&&writeScopes.every(scope=>['personal.approval','job.approval','compensation.approval','leave.approval','custom-fields.approval','webhooks.manage'].includes(scope)),'invalid_write_scopes')
+  insist(Array.isArray(writeScopes)&&new Set(writeScopes).size===writeScopes.length&&writeScopes.every(scope=>['personal.approval','job.approval','compensation.approval','leave.approval','custom-fields.approval','tables.approval','webhooks.manage'].includes(scope)),'invalid_write_scopes')
   const authority=await administratorAuthority(env,actor),level=input.text('level')
   const needsApproval=await credentialCeiling(env,authority.actor,level,writeScopes as string[])
   const prepared=await material(env,authority.actor,input.text('name'),level,expiry(input),authority.row,writeScopes as string[],needsApproval,credentialType,redirectUri)

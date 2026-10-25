@@ -1,3 +1,4 @@
+import { proposeRecordRow } from './record-tables/proposals'
 import { proposeCustomField } from './custom-fields/proposals'
 import { requestLeave } from './leave'
 import { requestChange } from './change-requests/requests'
@@ -125,6 +126,9 @@ export async function versionedRead(env:Bindings,actor:Actor,request:Request,url
 /** The initial write scope can request approval only; HR executes the unchanged native proposal. */
 export async function versionedWrite(env:Bindings,actor:Actor,request:Request,url:URL) {
  if(url.pathname===PREFIX+'webhooks')return registerWebhook(env,actor,await Input.from(request))
+ if(url.pathname===PREFIX+'table-changes') {
+  return {apiVersion:'1',data:await proposeRecordRow(env,actor,await Input.from(request))}
+ }
  if(url.pathname===PREFIX+'custom-field-changes') {
   const input=await Input.from(request)
   input.only(['person','field','effectiveFrom','value'])

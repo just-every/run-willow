@@ -308,3 +308,19 @@ same-date corrections use the native history. Revoked credentials and stale
 proposals cannot execute; HR can still reject them. Keys and both OAuth grants
 share this route. Read-only credentials cannot submit it, and credentials never
 decide changes or alter field definitions.
+
+
+### Native record-table requests
+
+The explicit `tables.approval` scope permits
+`POST /api/willow/v1/table-changes` with `person`, `table`, `effectiveFrom`,
+and complete typed `values`. Supply `row` to append an edit; `row` and
+`remove: true` request a dated removal without values. Native table columns,
+required values, sensitivity and current population govern validation.
+The response contains a pending `id` and `status` inside `data`; the existing
+HR queue shows the exact row and date. A distinct human holding current native
+table authority approves before any row changes. Approval rechecks requester
+credentials, scope, table definition and row history. Creation, edits and removal
+append native dated versions; earlier dates and removed-row history remain
+readable to authorized readers. Revoked or stale requests cannot execute, and
+HR can still reject them. Keys and both OAuth grants share the same route.

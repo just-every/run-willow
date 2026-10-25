@@ -317,6 +317,56 @@ export async function apiRosterProof(h,owner,fx) {
  const customAudit=await api('audit');assert.ok(customAudit.some(row=>row.action==='selfChange.request'&&row.actor==='credential:'+customKey.id));assert.ok(!JSON.stringify(customAudit).includes(customKey.token))
  console.log('API-002 custom-field writes: PASS — native five-type validation, scoped keys and both OAuth grants, pending human approval, dated values and corrections, stale revision and revoked-requester refusal')
 
+ // Native table proposals retain typed dated rows and immutable HR decisions.
+ const tableLevel=await apply({kind:'level',name:'synthetic-willow-15000',permissions:['people.manage'],scope:{kind:'group',dimensions:{location:[location.id]}}})
+ const tableIssue=(credentialType='key')=>api('apiKey.issue',{name:'synthetic-willow-15001',level:tableLevel.id,writeScopes:['tables.approval'],credentialType,expiresAt:new Date(Date.now()+86400000).toISOString(),...(credentialType==='oauth_client'?{redirectUri:'https://partner.example.test/callback'}:{})})
+ const tableWrite=async(token,body,status=200)=>{
+  const response=await fetch(h.origin+'/api/willow/v1/table-changes',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify(body)})
+  assert.equal(response.status,status,await response.clone().text());assert.ok(response.headers.has('RateLimit-Limit'))
+  const result=await response.json();check(spec.paths['/table-changes'].post.responses[String(status)].content['application/json'].schema,result);return result.data
+ }
+ const tableKey=await tableIssue(),tableTokens=[{token:tableKey.token,id:tableKey.id}]
+ for(const grant of ['client_credentials','authorization_code']) {
+  const client=await tableIssue('oauth_client'),verifier='synthetic-willow-15002-'.repeat(3),{createHash}=await import('node:crypto')
+  const authorization=grant==='authorization_code'?await api('oauth.authorize',{client:client.id,redirectUri:client.redirectUri,codeChallenge:createHash('sha256').update(verifier).digest('base64url'),codeChallengeMethod:'S256',state:'synthetic-willow-15003',reason:'synthetic-willow-15004'}):null
+  const exchanged=await fetch(h.origin+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(client.id+':'+client.token).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:grant,...(authorization?{code:new URL(authorization.redirectUri).searchParams.get('code'),redirect_uri:client.redirectUri,code_verifier:verifier}:{})})})
+  assert.equal(exchanged.status,200);tableTokens.push({token:(await exchanged.json()).access_token,id:client.id})
+ }
+ const tableBody={person:second.person,table:table.id,effectiveFrom:'2096-01-01',values:tableValues}
+ await tableWrite(key.token,tableBody,403)
+ await tableWrite(tableKey.token,{...tableBody,person:distant.person},404)
+ await tableWrite(tableKey.token,{...tableBody,values:{...tableValues,col_1:'not-a-number'}},400)
+ await tableWrite(tableKey.token,{...tableBody,values:{...tableValues,unknown:'synthetic-willow-15005'}},400)
+ await tableWrite(tableKey.token,{...tableBody,table:'table-dependents'},403)
+ await tableWrite(tableKey.token,{...tableBody,effectiveFrom:'2096-99-99'},400)
+ for(const [index,credential] of tableTokens.entries()) {
+  const pending=await tableWrite(credential.token,tableBody)
+  const queue=await h.api('self-changes',fx.staff.hr.cookie)
+  assert.ok(queue.some(row=>row.id===pending.id&&row.kind==='recordRow'&&row.requestedBy==='credential:'+credential.id&&row.status==='pending'))
+  const rowsAt=async date=>(await get('employees/'+second.person+'?fields=recordTables&asOf='+date,200,credential.token)).data.recordTables.tables.find(item=>item.id===table.id)
+  const before=await rowsAt('2096-01-01')
+  if(index===0)await apiBrowserProof(h,owner,fx.staff.hr.cookie,pending.id,undefined,tableLevel.id,'tables.approval')
+  await h.api('self.decide',fx.staff.hr.cookie,{change:pending.id,decision:'approve',comment:'synthetic-willow-15006'})
+  const added=await rowsAt('2096-01-01');assert.equal(added.rows.length,before.rows.length+1)
+  const row=added.rows.find(row=>!before.rows.some(previous=>previous.id===row.id));assert.deepEqual(row.values,tableValues)
+  const edit=await tableWrite(credential.token,{...tableBody,row:row.id,effectiveFrom:'2096-01-02',values:{...tableValues,col_0:'synthetic-willow-15007'}})
+  await h.api('self.decide',fx.staff.hr.cookie,{change:edit.id,decision:'approve',comment:'synthetic-willow-15008'})
+  assert.deepEqual((await rowsAt('2096-01-01')).rows.find(item=>item.id===row.id).values,tableValues)
+  assert.equal((await rowsAt('2096-01-02')).rows.find(item=>item.id===row.id).values.col_0,'synthetic-willow-15007')
+  const remove=await tableWrite(credential.token,{person:second.person,table:table.id,row:row.id,effectiveFrom:'2096-01-03',remove:true})
+  await h.api('self.decide',fx.staff.hr.cookie,{change:remove.id,decision:'approve',comment:'synthetic-willow-15009'})
+  assert.ok((await rowsAt('2096-01-02')).rows.some(item=>item.id===row.id))
+  const removed=(await rowsAt('2096-01-03')).formerRows.find(item=>item.id===row.id);assert.equal(removed.history.length,3);assert.equal(removed.history.at(-1).removed,true)
+ }
+ const staleTable=await tableWrite(tableKey.token,tableBody)
+ await api('recordRow.write',tableBody)
+ await h.api('self.decide',fx.staff.hr.cookie,{change:staleTable.id,decision:'approve',comment:'synthetic-willow-15010'},409)
+ const stoppedTable=await tableWrite(tableKey.token,tableBody)
+ await api('apiKey.revoke',{credential:tableKey.id})
+ await h.api('self.decide',fx.staff.hr.cookie,{change:stoppedTable.id,decision:'approve',comment:'synthetic-willow-15011'},401)
+ await h.api('self.decide',fx.staff.hr.cookie,{change:stoppedTable.id,decision:'reject',comment:'synthetic-willow-15012'})
+ console.log('API-002 table writes: PASS — scoped keys and both OAuth grants, typed native HR approval, dated creation and edit and removal, preserved history, stale rows and revoked-requester refusal')
+
  // An opted-in key proposes exactly one native personal field; it never changes records directly.
  const approvalLevel=await apply({kind:'level',name:'synthetic-willow-14012',permissions:[],otherFields:{phone:'approval'},scope:{kind:'group',dimensions:{location:[location.id]}}})
  const approvalKey=await api('apiKey.issue',{name:'synthetic-willow-14013',level:approvalLevel.id,writeScopes:['personal.approval'],expiresAt:new Date(Date.now()+86400000).toISOString()})
@@ -348,7 +398,7 @@ export async function apiRosterProof(h,owner,fx) {
  console.log('API-002 versioned reads: PASS — published schemas, exact level fields and scope, full cursor traversal, unique hire and transfer increments, tamper and cross-key refusal, stale pages, scope-loss reset and immediate revocation')
 }
 
-async function apiBrowserProof(h,owner,hr,pending,changePath,writeLevel,writeScope='job.approval') {
+export async function apiBrowserProof(h,owner,hr,pending,changePath,writeLevel,writeScope='job.approval') {
  if(process.env.WILLOW_LEVELS_BROWSER!=='1')return
  const {pathToFileURL}=await import('node:url')
  const {evidenceDirectory}=await import('./evidence.mjs')
@@ -384,7 +434,7 @@ async function apiBrowserProof(h,owner,hr,pending,changePath,writeLevel,writeSco
     await page.mouse.move(0,0)
     await bell.focus()
     assert.equal(await tip.isVisible(),true,'Keyboard focus shows the hint immediately')
-    await page.screenshot({path:evidenceDirectory+'/API-002-'+state+'-'+width+'.png',fullPage:true})
+    await page.screenshot({path:evidenceDirectory+'/API-002-'+state+(writeLevel?'-'+writeScope:'')+'-'+width+'.png',fullPage:true})
    }
    await context.close()
   }
@@ -414,12 +464,19 @@ async function nativeRequestUpgradeProof() {
    `INSERT INTO wl_change_requests(id,person_id,period_id,request_type,requested_by,requested_at,status,revision,chain_id,steps_json,step,plan_json,base_json,state,updated_at) VALUES('${prefix}${20+index}','${person}','${period}','job','${member}',0,'${status}',1,'${chain}',${quote(JSON.stringify(steps))},0,${quote(JSON.stringify(plan))},${quote(JSON.stringify(base))},'${prefix}${30+index}',0);`,
    `INSERT INTO wl_change_events(id,request_id,revision,step,kind,actor,comment,at) VALUES('${prefix}${40+index}','${prefix}${20+index}',1,NULL,'submitted','${member}','${prefix}50',0);`,
   ]),
+  ...['pending','approved'].flatMap((status,index)=>[
+   `INSERT INTO wl_self_changes(id,person_id,kind,row_id,before_json,after_json,source_revision,requested_by,requested_at,due_date) VALUES('${prefix}${60+index}','${person}','legalName',NULL,'{}','{"legalName":"synthetic-willow-15020"}','${prefix}11','${member}',0,'2099-01-01');`,
+   ...(status==='approved'?[`INSERT INTO wl_self_decisions(change_id,outcome,decided_by,decided_at,comment) VALUES('${prefix}${60+index}','approved','${member}',0,'synthetic-willow-15021');`,`INSERT INTO wl_self_reconciliation(change_id,reference,recorded_by,recorded_at) VALUES('${prefix}${60+index}','synthetic-willow-15022','${member}',0);`]:[]),
+  ]),
  ].join('\n')
  const h=await harness({bindings:{OWNER_EMAIL:member+'@example.test'},upgrade:{before:'0081_credential_change_requests.sql',sql,snapshot:'SELECT id,status,state,plan_json,base_json FROM wl_change_requests ORDER BY id'}})
  try {
   assert.equal(h.upgradeSnapshot.length,3)
   const owner=await h.signIn(h.vars.OWNER_EMAIL)
   await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})
+  const preserved=await h.api('self-changes',owner)
+  assert.equal(preserved.find(row=>row.id===prefix+'60').status,'pending')
+  const prior=preserved.find(row=>row.id===prefix+'61');assert.equal(prior.status,'approved');assert.equal(prior.decision.comment,'synthetic-willow-15021');assert.equal(prior.reconciliation.reference,'synthetic-willow-15022')
   const list=(await h.api('change-requests',owner)).requests
   for(const [index,status] of ['pending','approved','declined'].entries()) {
    const id=prefix+(20+index),row=list.find(row=>row.id===id)

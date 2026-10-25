@@ -2,6 +2,7 @@
 // education, certifications, assets) ship with fixed columns; HR adds custom
 // tables whose typed columns use PEOPLE-001's validator. Key and
 // classification never change; every other edit appends a complete version.
+import { credentialContext, credentialPersonAllowed } from '../api-credentials/principal'
 import type { Bindings } from '../../auth.server'
 import { can, canAbout, requirePermission, type Actor } from '../actor'
 import { all, commit, guard, insist, newId, now, stmt } from '../core'
@@ -76,6 +77,8 @@ export function readsTable(actor: Actor, personId: string, table: RecordTable): 
 }
 
 export function writesTable(actor: Actor, personId: string, table: RecordTable): boolean {
+  const credential=credentialContext(actor)
+  if(credential) return credential.writeScopes.includes('tables.approval') && credentialPersonAllowed(actor,personId) && canAbout(actor,'people.manage',personId) && (table.classification==='general' || canAbout(actor,table.classification==='payroll'?'pay.read':'people.private',personId))
   if (table.id === DEPENDENTS) return actor.personId !== personId && canAbout(actor, 'people.manage', personId) && canAbout(actor, 'people.private', personId)
   if (table.classification === 'contact') return actor.personId === personId || (canAbout(actor, 'people.manage', personId) && canAbout(actor, 'people.private', personId))
   return writesCustomField(actor, { classification: table.classification })

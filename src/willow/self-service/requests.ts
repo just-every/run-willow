@@ -1,3 +1,4 @@
+import { approveRecordRowStatements } from '../record-tables/proposals'
 import { approveReviewStatements } from '../performance/corrections'
 import { approveGoalStatements } from '../performance/goals'
 // SELF-001: proposed bytes never change. HR approval commits the native revision and outcome together.
@@ -67,7 +68,9 @@ export async function decideSelfChange(env: Bindings, actor: Actor, input: Input
  // A scoped reviewer is rechecked against fresh terms inside the write (ROLE-002).
  const statements=[guard(env,'already_decided','NOT EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=?)',id)]
  if(decision==='approve') {
-  if(row.kind==='review') {
+  if(row.kind==='recordRow') {
+   statements.push(...await approveRecordRowStatements(env,actor,row))
+  } else if(row.kind==='review') {
    statements.push(...await approveReviewStatements(env,actor,row))
   } else if(row.kind==='goal') {
    statements.push(...await approveGoalStatements(env,actor,row))
