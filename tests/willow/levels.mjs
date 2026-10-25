@@ -113,7 +113,7 @@ try {
  if(access) await documentWriteProof(h,owner,s,documentRights)
  const selectedReport=access?await selectedReportProof(h,owner,fx):undefined
  await browserEvidence(h,owner,s,bulk,scoped,delegated,documentRights,selectedReport,{access})
- if(access) console.log('ROLE-001: PASS — exact union, explicit bounded administration and reviewed changes, stale/replay refusal, same-session revocation and ended-access clearing (personal self-write modes and immutable HR routing proved; other field/section rights remain partial)')
+ if(access) console.log('ROLE-001: PASS — exact union, explicit bounded administration and reviewed changes, stale and replay refusal, same-session revocation and ended-access clearing (personal self-write modes and immutable HR routing proved; other field and section rights remain partial)')
 } finally { await h.close() }
 }
 

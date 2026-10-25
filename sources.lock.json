@@ -5066,7 +5066,7 @@
       "executable": false
     },
     "tests/willow/levels.mjs": {
-      "sha256": "cbd0829e36cca11a61e1cd296690be4f694aad528bc8f1906f607249f889433f",
+      "sha256": "784419351a6d47e1ffddbcc906f7825e1effee44564ce1332a722b9e2c22ddce",
       "executable": false
     },
     "tests/willow/open-area-fixtures.mjs": {
