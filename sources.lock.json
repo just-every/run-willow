@@ -673,7 +673,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "aa710de1bcf8adddc852eea7627550d3b0a953ceca7b008e1adaccd2cfaab65a",
+      "sha256": "4139109979d0c41f13bdb8791fd7332c3cc79a78937262845a40497458b0395f",
       "executable": false
     },
     ".gitignore": {
@@ -1669,7 +1669,7 @@
       "executable": false
     },
     "scripts/verify-app.mjs": {
-      "sha256": "0a4895374d1deb4c40d7e7a567cbf6d2aedcbd0f94d34c770421673912bbf7a4",
+      "sha256": "8f3eeef4efe7205b0835726f09c8221b40b5586759407af86487f85ced352dc6",
       "executable": false
     },
     "scripts/willow/import-kit-migration.mjs": {
@@ -5112,8 +5112,12 @@
       "sha256": "668b5e70e1766c127c6be3ffb0e43cfd1e9cbb9338a98bf1881bf28bbc43d34e",
       "executable": false
     },
+    "tests/willow/regression-transactions.mjs": {
+      "sha256": "b21e3f0e3279d8da92c9aaef7b872ea7cd08e5da3f172886cbfbaf20cbf45c93",
+      "executable": false
+    },
     "tests/willow/regressions.mjs": {
-      "sha256": "375707a10b73e080ebb5e3e45806618220a09c28f129b6bf182bcdd3b82c37d8",
+      "sha256": "b6479430825a3a5354a16136e9f9947878ce382ef5df2d11add1d2b7812d431c",
       "executable": false
     },
     "tests/willow/restore-access.mjs": {
