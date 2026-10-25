@@ -150,6 +150,7 @@ export const STORES: Store[] = [
 
 // Rows another person's records keep: the person's attribution is replaced by the erasure label.
 export const AUTHORED: [string, string][] = [
+  ['wl_default_access', 'approved_by'],
   ['wl_preboard_packets','created_by'], ['wl_applicant_eeo_invitations','invited_by'], ['wl_applicant_eeo_invitations','revoked_by'], ['wl_hiring_closures','closed_by'],
   ['wl_documents', 'created_by'], ['wl_document_versions', 'uploaded_by'], ['wl_comp_bands', 'recorded_by'], ['wl_comp_cycles', 'created_by'], ['wl_comp_records', 'recorded_by'],
   ['wl_custom_field_values', 'recorded_by'], ['wl_custom_field_versions', 'recorded_by'], ['wl_custom_fields', 'recorded_by'],

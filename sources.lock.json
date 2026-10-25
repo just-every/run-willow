@@ -4422,7 +4422,7 @@
       "executable": false
     },
     "src/willow/retention/inventory.ts": {
-      "sha256": "225ea9e83c891f5199186f3f45dc1724eaee5eaf62189c3f78748f71ce83f329",
+      "sha256": "bab36a171b7e7f9ca488d940c74e31b0a7c5f0967b20311eedffbcd6020147aa",
       "executable": false
     },
     "src/willow/retention/journal.d.ts": {
