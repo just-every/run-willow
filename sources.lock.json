@@ -727,7 +727,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "2cefd48d1e8d59caab0820e1144e40e477975821fde67cfeff825ce30ffce598",
+      "sha256": "e3b58657dd36f1e5c189d0e8a21c238b1915c5349ff09265b360dfc05080b58e",
       "executable": false
     },
     "DEMO.md": {
@@ -4295,7 +4295,7 @@
       "executable": false
     },
     "src/willow/levels/selection.ts": {
-      "sha256": "c5db8e50c30d46c005c7628b8f2da9f3d214ecbb7f812102c755289c3432959d",
+      "sha256": "c30e1339ea5b41716844458683e0acec175f2b7541b3c84642af1e0aa52f158c",
       "executable": false
     },
     "src/willow/levels/settings-authority.ts": {
@@ -4307,7 +4307,7 @@
       "executable": false
     },
     "src/willow/levels/store.ts": {
-      "sha256": "5e3d7e9fb6a345c0a910c09863b8422c3eedb27811bb9f164941104cc3ac965b",
+      "sha256": "6c3293a383c931a9b271b2c1c84fe98ead36871d2f868a3756d1764e1a022d1e",
       "executable": false
     },
     "src/willow/lifecycle.ts": {
@@ -5271,7 +5271,7 @@
       "executable": false
     },
     "tests/willow/levels-bulk.mjs": {
-      "sha256": "1dd02528b00380efa0d225da4c81ca37c39772418215359e0fdf22618d5882a9",
+      "sha256": "7245146a2ade532caf36ba13d47390c5921a00539ccfaddc0194a308a24c5147",
       "executable": false
     },
     "tests/willow/levels-compensation-custody.mjs": {

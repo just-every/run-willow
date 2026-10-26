@@ -45,7 +45,7 @@ export async function effectivePermissions(env: Bindings, member: string) {
 export async function levels(env: Bindings, actor: Actor) {
  const data=await levelData(env,actor)
  if(administrativeScopes(actor)===null)return data
- const members=data.members.filter(member=>administratesPerson(actor,member.person_id))
+ const members=data.members.filter(member=>!member.owner&&member.id!==actor.id&&administratesPerson(actor,member.person_id))
  const memberIds=new Set(members.map(member=>member.id))
  const visible=data.levels.filter(level=>administratesScope(actor,level.scope)&&level.members.every(id=>memberIds.has(id)))
  const levelIds=new Set(visible.map(level=>level.id))

@@ -19,5 +19,5 @@ export async function bulkSelection(env: Bindings, actor: Actor, input: Input, m
  const filter=Object.fromEntries(keys.map(key=>[key,input.text(key,{optional:true})]))
  const filters=directoryFilters(new URLSearchParams(filter),actor.today)
  const people=new Set(filterDirectory(await directory(env,actor),filters).map(person=>person.id))
- return {filter:{...filter,status:filters.status},members:members.filter(member=>administratesPerson(actor,member.person_id)&&member.status==='active'&&!member.owner&&people.has(member.person_id)).map(member=>member.id).sort()}
+ return {filter:{...filter,status:filters.status},members:members.filter(member=>member.id!==actor.id&&administratesPerson(actor,member.person_id)&&member.status==='active'&&!member.owner&&people.has(member.person_id)).map(member=>member.id).sort()}
 }
