@@ -61,5 +61,5 @@ export async function policyAnswer(env: Bindings, actor: Actor, input: Input): P
   return { text:claim.text, citation:{versionId:source.id,version:source.version,approvedAt:source.approvedAt,clause:source.clause,quote:claim.quote} }
  })
  if (!claims.length) return { ...refusal, callId:response.callId }
- return { status:'answered', claims, inputs, withheld, needsHr: true, escalation:'/app/company', callId:response.callId, responseId:response.responseId, model:response.model }
+ return { status:'answered', claims, inputs, withheld, needsHr: true, escalation:'/app/company', ...(topic==='policy-conflict'?{message:'HR must compare the included policy versions and confirm which terms apply. This assistant cannot resolve conflicting eligibility terms.'}:{}), callId:response.callId, responseId:response.responseId, model:response.model }
 }
