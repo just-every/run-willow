@@ -1,3 +1,4 @@
+import { auditedSigning } from './sign/action-audit'
 import { prepareSignature } from './sign/payloads'
 import { previewWorkflowSignatures, issueWorkflowSignatures, verifyWorkflowSignatures } from './workflow-signing'
 import { previewSignatures,sendSignatures,actSignature,cancelSignatures } from './sign/requests'
@@ -202,3 +203,5 @@ export const actions: Record<string, Handler> = {
   'proposal.create': (env, actor, input) => propose(env, actor, input),
   'proposal.decide': (env, actor, input) => decideProposal(env, actor, input),
 }
+
+for(const name of Object.keys(actions))if(name.startsWith('signature.')||name.startsWith('task.signature.'))actions[name]=auditedSigning(name,actions[name])

@@ -20,7 +20,10 @@ export async function signatureReportingProof(h,owner,s) {
  const review=await api('signature.preview',{template:template.id,people:[s.employee.person,s.managerb.person],hr:s.hr.member,expiresAt:Date.now()+7*86400000})
  const cohort=await api('signature.send',{review:review.id,digest:review.digest,approved:true})
  const columns=['name','signatureRequests','signaturePending','signatureViewed','signatureSigned','signatureVoided','signatureUnknown']
- const definition={name:'synthetic-willow-15305',columns,asOf:today,from:today,to:today,status:'all',signatureTemplate:template.id,signatureCohort:cohort.id}
+ const issuedRecord=(await api('signature-requests')).find(r=>r.id===cohort.requests[0])
+ const recordDay=new Date(issuedRecord.createdAt).toISOString().slice(0,10),recordDate=new Date(issuedRecord.expiresAt).toISOString().slice(0,10)
+ const pastDate=new Date(issuedRecord.createdAt-2*86400000).toISOString().slice(0,10),beforeRange=new Date(issuedRecord.createdAt-86400000).toISOString().slice(0,10)
+ const definition={name:'synthetic-willow-15305',columns,asOf:recordDate,from:beforeRange,to:recordDate,status:'all',signatureTemplate:template.id,signatureCohort:cohort.id}
  await api('report.save',{definition:{...definition,signatureState:'unobserved'}},400)
  const saved=await api('report.save',{definition})
  const result=async(cookie=owner,id=saved.id)=>(await as(cookie,'custom-reports/'+id)).result
@@ -49,17 +52,17 @@ export async function signatureReportingProof(h,owner,s) {
  assert.equal(r.signatureTotals.signatureUnknown,0)
  for(const record of r.signatureTotals.sources) {
   assert.equal((await h.raw(record.source,{cookie:owner})).status,200)
-  const dated=await api('signature-requests/'+record.id+'?asOf='+today)
+  const dated=await api('signature-requests/'+record.id+'?asOf='+recordDate)
   assert.equal(dated.state,record.state,'Saved metrics reconcile with the dated public signing source')
   assert.ok(record.closedAt)
   for(const forbidden of ['certificate','sealedVersion','digest','fields','values','signers','rendered_sha256'])assert.ok(!Object.hasOwn(record,forbidden))
  }
  assert.ok(r.signatureTotals.sources.find(x=>x.id===employeeRequest).completedAt)
- const past=await api('report.save',{definition:{...definition,name:'synthetic-willow-15308',asOf:day(-1),from:day(-2),to:today}})
+ const past=await api('report.save',{definition:{...definition,name:'synthetic-willow-15308',asOf:pastDate,from:pastDate,to:recordDate}})
  assert.equal((await result(owner,past.id)).signatureTotals.signatureRequests,0,'A past date excludes requests issued later')
  const filtered=await api('report.save',{definition:{...definition,name:'synthetic-willow-15309',signatureState:'signed'}})
  assert.equal((await result(owner,filtered.id)).signatureTotals.signatureRequests,1)
- const excluded=await api('report.save',{definition:{...definition,name:'synthetic-willow-15310',from:day(-2),to:day(-1)}})
+ const excluded=await api('report.save',{definition:{...definition,name:'synthetic-willow-15310',from:pastDate,to:beforeRange}})
  assert.equal((await result(owner,excluded.id)).signatureTotals.signatureRequests,0,'Issue dates use the inclusive selected range')
  const managerSaved=await as(s.managera.cookie,'report.save',{definition:{...definition,name:'synthetic-willow-15311'}})
  const manager=await result(s.managera.cookie,managerSaved.id)
@@ -91,13 +94,13 @@ export async function signatureReportingProof(h,owner,s) {
  assert.deepEqual(selected.signatureTotals.sources,[])
  assert.ok(selected.rows.find(x=>x.personId===s.employee.person).withheld.includes('signatureSigned'))
  assert.equal((await h.raw('/app/signatures/'+employeeRequest+'.pdf',{cookie:s.payroll.cookie})).status,404)
- await api('report.schedule',{report:saved.id,version:saved.versionId,firstDate:today,cadenceDays:1,recipients:[s.payroll.member],enabled:true})
+ await api('report.schedule',{report:saved.id,version:saved.versionId,firstDate:recordDay,cadenceDays:1,recipients:[s.payroll.member],enabled:true})
  const scheduled=(await api('custom-reports/'+saved.id)).schedule
  assert.ok(scheduled.schedule.recipients.includes(s.payroll.member),'Signature definitions reuse the existing reviewed safe-link schedule')
  await api('level.apply',{review:(await api('level.preview',{kind:'level',level:level.id,name:'synthetic-willow-15315',permissions:[],reports:[]})).id})
  s.payroll.cookie=await h.signIn('payroll@example.com')
  await as(s.payroll.cookie,'custom-reports/'+saved.id,undefined,403)
- await api('report.schedule',{report:saved.id,version:saved.versionId,firstDate:today,cadenceDays:1,recipients:[s.payroll.member],enabled:true},403)
+ await api('report.schedule',{report:saved.id,version:saved.versionId,firstDate:recordDay,cadenceDays:1,recipients:[s.payroll.member],enabled:true},403)
  await reportScreens(h,owner,s.managera.cookie,saved.id,managerSaved.id)
  console.log('Saved signature reports: PASS — dated authorized sources, reconciled counts, filters, CSV and XLSX, selected-report isolation and reviewed schedule')
 }

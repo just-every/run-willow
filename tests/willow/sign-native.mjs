@@ -179,6 +179,9 @@ export async function nativeSigningProof(h,owner,s,join) {
  assert.equal((await h.raw('/app/signatures/'+expiredBefore.id,{cookie:s.employee.cookie})).status,200)
 
  await signingBrowser(h,owner,s,next.requests[0],oldRequest.id,changedSend.requests[0],expiry.requests[0])
+ const nativeAudit=await api('audit')
+ assert.ok(nativeAudit.some(e=>e.action==='signature.attempt.read'&&JSON.parse(e.detail).outcome==='denied'))
+ assert.ok(!nativeAudit.filter(e=>e.action.startsWith('signature.')).some(e=>['Employee signer','HR signer','Session bound signer','Agreed'].some(value=>e.detail.includes(value))))
  console.log('Native signing: PASS — consent, ordered signatures, sealed bytes, certificate, scoped cohort status, cancellation and old request refusal')
 }
 async function signingBrowser(h,owner,s,id,oldId,newId,expiredId) {
