@@ -4901,7 +4901,7 @@
       "executable": false
     },
     "tests/willow/ai-policy.mjs": {
-      "sha256": "708aa15f6b6ed19942966c31b11f362a2be35bff515774182ac7104f19b7f686",
+      "sha256": "8591ae26949d58a5b2aea9c83b8ca04ca12992fd844bed359fa49d6ef1630247",
       "executable": false
     },
     "tests/willow/ai-workflows-browser.mjs": {

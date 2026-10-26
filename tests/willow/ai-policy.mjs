@@ -29,6 +29,8 @@ try{
  const config={enabled:true,policies:true,workflows:true,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
  const ask=(cookie,person='me',question='Am I eligible for PTO and what is my balance?',status=200)=>h.api('policy.answer',cookie,{person,question},status)
  const sources=await api('policies'),version=sources[0].versions.find(v=>v.status==='approved')
+ const unapproved=await h.api('policy.write',s.hr.cookie,{name:'Draft leave policy',summary:'Draft policy awaits owner review.',accrualWeeks:'0',negativeLimitHours:'0'})
+ await h.api('ai.policy.include',s.hr.cookie,{version:unapproved.id,included:true},409)
  await h.api('ai.policy.include',s.hr.cookie,{version:version.id,included:true})
  await h.api('policy.approve',s.hr.cookie,{version:version.id},403)
  await ask(s.employee.cookie,'me','What is my PTO balance?',409)
