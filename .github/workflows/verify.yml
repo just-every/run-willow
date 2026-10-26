@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [core, records-people, records-work, records-policy]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       CI: 'true'
@@ -50,7 +50,7 @@ jobs:
             ${{ runner.temp }}/willow-evidence/*.png
 
   performance:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       CI: 'true'
@@ -78,7 +78,7 @@ jobs:
           path: ${{ runner.temp }}/willow-evidence/*.png
 
   commands-and-restore:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       CI: 'true'
@@ -116,7 +116,7 @@ jobs:
           path: ${{ runner.temp }}/willow-evidence/*.png
 
   retention-and-eeo:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       CI: 'true'
@@ -146,7 +146,7 @@ jobs:
           path: ${{ runner.temp }}/willow-evidence/*.png
 
   restore-erasure:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       CI: 'true'
@@ -171,7 +171,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [browser-access, browser-scope, browser-job, browser-phase2]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       CI: 'true'
@@ -222,7 +222,7 @@ jobs:
             sections: approvalPersonal approvalRouting approvalBrowser
           - shard: builtins
             sections: builtinSelection builtinBrowser builtinCustody
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       CI: 'true'
