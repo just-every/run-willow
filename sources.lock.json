@@ -4932,7 +4932,7 @@
       "executable": false
     },
     "tests/willow/ai-policy.mjs": {
-      "sha256": "7114197da34e96328d32ad4ae2aacc6045aa1ffc715aa369e857d42fbacfd630",
+      "sha256": "4e215f80063f42f746e2b3685987e2d29018c07c6af55307d3fae6cf595e8d27",
       "executable": false
     },
     "tests/willow/ai-workflows-browser.mjs": {

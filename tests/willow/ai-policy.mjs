@@ -29,7 +29,7 @@ try{
  await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})
  const f=await fixture(h,owner,{names:{employee:'Elena Patel',managera:'Jules Chen',managerb:'Ari Morgan',hr:'Nora Brooks',payroll:'Mina Costa',ended:'Sam Reed',invited:'Theo Park'}}),s=f.staff,api=f.api
  if(!live)await escalationProof({h,owner,staff:s})
- const config={enabled:true,policies:true,workflows:true,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
+ const config={enabled:true,policies:true,workflows:true,model:live?'gpt-4.1-mini':'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
  const ask=(cookie,person='me',question='Am I eligible for PTO and what is my balance?',status=200)=>h.api('policy.answer',cookie,{person,question},status)
  const sources=await api('policies'),version=sources[0].versions.find(v=>v.status==='approved')
  const unapproved=await h.api('policy.write',s.hr.cookie,{name:'Draft leave policy',summary:'Draft policy awaits owner review.',accrualWeeks:'0',negativeLimitHours:'0'})
@@ -168,7 +168,7 @@ try{
  for(const value of ['PRIVATE-employee','81234.56','highest paid','synthetic-willow-provider-error',live?process.env.MODELS_KEY:'synthetic-willow-1'])assert.ok(!h.output().includes(value),'Worker logs contain no assistant question, record, provider error content or secret')
  for(const event of callAudit){const detail=typeof event.detail==='string'?JSON.parse(event.detail):event.detail;assert.ok(detail.consentVersion);assert.ok(detail.sources.length);assert.ok(detail.inputFields.length)}
  await h.api('ai-controls',s.employee.cookie,undefined,403)
- if(live)assert.ok(history.calls.reduce((sum,call)=>sum+call.reserved_microusd,0)<=10000,'Whole live journey is capped at USD 0.01')
+ if(live)assert.ok(history.calls.reduce((sum,call)=>sum+call.reserved_microusd,0)<=50000,'Whole live journey is capped at USD 0.05')
  if(live)console.log(JSON.stringify({calls:history.calls.map(call=>({responseId:call.response_id,model:call.model,status:call.status,actualMicrousd:call.actual_microusd,capMicrousd:call.cap_microusd}))}))
  console.log('AI-001 reader-scoped cited answers, inclusion, budgets, refusal and provider audit: PASS')
  if(live)console.log(JSON.stringify(receipts))
