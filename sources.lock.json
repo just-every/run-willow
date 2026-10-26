@@ -1754,6 +1754,10 @@
       "sha256": "f9fe6d4ab34e2290a8a87a15f8feee0e44c92f70392efe8f67303fcd886717fc",
       "executable": false
     },
+    "scripts/willow/signing-journey.sh": {
+      "sha256": "5500898e439cde7a107afdb65ec76c4d98c93481d3509d1061edcbe423819c34",
+      "executable": false
+    },
     "SEED-COMMAND-CONTRACT.md": {
       "sha256": "fa33e9ab6bb3695797e1f023221498959d09b8a68f644829f7b61529ce0f6e62",
       "executable": false
