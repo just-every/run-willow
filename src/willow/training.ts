@@ -125,3 +125,27 @@ export async function decideTraining(env:Bindings,actor:Actor,input:Input) {
  await commit(env,statements,{actor:actor.id,action:'training.decide',subject:id,detail:{decision}})
  return {id,status:decision==='approve'?'approved':'rejected'}
 }
+
+/** Required work reuses native schedules and fixed notices, without training evidence in the projection. */
+export async function trainingWork(env:Bindings):Promise<import('./work-sources').WorkSource[]> {
+ const result:import('./work-sources').WorkSource[]=[]
+ for(const row of await all(env,`SELECT a.*,c.self_completion,m.id AS member FROM wl_training_assignments a
+  JOIN wl_training_courses c ON c.id=a.course_id LEFT JOIN wl_members m ON m.person_id=a.person_id AND m.status='active'
+  WHERE NOT EXISTS(SELECT 1 FROM wl_training_events e WHERE e.assignment_id=a.id)`)) {
+  const visible=(actor:Actor)=>can(actor,'people.manage')||actor.personId===row.person_id&&reads(actor,row.person_id,'trainingAssignments')
+  result.push({key:`training:${row.id}`,kind:'training',title:'Complete assigned training',path:'/app/training',due:row.due_date,preferred:row.member,
+   next:'Complete the course and record permitted evidence or contact HR',progress:'Completion pending',personId:row.person_id,
+   visible,responsible:visible})
+ }
+ for(const row of await all(env,`SELECT r.*,a.due_date FROM wl_training_requests r LEFT JOIN wl_training_assignments a ON a.id=r.target_id
+  WHERE NOT EXISTS(SELECT 1 FROM wl_training_decisions d WHERE d.request_id=r.id)`)) {
+  const reviewer=(actor:Actor)=>can(actor,'people.manage')&&actor.id!==row.requested_by&&actor.personId!==row.person_id
+  const field=row.operation==='complete'?'trainingCompletions':'trainingAssignments'
+  const payload=JSON.parse(row.payload_json)
+  result.push({key:`training-request:${row.id}`,kind:'training-request',title:'Review training change',path:'/app/training',due:row.due_date??payload.dueDate,
+   next:'Review the exact proposed training change',progress:'Independent review pending',personId:row.person_id,approval:true,
+   visible:actor=>reviewer(actor)||actor.id===row.requested_by&&reads(actor,row.person_id,field)&&(!payload.certificate||reads(actor,row.person_id,'trainingCertifications')),
+   responsible:reviewer})
+ }
+ return result
+}
