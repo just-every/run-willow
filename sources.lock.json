@@ -3719,7 +3719,7 @@
       "executable": false
     },
     "src/willow/ai-workflows-approvals.ts": {
-      "sha256": "488480527ca2779a76fe03a8e8c0a06a820f33550c64a2ca395169add36c1ccf",
+      "sha256": "cef5782cf73c97b379cef2efcdcb1d64de3657f40dc1b0f902f27927de37848c",
       "executable": false
     },
     "src/willow/ai-workflows-impact.ts": {
@@ -4631,7 +4631,7 @@
       "executable": false
     },
     "src/willow/ui/ai-workflows.ts": {
-      "sha256": "99cfc025da38dca0918a5b7d962dd067ca95c45725e205a588977fd5ed3e2c07",
+      "sha256": "f2b92ff6e2f43dec03be52e0a79fc689e2e2fed611eb9fd190b056eefb72c79a",
       "executable": false
     },
     "src/willow/ui/api-credentials.ts": {
@@ -4919,7 +4919,7 @@
       "executable": false
     },
     "tests/willow/ai-workflows-browser.mjs": {
-      "sha256": "82b78b46469c11a00d3fbf6eea0224b2808923c537cc7888b825f93c5770a923",
+      "sha256": "2fc84459d1071fb50319027575404ce14db3d8f37de701aa6d44525d9374cd1f",
       "executable": false
     },
     "tests/willow/bundle-review-fixture.mjs": {

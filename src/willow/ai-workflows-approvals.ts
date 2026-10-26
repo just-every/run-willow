@@ -10,7 +10,8 @@ import { workflowData, workflowRecord } from './ai-workflows-store'
 
 export async function workflowStepApprovals(env: Bindings, row: Row) {
   const requirements = await all(env, 'SELECT position,authority FROM wl_ai_workflow_step_requirements WHERE workflow_id=? ORDER BY position,authority', row.id)
-  const receipts = await all(env, 'SELECT position,authority,approved_by,approved_at,approver_name FROM wl_ai_workflow_valid_step_approvals WHERE workflow_id=? ORDER BY approved_at', row.id)
+  const sourceStale = row.status !== 'published' && requirements.length > 0 && await workflowSourceChanged(env, workflowData(row).source)
+  const receipts = sourceStale ? [] : await all(env, 'SELECT position,authority,approved_by,approved_at,approver_name FROM wl_ai_workflow_valid_step_approvals WHERE workflow_id=? ORDER BY approved_at', row.id)
   return requirements.map(required => ({ position: required.position as number, authority: required.authority as string,
     approvals: receipts.filter(receipt => receipt.position === required.position && receipt.authority === required.authority).map(receipt => ({ member: receipt.approved_by, name: receipt.approver_name, at: receipt.approved_at })) }))
 }

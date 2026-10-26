@@ -75,10 +75,12 @@ export async function workflowScreens(h, owner, staff, inputs) {
       await h.api('connections.notices', owner, { enabled: width === 1440 })
       await hr.reload()
       assert.ok((await hr.getByRole('alert').allTextContents()).some(text => /source template or connection snapshot has changed/i.test(text)))
+      assert.ok((await h.api(`ai-workflows/${stale}`,owner)).approvals.every(step=>step.approvals.length===0),'A changed source invalidates every pending signoff')
       assert.equal(await hr.getByRole('button', { name: 'Approve and publish workflow', exact: true }).count(), 0)
       await capture(hr, 'stale', width)
       await payroll.goto(`${h.origin}/app/workflow-approvals?workflow=${stale}`)
       assert.equal(await payroll.getByRole('button', { name: 'Approve payroll step 2', exact: true }).count(), 0)
+      await capture(payroll, 'stale-signoff', width)
 
       const unresolved = await requestWorkflow(inputs.connectorSource, 'For everyone, assign task 1 to it due 0 days after start using source connector.\nFor everyone, assign task 2 to payroll due 0 days after start after task 1.')
       await hr.getByRole('heading', { name: 'Publication gaps', exact: true }).waitFor()
