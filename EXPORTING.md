@@ -240,9 +240,9 @@ manifest verifies their SHA-256 against the execution certificate.
 
 Request-owned signing records inherit their filing category's retention class,
 expiry and holds. Erasure moves retained evidence into restricted custody and
-keeps other recipients' shared-cohort records independent. Unassigned rendered
-preview files retain the existing preview-custody boundary; full erasure and
-purge coverage is still recorded as partial in the signing clauses.
+keeps other recipients' shared-cohort records independent. Unissued rendered preview files and exact shared review snapshots follow the
+same category rules. Erasure and expiry purge strip the affected recipient from
+live shared reviews and stop old issue authority while preserving peers.
 
 Owner archives preserve historical signed records and consent evidence, while
 excluding payload reviews, consuming old issue reviews, voiding unsigned requests

@@ -124,6 +124,8 @@ async function signingWorkflowBrowser(h) {
   const capturePage = async (page, label) => {
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 1000 })
+      await page.reload()
+      if (label.endsWith('-editor')) await page.locator('section.templates').getByText('Native signing step', { exact: true }).first().click()
       await page.evaluate(() => document.fonts.ready)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label} fits ${width}`)
       await prepareSigningCapture(page);await page.screenshot({ path: `${destination}/SIGN-workflow-${label}-${width}.png`, fullPage: true })
@@ -133,7 +135,6 @@ async function signingWorkflowBrowser(h) {
     async capture(path, cookie, label) {
       const page = await enter(cookie)
       assert.equal((await page.goto(h.origin + path)).status(), 200)
-      if (label.endsWith('-editor')) await page.locator('section.templates').getByText('Native signing step', { exact: true }).first().click()
       await capturePage(page, label); await page.context().close()
     },
     async preview(caseId, taskId, cookie, label) {

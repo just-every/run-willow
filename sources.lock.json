@@ -699,7 +699,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "63a679f616e66751fa6bd0b0d80d58bfb550af47bb43a696ee6ce020fa73ac6c",
+      "sha256": "2c3043fe2a20c6f4e11b52ed9748cfd47136d5b2c4715d839c2f3f9c251b3c7e",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -727,7 +727,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "cd311e7334d038a8255f5697c02e681bf799b2eb8a879b6791c0ef7dc0570f18",
+      "sha256": "9b271fc9b5397b45f9a244544d270a23d3388825cb8ff78626e3b8d175dc7c16",
       "executable": false
     },
     "DEMO.md": {
@@ -787,7 +787,7 @@
       "executable": false
     },
     "EXPORTING.md": {
-      "sha256": "24eba8d1da85e9e7331d4aa9e763eb4a4a6a97ccf3d45422abd8f100438589ea",
+      "sha256": "5e20c8666f128b54642de861cfa8ae9e6ffedfbe1b99f7394d2b3c11d3d93a04",
       "executable": false
     },
     "FIELD-AUTHORITY.md": {
@@ -4571,11 +4571,11 @@
       "executable": false
     },
     "src/willow/retention/erase.ts": {
-      "sha256": "d00ae19918e4fd95ce4e724f7a39754fc43c90b81c86643180f55315f5e326b3",
+      "sha256": "eadf49d75e9e1c21dab5ca3650f22d3dd14981da86824a3cf3f3f9ad74a3c8f7",
       "executable": false
     },
     "src/willow/retention/erasure.ts": {
-      "sha256": "cc4b84bf95f69f23af1901bdfbfb7d65328b6faded12c9f04182691d0652d5a7",
+      "sha256": "af5d33add1d12072011c20bf9fb1f3edc38529d1a8765774aeb5cce2df6067cb",
       "executable": false
     },
     "src/willow/retention/excluded.ts": {
@@ -4595,7 +4595,7 @@
       "executable": false
     },
     "src/willow/retention/inventory.ts": {
-      "sha256": "88afe9c2cb3d73c11eb0bae490e253bde6e611bc42c16e11cd057cea87fab433",
+      "sha256": "7bf213fcafce2388f89ee40718a763e4dd02ac02f4e61656208c38a997715610",
       "executable": false
     },
     "src/willow/retention/journal.d.ts": {
@@ -4623,7 +4623,7 @@
       "executable": false
     },
     "src/willow/retention/review.ts": {
-      "sha256": "cc0ed9a943159f1dd987ede849892a23fd02779476e6c7f3008d44409d11b8fb",
+      "sha256": "1147dd40c2810b812d776bdb12d782f97be15e2e141c52045a30f27b04853a1a",
       "executable": false
     },
     "src/willow/retention/rules.ts": {
@@ -4635,7 +4635,7 @@
       "executable": false
     },
     "src/willow/retention/signatures.ts": {
-      "sha256": "ebf3bb9ae44cda5615a55096f19155666dd6855f2e1f7a21574a719161d7ab7f",
+      "sha256": "50532ee061ebcf16f23a8936f8ea65bb5986cd85c6bf7c62cd54df4d8b37dcd9",
       "executable": false
     },
     "src/willow/retention/view.ts": {
@@ -5483,7 +5483,7 @@
       "executable": false
     },
     "tests/willow/retention-signatures.mjs": {
-      "sha256": "08ae63af4d0ed90aae879a522290b9dfb48779d0f85e659ed8ef9de4334ab5c6",
+      "sha256": "f39041641d59b3dde6344ede1fd347102b841342b5bb3c44e0f7bec9ceed1ef9",
       "executable": false
     },
     "tests/willow/retention.mjs": {
@@ -5511,7 +5511,7 @@
       "executable": false
     },
     "tests/willow/sign-native.mjs": {
-      "sha256": "7563d37a61210db12b1def55dd2a030dac1a8d12659e7a1074fe8696f48d06a9",
+      "sha256": "c53299728963be31873b2718ef05a9a810d5834ee2a9e432ba05baddd92e88aa",
       "executable": false
     },
     "tests/willow/sign-reporting.mjs": {
@@ -5551,7 +5551,7 @@
       "executable": false
     },
     "tests/willow/workflow-signing.mjs": {
-      "sha256": "3cc388253a30d497138ef88f591bfd91b7ded549d3f01c9b80277755e0f7f69d",
+      "sha256": "9d5c1c93671f160c3e915079681524e0e4e8db2bd5c5ce041f9167bfea7478a3",
       "executable": false
     },
     "tests/willow/workflows.mjs": {

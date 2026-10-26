@@ -154,7 +154,7 @@ export async function planErasure(env: Bindings, actor: Actor, personId: string)
   const staged: { store: Store; measured: Awaited<ReturnType<typeof measure>> }[] = []
   const latest = new Map<string, string>()
   for (const store of [...STORES, ...AUTHORED_STORES]) {
-    if (CATEGORY_SIGNATURE_STORES.has(store.id) && store.id !== 'signature_files') continue
+    if (CATEGORY_SIGNATURE_STORES.has(store.id) && !['signature_files', 'signature_reviews'].includes(store.id)) continue
     const measured = await measure(env, store, subject, zone)
     if (!measured.rows) continue
     staged.push({ store, measured })

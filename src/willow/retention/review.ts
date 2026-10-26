@@ -7,6 +7,7 @@ import { all, commit as commitBatch, insist, newId, now, sha256Hex, stmt, Willow
 import type { Input } from '../input'
 import { finishBlobs, moveRows, readTargets, targets } from './erase'
 import { planErasure } from './erasure'
+import { closeSigningReviews } from './signatures'
 
 const SHARED = new Set(['payroll_batches'])
 
@@ -48,10 +49,13 @@ export async function confirmPurge(env: Bindings, actor: Actor, input: Input) {
   const byClass: Record<string, number> = {}
   for (const item of expired) byClass[item.class!] = (byClass[item.class!] ?? 0) + item.rows
   const blobList = [...blobs]
+  const reviews = rowTargets.filter(target => target.table === 'wl_sign_reviews').flatMap(target => ids.get(target.id) ?? [])
+  const reviewIds = reviews.length ? (await all<{ id: string }>(env, 'SELECT id FROM wl_sign_reviews WHERE rowid IN (SELECT value FROM json_each(?))', JSON.stringify(reviews))).map(row => row.id) : []
   await commitBatch(env, [
     stmt(env, 'INSERT INTO wl_erasure_window (token) VALUES (?)', purgeId),
     stmt(env, 'PRAGMA defer_foreign_keys = on'),
     ...await moveRows(env, rowTargets, ids, purgeId, at),
+    ...closeSigningReviews(env, personId, at, reviewIds),
     ...blobList.map(([sha, size]) => stmt(env, 'INSERT INTO wl_erasure_blobs (erasure_id, sha256, size) VALUES (?, ?, ?)', purgeId, sha, size)),
     ...await erasureStatements(env.DB, 'wl_people', { id: `purge:${purgeId}` }), ...await redactionStatements(env.DB), ...await invalidateTransfersStatements(env.DB),
     stmt(env, 'DELETE FROM wl_erasure_window'),

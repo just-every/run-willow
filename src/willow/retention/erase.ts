@@ -56,6 +56,7 @@ export interface RowTarget { id: string; table: string; from: string; blob?: str
 /** The keys of every row each target removes, and the bytes only erased rows own. */
 export async function readTargets(env: Bindings, rowTargets: RowTarget[], params: string[]) {
   const ids = new Map<string, string[]>(), blobs = new Map<string, number>(), erasedShas = new Map<string, number>()
+  const retainedShas = new Set<string>(), erasedRows = new Set<string>()
   for (const target of rowTargets) {
     const rowid = !(await one<{ sql: string }>(env, "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", target.table))!.sql.includes('WITHOUT ROWID')
     const pk = (await all<{ name: string; pk: number }>(env, `PRAGMA table_info(${target.table})`)).filter(row => row.pk > 0).sort((a, b) => a.pk - b.pk).map(row => row.name)
@@ -65,10 +66,16 @@ export async function readTargets(env: Bindings, rowTargets: RowTarget[], params
     const rows = (await env.DB.prepare(sql).bind(...params.slice(0, max)).all<{ k: unknown; sha?: string; size?: number }>()).results
     ids.set(target.id, rows.map(row => rowid ? row.k as string : JSON.parse(String(row.k))))
     Object.assign(target, { rowid, pk })
-    if (target.blob && target.item.disposition === 'erased') for (const row of rows) { blobs.set(row.sha!, row.size!); erasedShas.set(row.sha!, (erasedShas.get(row.sha!) ?? 0) + 1) }
+    if (target.blob) for (const row of rows) {
+      if (target.item.disposition !== 'erased') { retainedShas.add(row.sha!); continue }
+      blobs.set(row.sha!, row.size!)
+      const key = `${target.table}:${JSON.stringify(row.k)}`
+      if (!erasedRows.has(key)) { erasedRows.add(key); erasedShas.set(row.sha!, (erasedShas.get(row.sha!) ?? 0) + 1) }
+    }
   }
   // Content-addressed bytes still referenced by a record that stays, here or elsewhere, are kept.
   for (const [sha] of [...blobs]) {
+    if (retainedShas.has(sha)) { blobs.delete(sha); continue }
     const refs = (await one<{ n: number }>(env, `SELECT (${SOURCE_TABLES.map(table => `(SELECT COUNT(*) FROM ${table} WHERE sha256 = ?1)`).join(' + ')} + (SELECT COUNT(*) FROM wl_retained_records WHERE instr(row_json, ?1) > 0) + (SELECT COUNT(*) FROM wl_change_requests WHERE instr(attachments_json, ?1) > 0)) AS n`, sha))!.n
     if (refs > (erasedShas.get(sha) ?? 0)) blobs.delete(sha)
   }
@@ -77,7 +84,7 @@ export async function readTargets(env: Bindings, rowTargets: RowTarget[], params
 
 /** Retained and held rows are copied whole into custody, then every target's rows are deleted. */
 export async function moveRows(env: Bindings, rowTargets: RowTarget[], ids: Map<string, string[]>, erasureId: string, at: number) {
-  const statements: D1PreparedStatement[] = []
+  const statements: D1PreparedStatement[] = [], deletions: D1PreparedStatement[] = []
   for (const target of rowTargets) {
     const list = ids.get(target.id) ?? []
     if (!list.length) continue
@@ -91,9 +98,11 @@ export async function moveRows(env: Bindings, rowTargets: RowTarget[], ids: Map<
     }
     // Peer awards and shared signing records stay live with anonymized attribution.
     // Holds preserve the original in restricted custody before that redaction.
-    if (target.id !== COMPENSATION_AUTHORSHIP && !(target.id.startsWith('wl_sign_') || ['signature_reviews', 'signature_cohorts'].includes(target.id))) statements.push(stmt(env, `DELETE FROM ${target.table} WHERE ${where}`, JSON.stringify(list)))
+    if (target.id !== COMPENSATION_AUTHORSHIP && !(target.id.startsWith('wl_sign_') || ['signature_reviews', 'signature_cohorts'].includes(target.id) || target.table === 'wl_sign_reviews')) deletions.push(stmt(env, `DELETE FROM ${target.table} WHERE ${where}`, JSON.stringify(list)))
   }
-  return statements
+  // A preview blob can be evidence for several categories. Copy every applicable
+  // retained use before deleting its one live file row.
+  return [...statements, ...deletions]
 }
 
 export async function confirmErasure(env: Bindings, actor: Actor, input: Input) {
