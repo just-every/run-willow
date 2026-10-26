@@ -85,7 +85,10 @@ async function escalationScreens({h,staff,read}) {
    assert.ok(pending,'The employee form creates an HR contact request')
    await capture(employee,'followup-requested',width)
 
-   await hr.goto(h.origin+route)
+   await hr.goto(h.origin+'/app/tasks')
+   await capture(hr,'followup-work',width,'h1')
+   await hr.getByRole('link',{name:'Contact requester about policy',exact:true}).first().click()
+   await hr.getByRole('heading',{name:'HR policy follow-up',exact:true}).waitFor()
    const form = hr.locator('form[action="/app/do/policy.escalation.resolve"]').filter({has:hr.locator(`input[name="escalation"][value="${pending.id}"]`)})
    assert.equal(await form.count(),1,'HR has a native form for the employee request')
    await capture(hr,'followup-hr',width)
@@ -106,13 +109,13 @@ async function escalationScreens({h,staff,read}) {
  }
 }
 
-async function capture(page,name,width) {
+async function capture(page,name,width,section='#hr-policy-follow-up') {
  await page.evaluate(()=>document.fonts.ready)
  const bell = page.getByRole('link',{name:'Open your task list',exact:true})
  await bell.focus()
  assert.ok(await page.getByRole('tooltip',{name:'Your tasks',exact:true}).isVisible(),'The task bell has an immediate focus tooltip')
  await page.locator('h1').click()
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'The follow-up page has no horizontal overflow')
- await page.locator('#hr-policy-follow-up').scrollIntoViewIfNeeded()
+ await page.locator(section).scrollIntoViewIfNeeded()
  await page.screenshot({path:join(evidenceDirectory,`${name}-${width}.png`),fullPage:true})
 }

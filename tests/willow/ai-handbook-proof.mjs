@@ -49,6 +49,16 @@ export async function handbookProof({h,api,owner,staff:s,ask,calls,live,onCall,r
  assert.equal((await ask(s.employee.cookie,'handbook','What is our remote work policy?')).status,'unsupported')
  assert.equal((await h.api('handbooks',s.employee.cookie)).length,0)
  assert.equal(calls.length,withdrawn,'Withdrawn handbooks cannot reach the provider')
+ if(!live){
+  const ambiguous=await hr('ai.handbook.write',{title:'Office guidance',clauses:[{clauseId:1,topic:'general-policy',applicableFrom:day(-30),text:'Clean jeans are permitted in the office.'},{clauseId:2,topic:'conduct',applicableFrom:day(-30),text:'Clean jeans in the office must follow the conduct policy.'}]})
+  const approved=await hr('ai.handbook.approve',{version:ambiguous.versionId,revision:ambiguous.revision,sourceAttestation:true})
+  const scoped=await hr('ai.handbook.include',{version:ambiguous.versionId,revision:approved.revision,included:true})
+  const beforeAmbiguity=calls.length
+  const limited=await ask(s.employee.cookie,'handbook','Can I wear clean jeans to the office?')
+  assert.equal(limited.status,'unsupported');assert.ok(limited.needsHr)
+  assert.equal(calls.length,beforeAmbiguity,'Ambiguous local topic matches route to HR before egress')
+  await hr('ai.handbook.withdraw',{handbook:ambiguous.handbookId,revision:scoped.revision})
+ }
  const audit=await api('audit')
  const records=audit.filter(row=>row.action.startsWith('ai.handbook.'))
  assert.ok(records.length)

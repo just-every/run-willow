@@ -120,6 +120,7 @@ try {
   const api = apiAt(origin)
   const f = await fixture({ api, signIn: (email,options) => server.signIn(email,options) }, owner)
   const { staff: s } = f
+  const policyFollowup=await api('policy.escalate',s.employee.cookie,{})
   // Native level-bound credentials are environment authority, never portable data.
   const credentialReview = await api('level.preview', owner, { kind: 'level', name: 'synthetic-willow-restore-credential', permissions: [], scope: { kind: 'everyone' } })
   const credentialLevel = await api('level.apply', owner, { review: credentialReview.id })
@@ -330,6 +331,9 @@ try {
   assert.equal(paused.model.configured, true)
   assert.equal(paused.model.selected, null)
   assert.equal((await after('model.draft', newOwner, { template: f.templates.joiner }, 409)).error, 'model_not_configured')
+  assert.equal((await after('policy-escalations',cookies.employee)).find(row=>row.id===policyFollowup.id).status,'open','A native HR contact request survives restore without model activation')
+  await after('policy.escalation.resolve',cookies.hr,{escalation:policyFollowup.id})
+  assert.equal((await api('policy-escalations',sourceOwner)).find(row=>row.id===policyFollowup.id).status,'open','Restored HR contact completion leaves the source request unchanged')
   const restoredAi=(await after('ai-controls',newOwner)).settings
   assert.equal(restoredAi.enabled,0);assert.equal(restoredAi.policies,0);assert.equal(restoredAi.workflows,0);assert.equal(restoredAi.provider_retention,'unapproved')
   await after('policy.answer',cookies.employee,{question:'What is my PTO balance?'},409)
