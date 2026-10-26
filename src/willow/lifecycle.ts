@@ -17,6 +17,7 @@ import { endAccessStatements } from './members'
 import { managerChangeGuard } from './organization'
 import { editorTaskRules, parseTaskRules } from './workflow-rules'
 import { blockedBy, plannedTasks, workflowContext, type WorkflowContext } from './workflow-plan'
+import { mayReadSigningEvidence, validateSignatureStep } from './workflow-signing'
 import { customValueStatements, customValuesInput } from './custom-fields/store'
 import { assetReturnStatements, heldAssets } from './record-tables/rows'
 import { PRIVATE_FIELDS, createPersonStatements, displayName, prepareTerms, readPerson, startPeriodStatements, termsOn } from './people'
@@ -50,6 +51,11 @@ export async function createTemplate(env: Bindings, actor: Actor, input: Input) 
     if (task.system) task.evidence = true
   }
   const rules = input.has('taskRules') ? parseTaskRules(input, tasks.length) : editorTaskRules(input, tasks.map(task => task.sourcePosition))
+  for (const [index, rule] of rules.entries()) if (rule.signature) {
+    insist(tasks[index].assignee === 'hr' && !tasks[index].action && !tasks[index].system, 'signature_task_requires_hr')
+    await validateSignatureStep(env, actor, rule.signature)
+    tasks[index].evidence = true
+  }
   const id = newId(), family = previous?.family_id ?? newId(), version = ((await one(env, 'SELECT MAX(version) AS version FROM wl_templates WHERE family_id=?', family))?.version ?? 0) + 1
   await commit(env, [
     guard(env, 'stale', '(SELECT COALESCE(MAX(version),0) FROM wl_templates WHERE family_id=?)=?', family, version - 1),
@@ -189,6 +195,7 @@ export async function completeTask(env: Bindings, actor: Actor, input: Input, re
   // HR work reached only through a scoped level is rechecked against fresh terms inside the write (ROLE-002).
   const scopeAuthority = (task.assignee === 'hr' || (task.assignee === 'manager' && !task.assignee_person_id)) && !can(actor, 'people.manage') ? await scopeFence(env, actor, caseRow.person_id, 'people.manage') : []
   insist(task.system !== OKTA_SYSTEM, 'okta_readback_required',409)
+  insist(task.action !== 'signature', 'signature_completion_required', 409)
   insist(task.status === 'open' && !task.superseded_at, 'task_already_done', 409)
   insist(!(await blockedBy(env, task)).length, 'dependencies_open', 409)
   const evidence = input.text('evidence', { optional: true, max: 2000 })
@@ -238,18 +245,21 @@ export async function completeCase(env: Bindings, actor: Actor, input: Input) {
 export async function caseDetail(env: Bindings, actor: Actor, id: string) {
   const caseRow = await one(env, 'SELECT * FROM wl_cases WHERE id = ?', id)
   insist(caseRow, 'not_found', 404)
-  const tasks = await all(env, 'SELECT * FROM wl_case_tasks WHERE case_id = ? AND superseded_at IS NULL ORDER BY position', id)
+  const history = await all(env, 'SELECT * FROM wl_case_tasks WHERE case_id = ? ORDER BY position', id)
+  const tasks = history.filter(task => !task.superseded_at)
   const mine = tasks.filter(task => answersFor(actor, task, caseRow))
   // Anyone answering a task sees the case's tasks; the lifecycle facet sees the whole case.
   insist(sees(actor, caseRow.person_id, 'lifecycle') || mine.length, 'not_found', 404)
   const template = (await one(env, 'SELECT * FROM wl_templates WHERE id = ?', caseRow.template_id))!
   const person = (await one(env, 'SELECT legal_name, preferred_name FROM wl_people WHERE id = ?', caseRow.person_id))!
+  const evidenceVisible = new Map(await Promise.all(history.map(async task => [task.id, await mayReadSigningEvidence(env, actor, task)] as const)))
+  const upgrades = await all(env, 'SELECT from_template,to_template,at,detail FROM wl_workflow_upgrades WHERE case_id=? ORDER BY at', id)
   return {
     id, kind: caseRow.kind, status: caseRow.status, person: { id: caseRow.person_id, name: displayName(person) }, period: caseRow.period_id, anchorDate: caseRow.anchor_date,
     template: { id: template.id, family: template.family_id, name: template.name, version: template.version },
     missing: sees(actor, caseRow.person_id, 'lifecycle') ? await missingFields(env, caseRow, template) : [],
-    upgrades: await all(env, 'SELECT from_template,to_template,at,detail FROM wl_workflow_upgrades WHERE case_id=? ORDER BY at', id),
-    tasks: await Promise.all(tasks.map(async task => ({ id: task.id, assetRow: task.record_row_id, title: task.title, assignee: task.assignee, dueDate: task.due_date, evidenceRequired: !!task.evidence_required, system: task.system, action: task.action, status: task.status, evidence: task.evidence, completedAt: task.completed_at, mine: answersFor(actor, task, caseRow), failure: task.failure, blockedBy: await blockedBy(env, task) }))),
+    upgrades: upgrades.map(upgrade => ({ ...upgrade, at: upgrade.at, detail: !history.some(task => task.action === 'signature') || can(actor, 'people.manage') && history.every(task => task.action !== 'signature' || !task.evidence || evidenceVisible.get(task.id)) ? upgrade.detail : null })),
+    tasks: await Promise.all(tasks.map(async task => ({ id: task.id, assetRow: task.record_row_id, title: task.title, assignee: task.assignee, dueDate: task.due_date, evidenceRequired: !!task.evidence_required, system: task.system, action: task.action, status: task.status, evidence: evidenceVisible.get(task.id) ? task.evidence : null, completedAt: task.completed_at, mine: answersFor(actor, task, caseRow), failure: task.failure, blockedBy: await blockedBy(env, task) }))),
   }
 }
 

@@ -1,4 +1,5 @@
 // REPORT-001: definitions describe a report, never grant permission to its rows or columns.
+import { SIGNATURE_COLUMNS, SIGNATURE_STATES } from './signatures'
 import { isReporter, selectedReport } from '../levels/reports'
 import type { Bindings } from '../../auth.server'
 import { can, hasScopedGrant, type Actor } from '../actor'
@@ -7,21 +8,22 @@ import { stmt } from '../core'
 import { isDate } from '../dates'
 import type { Input } from '../input'
 import { effectiveFieldDefinitions } from '../custom-fields/store'
-export interface ReportDefinition { name:string; columns:string[]; asOf:string; from:string; to:string; department:string; location:string; status:'active'|'all' }
-export const STANDARD_COLUMNS: Record<string,string>={name:'Name',employeeNumber:'Employee number',jobTitle:'Job title',department:'Department',location:'Location',employmentType:'Employment type',fte:'FTE',tenureDays:'Tenure (days)',leaveHours:'Leave balance (hours)',leaveLiability:'Leave liability',payAmount:'Pay amount',phone:'Private phone',personal_email:'Personal email',openExceptions:'Open exceptions',overdueWork:'Overdue work'}
+export interface ReportDefinition { name:string; columns:string[]; asOf:string; from:string; to:string; department:string; location:string; status:'active'|'all'; signatureTemplate?:string; signatureCohort?:string; signatureState?:string }
+export const STANDARD_COLUMNS: Record<string,string>={name:'Name',employeeNumber:'Employee number',jobTitle:'Job title',department:'Department',location:'Location',employmentType:'Employment type',fte:'FTE',tenureDays:'Tenure (days)',leaveHours:'Leave balance (hours)',leaveLiability:'Leave liability',payAmount:'Pay amount',phone:'Private phone',personal_email:'Personal email',openExceptions:'Open exceptions',overdueWork:'Overdue work',...SIGNATURE_COLUMNS}
 export function requireReporter(a:Actor) { insist(can(a,'reports.read')||hasScopedGrant(a,'reports.read')||a.reports.size>0,'forbidden',403) }
 export async function reportDefinition(env:Bindings,raw:unknown,date:string):Promise<ReportDefinition> {
  insist(raw && typeof raw==='object'&&!Array.isArray(raw),'invalid_report')
  const d=raw as Record<string,any>
- insist(Object.keys(d).every(k=>['name','columns','asOf','from','to','department','location','status'].includes(k)),'unexpected_report_field')
+ insist(Object.keys(d).every(k=>['name','columns','asOf','from','to','department','location','status','signatureTemplate','signatureCohort','signatureState'].includes(k)),'unexpected_report_field')
  insist(typeof d.name==='string'&&d.name.trim().length>0&&d.name.length<=160,'invalid_report_name')
  const asOf=d.asOf||date,anchor=asOf==='today'?date:asOf,from=d.from||anchor.slice(0,7)+'-01',to=d.to||anchor
  insist((asOf==='today'||isDate(asOf))&&isDate(from)&&isDate(to)&&from<=to,'invalid_report_dates')
  const custom=(await effectiveFieldDefinitions(env,asOf==='today'?date:asOf)).map(f=>'custom.'+f.key)
  insist(Array.isArray(d.columns)&&d.columns.length>0&&d.columns.length<=40&&new Set(d.columns).size===d.columns.length&&d.columns.every((k:unknown)=>typeof k==='string'&&(Object.hasOwn(STANDARD_COLUMNS,k)||custom.includes(k))),'invalid_report_columns')
- for(const k of ['department','location']) insist(d[k]===undefined||typeof d[k]==='string'&&d[k].length<=160,'invalid_report_filter')
+ for(const k of ['department','location','signatureTemplate','signatureCohort']) insist(d[k]===undefined||typeof d[k]==='string'&&d[k].length<=160,'invalid_report_filter')
+ insist(d.signatureState===undefined||d.signatureState===''||SIGNATURE_STATES.includes(d.signatureState),'invalid_signature_state')
  insist(!d.status||['active','all'].includes(d.status),'invalid_report_status')
- return {name:d.name.trim(),columns:d.columns,asOf,from,to,department:d.department||'',location:d.location||'',status:d.status||'active'}
+ return {name:d.name.trim(),columns:d.columns,asOf,from,to,department:d.department||'',location:d.location||'',status:d.status||'active',signatureTemplate:d.signatureTemplate||'',signatureCohort:d.signatureCohort||'',signatureState:d.signatureState||''}
 }
 export async function savedReports(env:Bindings,actor:Actor) {
  insist(isReporter(actor)||actor.reportGrants.length>0,'forbidden',403)
@@ -33,7 +35,7 @@ export async function savedReport(env:Bindings,actor:Actor,id:string) {
 }
 export async function saveReport(env:Bindings,actor:Actor,input:Input) {
  requireReporter(actor)
- const raw=input.has('definition')?input.json('definition'):{name:input.text('name'),columns:input.list('columns'),asOf:input.text('asOf',{optional:true})||actor.today,from:input.text('from',{optional:true}),to:input.text('to',{optional:true}),department:input.text('department',{optional:true}),location:input.text('location',{optional:true}),status:input.text('status',{optional:true})}
+ const raw=input.has('definition')?input.json('definition'):{name:input.text('name'),columns:input.list('columns'),asOf:input.text('asOf',{optional:true})||actor.today,from:input.text('from',{optional:true}),to:input.text('to',{optional:true}),department:input.text('department',{optional:true}),location:input.text('location',{optional:true}),status:input.text('status',{optional:true}),signatureTemplate:input.text('signatureTemplate',{optional:true}),signatureCohort:input.text('signatureCohort',{optional:true}),signatureState:input.text('signatureState',{optional:true})}
  const definition=await reportDefinition(env,raw,actor.today),existing=input.has('report')?await savedReport(env,actor,input.text('report')):null
  insist(!existing||existing.createdBy===actor.id||actor.owner,'forbidden',403)
  const id=existing?.id??newId(),version=(existing?.version??0)+1,versionId=newId(),at=now(),statements=[]

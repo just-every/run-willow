@@ -1,4 +1,7 @@
 import { reconcileRecipients } from './performance/store'
+import { expireSignatures } from './sign/expiry'
+import { enrollSignatureJoiners } from './sign/cohorts'
+import { dispatchCohortNotices } from './sign/delivery'
 // A durable attempt claim precedes mail. Uncertain attempts are visible and never retried blindly.
 import type { Bindings } from '../auth.server'
 import { operatorMail } from '../mail.server.mjs'
@@ -11,6 +14,9 @@ import { freshWork, memberUnavailable, workHistory, workPolicy, workState } from
 import { runDateAlerts } from './date-alerts/alerts'
 
 export async function runWorkScheduler(env: Bindings, instant=now()) {
+ await expireSignatures(env,instant)
+ await enrollSignatureJoiners(env,instant)
+ await dispatchCohortNotices(env,undefined,instant)
  await reconcileRecipients(env,today(await employerZone(env),instant))
  // PEOPLE-004 alerts fire first, in any hour; their review tasks then follow the FLOW-002 cadence.
  await runDateAlerts(env, instant)
@@ -23,6 +29,7 @@ export async function runWorkScheduler(env: Bindings, instant=now()) {
  if (quiet) return {attempted:0,reason:'quiet_hours'}
  let attempted=0
  for (const source of state.sources) {
+  if(source.notificationAllowed===false)continue
   const schedule = state.schedules.get(source.key)!
   const owner = state.members.find(a=>a.id===schedule.owner)
   const unavailable = !owner || !source.visible(owner) || await memberUnavailable(env,owner,date)
@@ -40,7 +47,7 @@ export async function runWorkScheduler(env: Bindings, instant=now()) {
    let status='refused', failure:string|null='recipient_or_source_changed'
    const fresh = await freshWork(env,source.key,recipient.id,schedule)
    const currentPolicy = await workPolicy(env)
-   if (fresh && currentPolicy?.revision===policy.revision && !await memberUnavailable(env,fresh.member,date)) {
+   if (fresh && fresh.source.notificationAllowed!==false && currentPolicy?.revision===policy.revision && !await memberUnavailable(env,fresh.member,date)) {
     const enabled = (await connectionSettings(env))?.notices
     if (!enabled) {status='disabled';failure='notices_disabled'}
     else {

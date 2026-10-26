@@ -7,6 +7,7 @@ import { answersFor } from './lifecycle'
 import { termsOn } from './people'
 import { plannedTasks, workflowContext } from './workflow-plan'
 import { auditSequence, readReview, reviewGuards, saveReview } from './workflow-review'
+import { mayReadSigningEvidence, signingAssignment } from './workflow-signing'
 
 async function upgradePlan(env: Bindings, caseId: string, templateId: string) {
   const current = await one(env, 'SELECT c.*,t.family_id FROM wl_cases c JOIN wl_templates t ON t.id=c.template_id WHERE c.id=?', caseId)
@@ -35,9 +36,9 @@ export async function previewUpgrade(env: Bindings, actor: Actor, input: Input) 
   const plan = await upgradePlan(env, caseId, templateId)
   const detail = { case: caseId, from: plan.current.template_id, to: templateId,
     requiredFields: { before: json((await one(env, 'SELECT required_fields FROM wl_templates WHERE id=?', plan.current.template_id))?.required_fields, []), after: json(plan.template.required_fields, []) },
-    retainedCompleted: plan.completed.map(t => ({ id: t.id, title: t.title, evidence: t.evidence })),
+    retainedCompleted: await Promise.all(plan.completed.map(async t => ({ id: t.id, title: t.title, action: t.action, evidence: await mayReadSigningEvidence(env, actor, t) ? t.evidence : null }))),
     supersededOpen: plan.previous.filter(t => t.status === 'open').map(t => ({ id: t.id, title: t.title, failure: t.failure })),
-    tasks: plan.selected.map(t => ({ position: t.position, title: t.title, assignee: t.assignee, dueDate: t.dueDate, system: t.system, dependencies: t.dependencies.filter(p => plan.selected.some(s => s.position === p)), reusedCompletion: t.retained })),
+    tasks: await Promise.all(plan.selected.map(async t => ({ position: t.position, title: t.title, assignee: t.assignee, dueDate: t.dueDate, system: t.system, ...(t.signature ? { signature: await signingAssignment(env, actor, t.signature, plan.current.person_id) } : {}), dependencies: t.dependencies.filter(p => plan.selected.some(s => s.position === p)), reusedCompletion: t.retained }))),
     revision: plan.current.revision }
   return saveReview(env, actor, 'upgrade', caseId, templateId, plan.current.anchor_date, sequence, detail)
 }
@@ -50,6 +51,8 @@ export async function applyUpgrade(env: Bindings, actor: Actor, input: Input) {
   await commit(env, [
     ...reviewGuards(env, actor, review),
     guard(env, 'review_stale', "EXISTS(SELECT 1 FROM wl_cases WHERE id=? AND revision=? AND status='open')", plan.current.id, review.detail.revision),
+    // Replacing unsigned signing work ends its old authority without removing evidence.
+    stmt(env, "UPDATE wl_sign_requests SET state='voided',revision=revision+1 WHERE state IN ('sent','viewed') AND cohort IN (SELECT w.review_id FROM wl_workflow_signatures w JOIN wl_case_tasks t ON t.id=w.task_id WHERE t.case_id=? AND t.status='open' AND t.superseded_at IS NULL AND w.issued_at IS NOT NULL)", plan.current.id),
     stmt(env, "UPDATE wl_case_tasks SET superseded_at=? WHERE case_id=? AND status='open' AND superseded_at IS NULL AND action IS NOT 'asset_return'", at, plan.current.id),
     ...plan.selected.filter(t => !t.retained).map((t, i) => stmt(env, "INSERT INTO wl_case_tasks(id,case_id,position,title,assignee,assignee_person_id,due_date,evidence_required,system,action,status,dependencies,source_task,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,'open',?,?,?)", ids.get(t.position), plan.current.id, maximum + i + 1, t.title, t.assignee, t.manager, t.dueDate, t.evidence_required, t.system, t.action, JSON.stringify(t.dependencies.filter(p => ids.has(p)).map(p => ids.get(p))), t.key, at)),
     stmt(env, 'UPDATE wl_cases SET template_id=?,revision=? WHERE id=?', plan.template.id, newId(), plan.current.id),

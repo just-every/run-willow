@@ -1,3 +1,5 @@
+import { prepareSignature } from './sign/payloads'
+import { previewWorkflowSignatures, issueWorkflowSignatures, verifyWorkflowSignatures } from './workflow-signing'
 import { previewSignatures,sendSignatures,actSignature,cancelSignatures } from './sign/requests'
 import { writeSignatureTemplate, approveSignatureTemplate } from './sign/templates'
 import { configureOkta, linkOktaAccount, previewOkta, applyOkta, observeOkta, closeOktaException } from './identity/okta-actions'
@@ -150,7 +152,9 @@ export const actions: Record<string, Handler> = {
   'access.default': configureDefaultAccess,
   'access.bulk': bulkGiveAccess,
   'import.access': importAccess,
-  'signature.preview':previewSignatures,'signature.send':sendSignatures,'signature.act':actSignature,'signature.cancel':cancelSignatures,
+  'task.signature.preview':previewWorkflowSignatures,'task.signature.issue':issueWorkflowSignatures,'task.signature.verify':verifyWorkflowSignatures,
+  'signature.prepare':prepareSignature,
+  'signature.preview':previewSignatures,'signature.send':(env,actor,input)=>sendSignatures(env,actor,input),'signature.act':actSignature,'signature.cancel':cancelSignatures,
   'signature.template': writeSignatureTemplate,
   'signature.template.approve': approveSignatureTemplate,
   'access.give': (env, actor, input, request) => giveAccess(env, actor, input, request),

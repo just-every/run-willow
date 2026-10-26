@@ -10,6 +10,7 @@ import { answersFor } from './lifecycle'
 import { workMembers } from './work-sources'
 import { displayName, termsOn } from './people'
 import { plannedTasks, workflowContext } from './workflow-plan'
+import { signingAssignment } from './workflow-signing'
 
 export const auditSequence = async (env: Bindings) => (await one(env, 'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq as number
 
@@ -44,7 +45,7 @@ export async function previewTemplate(env: Bindings, actor: Actor, input: Input)
     const terms = await termsOn(env, person.period, date)
     if (!terms) continue
     const tasks = await plannedTasks(env, id, await workflowContext(env, terms, person.employment_type), date, terms.manager_person_id)
-    affected.push({ person: person.id, name: displayName(person), tasks: tasks.map(task => ({ position: task.position, title: task.title, assignee: task.assignee, recipients: members.filter(member => answersFor(member, { ...task, assignee_person_id: task.manager }, { person_id: person.id })).map(member => ({ id: member.id, name: member.name })), manager: task.manager, dueDate: task.dueDate, system: task.system, action: task.action, evidenceRequired: !!task.evidence_required, dependencies: task.dependencies.filter(p => tasks.some(t => t.position === p)) })) })
+    affected.push({ person: person.id, name: displayName(person), tasks: await Promise.all(tasks.map(async task => ({ position: task.position, title: task.title, assignee: task.assignee, recipients: members.filter(member => answersFor(member, { ...task, assignee_person_id: task.manager }, { person_id: person.id })).map(member => ({ id: member.id, name: member.name })), manager: task.manager, dueDate: task.dueDate, system: task.system, action: task.action, ...(task.signature ? { signature: await signingAssignment(env, actor, task.signature, person.id) } : {}), evidenceRequired: !!task.evidence_required, dependencies: task.dependencies.filter(p => tasks.some(t => t.position === p)) }))) })
   }
   const openCases = await all(env, "SELECT c.id,c.person_id,c.template_id,t.version FROM wl_cases c JOIN wl_templates t ON t.id=c.template_id WHERE t.family_id=? AND c.status='open'", template.family_id)
   const recipe = await all(env, 'SELECT position,title,assignee,due_offset_days,evidence_required,system,action,rule FROM wl_template_tasks WHERE template_id=? ORDER BY position', id)

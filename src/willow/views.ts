@@ -73,7 +73,7 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
-  signatureRequests,signatureRequest:(env,actor,_request,id)=>signatureRequest(env,actor,id),
+  signatureRequests,signatureRequest:(env,actor,_request,id,url)=>signatureRequest(env,actor,id,url.searchParams.get('asOf')??undefined),
   signatureTemplates,
   policyEscalations,
   handbooks: (env,actor) => handbookSources(env,actor),

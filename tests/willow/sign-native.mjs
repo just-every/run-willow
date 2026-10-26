@@ -32,7 +32,15 @@ export async function nativeSigningProof(h,owner,s,join) {
  await api('signature.send',{review:review.id,digest:review.digest,approved:true},409)
  const id=sent.requests[0],other=sent.requests[1]
  const detail=()=>as(s.employee.cookie,'signature-requests/'+id)
- const act=async(cookie,action,extra={},status)=>{const r=await as(cookie,'signature-requests/'+id);return as(cookie,'signature.act',{request:id,revision:r.revision,digest:r.digest,action,...extra},status)}
+ const act=async(cookie,action,extra={},status)=>{
+  const r=await as(cookie,'signature-requests/'+id),bound={request:id,revision:r.revision,digest:r.digest}
+  if(action==='sign'&&extra.consent) {
+   const payload=await as(cookie,'signature.prepare',{...bound,name:extra.name,initial:extra.initial,text:extra.text},status===403?403:200)
+   if(status===403)return
+   return as(cookie,'signature.act',{...bound,action,consent:true,payload:payload.id},status)
+  }
+  return as(cookie,'signature.act',{...bound,action,consent:extra.consent},status)
+ }
  assert.equal((await detail()).canSign,true)
  await as(s.payroll.cookie,'signature-requests/'+id,undefined,404)
  assert.deepEqual(await as(s.payroll.cookie,'signature-requests'),[])
@@ -40,7 +48,7 @@ export async function nativeSigningProof(h,owner,s,join) {
  await act(s.employee.cookie,'sign',{consent:false,name:'Employee signer'},400)
  const stale=await detail()
  await act(s.employee.cookie,'view')
- await as(s.employee.cookie,'signature.act',{request:id,revision:stale.revision,digest:stale.digest,action:'sign',consent:true,name:'Employee signer'},409)
+ await as(s.employee.cookie,'signature.act',{request:id,revision:stale.revision,digest:stale.digest,action:'sign',consent:true},409)
  await act(s.employee.cookie,'sign',{consent:true,name:'Employee signer',initial:'ES',text:'Agreed'})
  assert.equal((await detail()).canSign,false)
  const middle=await detail()
@@ -76,13 +84,13 @@ export async function nativeSigningProof(h,owner,s,join) {
  const reissue=await api('signature.preview',{...input,people:[s.employee.person]})
  const next=await api('signature.send',{review:reissue.id,digest:reissue.digest,approved:true})
  assert.notEqual(next.requests[0],id)
- await as(s.employee.cookie,'signature.act',{request:id,revision:stale.revision,digest:stale.digest,action:'sign',consent:true,name:'Old signer'},409)
+ await as(s.employee.cookie,'signature.act',{request:id,revision:stale.revision,digest:stale.digest,action:'sign',consent:true},409)
  for(const action of ['decline','withdraw','void']) {
   const rev=await api('signature.preview',{...input,people:[s.employee.person]})
   const send=await api('signature.send',{review:rev.id,digest:rev.digest,approved:true})
   const r=await as(s.employee.cookie,'signature-requests/'+send.requests[0])
   await as(action==='void'?owner:s.employee.cookie,'signature.act',{request:r.id,revision:r.revision,digest:r.digest,action})
-  await as(s.employee.cookie,'signature.act',{request:r.id,revision:r.revision,digest:r.digest,action:'sign',consent:true,name:'Late signer'},409)
+  await as(s.employee.cookie,'signature.act',{request:r.id,revision:r.revision,digest:r.digest,action:'sign',consent:true},409)
  }
  const oldReview=await api('signature.preview',{...input,people:[s.employee.person]})
  const oldSend=await api('signature.send',{review:oldReview.id,digest:oldReview.digest,approved:true})
@@ -93,44 +101,94 @@ export async function nativeSigningProof(h,owner,s,join) {
  await api('signature.template.approve',{template:revised.id,digest:revisedTemplate.digest,reviewed:true})
  const changedReview=await api('signature.preview',{...input,template:revised.id,people:[s.employee.person]})
  const changedSend=await api('signature.send',{review:changedReview.id,digest:changedReview.digest,approved:true})
- await as(s.employee.cookie,'signature.act',{request:oldRequest.id,revision:oldRequest.revision,digest:oldRequest.digest,action:'sign',consent:true,name:'Old signer'},409)
+ await as(s.employee.cookie,'signature.act',{request:oldRequest.id,revision:oldRequest.revision,digest:oldRequest.digest,action:'sign',consent:true},409)
  assert.equal((await as(s.employee.cookie,'signature-requests/'+changedSend.requests[0])).state,'sent')
  const location=await api('location.create',{name:'Signature cohort office',timezone:'UTC'})
- const cohortPeople=[]
+ const cohortPeople=[],cohortCookies=[]
  for(let i=0;i<5;i++) {
-  const person=await join('synthetic-willow-sign-'+i,{locationId:location.id})
+  const person=await join('synthetic-willow-'+(15210+i),{locationId:location.id})
   await api('access.give',{person:person.person})
+  cohortCookies.push(await h.signIn('synthetic-willow-'+(15210+i)+'@example.com',{requested:true}))
   cohortPeople.push(person.person)
  }
  const cohortReview=await api('signature.preview',{template:revised.id,cohortKind:'location',cohortValue:location.id,hr:s.hr.member,expiresAt:Date.now()+7*86400000})
- assert.deepEqual(cohortReview.recipients.map(p=>p.id).sort(),cohortPeople.sort())
+ assert.deepEqual(cohortReview.recipients.map(p=>p.id).sort(),[...cohortPeople].sort())
  const locationSend=await api('signature.send',{review:cohortReview.id,digest:cohortReview.digest,approved:true})
  assert.equal(locationSend.requests.length,5)
  const nonmatching=await as(s.managera.cookie,'signature-requests')
  assert.ok(!nonmatching.some(r=>locationSend.requests.includes(r.id)))
+ for(let i=0;i<2;i++) {
+  const recipient=cohortReview.recipients.find(p=>p.member&&(p.id===cohortPeople[i]))
+  const requests=await as(cohortCookies[i],'signature-requests'),request=requests.find(r=>r.cohort===locationSend.id)
+  assert.ok(request&&recipient)
+  if(i===1&&process.env.WILLOW_SIGN_BROWSER==='1')await phoneCohortSigner(h,cohortCookies[i],s.hr.cookie,request.id)
+  else for(const [cookie,name] of [[cohortCookies[i],'Cohort employee '+i],[s.hr.cookie,'Named HR']]) {
+   const r=await as(cookie,'signature-requests/'+request.id),bound={request:r.id,revision:r.revision,digest:r.digest}
+   const payload=await as(cookie,'signature.prepare',{...bound,name,initial:'CE',text:'Agreed'})
+   await as(cookie,'signature.act',{...bound,action:'sign',consent:true,payload:payload.id})
+  }
+  const record=await as(cohortCookies[i],'signature-requests/'+request.id)
+  assert.equal(record.state,'signed');assert.ok(record.sealedVersion)
+  const profile=await as(cohortCookies[i],'people/'+cohortPeople[i])
+  assert.ok(profile.documents.some(d=>d.categoryId===category.id&&d.versions.some(v=>v.id===record.sealedVersion)))
+ }
  await api('signature.cancel',{cohort:locationSend.id})
- assert.equal((await api('signature-requests')).filter(r=>locationSend.requests.includes(r.id)&&r.state==='voided').length,5)
- await signingBrowser(h,owner,s,next.requests[0])
+ const cohortStates=(await api('signature-requests')).filter(r=>locationSend.requests.includes(r.id))
+ assert.equal(cohortStates.filter(r=>r.state==='voided').length,3)
+ assert.equal(cohortStates.filter(r=>r.state==='signed').length,2)
+ const expiryReview=await api('signature.preview',{...input,template:revised.id,people:[s.employee.person],expiresAt:Date.now()+65000})
+ const expiry=await api('signature.send',{review:expiryReview.id,digest:expiryReview.digest,approved:true})
+ const expiredBefore=await as(s.employee.cookie,'signature-requests/'+expiry.requests[0])
+ const tick=await h.raw('/cdn-cgi/local/scheduled?time='+expiryReview.expiresAt+'&cron='+encodeURIComponent('*/15 * * * *')+'&format=json')
+ assert.equal(tick.status,200)
+ const expired=await as(s.employee.cookie,'signature-requests/'+expiredBefore.id)
+ assert.equal(expired.state,'expired');assert.equal(expired.canSign,false)
+ await as(s.employee.cookie,'signature.act',{request:expiredBefore.id,revision:expiredBefore.revision,digest:expiredBefore.digest,action:'sign',consent:true,payload:'synthetic-willow-15299'},409)
+ assert.equal((await h.raw('/app/signatures/'+expiredBefore.id,{cookie:s.employee.cookie})).status,200)
+
+ await signingBrowser(h,owner,s,next.requests[0],oldRequest.id,changedSend.requests[0],expiry.requests[0])
  console.log('Native signing: PASS — consent, ordered signatures, sealed bytes, certificate, scoped cohort status, cancellation and old request refusal')
 }
-async function signingBrowser(h,owner,s,id) {
+async function signingBrowser(h,owner,s,id,oldId,newId,expiredId) {
  if(process.env.WILLOW_SIGN_BROWSER!=='1')return
  const destination=process.env.WILLOW_EVIDENCE_DIR;assert.ok(destination);await mkdir(destination,{recursive:true})
- const {chromium}=await import('@playwright/test')
+ const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH??'@playwright/test')
  const browser=await chromium.launch({headless:true,...(process.env.WILLOW_CHROMIUM?{executablePath:process.env.WILLOW_CHROMIUM}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
  const contexts=[]
  const enter=async cookie=>{const c=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(c);await c.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})));return c.newPage()}
  const capture=async(page,path,name)=>{for(const width of [1440,390]){await page.setViewportSize({width,height:1000});assert.equal((await page.goto(h.origin+path)).status(),200);await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),name+' fits '+width);await page.screenshot({path:`${destination}/SIGN-${name}-${width}.png`,fullPage:true});const bell=page.getByRole('link',{name:'Open your task list'});await bell.focus();await page.getByRole('tooltip').waitFor({state:'visible'});await bell.hover();await page.waitForTimeout(350);assert.ok(await page.getByRole('tooltip').isVisible());await page.screenshot({path:`${destination}/SIGN-${name}-tooltip-${width}.png`,fullPage:true})}}
  try {
   const admin=await enter(owner),employee=await enter(s.employee.cookie),hr=await enter(s.hr.cookie),manager=await enter(s.managera.cookie)
+  await capture(employee,'/app/signatures/'+oldId,'old-link');assert.equal(await employee.getByRole('button',{name:'Review signing document'}).count(),0);assert.equal((await h.api('signature-requests/'+newId,s.employee.cookie)).state,'sent')
+  await capture(employee,'/app/signatures/'+expiredId,'expired');assert.equal(await employee.getByRole('button',{name:'Review signing document'}).count(),0)
   await capture(admin,'/app/signatures','requests')
   const f=admin.locator('form[action="/app/do/signature.preview"]');await f.locator(`input[value="${s.employee.person}"]`).check();await f.getByLabel('HR countersigner').selectOption(s.hr.member);await f.getByRole('button',{name:'Review recipients'}).click()
   assert.ok(!new URL(admin.url()).searchParams.has('error'))
   for(const width of [1440,390]){await admin.setViewportSize({width,height:1000});await admin.screenshot({path:`${destination}/SIGN-review-${width}.png`,fullPage:true})}
   await capture(employee,'/app/signatures/'+id,'employee-consent')
-  await employee.getByLabel('Signature name',{exact:true}).fill('Employee form signer');await employee.getByLabel('Initials',{exact:true}).fill('EF');await employee.getByLabel('Text field',{exact:true}).fill('Agreed');await employee.locator('input[name="consent"]').check();await employee.getByRole('button',{name:'Sign exact document'}).click();assert.ok(!new URL(employee.url()).searchParams.has('error'))
+  await employee.getByLabel('Signature name',{exact:true}).fill('Employee form signer');await employee.getByLabel('Initials',{exact:true}).fill('EF');await employee.getByLabel('Text field',{exact:true}).fill('Agreed');await employee.getByRole('button',{name:'Review signing document'}).click();assert.ok(!new URL(employee.url()).searchParams.has('error'));for(const width of [1440,390]){await employee.setViewportSize({width,height:1000});await employee.screenshot({path:`${destination}/SIGN-payload-review-${width}.png`,fullPage:true})}await employee.locator('input[name="consent"]').check();await employee.getByRole('button',{name:'Sign exact document'}).click();assert.ok(!new URL(employee.url()).searchParams.has('error'))
   await capture(hr,'/app/signatures/'+id,'hr-countersign')
-  await hr.getByLabel('Signature name',{exact:true}).fill('HR form signer');await hr.locator('input[name="consent"]').check();await hr.getByRole('button',{name:'Sign exact document'}).click();assert.ok(!new URL(hr.url()).searchParams.has('error'))
+  await hr.getByLabel('Signature name',{exact:true}).fill('HR form signer');await hr.getByRole('button',{name:'Review signing document'}).click();assert.ok(!new URL(hr.url()).searchParams.has('error'));await hr.locator('input[name="consent"]').check();await hr.getByRole('button',{name:'Sign exact document'}).click();assert.ok(!new URL(hr.url()).searchParams.has('error'))
   await capture(employee,'/app/signatures/'+id,'sealed-certificate');await capture(manager,'/app/signatures','manager-report')
  } finally {for(const c of contexts)await c.close();await browser.close()}
+}
+
+async function phoneCohortSigner(h,employeeCookie,hrCookie,id) {
+ const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH??'@playwright/test')
+ const browser=await chromium.launch({headless:true,...(process.env.WILLOW_CHROMIUM?{executablePath:process.env.WILLOW_CHROMIUM}:{}),args:['--use-mock-keychain','--password-store=basic']})
+ try {
+  for(const [cookie,width,name] of [[employeeCookie,390,'Phone cohort signer'],[hrCookie,1440,'Named cohort HR']]) {
+   const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width,height:1000}})
+   await context.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})))
+   const page=await context.newPage();assert.equal((await page.goto(h.origin+'/app/signatures/'+id)).status(),200)
+   await page.getByLabel('Signature name',{exact:true}).fill(name)
+   if(width===390){await page.getByLabel('Initials',{exact:true}).fill('PC');await page.getByLabel('Text field',{exact:true}).fill('Agreed')}
+   await page.getByRole('button',{name:'Review signing document'}).click();assert.ok(!new URL(page.url()).searchParams.has('error'))
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
+   await page.screenshot({path:process.env.WILLOW_EVIDENCE_DIR+'/SIGN-location-payload-'+width+'.png',fullPage:true})
+   await page.locator('input[name="consent"]').check();await page.getByRole('button',{name:'Sign exact document'}).click()
+   assert.ok(!new URL(page.url()).searchParams.has('error'))
+   await page.screenshot({path:process.env.WILLOW_EVIDENCE_DIR+'/SIGN-location-signed-'+width+'.png',fullPage:true});await context.close()
+  }
+ } finally {await browser.close()}
 }

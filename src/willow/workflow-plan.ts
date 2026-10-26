@@ -18,7 +18,7 @@ export async function plannedTasks(env: Bindings, template: string, context: Wor
   const rows = await all<TemplateTask>(env, 'SELECT * FROM wl_template_tasks WHERE template_id=? ORDER BY position', template)
   return rows.filter(row => ruleMatches(json<TaskRule>(row.rule, { conditions: {}, dependencies: [] }), context)).map(row => {
     const rule = json<TaskRule>(row.rule, { conditions: {}, dependencies: [] })
-    return { ...row, dueDate: addDays(anchor, row.due_offset_days), manager: row.assignee === 'manager' ? manager : null,
+    return { ...row, action: rule.signature ? 'signature' : row.action, signature: rule.signature, dueDate: addDays(anchor, row.due_offset_days), manager: row.assignee === 'manager' ? manager : null,
       dependencies: rule.dependencies,
       // Changing a task's meaning cannot inherit an old completion.
       key: JSON.stringify([row.title, row.assignee, row.due_offset_days, row.evidence_required, row.system, row.action, rule]) }

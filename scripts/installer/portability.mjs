@@ -2,6 +2,8 @@ import { localPortability } from '@runeditrun/rer/portability';
 
 const ownerReauthorizationRequired = ['notices', 'oidc', 'model', 'businessImport', 'policyAssistant', 'workflowAssistant', 'oktaProvisioning'];
 const pauseConnections = (table, row) => {
+ if (table === 'wl_sign_requests' && ['sent','viewed'].includes(row.state)) return {...row,state:'voided',revision:row.revision+1};
+ if (table === 'wl_sign_cohorts') return {...row,future_joiners:0,notify:0,stopped_at:row.stopped_at??Date.now()};
  if (table === 'wl_okta_reviews') return { ...row, status: row.status === 'verified' ? 'verified' : 'closed' };
  if (table === 'wl_okta_settings') return { ...row, enabled: 0 };
  if (table === 'wl_ai_settings') return { ...row, enabled: 0, policies: 0, workflows: 0, provider_retention: 'unapproved', consent_version: '' };
@@ -17,11 +19,13 @@ export default {
  product: 'people/willow',
  // Door grants record consumed nonces: retain replay protection, permanent
  // revoked keys, approvals and custody; pause only Business enablement.
- excludeTables: ['wl_identity_token_health','wl_api_credentials','wl_api_credential_limits','wl_oauth_tokens','wl_oauth_codes','wl_oauth_refresh','wl_webhooks','wl_webhook_deliveries','wl_ai_workflow_step_approvals'],
+ excludeTables: ['wl_sign_payloads','wl_identity_token_health','wl_api_credentials','wl_api_credential_limits','wl_oauth_tokens','wl_oauth_codes','wl_oauth_refresh','wl_webhooks','wl_webhook_deliveries','wl_ai_workflow_step_approvals'],
  buckets: { files: { prefix: 'sha256/' } },
  requiredConfiguration: ['OWNER_EMAIL', 'SESSION_SECRET', 'SETUP_TOKEN', 'AUTH_ORIGIN', 'MAIL_PROVIDER', 'MAIL_FROM'],
  exportRow: pauseConnections,
  importSafety: {
+  wl_sign_cohorts: { future_joiners:[0],notify:[0] },
+  wl_sign_requests: { state:['signed','declined','expired','voided','withdrawn'] },
   wl_okta_settings: { enabled: [0] },
   wl_okta_reviews: { status: ['verified','closed'] },
   wl_ai_settings: { enabled: [0], policies: [0], workflows: [0], provider_retention: ['unapproved'], consent_version: [''] },

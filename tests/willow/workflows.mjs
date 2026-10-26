@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { harness } from './harness.mjs'
 import { fixture, today, day } from './regression-fixture.mjs'
 import { publishTemplate } from './publish-template.mjs'
+import { workflowSigningProof } from './workflow-signing.mjs'
 
 const h = await harness()
 let browser
@@ -132,6 +133,7 @@ try {
   assert.equal((await api(`cases/${exit.id}`)).tasks[0].dueDate, day(29))
   const pendingIT = (await api(`cases/${c.case}`)).tasks.find(t => t.assignee === 'it')
   await h.api('task.fail', itCookie, { task: pendingIT.id, failure: 'Provider rejected the account; IT must correct its input' })
+  await workflowSigningProof(h, owner, s)
   // Use every changed screen through the browser at desktop and phone widths.
   if (process.env.WILLOW_WORKFLOW_BROWSER === '1') {
     const { chromium } = await import(pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href)

@@ -14,6 +14,25 @@ export interface TaskRule {
   conditions: TaskConditions
   /** One-based positions in the complete template, before conditions filter it. */
   dependencies: number[]
+  signature?: SignatureStep
+}
+
+export interface SignatureStep {
+  template: string
+  hr: string
+  cohortKind: 'named' | 'everyone' | 'location' | 'department' | 'employment_type' | 'access_level'
+  cohortValue: string
+}
+
+function signatureStep(value: unknown): SignatureStep | undefined {
+  if (value === undefined) return undefined
+  const source = record(value, 'invalid_taskSignature')
+  insist(Object.keys(source).every(key => ['template', 'hr', 'cohortKind', 'cohortValue'].includes(key)), 'invalid_taskSignature')
+  for (const key of ['template', 'hr']) insist(typeof source[key] === 'string' && String(source[key]).trim().length > 0 && String(source[key]).length <= 100, 'invalid_taskSignature')
+  const cohortKind = source.cohortKind ?? 'named', cohortValue = source.cohortValue ?? ''
+  insist(typeof cohortKind === 'string' && ['named', 'everyone', 'location', 'department', 'employment_type', 'access_level'].includes(cohortKind), 'invalid_taskSignature')
+  insist(typeof cohortValue === 'string' && cohortValue.length <= 100 && (['named', 'everyone'].includes(cohortKind) ? !cohortValue : !!cohortValue), 'invalid_taskSignature')
+  return { template: String(source.template).trim(), hr: String(source.hr).trim(), cohortKind: cohortKind as SignatureStep['cohortKind'], cohortValue }
 }
 
 /** Employment and terms in force on the case's anchor date. Missing facts do not match. */
@@ -73,10 +92,11 @@ export function validateTaskDependencies(value: unknown, position: number): numb
 
 export function validateTaskRule(value: unknown, position: number): TaskRule {
   const source = record(value, 'invalid_taskRules')
-  insist(Object.keys(source).every(key => key === 'conditions' || key === 'dependencies'), 'invalid_taskRules')
+  insist(Object.keys(source).every(key => key === 'conditions' || key === 'dependencies' || key === 'signature'), 'invalid_taskRules')
   return {
     conditions: validateTaskConditions(source.conditions),
     dependencies: validateTaskDependencies(source.dependencies, position),
+    ...(source.signature === undefined ? {} : { signature: signatureStep(source.signature) }),
   }
 }
 
@@ -95,10 +115,11 @@ export function parseTaskRules(input: Input, taskCount: number): TaskRule[] {
 
 /** The editor keeps visible task numbers even when a row is left blank. */
 export function editorTaskRules(input: Input, sourcePositions: number[]): TaskRule[] {
-  const names = ['taskJobTitle', 'taskWorkState', 'taskEmploymentType', 'taskLocation', 'taskDependencies']
+  const names = ['taskJobTitle', 'taskWorkState', 'taskEmploymentType', 'taskLocation', 'taskDependencies', 'taskSignatureTemplate', 'taskSignatureHr', 'taskSignatureCohort']
   const values = Object.fromEntries(names.map(name => [name, input.list(name, { keepEmpty: true })]))
   const positions = new Map(sourcePositions.map((position, index) => [position + 1, index + 1]))
   return validateTaskRules(sourcePositions.map(position => ({
+    ...(values.taskSignatureTemplate[position] ? { signature: { template: values.taskSignatureTemplate[position], hr: values.taskSignatureHr[position], cohortKind: (values.taskSignatureCohort[position] || 'named').split(':')[0], cohortValue: (values.taskSignatureCohort[position] || '').split(':')[1] || '' } } : {}),
     conditions: { jobTitle: values.taskJobTitle[position] ?? '', workState: values.taskWorkState[position] ?? '', employmentType: values.taskEmploymentType[position] ?? '', location: values.taskLocation[position] ?? '' },
     dependencies: (values.taskDependencies[position] ?? '').split(',').filter(v => v.trim()).map(value => {
       const number = Number(value.trim())

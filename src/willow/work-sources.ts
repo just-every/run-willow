@@ -1,4 +1,5 @@
 import { POLICY_ESCALATION_PATH, reviewsPolicyEscalations } from './ai-policy-escalations'
+import { signatureWork } from './sign/work'
 import { readsSelfChange, reviewsChange, SELF_CHANGE_SELECT } from './self-service/view'
 import { performanceWork } from './performance/work'
 import { surveyWork } from './surveys/work'
@@ -27,6 +28,7 @@ export interface WorkSource {
  visible: (actor: Actor) => boolean
  responsible: (actor: Actor) => boolean
  approval?: boolean
+ notificationAllowed?: boolean
 }
 
 export async function workMembers(env: Bindings) {
@@ -126,5 +128,5 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
   add('provider-deletion',req,`Record ${req.provider} deletion outcome`,'/app/retention',req.dueDate,a=>a.owner||a.id===req.assignee,a=>active?a.id===req.assignee||a.owner:a.owner,active?req.assignee:null,req.status==='failed'?'Deletion failed; the request stays open':'Awaiting the provider\'s answer')
  }
  for (const r of await all(env,"SELECT id,person_id,requested_at FROM wl_erasure_requests WHERE status='open'")) add('erasure-request',r,'Decide erasure request',`/app/retention/erasure?person=${r.person_id}`,deadline(r.requested_at),a=>a.owner)
- return [...result,...await surveyWork(env),...await performanceWork(env)]
+ return [...result,...await surveyWork(env),...await performanceWork(env),...await signatureWork(env,defaultDays)]
 }

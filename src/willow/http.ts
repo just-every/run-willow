@@ -1,4 +1,5 @@
-import { signaturesPage,signaturePage,signaturePreviewPage } from './ui/signatures'
+import { signaturePayloadFile } from './sign/payloads'
+import { signaturesPage,signaturePage,signaturePreviewPage,signatureConsentPage } from './ui/signatures'
 import { signatureFile,signatureCsv,signatureReviewFile } from './sign/requests'
 import { POLICY_ESCALATION_PATH } from './ai-policy-escalations'
 import { aiWorkflowApprovalPage } from './ui/ai-workflows'
@@ -160,7 +161,8 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
     if (name === 'policy.answer') policyUrl.searchParams.set('person',input.text('person',{optional:true}) || 'me')
     try {
       const result = await action(env, actor, input, request) as { id?: string; notice?: string } | null
-      if (name === 'signature.preview') return signaturePreviewPage(actor,result,url)
+      if (name === 'signature.prepare') return signatureConsentPage(actor,result,url)
+      if (name === 'signature.preview' || name === 'task.signature.preview') return signaturePreviewPage(actor,result,url)
       if (name === 'policy.answer') return policyAssistantPage(env,actor,policyUrl,result as unknown as Awaited<ReturnType<typeof policyAnswer>>)
       if (name === 'apiKey.issue' || name === 'apiKey.rotate') return issuedCredentialPage(actor,result as CredentialMetadata&{token:string})
       await reconcileRecipients(env,actor.today)
@@ -215,6 +217,7 @@ const pages: Record<string, Page> = {
   compensation: (env,actor,_request,url)=>compensationPage(env,actor,url),
   compensationCycle: (env,actor,_request,url,id)=>cyclePage(env,actor,id,url),
   compensationEquity: (env,actor,_request,url)=>equityPage(env,actor,url),
+  signaturePayloadFile:(env,actor,_request,_url,id)=>signaturePayloadFile(env,actor,id),
   signatureReviewFile:(env,actor,_request,url,id)=>signatureReviewFile(env,actor,id,url),
   signatures:(env,actor,_request,url)=>signaturesPage(env,actor,url), signatureRequest:(env,actor,_request,url,id)=>signaturePage(env,actor,id,url), signatureFile:(env,actor,_request,_url,id)=>signatureFile(env,actor,id),signatureCsv,
   company: (env,actor,_request,url)=>companyPage(env,actor,url),
