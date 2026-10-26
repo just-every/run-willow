@@ -11,9 +11,9 @@ const kinds=[['signature','Signature'],['initial','Initials'],['date','Signing d
 export async function signatureTemplateSettings(env:Bindings,actor:Actor,_request:Request,url:URL) {
  requirePermission(actor,'people.manage')
  const templates=await signatureTemplates(env,actor),data=await settings(env)
- const sources=await all(env,"SELECT v.id,v.filename,f.title FROM wl_company_file_versions v JOIN wl_company_files f ON f.id=v.file_id WHERE v.media_type='application/pdf' AND v.version=(SELECT MAX(version) FROM wl_company_file_versions WHERE file_id=v.file_id) ORDER BY f.title")
+ const sources=await all(env,"SELECT v.id,v.filename,v.title FROM wl_company_file_versions v JOIN wl_company_files f ON f.id=v.file_id WHERE v.media_type='application/pdf' AND v.version=(SELECT MAX(version) FROM wl_company_file_versions WHERE file_id=v.file_id) ORDER BY v.title")
  const prior=templates.find(t=>t.id===url.searchParams.get('revise'))
- const placements=Array.from({length:8},(_,i)=>{
+ const placements=Array.from({length:Math.max(8,prior?.fields.length??0)},(_,i)=>{
   const existing=prior?.fields[i],kind=existing?.kind??(i===0?'signature':i===1?'signature':'')
   return h`<fieldset><legend>Field ${i+1}</legend>${select('Field type','fieldKind',kinds,kind,{required:false,blank:'Unused'})}${select('Signer','fieldSigner',[{value:'0',label:'Employee'},{value:'1',label:'Named employer countersigner'}],String(existing?.signer??(i===1?1:0)))}${field('PDF page','fieldPage',{type:'number',value:existing?.page??1})}<div class="grid">${field('Left (%)','fieldX',{type:'number',value:existing?existing.x*100:10})}${field('Top (%)','fieldY',{type:'number',value:existing?existing.y*100:40+i*5})}${field('Width (%)','fieldWidth',{type:'number',value:existing?existing.width*100:40})}${field('Height (%)','fieldHeight',{type:'number',value:existing?existing.height*100:5})}</div></fieldset>`
  })
