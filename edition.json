@@ -99,7 +99,9 @@
           "migrations/core/0082_default_access.sql",
           "migrations/core/0084_ai_provider.sql",
           "migrations/core/0085_ai_workflows.sql",
-          "migrations/core/0086_ai_workflow_step_approvals.sql"
+          "migrations/core/0086_ai_workflow_step_approvals.sql",
+          "migrations/core/0087_ai_consent.sql",
+          "migrations/core/0088_ai_handbooks.sql"
         ]
       }
     },
