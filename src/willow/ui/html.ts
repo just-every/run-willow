@@ -29,6 +29,7 @@ const NAV: NavItem[][] = [[
   { href: '/app', label: 'Home', icon: 'home', show: () => true },
   { href: '/app/progress', label: 'In progress', icon: 'checklist', show: () => true },
   { href: '/app/people', label: 'People', icon: 'people', show: () => true },
+  { href: '/app/signatures', label: 'Signatures', icon: 'checklist', show: () => true },
   { href: '/app/leave', label: 'Leave', icon: 'calendar', show: () => true },
   { href: '/app/people?view=organization', label: 'Organization chart', icon: 'org', show: () => true },
   { href: '/app/payroll', label: 'Payroll', icon: 'wallet', show: actor => can(actor, 'payroll.handoff') && can(actor, 'pay.read') },

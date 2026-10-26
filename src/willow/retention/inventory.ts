@@ -39,6 +39,10 @@ const cls = (key: ClassKey): Kind => ({ class: key })
 const s = (id: string, table: string, label: string, kind: Kind, from: string, extra: Partial<Store> = {}): Store => ({ id, table, label, kind, from: `${table} t WHERE ${from}`, ...extra })
 
 export const STORES: Store[] = [
+  s('signature_events','wl_sign_events','Native signing authentication and consent','erase','t.request_id IN (SELECT id FROM wl_sign_requests WHERE person_id=?1)',{ms:'t.at'}),
+  s('signature_files','wl_sign_files','Native signature rendered bytes','erase','t.person_id=?1',{ms:'t.created_at',blob:'t.size'}),
+  s('signature_requests','wl_sign_requests','Native signature requests and certificates','erase','t.person_id=?1',{ms:'t.created_at'}),
+  s('signature_reviews','wl_sign_reviews','Native signature recipient reviews','erase',"t.actor=?2 OR instr(t.snapshot,?1)>0",{ms:'t.created_at'}),
   s('okta_accounts','wl_okta_accounts','Okta account mappings','erase','t.person_id=?1',{ms:'t.linked_at'}),
   s('okta_reviews','wl_okta_reviews','Reviewed Okta actions and observed states','erase','t.person_id=?1',{ms:'t.created_at'}),
   s('ai_policy_followup','wl_ai_policy_escalations','Content-free HR policy follow-up','erase','t.requested_by=?2 OR t.person_id=?1',{ms:'t.created_at'}),
@@ -157,7 +161,7 @@ export const STORES: Store[] = [
 
 // Rows another person's records keep: the person's attribution is replaced by the erasure label.
 export const AUTHORED: [string, string][] = [
-  ['wl_sign_templates','recorded_by'], ['wl_sign_template_approvals','approved_by'],
+  ['wl_sign_events','member_id'], ['wl_sign_requests','hr_member'], ['wl_sign_reviews','actor'], ['wl_sign_templates','recorded_by'], ['wl_sign_template_approvals','approved_by'],
   ['wl_okta_accounts','linked_by'], ['wl_okta_reviews','actor'], ['wl_okta_settings','approved_by'],
   ['wl_ai_policy_escalations','resolved_by'],
   ['wl_ai_handbooks','created_by'], ['wl_ai_handbooks','withdrawn_by'], ['wl_ai_handbook_versions','created_by'], ['wl_ai_handbook_approvals','approved_by'], ['wl_ai_handbook_inclusions','included_by'],

@@ -25,7 +25,7 @@ function configuration(input:Input) {
   const row=value as Record<string,unknown>
   insist(Object.keys(row).length===7&&Object.keys(row).every(key=>['signer','kind','page','x','y','width','height'].includes(key)),'invalid_signature_field')
   insist(Number.isInteger(row.signer)&&Number(row.signer)>=0&&Number(row.signer)<signers.length,'invalid_signature_signer')
-  insist(typeof row.kind==='string'&&['signature','initial','date','text'].includes(row.kind),'invalid_signature_field_kind')
+  insist(typeof row.kind==='string'&&['signature','initial','date','text','employee_name','job_title','compensation'].includes(row.kind),'invalid_signature_field_kind')
   insist(Number.isInteger(row.page)&&Number(row.page)>0&&Number(row.page)<=1000,'invalid_signature_page')
   for(const key of ['x','y','width','height']) insist(typeof row[key]==='number'&&Number.isFinite(row[key])&&Number(row[key])>=0&&Number(row[key])<=1,'invalid_signature_position')
   insist(Number(row.width)>0&&Number(row.height)>0&&Number(row.x)+Number(row.width)<=1&&Number(row.y)+Number(row.height)<=1,'invalid_signature_position')

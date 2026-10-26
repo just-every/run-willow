@@ -1,3 +1,4 @@
+import { signatureRequests,signatureRequest } from './sign/requests'
 import { signatureTemplates } from './sign/templates'
 import { policyEscalations } from './ai-policy-escalations'
 import { handbookSources } from './ai-handbooks'
@@ -72,6 +73,7 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  signatureRequests,signatureRequest:(env,actor,_request,id)=>signatureRequest(env,actor,id),
   signatureTemplates,
   policyEscalations,
   handbooks: (env,actor) => handbookSources(env,actor),

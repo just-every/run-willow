@@ -3,6 +3,7 @@
 // entry, so a new door cannot be added without being crawled.
 // Patterns are relative to /api/willow/ (API) or absolute (pages).
 export const API_DOORS: [string, string][] = [
+  ['^signature-requests$','signatureRequests'],['^signature-requests/([\\w-]+)$','signatureRequest'],
   ['^signature-templates$','signatureTemplates'],
   ['^ai-workflow-approvals$','aiWorkflowApprovals'],
   ['^ai-workflows$','aiWorkflows'], ['^ai-workflows/([\\w-]+)$','aiWorkflow'],
@@ -35,6 +36,8 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/signature-reviews/([\\w-]+)$','signatureReviewFile'],
+  ['^/app/signatures$','signatures'],['^/app/signatures\\.csv$','signatureCsv'],['^/app/signatures/([\\w-]+)\\.pdf$','signatureFile'],['^/app/signatures/([\\w-]+)$','signatureRequest'],
   ['^/app/workflow-approvals$','workflowApprovals'],
   ['^/app/policy-assistant$','policyAssistant'],
   ['^/app/oauth/authorize$','oauthConsent'],
