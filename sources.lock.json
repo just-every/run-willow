@@ -5428,7 +5428,7 @@
       "executable": false
     },
     "tests/willow/performance.mjs": {
-      "sha256": "6b28a6319410f90a6ddd384f23abaf7ca8dd9aa0b535b1a9397a1d8818350cd3",
+      "sha256": "b4f8351b807ea9fa9dfb8a71df174ee4afa771d7c4e5ec5d4d1d0a5f4e7546b5",
       "executable": false
     },
     "tests/willow/phase2-fixtures.mjs": {

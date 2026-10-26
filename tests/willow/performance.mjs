@@ -147,6 +147,11 @@ try {
   await api('mover.schedule', { period: s.employee.period, effectiveFrom: today, managerPersonId: s.managerb.person, reason: 'Review-cycle team transfer' })
   const employmentAfterTransfer=(await api(`people/${s.employee.person}`)).employment
   const incoming = await detail(s.managerb.cookie)
+  // Check exact events when they occur, before independent later work advances the recent audit window.
+  const events = await api('audit')
+  assert.ok(events.some(event => event.action === 'performance.summary.transfer' && event.subject === first.id))
+  assert.ok(events.some(event => event.action === 'performance.summary.withhold' && event.subject === correction.id && event.detail.includes(withholdingReason)))
+
   contains(incoming.summaries, ['RELEASE-FIRST'])
   assert.ok(incoming.inputs.every(input => input.author === s.managerb.member), 'Succession transfers released summaries without transferring confidential input')
   excludes(incoming, ['RELEASE-CORRECTED', withholdingReason, privateNote, 'HR-REVISED-PRIVATE', answers.manager, answers.peer, answers.self, answers.revised, answers.otherSelf, answers.otherPeer])
@@ -225,9 +230,6 @@ try {
     assert.deepEqual(exportAfterExit[field], exportBeforeExit[field], 'Employee exit retains the locked review history')
     assert.deepEqual((await detail())[field], locked[field], 'Later cycles and exit do not rewrite the first closed cycle')
   }
-  const events = await api('audit')
-  assert.ok(events.some(event => event.action === 'performance.summary.transfer' && event.subject === first.id))
-  assert.ok(events.some(event => event.action === 'performance.summary.withhold' && event.subject === correction.id && event.detail.includes(withholdingReason)))
   console.log('PERFORM-001: PASS — two teams, scoped feedback, late escalation, calibration, immutable releases, succession, appeals, cross-cycle goals, current authority and retained exit history')
 } finally {
   await h.close()
