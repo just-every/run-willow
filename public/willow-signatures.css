@@ -1,0 +1,3 @@
+/* Readable metadata on signing, signing-workflow and signature-report screens. */
+body:has(main[data-signing-surface]) .avatar { font-size: 13px; }
+main[data-signing-surface] .table-wrap td[data-label]::before { font-size: 13px; }

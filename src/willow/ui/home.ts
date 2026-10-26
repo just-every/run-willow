@@ -51,5 +51,5 @@ ${item.missing.length ? h`<section class="card"><h2>Information still needed</h2
 ${upgrades.length ? h`<section class="card"><h2>Upgrade this case</h2>${form('case.upgrade.preview', `/app/cases/${id}?review={id}`, [hidden('case', id), select('Published version', 'template', upgrades.map(t => ({ value: t.id, label: `${t.name} v${t.version}` })))], 'Review case upgrade')}</section>` : ''}
 ${item.upgrades.length ? h`<section class="card"><h2>Upgrade history</h2><ul>${item.upgrades.map(u => h`<li>${new Date(u.at).toISOString()} — completed work and superseded tasks retained</li>`)}</ul></section>` : ''}
 ${item.status === 'open' && canAbout(actor, 'people.manage', item.person.id) ? h`<section class="card">${form('case.complete', `/app/cases/${id}`, [hidden('case', id)], 'Complete case')}<p class="muted">A case completes only when every task is done.</p></section>` : ''}`
-  return page('Case', actor, body, { current: '/app/people', url })
+  return page('Case', actor, body, { current: '/app/people', url, signing:true })
 }

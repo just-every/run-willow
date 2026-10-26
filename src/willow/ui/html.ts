@@ -91,16 +91,16 @@ const headers = {
 const STYLES = ['/fonts/fonts.css', '/rer-theme.css', '/willow-tokens.css', '/willow.css', '/willow-layouts.css', '/willow-progress.css', '/willow-connections.css','/willow-tooltips.css']
 
 // `wide` lets a page use the whole work area (In progress). Without the nav (first run) the shell is bare.
-export function page(title: string, actor: Actor | null, body: Html, { current = '', url, status = 200, showNav = true, wide = false }: { current?: string; url?: URL; status?: number; showNav?: boolean; wide?: boolean } = {}): Response {
+export function page(title: string, actor: Actor | null, body: Html, { current = '', url, status = 200, showNav = true, wide = false, signing = false }: { current?: string; url?: URL; status?: number; showNav?: boolean; wide?: boolean; signing?: boolean } = {}): Response {
   const notice = url?.searchParams.get('notice'), error = url?.searchParams.get('error')
   const nav = actor && showNav ? h`<input type="checkbox" id="menu-toggle" class="menu-toggle"><label for="menu-toggle" class="menu-button">${icon('menu')}Menu</label><nav aria-label="Main">${NAV.map((group, index) => {
     const items = group.filter(item => item.show(actor))
     return items.length ? h`<ul class="${NAV_CLASSES[index]}">${items.map(item => h`<li><a href="${item.href}"${item.href === current ? raw(' aria-current="page"') : ''}>${icon(item.icon)}${item.label}</a></li>`)}</ul>` : ''
   })}</nav>` : ''
   const top = actor && showNav ? h`<header class="topbar"><form class="find" method="get" action="/app/people" role="search">${icon('search')}<input type="search" name="q" placeholder="Find a person" aria-label="Find a person"></form><a class="bell" href="/app/tasks" aria-label="Open your task list" aria-describedby="tasks-tooltip">${icon('bell')}<span class="control-tooltip" id="tasks-tooltip" role="tooltip">Your tasks</span></a><div class="who">${avatar(actor.name)}<span>${actor.name}<small>${roleOf(actor)}</small></span></div></header>` : ''
-  const document = h`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · ${branding.name}</title>${STYLES.map(href => h`<link rel="stylesheet" href="${href}">`)}<link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" type="image/svg+xml" href="/brand/favicon-32.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png"></head><body>
+  const document = h`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · ${branding.name}</title>${(signing?[...STYLES,'/willow-signatures.css']:STYLES).map(href => h`<link rel="stylesheet" href="${href}">`)}<link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" type="image/svg+xml" href="/brand/favicon-32.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png"></head><body>
 <div class="shell${actor && showNav ? '' : ' bare'}"><aside class="rail"><a class="brand" href="/app"><img src="/brand/mark.svg" alt="" width="21" height="38"><span data-rer-name>${branding.name}</span></a>${nav}</aside>
-<div class="work">${top}<main${wide ? raw(' class="wide"') : ''}>${notice ? h`<p class="flash" role="status">${notice}</p>` : ''}${error ? h`<p class="flash error" role="alert">That did not work: ${describeError(error)}</p>` : ''}${body}</main></div></div></body></html>`
+<div class="work">${top}<main${signing?raw(' data-signing-surface'):''}${wide ? raw(' class="wide"') : ''}>${notice ? h`<p class="flash" role="status">${notice}</p>` : ''}${error ? h`<p class="flash error" role="alert">That did not work: ${describeError(error)}</p>` : ''}${body}</main></div></div></body></html>`
   return new Response(document.html, { status, headers })
 }
 

@@ -11,6 +11,7 @@ import { imports } from './import-transport.mjs'
 import { findText, rowCounts, stubIdentities } from './retention-counts.mjs'
 import { browserEvidence } from './retention-browser.mjs'
 import { payrollErasure } from './retention-payroll.mjs'
+import { retentionSignatures } from './retention-signatures.mjs'
 import { importErasure } from './retention-import.mjs'
 
 const directory = await mkdtemp(join(tmpdir(), 'willow-retention-'))
@@ -78,6 +79,7 @@ try {
   await api('connections.notices', { enabled: true })
   const leave = await h.api('leave.request', quinnCookie, { account: quinnAccount, startDate: day(3), endDate: day(3), reason: 'synthetic-willow-5' })
   await api('leave.decide', { request: leave.id, decision: 'approve' })
+  const signing = await retentionSignatures(h, owner, s, { person: q, cookie: quinnCookie }, directory)
   const leaver = await api('leaver.start', { period: quinn.period, template: f.templates.leaver, endDate: day(-1), reason: 'Resigned' })
 
   // Before any decision: every blocker is named and nothing can be confirmed.
@@ -122,6 +124,7 @@ try {
   await api('retention.map', { kind: 'document_category', ref: forms, class: 'payroll' })
   await api('retention.map', { target: `document_category:${offers}`, class: 'personnel' })
   await api('retention.map', { target: `custom_field:${badge.id}`, class: 'personnel' })
+  await signing.configure(day(30))
   assert.equal((await as('hr', 'retention.map', { kind: 'document_category', ref: forms, class: 'payroll' }, 403)).error, 'owner_required')
   const hold = await api('hold.place', { scope: 'document_category', ref: forms, reason: 'Wage claim', holdOwner: s.hr.member, reviewDate: day(30) })
   for (const who of ['hr', 'managera']) await as(who, 'hold.place', { scope: 'employer', reason: 'x', reviewDate: day(30) }, 403)
@@ -131,6 +134,7 @@ try {
   const clean = await preview('owner', q)
   assert.deepEqual(clean.blockers, [])
   assert.equal(clean.confirmable, true)
+  signing.preview(clean)
   const item = Object.fromEntries(clean.items.map(row => [row.id, row]))
   assert.equal(item[`documents:${forms}`].disposition, 'held')
   assert.equal(item[`documents:${forms}`].blobs,2,'Both the published and rejected pending file remain in the held category census')
@@ -248,6 +252,7 @@ try {
   await api('erasure.provider', { request: requestId, outcome: 'deleted', evidence: 'x' }, 409)
   await as('managera', `erasure/receipts/${erased.receipt}`, undefined, 403)
   const custodyRecords = (await api('retained')).records
+  await signing.afterErasure(custodyRecords)
   const kept = Object.fromEntries(custodyRecords.map(record => [record.store, record]))
   assert.equal(kept[`documents:${forms}`].hold, hold.id, 'the held document class is in custody under its hold')
   assert.equal(kept.terms.class, 'payroll')
@@ -350,6 +355,7 @@ try {
   assert.equal((await api('retained')).records.length, baseline, 'the warning purges nothing')
   await tick(oneYear)
   const remaining = (await api('retained')).records
+  await signing.afterPurge(remaining)
   const stores = new Set(remaining.map(record => record.store))
   assert.ok(!stores.has('cases') && !stores.has(`documents:${offers}`), 'one-year personnel records are purged at their expiry')
   assert.ok(stores.has('terms') && stores.has(`documents:${forms}`) && stores.has('people'), 'longer rules, holds and the identity they need remain')
