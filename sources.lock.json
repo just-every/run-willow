@@ -4868,12 +4868,16 @@
       "sha256": "ae506bce6fff17c5dcc37a0ffb5fba9b2e7a036d52e3f2545146f86b9016a2b2",
       "executable": false
     },
+    "tests/willow/ai-live-edge.mjs": {
+      "sha256": "2fa49219f6b4fa6470e9c70e54b88d18d3525f8a952f34f891fad9148bee684e",
+      "executable": false
+    },
     "tests/willow/ai-policy-browser.mjs": {
       "sha256": "6a158b48aa5416bdfa6f42e4cde7e68fe4a7097e73a211cc2381f47b7e5512b6",
       "executable": false
     },
     "tests/willow/ai-policy.mjs": {
-      "sha256": "b835ee9bf9c24491feeaa7b1c2dac8a13e526e54cee826ac24427d367a5f8f1f",
+      "sha256": "98bd0304ea7e98c1e06c16a78f4ccbc33cfd591ccbe968c8d5893d8c76a98d68",
       "executable": false
     },
     "tests/willow/ai-workflows-browser.mjs": {

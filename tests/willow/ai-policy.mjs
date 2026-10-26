@@ -4,6 +4,7 @@ import { harness } from './harness.mjs'
 import { publishTemplate } from './publish-template.mjs'
 import { fixture } from './regression-fixture.mjs'
 import { policyScreens, disabledPolicyScreen } from './ai-policy-browser.mjs'
+import { liveProviderRequest } from './ai-live-edge.mjs'
 
 const live = process.env.WILLOW_AI_LIVE === '1'
 let mode='valid', calls=[], duringCall
@@ -12,7 +13,7 @@ const h=await harness({transientBindings:{MODELS_ENDPOINT:'https://api.openai.co
  assert.equal(new URL(request.url).hostname,'api.openai.com')
  const body=await request.clone().json();calls.push(body)
  if(duringCall){const run=duringCall;duringCall=null;await run()}
- if(live)return fetch(request)
+ if(live)return liveProviderRequest(request)
  if(mode==='failed')return new Response('synthetic-willow-provider-error',{status:429})
  const context=JSON.parse(body.messages[1].content),source=context.policies[0]
  return Response.json({id:'synthetic-willow-response',usage:{prompt_tokens:200,completion_tokens:100},choices:[{message:{content:JSON.stringify({claims:[{text:mode==='fabricated'?'Uncited invented entitlement':source.summary,versionId:mode==='uncited'?'synthetic-willow-unknown':source.id,quote:source.summary}],needsHr:true})}}]})
