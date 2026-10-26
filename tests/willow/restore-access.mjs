@@ -1,5 +1,6 @@
 // Actual CLI export/import and ordinary email links; no SQL or dev identities.
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { mkdtemp, mkdir, copyFile, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -17,6 +18,7 @@ let origin, restored
 let server, destination, browser
 const modelBindings = { MODELS_ENDPOINT: 'https://api.openai.com/v1/chat/completions', MODELS_KEY: 'synthetic-willow-16800' }
 let sourceNotices = 0, restoredNotices = 0, modelCalls = 0
+const questionCanary='synthetic-willow-'+randomUUID(), providerCanary='synthetic-willow-'+randomUUID()
 const provider = side => async request => {
   if (new URL(request.url).hostname === 'api.sendgrid.com') {
     const body = await request.json()
@@ -28,7 +30,7 @@ const provider = side => async request => {
   modelCalls++
   const body=await request.json(),context=JSON.parse(body.messages[1].content)
   const value=context.policies?{claims:[{text:context.policies[0].summary,quote:context.policies[0].summary,sourceId:context.policies[0].id}],needsHr:true}:context
-  return Response.json({id:'synthetic-willow-16802',unusedProviderContent:'synthetic-willow-16803',choices:[{message:{content:JSON.stringify(value)}}]})
+  return Response.json({id:'synthetic-willow-16802',unusedProviderContent:providerCanary,choices:[{message:{content:JSON.stringify(value)}}]})
 }
 const request = (base, path, cookie, body) => fetch(base + path, { method: body === undefined ? 'GET' : 'POST', redirect: 'manual', headers: { ...(cookie ? { cookie } : {}), ...(body === undefined ? {} : { origin: base, 'content-type': 'application/json' }) }, body: body === undefined ? undefined : JSON.stringify(body) })
 const apiAt = base => async (path, cookie, body, status = 200) => { const r = await request(base, `/api/willow/${path}`, cookie, body); const text = await r.text(); assert.equal(r.status, status, `${path}: ${r.status} ${text.slice(0, 200)}`); return JSON.parse(text) }
@@ -161,7 +163,7 @@ try {
   await api('ai.configure',owner,aiConfig)
   const included=(await api('policies',owner))[0].versions.find(version=>version.status==='approved')
   await api('ai.policy.include',owner,{version:included.id,included:true})
-  await api('policy.answer',s.employee.cookie,{question:'What is my PTO balance? synthetic-willow-16801'})
+  await api('policy.answer',s.employee.cookie,{question:`What is my PTO balance? ${questionCanary}`})
   const aiSource=await publishTemplate(server,owner,{kind:'mover',name:'Approval restore',taskTitle:['Review payroll handoff'],taskAssignee:['payroll'],taskDueDays:['0']})
   const workflow=await api('workflow.draft',owner,{template:aiSource.id,request:'For everyone, assign task 1 to payroll due 0 days after start.'})
   // The provider edge returns the controlled structure without extra fields.
@@ -188,7 +190,7 @@ try {
   await server.close(); server = null
   await command(source, ['export', '--output', 'exports/access.rer'])
   const data = await readFile(join(source, 'exports/access.rer')), records = []
-  for(const canary of ['synthetic-willow-16801','synthetic-willow-16803'])assert.ok(!data.includes(Buffer.from(canary)),'Raw question and provider response content never enters an archive')
+  for(const canary of [questionCanary,providerCanary])assert.ok(!data.includes(Buffer.from(canary)),'Raw question and provider response content never enters an archive')
   for await (const record of readArchive(new ReadableStream({ start(c) { c.enqueue(data); c.close() } }))) records.push(record)
   const header = records[0]
   assert.ok(!data.includes(Buffer.from(webhook.secret)),'Webhook signing authority never enters archive bytes')
