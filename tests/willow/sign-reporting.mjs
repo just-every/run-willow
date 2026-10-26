@@ -97,9 +97,27 @@ export async function signatureReportingProof(h,owner,s) {
  await api('report.schedule',{report:saved.id,version:saved.versionId,firstDate:recordDay,cadenceDays:1,recipients:[s.payroll.member],enabled:true})
  const scheduled=(await api('custom-reports/'+saved.id)).schedule
  assert.ok(scheduled.schedule.recipients.includes(s.payroll.member),'Signature definitions reuse the existing reviewed safe-link schedule')
+ await api('connections.notices',{enabled:true})
+ const tick=async instant=>{const response=await h.raw('/cdn-cgi/local/scheduled?time='+instant+'&cron='+encodeURIComponent('*/15 * * * *')+'&format=json');assert.equal(response.status,200)}
+ const scheduledInstant=Date.parse(recordDay+'T12:00:00Z')
+ const beforeMail=h.businessMail().filter(m=>m.subject==='Willow: scheduled report ready').length
+ await tick(scheduledInstant)
+ let outcomes=(await api('custom-reports/'+saved.id)).schedule.deliveries
+ assert.equal(outcomes.length,1);assert.equal(outcomes[0].status,'accepted')
+ const message=h.businessMail().filter(m=>m.subject==='Willow: scheduled report ready').at(-1)
+ assert.ok(message.content.some(c=>c.value.includes(h.origin+'/app/reports/custom/'+saved.id)))
+ for(const value of ['synthetic-willow-15306','synthetic-willow-15307',employeeRequest])assert.ok(!JSON.stringify(message).includes(value),'Scheduled links contain no signing values or request metadata')
+ await tick(scheduledInstant)
+ assert.equal(h.businessMail().filter(m=>m.subject==='Willow: scheduled report ready').length,beforeMail+1)
+
  await api('level.apply',{review:(await api('level.preview',{kind:'level',level:level.id,name:'synthetic-willow-15315',permissions:[],reports:[]})).id})
  s.payroll.cookie=await h.signIn('payroll@example.com')
  await as(s.payroll.cookie,'custom-reports/'+saved.id,undefined,403)
+ await tick(scheduledInstant+86400000)
+ outcomes=(await api('custom-reports/'+saved.id)).schedule.deliveries
+ assert.equal(outcomes.length,2);assert.equal(outcomes[0].status,'refused')
+ assert.equal(h.businessMail().filter(m=>m.subject==='Willow: scheduled report ready').length,beforeMail+1,'Revoked report selection blocks the next scheduled link')
+ await api('connections.notices',{enabled:false})
  await api('report.schedule',{report:saved.id,version:saved.versionId,firstDate:recordDay,cadenceDays:1,recipients:[s.payroll.member],enabled:true},403)
  await reportScreens(h,owner,s.managera.cookie,saved.id,managerSaved.id)
  console.log('Saved signature reports: PASS — dated authorized sources, reconciled counts, filters, CSV and XLSX, selected-report isolation and reviewed schedule')

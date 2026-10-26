@@ -84,7 +84,7 @@ export async function harness({ bindings = {}, transientBindings = {}, provider,
     // as rer build wrote it, even when migration setup fails.
     await rm('dist/server/.wrangler', { recursive: true, force: true })
   }
-  const links = new Map()
+  const links = new Map(), businessMail=[]
   const capturedOutput = []
   let mf, mfOptions, convertOptions
   {
@@ -101,6 +101,7 @@ export async function harness({ bindings = {}, transientBindings = {}, provider,
       outboundService: async request => {
         if (new URL(request.url).hostname === 'api.sendgrid.com') {
           const message = await request.clone().json()
+          if(['Willow: scheduled report ready','Willow: signature request','Willow: assigned work needs attention'].includes(message.subject))businessMail.push(message)
           for (const content of message.content ?? []) {
             const link = content.value.match(/https?:[^\s"<>]+\/auth\/confirm\?token=[^\s"<>]+/)?.[0]
             if (link) for (const recipient of message.personalizations.flatMap(p => p.to)) links.set(recipient.email, link.replaceAll('&amp;', '&'))
@@ -180,7 +181,7 @@ export async function harness({ bindings = {}, transientBindings = {}, provider,
     return new URL(links.get(email)).searchParams.get('token')
   }
 
-  return { origin, vars, raw, outstanding, restart:async()=>{assert.ok(mf);await mf.dispose();mf=new Miniflare(convertOptions(mfOptions));await mf.ready}, upgradeSnapshot, setBindings: async changes => { assert.ok(mf); Object.assign(vars, changes); await mf.setOptions(convertOptions({...mfOptions,bindings:{...vars,...transientBindings}})) },  api, submit, signIn, close, output: ()=>capturedOutput.join('\n') }
+  return { origin, vars, raw, outstanding, businessMail:()=>businessMail, restart:async()=>{assert.ok(mf);await mf.dispose();mf=new Miniflare(convertOptions(mfOptions));await mf.ready}, upgradeSnapshot, setBindings: async changes => { assert.ok(mf); Object.assign(vars, changes); await mf.setOptions(convertOptions({...mfOptions,bindings:{...vars,...transientBindings}})) },  api, submit, signIn, close, output: ()=>capturedOutput.join('\n') }
 }
 
 export const file = (filename, content, type = 'application/octet-stream') => ({ filename, base64: Buffer.from(content).toString('base64'), type })

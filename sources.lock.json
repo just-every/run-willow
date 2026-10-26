@@ -5203,7 +5203,7 @@
       "executable": false
     },
     "tests/willow/harness.mjs": {
-      "sha256": "6ae69b9aa8fae015ed35a20443bae4a8ed13a3fad212bbfce88042ca66aac05e",
+      "sha256": "408d6ae19a6caf3bfebd05a3cd10557e56d79e737d05db4efea6444e2b13a267",
       "executable": false
     },
     "tests/willow/hiring-browser.mjs": {
@@ -5507,7 +5507,7 @@
       "executable": false
     },
     "tests/willow/sign-reporting.mjs": {
-      "sha256": "ee6a6a3140c0113ceb168b62ecec57be5a6147a11a9f660e42387fd24ad86b3f",
+      "sha256": "c1bbc30c65b7792afc61efac841f686d21ee335c26fe00baf932ff3c1aa31e43",
       "executable": false
     },
     "tests/willow/sign-restore.mjs": {
