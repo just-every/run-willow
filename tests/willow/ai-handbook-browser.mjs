@@ -32,15 +32,15 @@ export async function handbookScreens(h,staff,calls) {
   }
   for(const width of [1440,390]){
    await hr.setViewportSize({width,height:1000});await employee.setViewportSize({width,height:1000})
-   const title=width===1440?'Flexible work handbook':'Workplace flexibility handbook'
+   const title=width===1440?'Workplace dress handbook':'Office dress handbook'
    const before=calls.length
    await hr.goto(h.origin+'/app/settings');await hr.getByText('Create handbook source',{exact:true}).click()
    const form=hr.locator('form[action="/app/do/ai.handbook.write"]:visible')
    await form.getByLabel('Handbook title',{exact:true}).fill(title)
    await form.getByLabel('Clause number',{exact:true}).fill('1')
-   await form.getByLabel('Topic',{exact:true}).selectOption('remote-work')
+   await form.getByLabel('Topic',{exact:true}).selectOption('general-policy')
    await form.getByLabel('Applies from',{exact:true}).fill((await h.api('me',staff.hr.cookie)).today)
-   await form.getByLabel('Plain-text policy clause',{exact:true}).fill('Agree remote working days with your manager in writing before the arrangement starts.')
+   await form.getByLabel('Plain-text policy clause',{exact:true}).fill('Clean jeans are permitted in the office unless the published safety rules require protective clothing.')
    await capture(hr,'draft-request',width)
    await submit(hr,form.getByRole('button',{name:'Create handbook draft',exact:true}))
    const draft=(await h.api('handbook-management',staff.hr.cookie)).find(source=>source.title===title)
@@ -57,7 +57,7 @@ export async function handbookScreens(h,staff,calls) {
    assert.equal(calls.length,before,'Source management never invokes a provider')
    await employee.goto(h.origin+'/app/policy-assistant')
    await employee.getByLabel('Policy context',{exact:true}).selectOption('handbook')
-   await employee.getByLabel('Question',{exact:true}).fill('What is our remote work policy?')
+   await employee.getByLabel('Question',{exact:true}).fill('Can I wear clean jeans to the office?')
    await submit(employee,employee.getByRole('button',{name:'Ask about policy',exact:true}))
    await employee.getByRole('heading',{name:'Cited answer',exact:true}).waitFor()
    assert.equal(await employee.getByLabel('Policy context',{exact:true}).inputValue(),'handbook')
@@ -68,7 +68,7 @@ export async function handbookScreens(h,staff,calls) {
    await submit(hr,book.getByRole('button',{name:'Withdraw handbook source',exact:true}))
    await employee.goto(h.origin+'/app/policy-assistant')
    await employee.getByLabel('Policy context',{exact:true}).selectOption('handbook')
-   await employee.getByLabel('Question',{exact:true}).fill('What is our remote work policy?')
+   await employee.getByLabel('Question',{exact:true}).fill('Can I wear clean jeans to the office?')
    const withdrawn=calls.length
    await submit(employee,employee.getByRole('button',{name:'Ask about policy',exact:true}))
    await employee.getByRole('heading',{name:'Ask HR',exact:true}).waitFor()

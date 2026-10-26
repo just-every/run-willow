@@ -5,7 +5,7 @@ import { all, commit, guard, insist, now, one, stmt } from './core'
 import type { Input } from './input'
 import { readablePolicies } from './leave'
 import { readsLeaveField } from './levels/leave'
-import { policyContext, policyTopic } from './ai-policy-context'
+import { handbookQuestionTopic, policyContext, policyTopic } from './ai-policy-context'
 import { policyCalculations, type PolicyCalculation } from './ai-policy-calculations'
 import { personView } from './profile'
 import { aiSettings, callModel, freshAiActor, rejectAiCall } from './ai-provider'
@@ -37,7 +37,7 @@ export async function policyAnswer(env: Bindings, actor: Actor, input: Input): P
  const sequence=(await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq as number
  // Admission is exactly the reader's screen. The full projection never leaves Willow.
  if (id) await admit(env,actor,id)
- const topic = policyTopic(question)
+ const topic = policyTopic(question) ?? await handbookQuestionTopic(env,actor,question)
  const visible = id ? facets(actor,id) : new Set<Facet>()
  const withheld = (Object.keys(FACET_LABELS) as Facet[]).filter(facet=>!visible.has(facet)).map(facet=>FACET_LABELS[facet])
  const refusal = { status: 'unsupported', claims: [], withheld, needsHr: true, escalation: '/app/company', message: 'No included policy in your scope supports this question. Ask HR; no entitlement is inferred.' }

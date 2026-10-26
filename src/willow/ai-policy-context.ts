@@ -22,6 +22,19 @@ export function policyTopic(question: string): PolicyTopic | null {
  return null
 }
 
+const QUESTION_WORDS = new Set(['about','after','before','could','does','have','into','must','ours','policy','should','that','their','them','there','these','they','this','what','when','where','which','while','will','with','would','your'])
+const words = (text: string) => new Set((text.toLowerCase().match(/[a-z]{4,}/g)??[]).filter(word=>!QUESTION_WORDS.has(word)))
+
+/** Resolve unfamiliar wording against approved general clauses locally; tokens never leave. */
+export async function handbookQuestionTopic(env: Bindings, actor: Actor, question: string): Promise<PolicyTopic | null> {
+ const query=words(question)
+ const sources=await handbookSources(env,actor)
+ const matches=sources.filter(source=>source.included).flatMap(source=>source.clauses.filter(clause=>clause.applicableFrom<=actor.today).map(clause=>({topic:clause.topic,score:[...words(clause.text)].filter(word=>query.has(word)).length}))).filter(match=>match.score>=2)
+ const topics=[...new Set(matches.map(match=>match.topic))]
+ // Ambiguity is a limitation for HR; never choose a topic from a tied meaning.
+ return topics.length===1?topics[0]:null
+}
+
 /** Build a closed source projection; no question text or person projection enters it. */
 export async function policyContext(env: Bindings, actor: Actor, person: string | null, topic: PolicyTopic, numbers: boolean) {
  const included = new Set((await all(env,'SELECT version_id FROM wl_ai_sources')).map(row=>row.version_id))
