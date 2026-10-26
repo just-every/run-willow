@@ -1,7 +1,7 @@
 // Runs the built Worker (dist/) with its own local D1 and R2 state in a
 // temporary directory, and drives it only through public HTTP doors.
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { mkdtemp, mkdir, rm, writeFile, readdir, readFile, copyFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
@@ -16,6 +16,22 @@ export async function freePort() {
   const { port } = socket.address()
   await new Promise(resolve => socket.close(resolve))
   return port
+}
+
+// Wrangler redraws the complete migration table after every file. Drain it
+// without a synchronous buffer ceiling; keep only bounded failure diagnostics.
+async function wranglerCommand(args, env) {
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, args, { env, stdio: ['ignore','pipe','pipe'] })
+    let stdout = '', stderr = ''
+    child.stdout.on('data', chunk => { stdout = (stdout + chunk).slice(-12000) })
+    child.stderr.on('data', chunk => { stderr = (stderr + chunk).slice(-12000) })
+    child.on('error', reject)
+    child.on('close', (code, signal) => {
+      if (code === 0) return resolve()
+      reject(Object.assign(new Error(`Worker database setup failed: exit ${code}, signal ${signal ?? 'none'}`), { stderr: stderr || stdout }))
+    })
+  })
 }
 
 export async function harness({ bindings = {}, transientBindings = {}, provider, persistTo, port: chosenPort, scheduled = false, upgrade } = {}) {
@@ -49,14 +65,14 @@ export async function harness({ bindings = {}, transientBindings = {}, provider,
     const stagedConfig = join(directory, 'upgrade-wrangler.json')
     await writeFile(stagedConfig, JSON.stringify({ name: config.name, compatibility_date: config.compatibility_date, d1_databases: [{ ...database, migrations_dir: staged }] }))
     const local = ['DB', '--local', '--persist-to', directory, '--config', stagedConfig, '--env-file', join(directory, 'local.env')]
-    execFileSync(process.execPath, [wrangler, 'd1', 'migrations', 'apply', ...local], { stdio: 'pipe', env })
+    await wranglerCommand([wrangler, 'd1', 'migrations', 'apply', ...local], env)
     const fixture = join(directory, 'upgrade-fixture.sql')
     await writeFile(fixture, upgrade.sql)
-    execFileSync(process.execPath, [wrangler, 'd1', 'execute', ...local, '--file', fixture], { stdio: 'pipe', env })
+    await wranglerCommand([wrangler, 'd1', 'execute', ...local, '--file', fixture], env)
     const result = execFileSync(process.execPath, [wrangler, 'd1', 'execute', ...local, '--command', upgrade.snapshot, '--json'], { encoding: 'utf8', env })
     upgradeSnapshot = JSON.parse(result).flatMap(item => item.results)
    }
-   execFileSync(process.execPath, [wrangler, 'd1', 'migrations', 'apply', 'DB', '--local', '--persist-to', directory, '--config', 'dist/server/wrangler.json', '--env-file', join(directory, 'local.env')], { stdio: 'pipe', env })
+   await wranglerCommand([wrangler, 'd1', 'migrations', 'apply', 'DB', '--local', '--persist-to', directory, '--config', 'dist/server/wrangler.json', '--env-file', join(directory, 'local.env')], env)
   } catch (error) {
     const diagnostics = error.stderr?.toString() || error.stdout?.toString()
     if (diagnostics) console.error(diagnostics)
