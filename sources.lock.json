@@ -700,7 +700,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "c0cc1762f924aa9a4be8e50567d81b3bd97ff2c7853629f84136164551ad03bc",
+      "sha256": "bc5bd9046ffe4caec2d4da6d4d2b1efa8a86507e73cf32b88177eacdd8636c10",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -728,7 +728,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "aa47e155766ebbee243e16ae6001c80ca3b97efada32e25fb8a421dbf7e368a9",
+      "sha256": "1fd6e0c3e0c3dc23a13eb26bf3ba2c6ee8b2efd41e667ffc460aa49bb3655a6c",
       "executable": false
     },
     "DEMO.md": {
@@ -5336,7 +5336,7 @@
       "executable": false
     },
     "tests/willow/levels-performance.mjs": {
-      "sha256": "fdb09289010e85e49d8c33781682a066b5262b235285a58fe7426d2e6291e0cd",
+      "sha256": "922a6554cb2722926d6e810016dd0bad9a2a2a48d805804462a3207889d9027c",
       "executable": false
     },
     "tests/willow/levels-personal-browser.mjs": {

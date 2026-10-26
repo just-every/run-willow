@@ -736,7 +736,7 @@ async function trainingBrowserProof(h,owner,cookie,hrCookie,plan,level,assignmen
    for(const label of ['Training assignments','Training completions','Training certifications'])await editor.getByLabel('Performance about others: '+label,{exact:true}).selectOption('approval')
    await capture(admin,'level-form',width);await submit(admin,editor.locator('form'),'Review level');await capture(admin,'level-impact',width)
    await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
-   await writer.goto(h.origin+'/app/training');await writer.getByText('Assign training',{exact:true}).click()
+   await writer.goto(h.origin+'/app/training');await writer.locator('summary').filter({hasText:/^Assign training$/}).click()
    const assign=writer.locator('form[action="/app/do/training.assign"]')
    await assign.getByLabel('Person',{exact:true}).selectOption(assignment.person)
    await assign.getByLabel('Course',{exact:true}).selectOption(assignment.course)
