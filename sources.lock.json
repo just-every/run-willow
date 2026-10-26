@@ -4915,7 +4915,7 @@
       "executable": false
     },
     "tests/willow/ai-policy.mjs": {
-      "sha256": "1e305866e8c57b59ea326f519d4930704ece5087cdc7ca718c3f4aed6602bed3",
+      "sha256": "5f1b7a6893c5a120d65e192332b541afd180ea5df85010eef456056ff5ae8efa",
       "executable": false
     },
     "tests/willow/ai-workflows-browser.mjs": {
@@ -5039,7 +5039,7 @@
       "executable": false
     },
     "tests/willow/harness.mjs": {
-      "sha256": "4a5d5345418ff1afd11efab6bc3755233c11b41642061df2699c0914d14fe61e",
+      "sha256": "bdd95dd5a271bc9926835b82473a4e5768a53a6dd9ae52c601814555dec44f61",
       "executable": false
     },
     "tests/willow/hiring-browser.mjs": {

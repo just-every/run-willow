@@ -85,14 +85,16 @@ export async function harness({ bindings = {}, transientBindings = {}, provider,
     await rm('dist/server/.wrangler', { recursive: true, force: true })
   }
   const links = new Map()
+  const capturedOutput = []
   let mf, mfOptions, convertOptions
   {
     const require = createRequire(import.meta.url)
     const fromWrangler = createRequire(require.resolve('wrangler/package.json'))
-    const { Miniflare, convertV4MiniflareOptions } = fromWrangler('miniflare')
+    const { Miniflare, convertV4MiniflareOptions, Log, LogLevel } = fromWrangler('miniflare')
+    const log = new class extends Log { log(message) { capturedOutput.push(String(message)) } }(LogLevel.VERBOSE)
     convertOptions = convertV4MiniflareOptions
     const files = ['index.js', ...(await readdir('dist/server/assets')).filter(f=>f.endsWith('.js')).map(f=>'assets/'+f)]
-    mfOptions = { unsafeTriggerHandlers: scheduled, name: 'willow-test', modulesRoot: resolve('dist/server'), modules: files.map(f=>({type:'ESModule',path:resolve('dist/server',f)})),
+    mfOptions = { log, handleStructuredLogs: entry=>capturedOutput.push(JSON.stringify(entry)), unsafeTriggerHandlers: scheduled, name: 'willow-test', modulesRoot: resolve('dist/server'), modules: files.map(f=>({type:'ESModule',path:resolve('dist/server',f)})),
       compatibilityDate: '2026-09-08', compatibilityFlags: ['nodejs_compat'],
       bindings: { ...vars, ...transientBindings }, d1Databases: { DB: 'local-willow-only' }, r2Buckets: { FILES: 'people-willow-files' },
       resourcePersistencePath: join(directory, 'v3'),
@@ -178,8 +180,7 @@ export async function harness({ bindings = {}, transientBindings = {}, provider,
     return new URL(links.get(email)).searchParams.get('token')
   }
 
-  const redacted = () => ''
-  return { origin, vars, raw, outstanding, upgradeSnapshot, setBindings: async changes => { assert.ok(mf); Object.assign(vars, changes); await mf.setOptions(convertOptions({...mfOptions,bindings:{...vars,...transientBindings}})) },  api, submit, signIn, close, output: redacted }
+  return { origin, vars, raw, outstanding, upgradeSnapshot, setBindings: async changes => { assert.ok(mf); Object.assign(vars, changes); await mf.setOptions(convertOptions({...mfOptions,bindings:{...vars,...transientBindings}})) },  api, submit, signIn, close, output: ()=>capturedOutput.join('\n') }
 }
 
 export const file = (filename, content, type = 'application/octet-stream') => ({ filename, base64: Buffer.from(content).toString('base64'), type })

@@ -163,6 +163,7 @@ try{
  const audit=await api('audit')
  const callAudit=audit.filter(event=>event.action==='ai.call')
  assert.ok(callAudit.length)
+ for(const value of ['PRIVATE-employee','81234.56','highest paid','synthetic-willow-provider-error',live?process.env.MODELS_KEY:'synthetic-willow-1'])assert.ok(!h.output().includes(value),'Worker logs contain no assistant question, record, provider error content or secret')
  for(const event of callAudit){const detail=typeof event.detail==='string'?JSON.parse(event.detail):event.detail;assert.ok(detail.consentVersion);assert.ok(detail.sources.length);assert.ok(detail.inputFields.length)}
  await h.api('ai-controls',s.employee.cookie,undefined,403)
  if(live)assert.ok(history.calls.reduce((sum,call)=>sum+call.reserved_microusd,0)<=10000,'Whole live journey is capped at USD 0.01')
