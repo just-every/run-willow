@@ -34,7 +34,10 @@ export async function policyScreens(h,owner,staff,calculationPerson){
      await page.getByLabel('Question',{exact:true}).fill('Am I eligible for PTO?')
      await page.getByRole('button',{name:'Ask about policy',exact:true}).click()
      await page.getByRole('heading',{name:'Cited answer',exact:true}).waitFor()
-     if(name==='assistant-calculation')await page.getByRole('heading',{name:'Willow leave calculation',exact:true}).waitFor()
+     if(name==='assistant-calculation'){
+      await page.getByRole('heading',{name:'Willow leave calculation',exact:true}).waitFor()
+      assert.equal(await page.getByLabel('Policy context',{exact:true}).inputValue(),calculationPerson)
+     }
     }
     const bell=page.getByRole('link',{name:'Open your task list',exact:true})
     await bell.focus();assert.ok(await page.getByRole('tooltip',{name:'Your tasks',exact:true}).isVisible())

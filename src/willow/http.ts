@@ -153,9 +153,11 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
     if (!action) throw new WillowError('not_found', 404)
     const input = await Input.from(request)
     const returnTo = safeReturnTo(input.text('returnTo', { optional: true, max: 300 }) || '/app', '/app')
+    const policyUrl = new URL('/app/policy-assistant',url)
+    if (name === 'policy.answer') policyUrl.searchParams.set('person',input.text('person',{optional:true}) || 'me')
     try {
       const result = await action(env, actor, input, request) as { id?: string; notice?: string } | null
-      if (name === 'policy.answer') return policyAssistantPage(env,actor,url,result as unknown as Awaited<ReturnType<typeof policyAnswer>>)
+      if (name === 'policy.answer') return policyAssistantPage(env,actor,policyUrl,result as unknown as Awaited<ReturnType<typeof policyAnswer>>)
       if (name === 'apiKey.issue' || name === 'apiKey.rotate') return issuedCredentialPage(actor,result as CredentialMetadata&{token:string})
       await reconcileRecipients(env,actor.today)
       const notices = await notifyAction(env, name!, result)
@@ -163,7 +165,7 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
       return redirect(env, returnTo.replace('{id}', encodeURIComponent(result?.id ?? '')), 'notice', failed ? 'Saved. Email notice delivery failed; continue the work in Willow.' : result?.notice ?? 'Saved.')
     } catch (error) {
       const { code, status } = failure(error)
-      if (name === 'policy.answer' && error instanceof WillowError) return policyAssistantPage(env,actor,url,{status:'unavailable',claims:[],withheld:[],needsHr:true,escalation:'/app/company',message:'No supported policy answer is available. HR must resolve the source or provider limitation before you rely on an entitlement or take action.'})
+      if (name === 'policy.answer' && error instanceof WillowError) return policyAssistantPage(env,actor,policyUrl,{status:'unavailable',claims:[],withheld:[],needsHr:true,escalation:'/app/company',message:'No supported policy answer is available. HR must resolve the source or provider limitation before you rely on an entitlement or take action.'})
       if (status >= 500) throw error
       return redirect(env, returnTo.replace('/{id}', ''), 'error', code)
     }

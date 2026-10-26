@@ -60,6 +60,7 @@ export async function handbookScreens(h,staff,calls) {
    await employee.getByLabel('Question',{exact:true}).fill('What is our remote work policy?')
    await submit(employee,employee.getByRole('button',{name:'Ask about policy',exact:true}))
    await employee.getByRole('heading',{name:'Cited answer',exact:true}).waitFor()
+   assert.equal(await employee.getByLabel('Policy context',{exact:true}).inputValue(),'handbook')
    assert.ok((await employee.locator('body').innerText()).includes(draft.versionId))
    await capture(employee,'answer',width)
    await hr.goto(h.origin+'/app/settings');book=await openBook(hr,title)
