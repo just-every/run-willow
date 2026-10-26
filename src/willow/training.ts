@@ -26,7 +26,9 @@ export async function trainingHome(env:Bindings, actor:Actor) {
   mayComplete:!row.outcome && writes(mode(actor,row.person_id,'trainingCompletions')) && (actor.personId!==row.person_id || !!row.self_completion),
   mayWaive:!row.outcome && actor.personId!==row.person_id && writes(mode(actor,row.person_id,'trainingAssignments')),
   mayCertify:actor.personId!==row.person_id&&writes(mode(actor,row.person_id,'trainingCertifications')),
-  requiresApproval:fields.some(field=>mode(actor,row.person_id,field)==='approval'),
+  completionRequiresApproval:mode(actor,row.person_id,'trainingCompletions')==='approval',
+  certificateRequiresApproval:mode(actor,row.person_id,'trainingCertifications')==='approval',
+  waiverRequiresApproval:mode(actor,row.person_id,'trainingAssignments')==='approval',
  }))
  const pending = await all(env,`SELECT r.*,d.outcome AS decision,d.reason FROM wl_training_requests r LEFT JOIN wl_training_decisions d ON d.request_id=r.id ORDER BY r.requested_at,r.id`)
  const requests=[]
