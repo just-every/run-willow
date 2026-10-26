@@ -699,7 +699,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "2c3043fe2a20c6f4e11b52ed9748cfd47136d5b2c4715d839c2f3f9c251b3c7e",
+      "sha256": "5bc9045f9b074c06134691d8f109b638b479739bf113f23efed652e8427807fe",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -707,7 +707,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "337a2917f783c17f869795e1da06b4ed593d44db48e7d223cf1f2186318221e2",
+      "sha256": "e5bce70409665228f95723ca6853b214f00674381208d4276deef93d0f838f37",
       "executable": false
     },
     "API.md": {
@@ -727,7 +727,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "9b271fc9b5397b45f9a244544d270a23d3388825cb8ff78626e3b8d175dc7c16",
+      "sha256": "2cefd48d1e8d59caab0820e1144e40e477975821fde67cfeff825ce30ffce598",
       "executable": false
     },
     "DEMO.md": {
@@ -4231,7 +4231,7 @@
       "executable": false
     },
     "src/willow/levels/actions.ts": {
-      "sha256": "b646963c293c28fb2c0eb35279630c9b04bb32c0113e3bd2fa318eef311d469f",
+      "sha256": "b91d7fa7b85ed1a7514799396d4f2f3ef846ac75517f0aabc451ce48a63a6176",
       "executable": false
     },
     "src/willow/levels/approval-impact.ts": {
@@ -4891,7 +4891,7 @@
       "executable": false
     },
     "src/willow/ui/levels.ts": {
-      "sha256": "da619f86953b4fec64562169c20d907b82c9a7f32ac01f5c1ad3c9bb66eadfa8",
+      "sha256": "f18c6e0d646944c741a4da3e5fc57f82bfdec3c909c0307c6a8380e9784aa6b8",
       "executable": false
     },
     "src/willow/ui/model-drafts.ts": {
@@ -5271,7 +5271,7 @@
       "executable": false
     },
     "tests/willow/levels-bulk.mjs": {
-      "sha256": "60545d486bc671f4bbee81c377c9c688bb12fc96706f15f8a6b9b51a4f1f23e6",
+      "sha256": "1dd02528b00380efa0d225da4c81ca37c39772418215359e0fdf22618d5882a9",
       "executable": false
     },
     "tests/willow/levels-compensation-custody.mjs": {
@@ -5375,7 +5375,7 @@
       "executable": false
     },
     "tests/willow/levels.mjs": {
-      "sha256": "784419351a6d47e1ffddbcc906f7825e1effee44564ce1332a722b9e2c22ddce",
+      "sha256": "9d72e8542903d190af7c301a42622f361db3b17f02cc47b192508ff20a2baa30",
       "executable": false
     },
     "tests/willow/okta-edge.mjs": {

@@ -240,7 +240,6 @@ export async function delegatedLevelProof(h,owner,s) {
  await hr('levels',undefined,403)
  console.log('ROLE-003 delegated levels: PASS — explicit HR grant, exact ceilings, no self/owner/EEO/re-delegation escalation, audited refusals, reviewed bulk assignment, independent pay approval and current-rights revocation')
  await defaultAccessProof(h,owner,s)
- await scopedDelegationProof(h,owner,s)
  return {delegation:delegation.id,pay:pay.id,payCeiling:privatePay.id,originalHR,originalManager,originalTarget,hrBundle}
 }
 

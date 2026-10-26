@@ -2,7 +2,7 @@ import { jobLevelProof } from './levels-job-read.mjs'
 import { migrationProof } from './levels-migration.mjs'
 // ROLE-001 named-level slice: public HTTP doors against the production Worker.
 import assert from 'node:assert/strict'
-import { bulkLevelProof, delegatedLevelProof } from './levels-bulk.mjs'
+import { bulkLevelProof, delegatedLevelProof, scopedDelegationProof } from './levels-bulk.mjs'
 import { personalFieldProof, otherPersonalProof, documentCategoryProof, documentWriteProof, selectedReportProof } from './levels-personal.mjs'
 import { harness } from './harness.mjs'
 import { fixture } from './regression-fixture.mjs'
@@ -113,6 +113,7 @@ try {
  if(access) await documentWriteProof(h,owner,s,documentRights)
  const selectedReport=access?await selectedReportProof(h,owner,fx):undefined
  await browserEvidence(h,owner,s,bulk,scoped,delegated,documentRights,selectedReport,{access})
+ if(access) await scopedDelegationProof(h,owner,s)
  if(access) console.log('ROLE-001: PASS — exact union, explicit bounded administration and reviewed changes, stale and replay refusal, same-session revocation and ended-access clearing (personal self-write modes and immutable HR routing proved; other field and section rights remain partial)')
 } finally { await h.close() }
 }
