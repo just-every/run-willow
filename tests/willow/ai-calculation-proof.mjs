@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 
 export async function calculationProof({h,api,fixture,staff,ask,calls}) {
- const person=await fixture.join('Leah Vargas',{startDate:'2024-01-01',managerPersonId:staff.managera.person})
+ const person=await fixture.join('Leah Vargas',{workEmail:'leah.vargas@example.com',startDate:'2024-01-01',managerPersonId:staff.managera.person})
  const rules={kind:'vacation',eligibility:{employmentTypes:['full_time'],waitingDays:0},tiers:[{afterMonths:0,allowance:{unit:'hours',amount:366}}],cadence:'daily',proration:'calendar_days',capMinutes:null,carryover:{capMinutes:null,expiresOn:null},locations:[]}
  const source=await api('policy.write',{name:'Recorded vacation accrual',summary:'Vacation accrues under the approved calendar-day rules. HR confirms any entitlement decision.',accrualWeeks:'0',negativeLimitHours:'0',rules})
  await api('policy.approve',{version:source.id})

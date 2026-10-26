@@ -4895,7 +4895,7 @@
       "executable": false
     },
     "tests/willow/ai-calculation-proof.mjs": {
-      "sha256": "dc41cda59bd46a58782f45dc6cd67e17c58d34ab7ef9f9c76ff35cd450a328dd",
+      "sha256": "df22d0f4e5eaa3257f046a082b3caf1616dd5d57aa11c5bfd6be983198dfaa14",
       "executable": false
     },
     "tests/willow/ai-handbook-browser.mjs": {
