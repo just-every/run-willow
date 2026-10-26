@@ -35,7 +35,7 @@ export async function trainingHome(env:Bindings, actor:Actor) {
   const payload=JSON.parse(row.payload_json)
   const field=row.operation==='complete'?'trainingCompletions':'trainingAssignments'
   if(!reads(actor,row.person_id,field)||payload.certificate&&!reads(actor,row.person_id,'trainingCertifications'))continue
-  requests.push({id:row.id,person:row.person_id,operation:row.operation,payload:JSON.parse(row.payload_json),status:row.decision??'pending',reason:row.reason,mayDecide:!row.decision&&can(actor,'people.manage')&&row.requested_by!==actor.id&&row.person_id!==actor.personId})
+  requests.push({id:row.id,assignment:row.target_id,person:row.person_id,operation:row.operation,payload:JSON.parse(row.payload_json),status:row.decision??'pending',reason:row.reason,mayDecide:!row.decision&&can(actor,'people.manage')&&row.requested_by!==actor.id&&row.person_id!==actor.personId})
  }
  await auditRead(env,actor.id,'training.read','training')
  return {connection:{provider:'TalentLMS',connected:false,state:'Not connected'},courses,people:people.map(p=>({id:String(p.id),name:String(p.name),mayAssign:p.id!==actor.personId&&writes(mode(actor,p.id,'trainingAssignments'))})),assignments,requests,mayManage:can(actor,'people.manage')}
