@@ -149,7 +149,7 @@ OpenAI and a supported GPT-4.1 model, sets the maximum USD spend per run, and
 selects included policies alone or policies plus permitted numeric leave inputs.
 The default is disabled. HR includes approved policy versions in Settings;
 ordinary reader permissions still limit each answer. Questions reduce to supported
-leave topics locally. Workflow requests use the sentence format shown in Proposals.
+topics locally. General handbook drafts are published under current HR source authority, with an explicit content attestation. HR separately includes an exact approved version; each numbered clause has an applicable date. Future clauses and withdrawn handbooks cannot answer current questions. Workflow requests use the sentence format shown in Proposals.
 No raw request, employee name, pay, private record or task title crosses the model
 edge. A request makes at most one call, bounded before sending by UTF-8 input size,
 output-token limit and the supported model rate. There are no automatic retries.
@@ -157,10 +157,10 @@ output-token limit and the supported model rate. There are no automatic retries.
 Willow retains only call metadata, with minimized subject custody when numeric
 leave inputs were sent. Prompts and policy answers are transient. Calls request
 `store=false`; standard provider abuse-monitoring retention may last up to 30 days
-and requires the owner's explicit consent. Disabling the assistant invalidates
+and requires the owner's explicit consent. The provider also states legal and safety exceptions that can require longer retention; the owner reviews the actual account terms before attesting. Disabling the assistant invalidates
 pending reviews. Restored installations need fresh consent. DATA-002 tracks
 provider deletion requests for minimized leave inputs.
 
-[OpenAI model documentation](https://developers.openai.com/api/docs/models/gpt-4.1-nano)
+[OpenAI pricing](https://developers.openai.com/api/docs/pricing), [model documentation](https://developers.openai.com/api/docs/models/gpt-4.1-nano)
 and [OpenAI data controls](https://developers.openai.com/api/docs/guides/your-data)
 describe the provider settings and rates used here (checked 26 October 2026).

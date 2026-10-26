@@ -713,7 +713,7 @@
       "executable": false
     },
     "CONNECTIONS.md": {
-      "sha256": "004a7fca937c6340918cb59ae84a19dd2906941e45b2b51ab646e5897a5744a0",
+      "sha256": "b3fbd210b0bc4f9db070aef2af1e95c61a94517392e1eb69722c6436107c1eca",
       "executable": false
     },
     "CONTRACT.md": {
@@ -4609,7 +4609,7 @@
       "executable": false
     },
     "src/willow/ui/ai-controls.ts": {
-      "sha256": "cedab9a0dee0694c0b870e084cc133a13ee2f82dae00166f6f9bba91ee93a58f",
+      "sha256": "6b3d953e75113757362259725044fbc0a37ff39942a64f6a99ab182d6f47f692",
       "executable": false
     },
     "src/willow/ui/ai-handbooks.ts": {
