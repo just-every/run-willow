@@ -196,6 +196,8 @@ jobs:
         run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
       - if: matrix.shard == 'browser-phase2'
         run: pnpm run test:phase2-browser
+      - if: matrix.shard == 'browser-phase2'
+        run: WILLOW_AI_BROWSER=1 node tests/willow/ai-policy.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

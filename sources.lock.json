@@ -677,7 +677,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "ecbe87351de2c8c2eafa86b34751cb34f17ea0c9307edb2d06d9e4bdf9c86e81",
+      "sha256": "2b9942cbc878eeccef0360438c14b206cf6eef239444bd5c89f897fa42fc4d1d",
       "executable": false
     },
     ".gitignore": {
@@ -4869,7 +4869,7 @@
       "executable": false
     },
     "tests/willow/ai-live-edge.mjs": {
-      "sha256": "2fa49219f6b4fa6470e9c70e54b88d18d3525f8a952f34f891fad9148bee684e",
+      "sha256": "1b7343846074c9fe5491435ce21d939c658910b1c031b4a902ebe266441c054f",
       "executable": false
     },
     "tests/willow/ai-policy-browser.mjs": {

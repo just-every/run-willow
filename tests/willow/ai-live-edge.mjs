@@ -4,7 +4,7 @@ import { request as httpsRequest } from 'node:https'
 export async function liveProviderRequest(request) {
  const body=Buffer.from(await request.arrayBuffer())
  return new Promise((resolve,reject)=>{
-  const upstream=httpsRequest(request.url,{method:request.method,headers:Object.fromEntries(request.headers),rejectUnauthorized:true},response=>{
+  const upstream=httpsRequest(request.url,{method:request.method,headers:{...Object.fromEntries(request.headers),'accept-encoding':'identity'},rejectUnauthorized:true},response=>{
    const chunks=[];let size=0
    response.on('error',reject)
    response.on('data',chunk=>{
