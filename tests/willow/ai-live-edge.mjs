@@ -15,7 +15,16 @@ export async function liveProviderRequest(request) {
     if(size>40000){upstream.destroy(new Error('Provider response exceeded the journey bound'));return}
     chunks.push(chunk)
    })
-   response.on('end',()=>resolve(new Response(Buffer.concat(chunks),{status:response.statusCode,headers:Object.fromEntries(Object.entries(response.headers).filter(([,value])=>typeof value==='string'))})))
+   response.on('end',()=>{
+    const bytes=Buffer.concat(chunks)
+    if(response.statusCode>=400){
+     let code
+     try{code=JSON.parse(bytes.toString()).error?.code}catch{}
+     const known=['model_not_found','insufficient_quota','invalid_api_key','permission_denied','rate_limit_exceeded','account_deactivated']
+     console.log(JSON.stringify({providerStatus:response.statusCode,errorCode:known.includes(code)?code:'unclassified_provider_failure',requestId:response.headers['x-request-id']}))
+    }
+    resolve(new Response(bytes,{status:response.statusCode,headers:Object.fromEntries(Object.entries(response.headers).filter(([,value])=>typeof value==='string'))}))
+   })
   })
   upstream.on('error',reject)
   upstream.setTimeout(30000,()=>upstream.destroy(new Error('Provider request timed out')))

@@ -4924,7 +4924,7 @@
       "executable": false
     },
     "tests/willow/ai-live-edge.mjs": {
-      "sha256": "1481c5a8391c7f51935ac1853c925f44b51c95d94e12d3f6fe3632b40b2ae240",
+      "sha256": "22e86dbb6ff46b3ca6fa002f88d4144d62fab77923645ed669552a750b460ed3",
       "executable": false
     },
     "tests/willow/ai-policy-browser.mjs": {
