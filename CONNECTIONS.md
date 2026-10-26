@@ -161,7 +161,7 @@ and requires the owner's explicit consent. The provider also states legal and sa
 pending reviews. Restored installations need fresh consent. DATA-002 tracks
 provider deletion requests for minimized leave inputs.
 
-[OpenAI pricing](https://developers.openai.com/api/docs/pricing), [model documentation](https://developers.openai.com/api/docs/models/gpt-4.1-nano)
+[OpenAI pricing](https://developers.openai.com/api/docs/pricing), [model documentation](https://developers.openai.com/api/docs/models/gpt-4.1-mini)
 and [OpenAI data controls](https://developers.openai.com/api/docs/guides/your-data)
 describe the provider settings and rates used here (checked 26 October 2026).
 
@@ -175,3 +175,5 @@ Current vendor pages describe shipped capabilities that overlap these targets. [
 AI-002 connected-system simulation still needs native typed provider adapters, capability and scope snapshots, reviewed account mappings, authorized external-state reads and an effect planner. No provider adapter or account state is invented when those inputs are absent. Exercising those integrations additionally needs an authorized employer tenant and its applicable provider credentials, scopes, mapping identifiers and any required partner approval. The existing identity connection supplies sign-in, not account provisioning.
 
 HR follow-up is a separate explicit member action. Its native request stores requester references, controlled status and completion metadata, never the question or answer. Current employer-wide HR authority is required to complete it. DATA-002 erases the personal contact request and anonymizes completion authorship; restoring native HR work does not activate model access or transfer provider consent.
+
+The supported assistant model is GPT-4.1 mini. OpenAI [shut down GPT-4.1 nano on 23 October 2026](https://developers.openai.com/api/docs/deprecations#2026-04-22-legacy-gpt-model-snapshots); it is no longer offered. Unsupported historical model selections refuse calls until the owner explicitly reconfigures and consents. No automatic model substitution occurs.

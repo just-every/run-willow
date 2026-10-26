@@ -5,8 +5,8 @@ import type { Input } from './input'
 import { AI_CONSENT_VERSION } from './ai-consent'
 
 // Prices per million tokens in USD; supported fixed-price models only.
-const MODELS: Record<string, [number, number]> = { 'gpt-4.1-nano': [0.1, 0.4], 'gpt-4.1-mini': [0.4, 1.6] }
-export const aiSettings = async (env: Bindings) => await one(env, 'SELECT * FROM wl_ai_settings WHERE singleton=1') ?? { enabled: 0, policies: 0, workflows: 0, model: 'gpt-4.1-nano', cap_microusd: 10000, data_scope: 'policies-only', retention: 'no-content', provider_retention: 'unapproved', consent_version: '', revision: '' }
+const MODELS: Record<string, [number, number]> = { 'gpt-4.1-mini': [0.4, 1.6] }
+export const aiSettings = async (env: Bindings) => await one(env, 'SELECT * FROM wl_ai_settings WHERE singleton=1') ?? { enabled: 0, policies: 0, workflows: 0, model: 'gpt-4.1-mini', cap_microusd: 10000, data_scope: 'policies-only', retention: 'no-content', provider_retention: 'unapproved', consent_version: '', revision: '' }
 
 export async function freshAiActor(env: Bindings, actor: Actor) {
  const session = await one(env, `SELECT o.role FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id WHERE s.id=? AND s.revoked_at IS NULL AND s.expires_at>? AND s.operator_version=o.version AND o.status='active'`, actor.sessionId, now())

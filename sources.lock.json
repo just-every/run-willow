@@ -716,7 +716,7 @@
       "executable": false
     },
     "CONNECTIONS.md": {
-      "sha256": "61aed284411c08384a7ab0a4150df4ea4cfbf9fd4131d987e617806e6bade4ea",
+      "sha256": "d66d308e73f513529a142d6d4bab2f36537e577f337fd2095b0e593083833249",
       "executable": false
     },
     "CONTRACT.md": {
@@ -1144,7 +1144,7 @@
       "executable": false
     },
     "migrations/core/0084_ai_provider.sql": {
-      "sha256": "73d63fcc915089050d13ac76d2afcd67e6d067b5cdd47ce00bcd29aa6cc1c731",
+      "sha256": "80d21fd30dff9161befa6dd34a64f65412807b16b2ed7ae56bcf57ebc6e45847",
       "executable": false
     },
     "migrations/core/0085_ai_workflows.sql": {
@@ -3724,7 +3724,7 @@
       "executable": false
     },
     "src/willow/ai-provider.ts": {
-      "sha256": "1f981a78f44cafc689c02b856434dfe1b1b0e3154f68b288f865fc0394a0c0f6",
+      "sha256": "c334790dc9eb73a0f4e75b03b517ae51f623087bc700658c5e2c31da2d3fcecb",
       "executable": false
     },
     "src/willow/ai-workflows-approvals.ts": {
@@ -4624,7 +4624,7 @@
       "executable": false
     },
     "src/willow/ui/ai-controls.ts": {
-      "sha256": "6b3d953e75113757362259725044fbc0a37ff39942a64f6a99ab182d6f47f692",
+      "sha256": "b170251176d3d7df69e84d62238508e7314abee270815bf0313a429711ebaa84",
       "executable": false
     },
     "src/willow/ui/ai-handbooks.ts": {
@@ -4932,7 +4932,7 @@
       "executable": false
     },
     "tests/willow/ai-policy.mjs": {
-      "sha256": "4e215f80063f42f746e2b3685987e2d29018c07c6af55307d3fae6cf595e8d27",
+      "sha256": "5f7769afb1ae3d16ec86294ce0eb29a7f5c04b7a6c9a81ae84c4451be574c5ba",
       "executable": false
     },
     "tests/willow/ai-workflows-browser.mjs": {
@@ -5260,7 +5260,7 @@
       "executable": false
     },
     "tests/willow/phase2.mjs": {
-      "sha256": "9cb5e189074d6402752c418a172197812605ed418f6bd4fe50bc0e85bc867854",
+      "sha256": "be5182ccecbe8679f99097778cec64ce866eb2e4bbe611cc4d32a564977444a9",
       "executable": false
     },
     "tests/willow/publish-template.mjs": {
@@ -5288,7 +5288,7 @@
       "executable": false
     },
     "tests/willow/restore-access.mjs": {
-      "sha256": "7161b76d2d3bcef12def1a5f772b332114de0ee30f2415523ee59befd24cf1f2",
+      "sha256": "92c1710dea56c0ca64e431d0abf212f80ed9b40b4dc41662f4c2c036367855b7",
       "executable": false
     },
     "tests/willow/restore-archive-fixture.mjs": {
@@ -5320,7 +5320,7 @@
       "executable": false
     },
     "tests/willow/retention.mjs": {
-      "sha256": "99a09601028d59ca5b7f02a6970d7f4c236a9a8a7345fa2013ccd096a6d28bd5",
+      "sha256": "23cfd391bf7a80b5a3fdd575989e3e198426d5fe205726c858f1b1376b7f92ae",
       "executable": false
     },
     "tests/willow/self-service-browser.mjs": {

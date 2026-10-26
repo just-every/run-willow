@@ -15,7 +15,7 @@ export async function aiControlsSection(env: Bindings, actor: Actor) {
  select('Assistant','enabled',[{value:'false',label:'Disabled'},{value:'true',label:'Enabled'}],String(!!s.enabled)),
  select('Policy answers','policies',[{value:'false',label:'Disabled'},{value:'true',label:'Enabled'}],String(!!s.policies)),
  select('Workflow drafts','workflows',[{value:'false',label:'Disabled'},{value:'true',label:'Enabled'}],String(!!s.workflows)),
- select('Model','model',[{value:'gpt-4.1-nano',label:'GPT-4.1 nano'},{value:'gpt-4.1-mini',label:'GPT-4.1 mini'}],s.model),
+ select('Model','model',[{value:'gpt-4.1-mini',label:'GPT-4.1 mini'}],s.model),
  field('Maximum spend per run (USD)','capUsd',{value:s.cap_microusd/1000000}),
  select('Data scope','dataScope',[{value:'policies-only',label:'Included policy clauses only'},{value:'policy-and-leave-numbers',label:'Included policies and permitted leave numbers'}],s.data_scope),
  select('Willow retention','retention',[{value:'no-content',label:'No prompt or answer content retained'}],s.retention),

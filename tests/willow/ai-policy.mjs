@@ -29,7 +29,7 @@ try{
  await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})
  const f=await fixture(h,owner,{names:{employee:'Elena Patel',managera:'Jules Chen',managerb:'Ari Morgan',hr:'Nora Brooks',payroll:'Mina Costa',ended:'Sam Reed',invited:'Theo Park'}}),s=f.staff,api=f.api
  if(!live)await escalationProof({h,owner,staff:s})
- const config={enabled:true,policies:true,workflows:true,model:live?'gpt-4.1-mini':'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
+ const config={enabled:true,policies:true,workflows:true,model:'gpt-4.1-mini',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
  const ask=(cookie,person='me',question='Am I eligible for PTO and what is my balance?',status=200)=>h.api('policy.answer',cookie,{person,question},status)
  const sources=await api('policies'),version=sources[0].versions.find(v=>v.status==='approved')
  const unapproved=await h.api('policy.write',s.hr.cookie,{name:'Draft leave policy',summary:'Draft policy awaits owner review.',accrualWeeks:'0',negativeLimitHours:'0'})

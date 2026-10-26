@@ -160,7 +160,7 @@ try {
   // DATA-001: restored authority must pause even when provider bindings are available.
   await api('connections.notices', owner, { enabled: true })
   await api('connections.model', owner, { model: 'restore-proof-model' })
-  const aiConfig={enabled:true,policies:true,workflows:true,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
+  const aiConfig={enabled:true,policies:true,workflows:true,model:'gpt-4.1-mini',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
   await api('ai.configure',owner,aiConfig)
   const included=(await api('policies',owner))[0].versions.find(version=>version.status==='approved')
   await api('ai.policy.include',owner,{version:included.id,included:true})
