@@ -54,6 +54,9 @@ try {
   assert.equal((await webhookLog()).deliveries.length,1,'A real employee delivery exists before erasure')
   const quinnMemberId = (await api('access.give', { person: q })).id
   const quinnCookie = await h.signIn('quinn@example.com', { requested: true })
+  const trainingCourse=await api('training.course',{title:'synthetic-willow-10510 native training',selfCompletion:true})
+  const trainingAssignment=await api('training.assign',{person:q,course:trainingCourse.id,dueDate:day(30)})
+  await api('training.complete',{assignment:trainingAssignment.id,evidence:'synthetic-willow-10511 retained completion',certificate:'synthetic-willow-10512 retained certificate'})
   await h.api('eeo.self.write', quinnCookie, { raceEthnicity: 'asian', sex: 'female' })
   const offers = (await api('category.create', { name: 'Offer letters' })).id, forms = (await api('category.create', { name: 'Payroll forms' })).id
   const text = value => ({ filename: 'a.txt', base64: Buffer.from(value).toString('base64') })
@@ -61,7 +64,11 @@ try {
   const formVersion = (await api('document.add', { person: q, category: forms, title: 'Withholding form', file: text('synthetic-willow-2') })).version
   // Pending document uploads already use native category custody and must not escape a held erasure.
   const pendingLevel=await api('level.apply',{review:(await api('level.preview',{kind:'level',name:'Pending payroll document',permissions:[],documentCategories:{self:{[forms]:'approval'},others:{}}})).id})
-  await api('level.apply',{review:(await api('level.preview',{kind:'assignment',member:quinnMemberId,levels:[pendingLevel.id]})).id})
+  const trainingLevel=await api('level.apply',{review:(await api('level.preview',{kind:'level',name:'synthetic-willow-10513',permissions:[],performanceFields:{self:{trainingAssignments:'view',trainingCompletions:'approval'},others:{}}})).id})
+  await api('level.apply',{review:(await api('level.preview',{kind:'assignment',member:quinnMemberId,levels:[pendingLevel.id,trainingLevel.id]})).id})
+  const trainingReviewAssignment=await api('training.assign',{person:q,course:trainingCourse.id,dueDate:day(30)})
+  const trainingRequest=await h.api('training.complete',quinnCookie,{assignment:trainingReviewAssignment.id,evidence:'synthetic-willow-10514 reviewed completion'})
+  await as('hr','training.decide',{request:trainingRequest.id,decision:'approve',reason:'Independent HR review'})
   const pendingDocument=await h.api('document.propose',quinnCookie,{person:q,category:forms,title:'Pending form',file:text('synthetic-willow-14')})
   const badge = await as('hr', 'customField.define', { definition: { key: 'badge', classification: 'hr', type: 'text', validation: { maxLength: 40 }, effectiveFrom: day(-60), label: 'Badge', required: false, employeeRead: false, managerRead: false, retired: false } })
   await as('hr', 'customField.write', { person: q, effectiveFrom: day(-1), values: { badge: 'synthetic-willow-3' } })
@@ -89,7 +96,7 @@ try {
   assert.equal(first.confirmable, false)
   assert.ok(first.items.some(item=>item.id==='ai_policy_followup'&&item.rows>0),'The real HR contact request is included in the erasure preview')
   const byId = Object.fromEntries(first.items.map(item => [item.id, item]))
-  for (const id of ['people', 'private', 'periods', 'terms', 'leave_accounts', 'eeo', 'members', 'sessions', 'audit', 'cases', `custom_field:${badge.id}`, `documents:${offers}`, `documents:${forms}`, 'document_proposals']) assert.ok(byId[id]?.rows > 0, `${id} is classified`)
+  for (const id of ['people', 'private', 'periods', 'terms', 'leave_accounts', 'eeo', 'members', 'sessions', 'audit', 'cases', `custom_field:${badge.id}`, `documents:${offers}`, `documents:${forms}`, 'document_proposals','training_assignments','training_events','training_requests','training_decisions']) assert.ok(byId[id]?.rows > 0, `${id} is classified`)
   assert.equal(byId.eeo.class, 'eeo')
   assert.equal(byId.sessions.disposition, 'erased')
   for (const who of ['hr', 'managera', 'employee']) assert.equal((await preview(who, q, 403)).error, 'owner_required')
@@ -207,6 +214,9 @@ try {
   const sourceBefore = await rowCounts(directory)
   const erased = await api('erasure.confirm', { person: q, digest: final.digest })
   assert.equal(erased.status, 'confirmed')
+  assert.ok(!(await api('training')).assignments.some(row=>row.person===q),'Erasure removes native training from every ordinary projection')
+  const retainedTraining=await api('retained')
+  assert.ok(JSON.stringify(retainedTraining).includes('synthetic-willow-10512 retained certificate'),'Retained training evidence stays in restricted custody')
   assert.equal((await webhookLog()).deliveries.length,0,'Erasure removes native webhook delivery custody')
   assert.match(erased.label, /^Former person [0-9a-f]{8}$/)
   assert.equal((await api('erasure.confirm', { person: q, digest: final.digest }, 409)).error, 'erasure_request_required')
