@@ -104,7 +104,11 @@
           "migrations/core/0088_ai_handbooks.sql",
           "migrations/core/0089_ai_policy_followup.sql",
           "migrations/core/0091_signature_templates.sql",
-          "migrations/core/0092_native_signing.sql"
+          "migrations/core/0092_native_signing.sql",
+          "public/willow-signatures.css",
+          "migrations/core/0093_sign_cohorts.sql",
+          "migrations/core/0094_workflow_signing.sql",
+          "migrations/core/0095_signature_payloads.sql"
         ]
       }
     },

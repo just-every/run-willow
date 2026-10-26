@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "people/willow",
-  "manifest": "8158174fd9f5ff68bd9f67aeec4af165aa254ead3ad519b1b00cd78bfdf96c74",
+  "manifest": "2c6f97f027b43567b3249ec58bf4ebbf165670b92e33c8c0087173ce67b0fd45",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -104,7 +104,11 @@
           "migrations/core/0088_ai_handbooks.sql",
           "migrations/core/0089_ai_policy_followup.sql",
           "migrations/core/0091_signature_templates.sql",
-          "migrations/core/0092_native_signing.sql"
+          "migrations/core/0092_native_signing.sql",
+          "public/willow-signatures.css",
+          "migrations/core/0093_sign_cohorts.sql",
+          "migrations/core/0094_workflow_signing.sql",
+          "migrations/core/0095_signature_payloads.sql"
         ]
       },
       "baseline": null
@@ -778,7 +782,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "8158174fd9f5ff68bd9f67aeec4af165aa254ead3ad519b1b00cd78bfdf96c74",
+      "sha256": "2c6f97f027b43567b3249ec58bf4ebbf165670b92e33c8c0087173ce67b0fd45",
       "executable": false
     },
     "EXPORTING.md": {
@@ -1495,6 +1499,10 @@
     },
     "public/willow-progress.css": {
       "sha256": "223e80bc2367756c23dd0b5ce633a949efe1570de789bb794df214add759f37b",
+      "executable": false
+    },
+    "public/willow-signatures.css": {
+      "sha256": "42155f61cf787d4db4631d0efd221de7716d7713465149d063e29b91e855433d",
       "executable": false
     },
     "public/willow-tokens.css": {
@@ -5459,6 +5467,10 @@
     },
     "tests/willow/retention-payroll.mjs": {
       "sha256": "50aebfae63c77ca43d521aeedc9cb8a40eb21cc90f349ef918bf30813d874bca",
+      "executable": false
+    },
+    "tests/willow/retention-signatures.mjs": {
+      "sha256": "08ae63af4d0ed90aae879a522290b9dfb48779d0f85e659ed8ef9de4334ab5c6",
       "executable": false
     },
     "tests/willow/retention.mjs": {
