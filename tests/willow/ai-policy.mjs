@@ -4,6 +4,8 @@ import { harness } from './harness.mjs'
 import { publishTemplate } from './publish-template.mjs'
 import { fixture } from './regression-fixture.mjs'
 import { policyScreens, disabledPolicyScreen } from './ai-policy-browser.mjs'
+import { handbookProof } from './ai-handbook-proof.mjs'
+import { handbookScreens } from './ai-handbook-browser.mjs'
 import { liveProviderRequest } from './ai-live-edge.mjs'
 
 const live = process.env.WILLOW_AI_LIVE === '1'
@@ -16,7 +18,7 @@ const h=await harness({transientBindings:{MODELS_ENDPOINT:'https://api.openai.co
  if(live)return liveProviderRequest(request)
  if(mode==='failed')return new Response('synthetic-willow-provider-error',{status:429})
  const context=JSON.parse(body.messages[1].content),source=context.policies[0]
- return Response.json({id:'synthetic-willow-response',usage:{prompt_tokens:200,completion_tokens:100},choices:[{message:{content:JSON.stringify({claims:[{text:mode==='fabricated'?'Uncited invented entitlement':source.summary,versionId:mode==='uncited'?'synthetic-willow-unknown':source.id,quote:source.summary}],needsHr:true})}}]})
+ return Response.json({id:'synthetic-willow-response',usage:{prompt_tokens:200,completion_tokens:100},choices:[{message:{content:JSON.stringify({claims:[{text:mode==='fabricated'?'Uncited invented entitlement':source.summary,sourceId:mode==='uncited'?'synthetic-willow-unknown':source.id,quote:source.summary}],needsHr:true})}}]})
 }})
 const receipts=[]
 try{
@@ -68,6 +70,8 @@ try{
  assert.equal(calls.length,before,'A free-text payload extension is refused before egress')
  await ask(s.employee.cookie,'synthetic-willow-unknown','What is PTO?',404)
  await policyScreens(h,owner,s,answer)
+ await handbookProof({h,api,owner,staff:s,ask,calls,live,onCall:run=>{duringCall=run},receipts})
+ await handbookScreens(h,s,calls)
  if(!live){
   const policyOnly=await ask(s.employee.cookie,'me','Explain the PTO eligibility rules')
   assert.equal(policyOnly.status,'answered');assert.deepEqual(calls.at(-1).messages.map(message=>message.role),['system','user'])

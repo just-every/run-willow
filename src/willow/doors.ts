@@ -5,7 +5,7 @@
 export const API_DOORS: [string, string][] = [
   ['^ai-workflow-approvals$','aiWorkflowApprovals'],
   ['^ai-workflows$','aiWorkflows'], ['^ai-workflows/([\\w-]+)$','aiWorkflow'],
-  ['^ai-controls$','aiControls'],
+  ['^ai-controls$','aiControls'], ['^handbooks$','handbooks'], ['^handbook-management$','handbookManagement'],
   ['^api-credentials$','apiCredentials'],['^setting-areas/locations$','settingLocations'],['^setting-areas/schedules$','settingSchedules'],['^setting-areas/document-categories$','settingCategories'],['^setting-areas/payroll-connections$','settingPayroll'],['^setting-areas/sign-in$','settingSecurity'],['^setting-areas/retention$','settingRetention'],
   ['^preboarding$', 'preboarding'], ['^eeo/preboarding/([\\w-]+)$', 'eeoPreboarding'],
   ['^eeo/applicants$', 'eeoApplicants'], ['^eeo/applicants/([\\w-]+)$', 'eeoApplicant'],

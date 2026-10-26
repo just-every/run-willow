@@ -27,8 +27,8 @@ const provider = side => async request => {
   assert.equal(side,'source','No model call is authorized during restore')
   modelCalls++
   const body=await request.json(),context=JSON.parse(body.messages[1].content)
-  const value=context.policies?{claims:[{text:context.policies[0].summary,quote:context.policies[0].summary,versionId:context.policies[0].id}],needsHr:true,unusedProviderContent:'synthetic-willow-16803'}:context
-  return Response.json({id:'synthetic-willow-16802',choices:[{message:{content:JSON.stringify(value)}}]})
+  const value=context.policies?{claims:[{text:context.policies[0].summary,quote:context.policies[0].summary,sourceId:context.policies[0].id}],needsHr:true}:context
+  return Response.json({id:'synthetic-willow-16802',unusedProviderContent:'synthetic-willow-16803',choices:[{message:{content:JSON.stringify(value)}}]})
 }
 const request = (base, path, cookie, body) => fetch(base + path, { method: body === undefined ? 'GET' : 'POST', redirect: 'manual', headers: { ...(cookie ? { cookie } : {}), ...(body === undefined ? {} : { origin: base, 'content-type': 'application/json' }) }, body: body === undefined ? undefined : JSON.stringify(body) })
 const apiAt = base => async (path, cookie, body, status = 200) => { const r = await request(base, `/api/willow/${path}`, cookie, body); const text = await r.text(); assert.equal(r.status, status, `${path}: ${r.status} ${text.slice(0, 200)}`); return JSON.parse(text) }

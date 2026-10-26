@@ -154,6 +154,7 @@ export const STORES: Store[] = [
 
 // Rows another person's records keep: the person's attribution is replaced by the erasure label.
 export const AUTHORED: [string, string][] = [
+  ['wl_ai_handbooks','created_by'], ['wl_ai_handbooks','withdrawn_by'], ['wl_ai_handbook_versions','created_by'], ['wl_ai_handbook_approvals','approved_by'], ['wl_ai_handbook_inclusions','included_by'],
   ['wl_ai_workflows','published_by'], ['wl_ai_calls','actor'], ['wl_ai_sources','approved_by'],
   ['wl_default_access', 'approved_by'],
   ['wl_preboard_packets','created_by'], ['wl_applicant_eeo_invitations','invited_by'], ['wl_applicant_eeo_invitations','revoked_by'], ['wl_hiring_closures','closed_by'],
@@ -185,7 +186,7 @@ export const DYNAMIC = ['wl_documents', 'wl_document_versions', 'wl_custom_field
 const NONE = (reason: string, ...tables: string[]): [string, string][] => tables.map(table => [table, reason])
 export const OUT_OF_SCOPE = new Map<string, string>([
   ...NONE('Private erasure HMAC key and value-free source tombstones; installation archives preserve the fence', 'wl_retention_import_secret', 'wl_erased_import_keys', 'wl_import_erasure_fences'),
-  ...NONE('employer configuration', 'wl_ai_settings', 'wl_employer', 'wl_connections', 'wl_import_door', 'wl_payroll_layout', 'wl_work_policy', 'wl_locations', 'wl_departments', 'wl_divisions', 'wl_legal_entities', 'wl_schedules', 'wl_doc_categories'),
+  ...NONE('employer configuration', 'wl_ai_handbooks', 'wl_ai_handbook_versions', 'wl_ai_handbook_approvals', 'wl_ai_handbook_inclusions', 'wl_ai_settings', 'wl_employer', 'wl_connections', 'wl_import_door', 'wl_payroll_layout', 'wl_work_policy', 'wl_locations', 'wl_departments', 'wl_divisions', 'wl_legal_entities', 'wl_schedules', 'wl_doc_categories'),
   ...NONE('policy and template definitions', 'wl_policy_versions', 'wl_leave_policies', 'wl_leave_policy_rules', 'wl_template_tasks', 'wl_levels', 'wl_level_permissions', 'wl_level_scope_values', 'wl_level_self_fields', 'wl_level_other_fields', 'wl_level_document_categories', 'wl_level_reports', 'wl_level_builtin_reports', 'wl_level_settings', 'wl_level_job_fields', 'wl_level_compensation_fields', 'wl_level_leave_fields', 'wl_level_performance_fields', 'wl_level_approvals', 'wl_hiring_openings', 'wl_review_cycles', 'wl_company_announcements', 'wl_company_folders', 'wl_company_files'),
   ...NONE('the erasure window: one row inside the journaled erasure batch, never committed', 'wl_erasure_window'),
   ...NONE('restricted custody of records already removed from every live table: owner-read only, purged by rule', 'wl_retained_records'),

@@ -17,7 +17,7 @@ const directory = await mkdtemp(join(tmpdir(), 'willow-retention-'))
 const h = await harness({ persistTo: directory, scheduled: true, bindings:{MODELS_ENDPOINT:'https://api.openai.com/v1/chat/completions',MODELS_KEY:'synthetic-willow-17001'}, provider: async request => {
   if(new URL(request.url).hostname!=='api.openai.com')return new Response(null,{status:202})
   const body=await request.json(),context=JSON.parse(body.messages[1].content),source=context.policies[0]
-  return Response.json({id:'synthetic-willow-17002',choices:[{message:{content:JSON.stringify({claims:[{text:source.summary,quote:source.summary,versionId:source.id}],needsHr:true})}}]})
+  return Response.json({id:'synthetic-willow-17002',choices:[{message:{content:JSON.stringify({claims:[{text:source.summary,quote:source.summary,sourceId:source.id}],needsHr:true})}}]})
 } })
 const years = (date, n) => { const d = new Date(`${date}T00:00:00Z`); d.setUTCFullYear(d.getUTCFullYear() + n); return d.toISOString().slice(0, 10) }
 try {
