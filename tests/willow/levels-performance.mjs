@@ -1,5 +1,8 @@
 async function tooltipProof(page) {
    const bell=page.getByRole('link',{name:'Open your task list',exact:true})
+   await page.mouse.move(0,0)
+   await page.getByRole('searchbox',{name:'Find a person',exact:true}).focus()
+   await page.waitForFunction(()=>getComputedStyle(document.querySelector('.bell [role="tooltip"]')).opacity==='0')
    await page.evaluate(()=>{const link=document.querySelector('.bell');window.__tip=null;link.addEventListener('mouseenter',()=>{const start=performance.now();const sample=()=>{if(Number(getComputedStyle(link.querySelector('[role="tooltip"]')).opacity)>.5)window.__tip=performance.now()-start;else requestAnimationFrame(sample)};requestAnimationFrame(sample)},{once:true})})
    await bell.hover();await page.waitForFunction(()=>window.__tip!==null)
    assert.ok(await page.evaluate(()=>window.__tip>=250&&window.__tip<1500),'Tooltip appears after approximately 300ms hover')
