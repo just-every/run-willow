@@ -9,6 +9,6 @@ export async function readsSurveyThemes(env: Bindings, actor: Actor, survey: str
  if (!cohort.length) return false
  // The fixed cohort includes former members and nonrespondents. Never shrink it
  // to an answer set, or reveal its members to the caller to explain a refusal.
- return cohort.every(member => readsPerformanceField(actor,member.person_id,'engagement')) ||
+ return cohort.length >= 5 && cohort.every(member => readsPerformanceField(actor,member.person_id,'engagement')) ||
   can(actor,'reports.read') && cohort.every(member => actor.reports.has(member.person_id))
 }

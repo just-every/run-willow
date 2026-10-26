@@ -10,6 +10,7 @@ import { createAiWorkflowDraft, publishAiWorkflow, workflowStepApprove, previewA
 import { configureAi } from './ai-provider'
 import { includeAiPolicy, policyAnswer } from './ai-policy'
 import { authorizeOAuth } from './api-credentials/oauth'
+import { createCourse, assignTraining, completeTraining, waiveTraining, decideTraining } from './training'
 import { correctReview } from './performance/corrections'
 import { approveWebhook, replayWebhook, runWebhooksNow, disableWebhook } from './webhooks'
 import { approveCredential,issueCredential,rotateCredential,revokeCredential } from './api-credentials'
@@ -90,6 +91,7 @@ export const actions: Record<string, Handler> = {
   'level.preview': previewLevel, 'level.apply': applyLevel,
   'survey.create': createSurvey, 'survey.close': closeSurvey, 'survey.respond': respondSurvey,
   'survey.plan': createActionPlan, 'survey.plan.complete': completeActionPlan, 'survey.comment.hide': hideSurveyComment,
+  'training.course': createCourse, 'training.assign': assignTraining, 'training.complete': completeTraining, 'training.waive': waiveTraining, 'training.decide': decideTraining,
   'performance.cycle': createReviewCycle, 'performance.assign': assignReview, 'performance.respond': respondReview, 'performance.close': closeReviewCycle,
   'performance.correct': correctReview, 'performance.note': calibrateReview, 'performance.release': releaseReview, 'performance.withhold': withholdReview, 'performance.ack': acknowledgeReview, 'performance.appeal': appealReview,
   'goal.create': saveGoal, 'goal.checkin': checkinGoal, 'goal.complete': finishDevelopment,

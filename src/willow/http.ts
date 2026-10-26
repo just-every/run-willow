@@ -25,6 +25,7 @@ import { packetRecord } from './preboarding'
 import { applicantRecord } from './eeo-applicants'
 import { invitationRecordPage } from './ui/eeo-invitations'
 import { hiringPage, hiringOpeningPage, hiringApplicationPage } from './ui/hiring'
+import { trainingPage } from './ui/training'
 import { reconcileRecipients } from './performance/store'
 import { performancePage, reviewPage, goalsPage } from './ui/performance'
 import { performanceFile } from './performance/views'
@@ -206,6 +207,7 @@ const pages: Record<string, Page> = {
   hiring: (env,actor,request,url)=>hiringPage(env,actor,request,url),
   hiringOpening: (env,actor,request,url,id)=>hiringOpeningPage(env,actor,request,url,id),
   hiringApplication: (env,actor,_request,url,id)=>hiringApplicationPage(env,actor,url,id),
+  training: (env,actor,_request,url)=>trainingPage(env,actor,url),
   performance: (env,actor,_request,url)=>performancePage(env,actor,url),
   performanceCycle: (env,actor,_request,url,id)=>reviewPage(env,actor,id,url),
   performanceFile: (env,actor,_request,_url,id)=>performanceFile(env,actor,id),

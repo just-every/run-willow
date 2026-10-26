@@ -1,3 +1,4 @@
+import { trainingHome } from './training'
 import { signatureRequests,signatureRequest } from './sign/requests'
 import { signatureTemplates } from './sign/templates'
 import { policyEscalations } from './ai-policy-escalations'
@@ -84,6 +85,7 @@ export const views: Record<string, View> = {
   preboarding: packets, eeoPreboarding: (env,actor,_request,id)=>packetRecord(env,actor,id),
   eeoApplicants: applicantRecordsList, eeoApplicant: (env,actor,_request,id)=>applicantRecord(env,actor,id),
   hiring: hiringOpenings, hiringOpening: (env,actor,_request,id)=>hiringOpening(env,actor,id), hiringApplication: (env,actor,_request,id)=>hiringApplication(env,actor,id),
+  training: trainingHome,
   performance: performanceHome, performanceCycle: (env,actor,_request,id)=>performanceDetail(env,actor,id), goals: goalHome,
   surveyPlan: (env,actor,_request,id)=>ownSurveyPlan(env,actor,id),
   surveys: surveyList, survey: (env,actor,_request,id)=>surveyDetail(env,actor,id),

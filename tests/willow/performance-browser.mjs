@@ -42,7 +42,7 @@ export async function browserEvidence(h, owner, staff, ids) {
  await mkdir(destination, { recursive: true })
  const { chromium } = await import(process.env.WILLOW_PLAYWRIGHT_PATH
   ? pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href : '@playwright/test')
- const browser = await chromium.launch({ headless: true, args: ['--use-mock-keychain', '--password-store=basic'] })
+ const browser = await chromium.launch({ headless: true, executablePath: process.env.WILLOW_CHROMIUM_PATH, args: ['--no-sandbox','--use-mock-keychain', '--password-store=basic'] })
  const contexts = []
  try {
   const pages = {}
