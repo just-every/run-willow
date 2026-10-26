@@ -1,3 +1,4 @@
+import { eligibleSource } from './source'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
@@ -49,6 +50,7 @@ export async function signaturePayloadFile(env:Bindings,actor:Actor,id:string) {
  const payload=await one(env,'SELECT * FROM wl_sign_payloads WHERE id=?',id)
  const row=payload?await rowFor(env,payload.request_id):null
  insist(row&&readable(actor,row)&&payload!.member_id===actor.id&&payload!.session_binding===await sha256Hex(actor.sessionId)&&!payload!.used_at&&payload!.created_at>now()-15*60000&&pending(row)&&row.expires_at>now()&&row.revision===payload!.request_revision,'not_found',404)
+ insist(await eligibleSource(env,actor,row.source_version,row.person_id),'not_found',404)
  await auditRead(env,actor.id,'signature.payload.download',row.id,{review:id})
  return serve(env,{sha256:payload!.sha256,size:payload!.size,filename:'signing-review.pdf',mediaType:'application/pdf'},{download:true})
 }

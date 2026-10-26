@@ -87,7 +87,13 @@ export async function signatureCohortProof(h,owner,s,join) {
  const notices=(await api('audit')).filter(e=>e.action==='signature.notice'&&rows.some(r=>r.id===e.subject))
  assert.ok(notices.some(e=>e.subject===byPerson.get(d.person)&&JSON.parse(e.detail).status==='accepted'),'Explicitly reviewed email policy permits an independently addressed authenticated link')
  // Current shared-folder targeting gates both outreach and future enrollment.
+ const pendingBeforeRetarget=await as(d.cookie,'signature-requests/'+byPerson.get(d.person))
+ const preparedBeforeRetarget=await as(d.cookie,'signature.prepare',{request:pendingBeforeRetarget.id,revision:pendingBeforeRetarget.revision,digest:pendingBeforeRetarget.digest,name:'synthetic-willow-15315'})
  await api('company.folder',{id:folder.id,name:'synthetic-willow-15305',audience:{kind:'location',id:otherLocation.id}})
+ assert.equal((await h.raw('/app/signatures/'+pendingBeforeRetarget.id+'.pdf',{cookie:d.cookie})).status,404,'Retargeting refuses an old unsigned request download')
+ assert.equal((await h.raw('/app/signature-payloads/'+preparedBeforeRetarget.id+'.pdf',{cookie:d.cookie})).status,404,'Retargeting refuses an already prepared payload link')
+ const preserved=await as(a.cookie,'signature-requests/'+byPerson.get(a.person))
+ assert.equal((await h.raw('/app/files/document/'+preserved.sealedVersion,{cookie:a.cookie})).status,200,'Current category rights preserve an existing signed employee record')
  const denied=await create(15314)
  await api('work.run',{})
  assert.ok(!(await requests(active.id)).some(r=>r.person===denied.person))

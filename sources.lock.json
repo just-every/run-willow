@@ -4679,7 +4679,7 @@
       "executable": false
     },
     "src/willow/sign/payloads.ts": {
-      "sha256": "e0e76d995a368002ef3f1411ccee6926a35b38013705713e15fcc973746df13b",
+      "sha256": "fac99ec34a63a331377c671997c5a046f592095574a7a5892f3bc5d7b16ea4c9",
       "executable": false
     },
     "src/willow/sign/recipients.ts": {
@@ -4691,7 +4691,7 @@
       "executable": false
     },
     "src/willow/sign/requests.ts": {
-      "sha256": "72dbe9db290dfd551c70434db7f3d76bf333e7bc0a443a4c133beeffbbc6bece",
+      "sha256": "d10d0214c598a726ba7c321d261c6163cee104e3ed0b3207a799c8e756b48caf",
       "executable": false
     },
     "src/willow/sign/source.ts": {
@@ -5495,7 +5495,7 @@
       "executable": false
     },
     "tests/willow/sign-cohorts.mjs": {
-      "sha256": "183f80bd9dfe2d8d3145947638952089c134dd025866077185207f123a94d697",
+      "sha256": "6a3c2aabd5d07d4cd03c4633f4e3094c16ac29825f422f3f09908d13e849d91d",
       "executable": false
     },
     "tests/willow/sign-custody.mjs": {

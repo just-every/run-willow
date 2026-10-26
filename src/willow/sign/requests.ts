@@ -205,6 +205,7 @@ export async function actSignature(env:Bindings,actor:Actor,input:Input,request:
 export async function signatureFile(env:Bindings,actor:Actor,id:string) {
  const row=await rowFor(env,id)
  insist(row&&readable(actor,row)&&(actor.personId===row.person_id||actor.id===row.hr_member||can(actor,'people.manage')),'not_found',404)
+ insist(row.state==='signed'||await eligibleSource(env,actor,row.source_version,row.person_id),'not_found',404)
  await auditRead(env,actor.id,'signature.download',id)
  return serve(env,{filename:'signature-document.pdf',mediaType:'application/pdf',size:row.rendered_size,sha256:row.rendered_sha256},{download:true})
 }
@@ -231,7 +232,7 @@ export async function signatureReviewFile(env:Bindings,actor:Actor,id:string,url
  const snapshot=JSON.parse(review.snapshot),recipient=snapshot.recipients.find((r:Row)=>r.id===url.searchParams.get('person'))
  insist(recipient,'not_found',404)
  const template=(await signatureTemplates(env,actor)).find(t=>t.id===snapshot.template)
- insist(template&&JSON.stringify(await mergeValues(env,actor,recipient.id,template.fields))===JSON.stringify(recipient.merged),'signature_merge_changed',409)
+ insist(template?.current&&template.digest===snapshot.templateDigest&&await eligibleSource(env,actor,snapshot.source,recipient.id)&&JSON.stringify(await mergeValues(env,actor,recipient.id,template.fields))===JSON.stringify(recipient.merged),'signature_merge_changed',409)
  const category=await one(env,'SELECT * FROM wl_doc_categories WHERE id=?',snapshot.category)
  insist(category&&readsCategory(actor,recipient.id,category),'not_found',404)
  await auditRead(env,actor.id,'signature.preview.download',id)
