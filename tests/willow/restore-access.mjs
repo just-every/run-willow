@@ -333,7 +333,6 @@ try {
   assert.equal((await after('model.draft', newOwner, { template: f.templates.joiner }, 409)).error, 'model_not_configured')
   assert.equal((await after('policy-escalations',cookies.employee)).find(row=>row.id===policyFollowup.id).status,'open','A native HR contact request survives restore without model activation')
   await after('policy.escalation.resolve',cookies.hr,{escalation:policyFollowup.id})
-  assert.equal((await api('policy-escalations',sourceOwner)).find(row=>row.id===policyFollowup.id).status,'open','Restored HR contact completion leaves the source request unchanged')
   const restoredAi=(await after('ai-controls',newOwner)).settings
   assert.equal(restoredAi.enabled,0);assert.equal(restoredAi.policies,0);assert.equal(restoredAi.workflows,0);assert.equal(restoredAi.provider_retention,'unapproved')
   await after('policy.answer',cookies.employee,{question:'What is my PTO balance?'},409)
@@ -375,6 +374,10 @@ try {
   const resumed = await after('connections', newOwner)
   assert.equal(resumed.model.selected, 'restore-proof-model')
   for (const notice of noticeHistory) assert.deepEqual(resumed.history.find(row => row.id === notice.id), notice, 'old deliveries never replay')
+  await destination.close(); destination = null
+  server = await harness({persistTo:join(source,'.wrangler/state'),port:sourcePort,bindings:modelBindings,provider:provider('source')})
+  const unchangedOwner = await server.signIn('owner@example.com')
+  assert.equal((await api('policy-escalations',unchangedOwner)).find(row=>row.id===policyFollowup.id).status,'open','Restored HR contact completion leaves the source request unchanged')
   console.log('DATA-001 restore pause: PASS; source unchanged, old enabled archive normalized and reported, typed custom metadata/value history and retirement preserved, preserved work/history, no replay, owner reauthorization')
   console.log('restore-access: PASS; ordinary identities, roles, private/pay/document/leave boundaries and HR invitation work')
 } finally {
