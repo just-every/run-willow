@@ -4869,7 +4869,7 @@
       "executable": false
     },
     "tests/willow/ai-policy.mjs": {
-      "sha256": "eb25cf5d13e126a8a8d2888874c90e4ea591fbccbcb2769ce5b6657b04655899",
+      "sha256": "2f3d87787e2f775d9c0a7a73d2dba5f2819f958410827a9edb457754c441f58c",
       "executable": false
     },
     "tests/willow/ai-workflows-browser.mjs": {
@@ -5197,7 +5197,7 @@
       "executable": false
     },
     "tests/willow/phase2.mjs": {
-      "sha256": "6d069bb123c90587c05a0459c0011d8aa3843c644c3d4cc26f0090c39f3459a0",
+      "sha256": "9cb5e189074d6402752c418a172197812605ed418f6bd4fe50bc0e85bc867854",
       "executable": false
     },
     "tests/willow/publish-template.mjs": {
@@ -5213,7 +5213,7 @@
       "executable": false
     },
     "tests/willow/regression-fixture.mjs": {
-      "sha256": "668b5e70e1766c127c6be3ffb0e43cfd1e9cbb9338a98bf1881bf28bbc43d34e",
+      "sha256": "5a0f1559160116fb096d1fc5336644a047c5a3368f4c0e64528950c6bb54d31a",
       "executable": false
     },
     "tests/willow/regression-transactions.mjs": {

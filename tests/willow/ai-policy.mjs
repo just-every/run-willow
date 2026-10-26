@@ -22,7 +22,7 @@ try{
  assert.equal((await h.raw('/auth/bootstrap',{body:{token:h.vars.SETUP_TOKEN,displayName:'Owner'}})).status,303)
  const owner=await h.signIn(h.vars.OWNER_EMAIL)
  await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})
- const f=await fixture(h,owner),s=f.staff,api=f.api
+ const f=await fixture(h,owner,{names:{employee:'Elena Patel',managera:'Jules Chen',managerb:'Ari Morgan',hr:'Nora Brooks',payroll:'Mina Costa',ended:'Sam Reed',invited:'Theo Park'}}),s=f.staff,api=f.api
  const config={enabled:true,policies:true,workflows:true,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
  const ask=(cookie,person='me',question='Am I eligible for PTO and what is my balance?',status=200)=>h.api('policy.answer',cookie,{person,question},status)
  await ask(s.employee.cookie,'me','What is my PTO balance?',409)
