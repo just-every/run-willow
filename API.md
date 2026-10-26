@@ -118,9 +118,10 @@ global subscriptions remain unimplemented pending ct review.
 
 Current events are `employee.created`, `employee.updated`,
 `employee.terminated`, `employee.rehired`, `terms.recorded`, `terms.effective`,
-`timeoff.approved` and `timeoff.canceled`. Native personal, typed-field and
-table edits select monitored field families. Signature completion awaits a
-native signing source. Future terms changes queue one recorded event and one
+`timeoff.approved`, `timeoff.canceled` and `signature.completed`. Native
+personal, typed-field and table edits select monitored field families.
+`signature.completed` describes observed native sealing, as set out under
+signatures below. Future terms changes queue one recorded event and one
 effective event in the employer's time zone. Other future source boundaries
 and complete monitored-field coverage remain API-003 work.
 
