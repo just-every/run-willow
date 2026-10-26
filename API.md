@@ -401,7 +401,7 @@ wording, post `signature.act` with the request binding, `action: "sign"`,
 values. Employee signing precedes the named employer countersigner. Other
 request actions are `view`, `decline`, `withdraw` and authorized `void`.
 `signature.cancel` closes unsigned work and future enrollment for a cohort;
-completed records remain. Expiry is committed by the scheduled instant.
+completed records remain. Cancellation has its own `cancelled` public state, separate from a deliberate request void. Expiry is committed by the scheduled instant.
 
 Lifecycle rules can carry `signature: {template, hr, cohortKind, cohortValue}`.
 `task.signature.preview`, `task.signature.issue` and `task.signature.verify`
@@ -412,7 +412,7 @@ the pinned graph and completed evidence.
 
 Saved reports support the `signatureRequests`, `signaturePending`,
 `signatureViewed`, `signatureSigned`, `signatureDeclined`, `signatureExpired`,
-`signatureVoided`, `signatureWithdrawn` and `signatureUnknown` columns, with
+`signatureVoided`, `signatureCancelled`, `signatureWithdrawn` and `signatureUnknown` columns, with
 optional `signatureTemplate`, `signatureCohort` and `signatureState` filters.
 Sources reconcile dated observed status; manager access remains status-only.
 CSV and XLSX and scheduled authenticated report links use the same current

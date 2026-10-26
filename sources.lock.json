@@ -711,7 +711,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "c65da4c43fbf3056ea54dd5c25436f4d202ab6d9baa974b2f31392d86f59e481",
+      "sha256": "69b9fa3b1411f8e7ee0b3deb57405ab0a77b753d6e535577bb0c0d520242d501",
       "executable": false
     },
     "base-copies.json": {
@@ -4543,7 +4543,7 @@
       "executable": false
     },
     "src/willow/reporting/signature-metrics.ts": {
-      "sha256": "8048d1d4fbd1e543f453607de015fb310337f32c6e834e523846d4d5d8932495",
+      "sha256": "59919c53ab14282752818360524b02220b5df3503dedf3b59c647c9652610f20",
       "executable": false
     },
     "src/willow/reporting/signatures.ts": {

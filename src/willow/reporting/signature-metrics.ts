@@ -9,7 +9,7 @@ export const signatureMeasures=(sources:SignatureSource[])=>({
  signatureRequests:sources.length,signaturePending:sources.filter(s=>['sent','viewed'].includes(s.state)).length,
  signatureViewed:sources.filter(s=>s.state==='viewed').length,signatureSigned:sources.filter(s=>s.state==='signed').length,
  signatureDeclined:sources.filter(s=>s.state==='declined').length,signatureExpired:sources.filter(s=>s.state==='expired').length,
- signatureVoided:sources.filter(s=>s.state==='voided').length,signatureWithdrawn:sources.filter(s=>s.state==='withdrawn').length,
+ signatureVoided:sources.filter(s=>s.state==='voided').length,signatureCancelled:sources.filter(s=>s.state==='cancelled').length,signatureWithdrawn:sources.filter(s=>s.state==='withdrawn').length,
  signatureUnknown:sources.filter(s=>s.state==='unknown').length,
 })
 export async function signatureMetrics(env:Bindings,actor:Actor,definition:ReportDefinition,asOf:string,zone:string) {
