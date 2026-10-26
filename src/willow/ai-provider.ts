@@ -31,6 +31,11 @@ export async function aiControls(env: Bindings, actor: Actor) {
  return { settings: await aiSettings(env), calls: await all(env, 'SELECT id,feature,provider,model,status,response_id,failure,cap_microusd,reserved_microusd,actual_microusd,created_at FROM wl_ai_calls ORDER BY created_at DESC LIMIT 30') }
 }
 
+export async function rejectAiCall(env: Bindings, id: string, error: unknown) {
+ const code = error instanceof WillowError ? error.code : 'ai_output_rejected'
+ await stmt(env,"UPDATE wl_ai_calls SET status='failed',failure=? WHERE id=?",code,id).run()
+}
+
 export async function callModel(env: Bindings, actor: Actor, feature: string, context: unknown, instruction: string, custody: { person?: string; sequence?: number; sources?: {id:string;revision:number}[]; fields?: string[] } = {}) {
  actor = await freshAiActor(env,actor)
  if(feature.includes('workflow'))requirePermission(actor,'people.manage')

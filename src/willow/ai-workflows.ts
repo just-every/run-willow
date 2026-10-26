@@ -1,6 +1,6 @@
 import type { Bindings } from '../auth.server'
 import type { Actor } from './actor'
-import { aiSettings, callModel } from './ai-provider'
+import { aiSettings, callModel, rejectAiCall } from './ai-provider'
 import { commit, guard, insist, newId, now, one, stmt, WillowError } from './core'
 import { requireDate } from './dates'
 import { Input } from './input'
@@ -24,10 +24,12 @@ export async function createAiWorkflowDraft(env: Bindings, actor: Actor, input: 
   const expected = expectedWorkflow(source, edits), date = requireDate(input.text('asOf', { optional: true }) || actor.today, 'invalid_asOf')
   const id = newId()
   await commit(env, [workflowAuthorityGuard(env, actor), stmt(env, `INSERT INTO wl_ai_workflows(id,source_snapshot,normalized_request,status,failure,as_of,created_by,created_at) VALUES(?,?,?,'failed','ai_request_incomplete',?,?,?)`, id, JSON.stringify(source), JSON.stringify(edits), date, actor.id, now())], { actor: actor.id, action: 'workflow.request', subject: id })
+  let callId: string | undefined
   try {
     // Exactly the proposed structural plan crosses the network. Template names,
     // task titles, system labels, original prose and all person data stay local.
     const result = await callModel(env, actor, 'willow-workflow-draft', expected, WORKFLOW_INSTRUCTION, {sources:[{id:source.template.id,revision:source.template.version}],fields:['normalized-workflow-structure']})
+    callId = result.callId
     const output = validateWorkflowOutput(result.value, expected)
     actor = await workflowAuthority(env, actor)
     await requireWorkflowSource(env, source)
@@ -48,6 +50,7 @@ export async function createAiWorkflowDraft(env: Bindings, actor: Actor, input: 
     }
     return { id, status: gaps.length ? 'blocked' : 'pending', template: template?.id ?? null, gaps }
   } catch (error) {
+    if (callId) await rejectAiCall(env,callId,error)
     // Store fixed machine failure codes, never provider text or raw output.
     const failure = error instanceof WillowError ? error.code : 'workflow_draft_failed'
     await stmt(env, "UPDATE wl_ai_workflows SET status='failed',failure=? WHERE id=? AND status<>'published'", failure, id).run()

@@ -83,6 +83,9 @@ try{
   const unavailable=await h.raw('/app/do/policy.answer',{cookie:s.employee.cookie,form:new URLSearchParams({question:'What is my PTO?',person:'me',returnTo:'/app/policy-assistant'})})
   assert.equal(unavailable.status,200);assert.ok((await unavailable.text()).includes('HR must resolve the source or provider limitation'))
   mode='valid'
+  duringCall=()=>api('ai.configure',{...config,enabled:false})
+  assert.equal((await ask(s.employee.cookie,'me','What is my PTO?',409)).error,'ai_settings_changed')
+  await api('ai.configure',config)
   duringCall=()=>h.api('ai.policy.include',s.hr.cookie,{version:version.id,included:false})
   assert.equal((await ask(s.employee.cookie,'me','What is my PTO?',409)).error,'ai_source_changed','An in-flight source withdrawal cannot return an answer')
   await h.api('ai.policy.include',s.hr.cookie,{version:version.id,included:true})
@@ -138,6 +141,7 @@ try{
  assert.equal(history.calls.length,calls.length)
  for(const value of ['PRIVATE-employee','81234.56','Question','highest paid','synthetic-willow-provider-error'])assert.ok(!JSON.stringify(history).includes(value))
  assert.ok(history.calls.every(call=>call.reserved_microusd<=call.cap_microusd))
+ if(!live)assert.ok(history.calls.some(call=>call.status==='failed'&&call.failure==='ai_citation_required'),'Rejected model content has a controlled failed outcome')
  const audit=await api('audit')
  const callAudit=audit.filter(event=>event.action==='ai.call')
  assert.ok(callAudit.length)
