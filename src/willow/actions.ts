@@ -1,3 +1,4 @@
+import { writeSignatureTemplate, approveSignatureTemplate } from './sign/templates'
 import { configureOkta, linkOktaAccount, previewOkta, applyOkta, observeOkta, closeOktaException } from './identity/okta-actions'
 import { requestPolicyEscalation, resolvePolicyEscalation } from './ai-policy-escalations'
 import { writeHandbook, approveHandbook, includeHandbook, withdrawHandbook } from './ai-handbooks'
@@ -148,6 +149,8 @@ export const actions: Record<string, Handler> = {
   'access.default': configureDefaultAccess,
   'access.bulk': bulkGiveAccess,
   'import.access': importAccess,
+  'signature.template': writeSignatureTemplate,
+  'signature.template.approve': approveSignatureTemplate,
   'access.give': (env, actor, input, request) => giveAccess(env, actor, input, request),
   'access.end': (env, actor, input, request) => endAccess(env, actor, input, request),
   'custom.propose':proposeCustomField,

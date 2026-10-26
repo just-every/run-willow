@@ -347,3 +347,27 @@ revocation and withdrawal of independent approval prevent execution.
 Delegated OAuth clients remain inactive until the existing independent
 sensitive-rights approval succeeds. Keys and both OAuth grants share these
 rules. This scope grants no direct publication or decision authority.
+
+
+## Native signature template foundation
+
+Employer-wide HR can read `GET /api/willow/signature-templates`. Each result
+includes the exact shared PDF version, SHA-256, filing category, ordered signer
+roles, placed fields, review digest, approval time and current-source state.
+Employees and managers gain no template-administration access.
+
+`POST /api/willow/signature.template` accepts `title`, `source` (the current
+shared PDF version id), `category`, `signers` (ordered `employee` and `hr` roles)
+and `fields`. Each field has `signer` (zero-based role index), `kind`
+(`signature`, `initial`, `date` or `text`), a one-based `page`, and normalized
+`x`, `y`, `width` and `height` coordinates. Every signer needs a signature field.
+To create the next immutable draft, include the current `template` id.
+
+After reviewing the source bytes and configuration, HR posts `template`, the
+returned `digest` and `reviewed: true` to
+`POST /api/willow/signature.template.approve`. A new draft or changed source
+prevents approval of an obsolete version. Historical approval remains recorded.
+This foundation has no send or signing action: approval creates neither a
+signature request nor employee consent. Native forms, merge fields, rendered
+placements, signer authentication, sealing, certificates, cohort work and
+DocuSign remain explicit contract gaps.

@@ -1,3 +1,4 @@
+import { signatureTemplateProof } from './sign-templates.mjs'
 import { browserEvidence } from './company-home-browser.mjs'
 // SELF-002: one public-door proof of current targeted delivery and voluntary celebrations.
 import assert from 'node:assert/strict'
@@ -11,6 +12,7 @@ try {
   const owner = await h.signIn(h.vars.OWNER_EMAIL)
   await h.raw('/setup', { cookie: owner, form: new URLSearchParams({ confirm: 'yes' }) })
   const { api, staff: s, join, schedule } = await fixture(h, owner)
+  await signatureTemplateProof(h,owner,s)
   const employee = s.employee.cookie, outsider = s.managerb.cookie, hr = s.hr.cookie
   const as = (cookie, path, body, status = 200) => h.api(path, cookie, body, status)
   const home = cookie => as(cookie, 'company')

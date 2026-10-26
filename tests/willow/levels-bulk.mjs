@@ -285,6 +285,7 @@ export async function defaultAccessProof(h,owner,s) {
  }
  assert.ok(!members.some(row=>row.person===former.person))
  assert.ok(result.deferred.every(person=>!members.some(row=>row.person===person)))
+ await h.setBindings({})
  const repeat=await api('import.access',{...choice,choice:'invite'})
  assert.ok(repeat.invited.every(person=>result.deferred.includes(person)))
  assert.ok(repeat.invited.every(person=>!result.invited.includes(person)),'A retry never duplicates an existing invitation')
