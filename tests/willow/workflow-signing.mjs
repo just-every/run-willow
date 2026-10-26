@@ -128,7 +128,11 @@ async function signingWorkflowBrowser(h) {
       if (label.endsWith('-editor')) await page.locator('section.templates').getByText('Native signing step', { exact: true }).first().click()
       await page.evaluate(() => document.fonts.ready)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label} fits ${width}`)
-      await prepareSigningCapture(page);await page.screenshot({ path: `${destination}/SIGN-workflow-${label}-${width}.png`, fullPage: true })
+      await prepareSigningCapture(page)
+      const path = `${destination}/SIGN-workflow-${label}-${width}.png`
+      if (label.endsWith('-publication')) await page.locator('section.card').first().screenshot({ path })
+      else if (label.endsWith('-editor')) await page.locator('section.templates').screenshot({ path })
+      else await page.screenshot({ path, fullPage: true })
     }
   }
   return {

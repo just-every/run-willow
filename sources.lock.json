@@ -5551,7 +5551,7 @@
       "executable": false
     },
     "tests/willow/workflow-signing.mjs": {
-      "sha256": "9d5c1c93671f160c3e915079681524e0e4e8db2bd5c5ce041f9167bfea7478a3",
+      "sha256": "f07732bf4767cc135f0767f8663b67992e4f96c59bd90cae3b4194d69b33bc96",
       "executable": false
     },
     "tests/willow/workflows.mjs": {
