@@ -5500,7 +5500,7 @@
       "executable": false
     },
     "tests/willow/retention.mjs": {
-      "sha256": "3cb9c13d1c2d9f108840f17a518499be01c37a50db21b19d893586eeea3451a8",
+      "sha256": "e1c0eb2e85c82fa0b767544853f35ec30b918d9cc359b689fbdf829811d06b05",
       "executable": false
     },
     "tests/willow/self-service-browser.mjs": {
