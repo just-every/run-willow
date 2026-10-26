@@ -18,7 +18,7 @@ export async function trainingHome(env:Bindings, actor:Actor) {
  const rows = await all(env,`SELECT a.*,c.title,c.self_completion,p.legal_name AS person_name,e.outcome,e.evidence,e.certificate,e.created_at AS completed_at,e.created_by AS completed_by
   FROM wl_training_assignments a JOIN wl_training_courses c ON c.id=a.course_id JOIN wl_people p ON p.id=a.person_id
   LEFT JOIN wl_training_events e ON e.assignment_id=a.id ORDER BY a.due_date,a.id`)
- const assignments = rows.filter(row=>fields.some(field=>reads(actor,row.person_id,field))).map(row=>({
+ const assignments = rows.filter(row=>reads(actor,row.person_id,'trainingAssignments') || reads(actor,row.person_id,'trainingCompletions')&&(!!row.outcome||writes(mode(actor,row.person_id,'trainingCompletions'))) || reads(actor,row.person_id,'trainingCertifications')&&!!row.certificate).map(row=>({
   id:row.id,person:row.person_id,personName:row.person_name,course:row.course_id,title:row.title,
   assignment:reads(actor,row.person_id,'trainingAssignments') ? {dueDate:row.due_date,createdAt:row.created_at} : null,
   completion:reads(actor,row.person_id,'trainingCompletions') && row.outcome ? {outcome:row.outcome,evidence:row.evidence,recordedAt:row.completed_at,recordedBy:row.completed_by} : null,

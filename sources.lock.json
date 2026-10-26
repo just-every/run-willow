@@ -4752,7 +4752,7 @@
       "executable": false
     },
     "src/willow/training.ts": {
-      "sha256": "d9f20e0182c6536389e1e96aa8654ad7317149d13029a76aa7eb9554c4c38b4e",
+      "sha256": "42ecbe9febc99ee596b52d4e8eeba4c5dc4a5f3ef3618785dec3582f4968d9b5",
       "executable": false
     },
     "src/willow/ui/accrual-calculations.ts": {
@@ -5336,7 +5336,7 @@
       "executable": false
     },
     "tests/willow/levels-performance.mjs": {
-      "sha256": "922a6554cb2722926d6e810016dd0bad9a2a2a48d805804462a3207889d9027c",
+      "sha256": "60f9c162400647942629c836e73991f24e9382ab04d9ffeafb0fb064ae7f9b92",
       "executable": false
     },
     "tests/willow/levels-personal-browser.mjs": {
