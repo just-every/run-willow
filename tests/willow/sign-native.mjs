@@ -143,9 +143,7 @@ export async function nativeSigningProof(h,owner,s,join) {
  const location=await api('location.create',{name:'Signature cohort office',timezone:'UTC'})
  const cohortPeople=[],cohortCookies=[]
  for(let i=0;i<5;i++) {
-  const person=await join('synthetic-willow-'+(15210+i),{locationId:location.id})
-  const record=await api('people/'+person.person)
-  await api('person.update',{person:person.person,revision:record.revision,legalName:['Avery Wilson','Casey Brown','Drew Martin','Jamie Taylor','Robin Davis'][i]})
+  const person=await join('synthetic-willow-'+(15210+i),{locationId:location.id,legalName:['Avery Wilson','Casey Brown','Drew Martin','Jamie Taylor','Robin Davis'][i]})
   await api('access.give',{person:person.person})
   cohortCookies.push(await h.signIn('synthetic-willow-'+(15210+i)+'@example.com',{requested:true}))
   cohortPeople.push(person.person)

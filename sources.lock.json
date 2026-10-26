@@ -5511,7 +5511,7 @@
       "executable": false
     },
     "tests/willow/sign-native.mjs": {
-      "sha256": "c53299728963be31873b2718ef05a9a810d5834ee2a9e432ba05baddd92e88aa",
+      "sha256": "a9d40c18f30405dfbd021a18f2930a3091be84bac0654114846b1337abbd2053",
       "executable": false
     },
     "tests/willow/sign-reporting.mjs": {
