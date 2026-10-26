@@ -1149,7 +1149,7 @@
       "executable": false
     },
     "migrations/core/0086_ai_workflow_step_approvals.sql": {
-      "sha256": "12ed79ac260862e8d328e4387b6d07c84dda09f27360e6d080dc5019172fc9e0",
+      "sha256": "0cd4c9cc0ac843b76e6be8f0df2ea2a9931b1bea153316d1cd51f0dd041684d5",
       "executable": false
     },
     "migrations/core/0087_ai_consent.sql": {

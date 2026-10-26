@@ -57,9 +57,9 @@ WHERE a.revoked_at IS NULL AND a.revision<>'';
 -- A removed grant or membership permanently invalidates its receipts. Regranting
 -- access requires a new human signoff rather than reviving an old one.
 CREATE TRIGGER wl_ai_step_direct_revoked AFTER DELETE ON wl_permissions
-BEGIN UPDATE wl_ai_workflow_step_approvals SET revoked_at=CAST(strftime('%s','now') AS INTEGER)*1000 WHERE approved_by=OLD.member_id AND revoked_at IS NULL AND authority=CASE OLD.permission WHEN 'it.tasks' THEN 'it' WHEN 'payroll.handoff' THEN 'payroll' ELSE '' END; END;
+BEGIN UPDATE wl_ai_workflow_step_approvals SET revoked_at=CAST(strftime('%s','now') AS INTEGER)*1000 WHERE approved_by=OLD.member_id AND revoked_at IS NULL AND authority = CASE OLD.permission WHEN 'it.tasks' THEN 'it' WHEN 'payroll.handoff' THEN 'payroll' ELSE '' END; END;
 CREATE TRIGGER wl_ai_step_direct_changed AFTER UPDATE ON wl_permissions
-BEGIN UPDATE wl_ai_workflow_step_approvals SET revoked_at=CAST(strftime('%s','now') AS INTEGER)*1000 WHERE approved_by=OLD.member_id AND revoked_at IS NULL AND authority=CASE OLD.permission WHEN 'it.tasks' THEN 'it' WHEN 'payroll.handoff' THEN 'payroll' ELSE '' END; END;
+BEGIN UPDATE wl_ai_workflow_step_approvals SET revoked_at=CAST(strftime('%s','now') AS INTEGER)*1000 WHERE approved_by=OLD.member_id AND revoked_at IS NULL AND authority = CASE OLD.permission WHEN 'it.tasks' THEN 'it' WHEN 'payroll.handoff' THEN 'payroll' ELSE '' END; END;
 CREATE TRIGGER wl_ai_step_assignment_revoked AFTER DELETE ON wl_member_levels
 BEGIN UPDATE wl_ai_workflow_step_approvals SET revoked_at=CAST(strftime('%s','now') AS INTEGER)*1000 WHERE approved_by=OLD.member_id AND revoked_at IS NULL; END;
 CREATE TRIGGER wl_ai_step_level_permission_revoked AFTER DELETE ON wl_level_permissions
