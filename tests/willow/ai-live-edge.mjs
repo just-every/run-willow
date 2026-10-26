@@ -3,8 +3,11 @@ import { request as httpsRequest } from 'node:https'
 // Local Worker TLS is self-signed. The real provider leg always verifies TLS.
 export async function liveProviderRequest(request) {
  const body=Buffer.from(await request.arrayBuffer())
+ // Miniflare restores the original URL after loopback transport, but leaves
+ // transport headers in place. Let Node derive Host from the provider URL.
+ const headers=Object.fromEntries(['authorization','content-type','x-models-feature'].map(name=>[name,request.headers.get(name)]).filter(([,value])=>value!==null))
  return new Promise((resolve,reject)=>{
-  const upstream=httpsRequest(request.url,{method:request.method,headers:{...Object.fromEntries(request.headers),'accept-encoding':'identity'},rejectUnauthorized:true},response=>{
+  const upstream=httpsRequest(request.url,{method:request.method,headers:{...headers,'accept-encoding':'identity'},rejectUnauthorized:true},response=>{
    const chunks=[];let size=0
    response.on('error',reject)
    response.on('data',chunk=>{
