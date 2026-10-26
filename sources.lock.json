@@ -687,7 +687,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "5d7dbb57ec216d7c5d4a1437a12fd5d9a5f12b4a2790d2639f29eab6ba26f8fc",
+      "sha256": "f30a10174517aa6a278324ec873ef10c2b75b88d098661b1ac65de8f95965cd7",
       "executable": false
     },
     ".gitignore": {
@@ -699,7 +699,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "5bc9045f9b074c06134691d8f109b638b479739bf113f23efed652e8427807fe",
+      "sha256": "c0cc1762f924aa9a4be8e50567d81b3bd97ff2c7853629f84136164551ad03bc",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -727,7 +727,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "e3b58657dd36f1e5c189d0e8a21c238b1915c5349ff09265b360dfc05080b58e",
+      "sha256": "aa47e155766ebbee243e16ae6001c80ca3b97efada32e25fb8a421dbf7e368a9",
       "executable": false
     },
     "DEMO.md": {
@@ -1755,7 +1755,7 @@
       "executable": false
     },
     "scripts/willow/signing-journey.sh": {
-      "sha256": "5500898e439cde7a107afdb65ec76c4d98c93481d3509d1061edcbe423819c34",
+      "sha256": "7ce298926dc45b81470ab9b7d99b3a4a05c57dfdbfba7c899dda20afd243860f",
       "executable": false
     },
     "SEED-COMMAND-CONTRACT.md": {
@@ -5511,7 +5511,7 @@
       "executable": false
     },
     "tests/willow/sign-native.mjs": {
-      "sha256": "b0d721ff7d51ba45c09c06e7cdc5c02a1dead0ad51a565496bf211bf24e117ea",
+      "sha256": "f2121b5fd37dd451360ab2f84f14fbeed2d0973563a0e7fe3a20e8cfc1705da9",
       "executable": false
     },
     "tests/willow/sign-reporting.mjs": {

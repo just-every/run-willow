@@ -204,6 +204,38 @@ jobs:
           name: willow-browser-pages-${{ matrix.shard }}
           path: ${{ runner.temp }}/willow-evidence/*.png
 
+  # SIGN-001 and SIGN-002 phone, old-link, report and workflow screens at 1440 and 390.
+  signing-journeys:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - name: Set external evidence directory
+        run: printf 'WILLOW_EVIDENCE_DIR=%s/willow-evidence\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.20.0'
+      - run: npm install --global pnpm@10.12.4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec rer install
+      - name: Install current signing browser
+        run: |
+          npm install --prefix "$RUNNER_TEMP/willow-playwright" --no-save playwright@1.64.1
+          node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install --only-shell chromium
+          printf 'WILLOW_PLAYWRIGHT_PATH=%s/willow-playwright/node_modules/playwright/index.mjs\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - run: sh scripts/willow/signing-journey.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: willow-signing-pages
+          path: ${{ runner.temp }}/willow-evidence/*.png
+
   section-journeys:
     name: section-journeys (${{ matrix.shard }})
     strategy:

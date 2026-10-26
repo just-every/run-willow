@@ -142,11 +142,12 @@ export async function nativeSigningProof(h,owner,s,join) {
  await as(s.employee.cookie,'signature.act',{request:oldRequest.id,revision:oldRequest.revision,digest:oldRequest.digest,action:'sign',consent:true},409)
  assert.equal((await as(s.employee.cookie,'signature-requests/'+changedSend.requests[0])).state,'sent')
  const location=await api('location.create',{name:'Signature cohort office',timezone:'UTC'})
- const cohortPeople=[],cohortCookies=[]
+ const cohortPeople=[],cohortCookies=[],cohortMembers=[],cohortEmails=[]
  for(let i=0;i<5;i++) {
   const person=await join('synthetic-willow-'+(15210+i),{locationId:location.id,legalName:['Avery Wilson','Casey Brown','Drew Martin','Jamie Taylor','Robin Davis'][i]})
-  await api('access.give',{person:person.person})
-  cohortCookies.push(await h.signIn('synthetic-willow-'+(15210+i)+'@example.com',{requested:true}))
+  cohortMembers.push((await api('access.give',{person:person.person})).id)
+  cohortEmails.push('synthetic-willow-'+(15210+i)+'@example.com')
+  cohortCookies.push(await h.signIn(cohortEmails[i],{requested:true}))
   cohortPeople.push(person.person)
  }
  const policyPdf=await PDFDocument.create(),policyFont=await policyPdf.embedFont(StandardFonts.Helvetica)
@@ -155,12 +156,16 @@ export async function nativeSigningProof(h,owner,s,join) {
  const policyTemplate=await api('signature.template',{source:policySource.versionId,title:'Workplace policy',category:category.id,signers:['employee','hr'],fields:fields.filter(f=>f.page===1&&!['job_title','compensation'].includes(f.kind))})
  const policyDefinition=(await api('signature-templates')).find(t=>t.id===policyTemplate.id)
  await api('signature.template.approve',{template:policyTemplate.id,digest:policyDefinition.digest,reviewed:true})
- const cohortReview=await api('signature.preview',{template:policyTemplate.id,cohortKind:'location',cohortValue:location.id,hr:s.hr.member,expiresAt:Date.now()+7*86400000})
+ // Reviewed email delivery, future enrollment and the FLOW-002 cadence let the scheduler continue this cohort.
+ await api('connections.notices',{enabled:true})
+ await api('work.policy',{offsets:'0',quietStart:0,quietEnd:0,defaultDays:0})
+ const cohortReview=await api('signature.preview',{template:policyTemplate.id,cohortKind:'location',cohortValue:location.id,hr:s.hr.member,expiresAt:Date.now()+7*86400000,notify:true,futureJoiners:true})
  assert.deepEqual(cohortReview.recipients.map(p=>p.id).sort(),[...cohortPeople].sort())
  const locationSend=await api('signature.send',{review:cohortReview.id,digest:cohortReview.digest,approved:true})
  assert.equal(locationSend.requests.length,5)
  const nonmatching=await as(s.managera.cookie,'signature-requests')
  assert.ok(!nonmatching.some(r=>locationSend.requests.includes(r.id)))
+ const cohortSealed=[]
  for(let i=0;i<2;i++) {
   const recipient=cohortReview.recipients.find(p=>p.member&&(p.id===cohortPeople[i]))
   const requests=await as(cohortCookies[i],'signature-requests'),request=requests.find(r=>r.cohort===locationSend.id)
@@ -175,11 +180,47 @@ export async function nativeSigningProof(h,owner,s,join) {
   assert.equal(record.state,'signed');assert.ok(record.sealedVersion)
   const profile=await as(cohortCookies[i],'people/'+cohortPeople[i])
   assert.ok(profile.documents.some(d=>d.categoryId===category.id&&d.versions.some(v=>v.id===record.sealedVersion)))
+  cohortSealed.push(record.sealedVersion)
  }
+ // Advancing the scheduler reminds each of the three pending signers exactly once; a matching joiner is enrolled and reminded too.
+ const requestOf=new Map((await api('signature-requests')).filter(r=>r.cohort===locationSend.id).map(r=>[r.person,r.id]))
+ const reminderMail=email=>h.businessMail().filter(m=>m.subject==='Willow: assigned work needs attention'&&m.personalizations.some(p=>p.to.some(t=>t.email===email)))
+ const reminders=async(pending,signed)=>{
+  const work=await api('work'),deliveries=person=>work.items.filter(w=>w.source.startsWith('signature:'+requestOf.get(person)+':')).flatMap(w=>w.deliveries)
+  for(const [person,member,email] of pending) {
+   assert.deepEqual(deliveries(person).map(d=>[d.recipient,d.status]),[[member,'accepted']],'Each pending signer has exactly one accepted reminder')
+   assert.equal(reminderMail(email).length,1,'The mail edge carries one reminder to each pending signer')
+  }
+  for(const [person,,email] of signed) {
+   assert.deepEqual(deliveries(person),[],'A completed signer is never reminded')
+   assert.equal(reminderMail(email).length,0)
+  }
+ }
+ const recipients=cohortPeople.map((person,i)=>[person,cohortMembers[i],cohortEmails[i]])
+ await api('work.run',{})
+ await api('work.run',{})
+ await reminders(recipients.slice(2),recipients.slice(0,2))
+ const joiner=await join('synthetic-willow-15215',{locationId:location.id,legalName:'Morgan Price',startDate:day(0)})
+ const joinerRecipient=[joiner.person,(await api('access.give',{person:joiner.person})).id,'synthetic-willow-15215@example.com']
+ const joinerCookie=await h.signIn(joinerRecipient[2],{requested:true})
+ await api('work.run',{})
+ await api('work.run',{})
+ const joined=(await as(joinerCookie,'signature-requests')).find(r=>r.cohort===locationSend.id)
+ assert.ok(joined,'A new joiner at the location sees their own request')
+ requestOf.set(joiner.person,joined.id)
+ await reminders([...recipients.slice(2),joinerRecipient],recipients.slice(0,2))
  await api('signature.cancel',{cohort:locationSend.id})
  const cohortStates=(await api('signature-requests')).filter(r=>locationSend.requests.includes(r.id))
  assert.equal(cohortStates.filter(r=>r.state==='cancelled').length,3)
  assert.equal(cohortStates.filter(r=>r.state==='signed').length,2)
+ assert.equal((await as(joinerCookie,'signature-requests/'+joined.id)).state,'cancelled')
+ const outreach=()=>h.businessMail().filter(m=>m.personalizations.some(p=>p.to.some(t=>[...cohortEmails,joinerRecipient[2]].includes(t.email)))).length
+ const reached=outreach()
+ await api('work.run',{})
+ assert.equal(outreach(),reached,'Later ticks send nothing to the cancelled cohort')
+ assert.ok(!(await api('work')).items.some(w=>[...requestOf.values()].some(id=>w.source.startsWith('signature:'+id+':'))),'Cancellation removes every remaining reminder')
+ for(const [i,version] of cohortSealed.entries())assert.equal((await h.raw('/app/files/document/'+version+'?download=1',{cookie:cohortCookies[i]})).status,200,'Signed copies remain after cancellation')
+ await api('connections.notices',{enabled:false})
  const expiryReview=await api('signature.preview',{...input,template:revised.id,people:[s.employee.person],expiresAt:Date.now()+65000})
  const expiry=await api('signature.send',{review:expiryReview.id,digest:expiryReview.digest,approved:true})
  const expiredBefore=await as(s.employee.cookie,'signature-requests/'+expiry.requests[0])
