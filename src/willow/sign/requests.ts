@@ -87,7 +87,7 @@ export async function previewSignatures(env:Bindings,actor:Actor,input:Input) {
  let cohortLabel=cohortKind==='named'?'Named people':cohortKind.replaceAll('_',' ')
  if(['location','department','access_level'].includes(cohortKind))cohortLabel+=': '+(await one(env,'SELECT name FROM '+({location:'wl_locations',department:'wl_departments',access_level:'wl_levels'} as Record<string,string>)[cohortKind]+' WHERE id=?',cohortValue))?.name
  if(cohortKind==='employment_type')cohortLabel+=': '+cohortValue.replaceAll('_',' ')
- const snapshot={categoryName,hrName:counter.name,cohortLabel,templateVersion:template.version,...cohortPolicy(input,cohortKind),expiryDuration:expiresAt-now(),cohortKind,cohortValue,template:template.id,templateDigest:template.digest,source:template.sourceVersion,sourceSha256:template.sourceSha256,category:template.category,title:template.title,hr,expiresAt,recipients}
+ const snapshot={categoryName,hrName:counter.name,cohortLabel,templateVersion:template.version,sourceFilename:source.filename,sourceVersion:source.version,...cohortPolicy(input,cohortKind),expiryDuration:expiresAt-now(),cohortKind,cohortValue,template:template.id,templateDigest:template.digest,source:template.sourceVersion,sourceSha256:template.sourceSha256,category:template.category,title:template.title,hr,expiresAt,recipients}
  const encoded=JSON.stringify(snapshot),digest=await sha256Hex(encoded),id=newId()
  await commit(env,[session(env,actor),authority(env,actor),...files,stmt(env,'INSERT INTO wl_sign_reviews(id,actor,template_id,snapshot,digest,created_at) VALUES(?,?,?,?,?,?)',id,actor.id,template.id,encoded,digest,now())],{actor:actor.id,action:'signature.preview',subject:id,detail:{template:template.id,count:people.length}})
  return {id,digest,...snapshot}
