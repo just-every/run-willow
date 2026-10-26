@@ -699,7 +699,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "541af0b93276e39077a43744537436889e04d158a3dfe27084cec9181d3b03f4",
+      "sha256": "63a679f616e66751fa6bd0b0d80d58bfb550af47bb43a696ee6ce020fa73ac6c",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -727,7 +727,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "f91332f0f7454eb0b06fe8e1d045576bff592d57410350234d6076405d23fb7a",
+      "sha256": "cd311e7334d038a8255f5697c02e681bf799b2eb8a879b6791c0ef7dc0570f18",
       "executable": false
     },
     "DEMO.md": {
@@ -4667,7 +4667,7 @@
       "executable": false
     },
     "src/willow/sign/custody.ts": {
-      "sha256": "5caced8629c201ee6814de0474d0d8546652cd62abc77508257998090209f989",
+      "sha256": "8c13a7a37d664cffec659efe5ccd4535fde488d60fa2eb6c9fc24ef794fae223",
       "executable": false
     },
     "src/willow/sign/delivery.ts": {
@@ -4691,7 +4691,7 @@
       "executable": false
     },
     "src/willow/sign/rendering.ts": {
-      "sha256": "fe51a20d707a7291eedbd3255161c8f125e3baea7b473762527d13b88eb8dffb",
+      "sha256": "80293372c9226ff7e844ff52c8e3e71e473eb94318629d89d59a785150b0ef9e",
       "executable": false
     },
     "src/willow/sign/requests.ts": {
@@ -4971,7 +4971,7 @@
       "executable": false
     },
     "src/willow/ui/signatures.ts": {
-      "sha256": "533d252d46d289ccb93ce7af2c77ec8e6be09e8b16d866f0acc789c9ab1797a4",
+      "sha256": "71510f2caefcfc3633a1723069ddde68aca2a023aa74aff0f7ef6a31593fed7b",
       "executable": false
     },
     "src/willow/ui/survey-plan.ts": {
@@ -4995,7 +4995,7 @@
       "executable": false
     },
     "src/willow/ui/workflow-review.ts": {
-      "sha256": "c1ee56b70e59461e36c205f54d54c0c427716458c5002b400aad12155d8e4127",
+      "sha256": "35a91c782b501ecb6047d8b6dc8f2b92e3e7c8780459288038e01fc8ff622b6d",
       "executable": false
     },
     "src/willow/ui/workflow-signing.ts": {
@@ -5511,7 +5511,7 @@
       "executable": false
     },
     "tests/willow/sign-native.mjs": {
-      "sha256": "f9a6b041767d0d34430c155703a8a569699cc584f217c97b006d4328b082f319",
+      "sha256": "7563d37a61210db12b1def55dd2a030dac1a8d12659e7a1074fe8696f48d06a9",
       "executable": false
     },
     "tests/willow/sign-reporting.mjs": {
@@ -5551,11 +5551,11 @@
       "executable": false
     },
     "tests/willow/workflow-signing.mjs": {
-      "sha256": "f9e00e0fdc8fb78eeb334a18c63b7c6389ad4dc94317f5bc82fa59d2739092da",
+      "sha256": "3cc388253a30d497138ef88f591bfd91b7ded549d3f01c9b80277755e0f7f69d",
       "executable": false
     },
     "tests/willow/workflows.mjs": {
-      "sha256": "362dc1ccc6e012ca4f3c11332cdcb48833fac1e1d04d3943140c7f8629afc92a",
+      "sha256": "ce0a4bf611825c858638394f49cb9a7e1190126ff36d2b482df8f76971b5ad98",
       "executable": false
     },
     "tests/worker-environment.mjs": {

@@ -11,21 +11,21 @@ import { pathToFileURL } from 'node:url'
 export async function workflowSigningProof(h, owner, staff) {
   const api = (path, body, status) => h.api(path, owner, body, status)
   const as = (cookie, path, body, status) => h.api(path, cookie, body, status)
-  const folder = await api('company.folder', { name: 'synthetic-willow-18100', audience: { kind: 'everyone', id: null } })
+  const folder = await api('company.folder', { name: 'Employment documents', audience: { kind: 'everyone', id: null } })
   const pdf = await PDFDocument.create(); pdf.addPage([612, 792])
-  const source = await api('company.file', { folder: folder.id, title: 'synthetic-willow-18101', file: file('synthetic-willow-18101.pdf', await pdf.save()) })
-  const category = await api('category.create', { name: 'synthetic-willow-18102', subjectReads: true, managerReads: false })
+  const source = await api('company.file', { folder: folder.id, title: 'Employment agreement', file: file('employment-agreement.pdf', await pdf.save()) })
+  const category = await api('category.create', { name: 'Signed agreements', subjectReads: true, managerReads: false })
   const fields = [0, 1].map(signer => ({ signer, kind: 'signature', page: 1, x: 0.1, y: 0.2 + signer * 0.3, width: 0.6, height: 0.08 }))
-  const signTemplate = await api('signature.template', { source: source.versionId, title: 'synthetic-willow-18103', category: category.id, signers: ['employee', 'hr'], fields })
+  const signTemplate = await api('signature.template', { source: source.versionId, title: 'Reviewed employment agreement', category: category.id, signers: ['employee', 'hr'], fields })
   const definition = (await api('signature-templates')).find(t => t.id === signTemplate.id)
   await api('signature.template.approve', { template: signTemplate.id, digest: definition.digest, reviewed: true })
-  const location = await api('location.create', { name: 'synthetic-willow-18104', timezone: 'UTC' })
+  const location = await api('location.create', { name: 'Brisbane office', timezone: 'UTC' })
   for (const person of [staff.employee, staff.managerb]) await api('mover.schedule', { period: person.period, effectiveFrom: day(-1), locationId: location.id, reason: 'synthetic-willow-18105' })
 
   const visual = await signingWorkflowBrowser(h)
   try { for (const [index, cohortKind] of ['named', 'location'].entries()) {
     const signature = { template: signTemplate.id, hr: staff.hr.member, cohortKind, cohortValue: cohortKind === 'location' ? location.id : '' }
-    const recipe = { kind: 'mover', name: `synthetic-willow-${18110 + index}`, taskTitle: ['Review and issue signing', 'Confirm completed filing'], taskAssignee: ['hr', 'payroll'], taskDueDays: ['0', '1'], taskRules: [{ signature }, { dependencies: [1] }] }
+    const recipe = { kind: 'mover', name: index === 0 ? 'Individual employment signing' : 'Office policy signing', taskTitle: ['Review and issue signing', 'Confirm completed filing'], taskAssignee: ['hr', 'payroll'], taskDueDays: ['0', '1'], taskRules: [{ signature }, { dependencies: [1] }] }
     const draft = await api('template.create', recipe)
     const preview = await api('template.preview', { template: draft.id })
     const named = preview.detail.affected.find(p => p.person === staff.employee.person).tasks[0].signature

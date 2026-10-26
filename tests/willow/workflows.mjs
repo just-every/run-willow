@@ -13,7 +13,7 @@ try {
   assert.equal((await h.raw('/auth/bootstrap', { body: { token: h.vars.SETUP_TOKEN, displayName: 'Olive Owner' } })).status, 303)
   const owner = await h.signIn(h.vars.OWNER_EMAIL)
   await h.raw('/setup', { cookie: owner, form: new URLSearchParams({ confirm: 'yes' }) })
-  const f = await fixture(h, owner), s = f.staff
+  const f = await fixture(h, owner,{names:{employee:'Maya Chen',hr:'Riley Morgan',managera:'Jordan Lee',managerb:'Taylor Reed',payroll:'Alex Patel'}}), s = f.staff
   const api = (path, body, status) => h.api(path, owner, body, status)
   await api('employer.configure', { name: 'Juniper Field Services', timezone: 'America/New_York', country: 'US', currency: 'USD' })
   const ny = (await api('location.create', { name: 'New York office', timezone: 'America/New_York', workState: 'NY' })).id

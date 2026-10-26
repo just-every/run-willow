@@ -22,4 +22,3 @@ export async function mergeValues(env:Bindings,actor:Actor,person:string,fields:
  }
  return values
 }
-

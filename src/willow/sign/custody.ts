@@ -24,4 +24,3 @@ export function draw(page:any,font:any,text:string,field:Row) {
  insist(size>=6,'signature_text_does_not_fit')
  page.drawText(text,{x:field.x*width,y:height-(field.y+field.height)*height+Math.max(0,(h-size)/2),size,font})
 }
-

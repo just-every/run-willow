@@ -140,6 +140,8 @@ export async function nativeSigningProof(h,owner,s,join) {
  const cohortPeople=[],cohortCookies=[]
  for(let i=0;i<5;i++) {
   const person=await join('synthetic-willow-'+(15210+i),{locationId:location.id})
+  const record=await api('people/'+person.person)
+  await api('person.update',{person:person.person,revision:record.revision,legalName:['Avery Wilson','Casey Brown','Drew Martin','Jamie Taylor','Robin Davis'][i]})
   await api('access.give',{person:person.person})
   cohortCookies.push(await h.signIn('synthetic-willow-'+(15210+i)+'@example.com',{requested:true}))
   cohortPeople.push(person.person)
@@ -219,9 +221,9 @@ async function signingBrowser(h,owner,s,id,oldId,newId,expiredId) {
   assert.ok(!new URL(admin.url()).searchParams.has('error'))
   for(const width of [1440,390]){await admin.setViewportSize({width,height:1000});await prepareSigningCapture(admin);await admin.screenshot({path:`${destination}/SIGN-review-${width}.png`,fullPage:true})}
   await capture(employee,'/app/signatures/'+id,'employee-consent')
-  await employee.getByLabel('Signature name',{exact:true}).fill('Employee form signer');await employee.getByLabel('Initials',{exact:true}).fill('EF');await employee.getByLabel('Text field',{exact:true}).fill('Agreed');await employee.getByRole('button',{name:'Review signing document'}).click();assert.ok(!new URL(employee.url()).searchParams.has('error'));for(const width of [1440,390]){await employee.setViewportSize({width,height:1000});await prepareSigningCapture(employee);await employee.screenshot({path:`${destination}/SIGN-payload-review-${width}.png`,fullPage:true})}await employee.locator('input[name="consent"]').check();await employee.getByRole('button',{name:'Sign exact document'}).click();assert.ok(!new URL(employee.url()).searchParams.has('error'))
+  await employee.getByLabel('Signature name',{exact:true}).fill('Maya Chen');await employee.getByLabel('Initials',{exact:true}).fill('EF');await employee.getByLabel('Text field',{exact:true}).fill('Agreed');await employee.getByRole('button',{name:'Review signing document'}).click();assert.ok(!new URL(employee.url()).searchParams.has('error'));for(const width of [1440,390]){await employee.setViewportSize({width,height:1000});await prepareSigningCapture(employee);await employee.screenshot({path:`${destination}/SIGN-payload-review-${width}.png`,fullPage:true})}await employee.locator('input[name="consent"]').check();await employee.getByRole('button',{name:'Sign exact document'}).click();assert.ok(!new URL(employee.url()).searchParams.has('error'))
   await capture(hr,'/app/signatures/'+id,'hr-countersign')
-  await hr.getByLabel('Signature name',{exact:true}).fill('HR form signer');await hr.getByRole('button',{name:'Review signing document'}).click();assert.ok(!new URL(hr.url()).searchParams.has('error'));await hr.locator('input[name="consent"]').check();await hr.getByRole('button',{name:'Sign exact document'}).click();assert.ok(!new URL(hr.url()).searchParams.has('error'))
+  await hr.getByLabel('Signature name',{exact:true}).fill('Riley Morgan');await hr.getByRole('button',{name:'Review signing document'}).click();assert.ok(!new URL(hr.url()).searchParams.has('error'));await hr.locator('input[name="consent"]').check();await hr.getByRole('button',{name:'Sign exact document'}).click();assert.ok(!new URL(hr.url()).searchParams.has('error'))
   await capture(employee,'/app/signatures/'+id,'sealed-certificate');await capture(manager,'/app/signatures','manager-report')
  } finally {for(const c of contexts)await c.close();await browser.close()}
 }
