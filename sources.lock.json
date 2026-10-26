@@ -5333,7 +5333,7 @@
       "executable": false
     },
     "tests/willow/restore-access.mjs": {
-      "sha256": "00dc06842a6f887287f135310f043301b04b156c5982e160aaad7bdc8db3a4a6",
+      "sha256": "62eaf0148f9b0c955e3b1d2db04b69b40a55562a21a4abc381040e1aa9822e26",
       "executable": false
     },
     "tests/willow/restore-archive-fixture.mjs": {
@@ -5377,7 +5377,7 @@
       "executable": false
     },
     "tests/willow/sign-templates.mjs": {
-      "sha256": "457075c62940721e824d78a007c1db4e3a0fa47d6c68bf0e40bab0a149fc821c",
+      "sha256": "3fdf74006beb408b40248cf69460e72a3c97bb0f1a897b03d085b51ca8e75dae",
       "executable": false
     },
     "tests/willow/site.mjs": {

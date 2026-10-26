@@ -1,3 +1,4 @@
+import { signatureTemplateProof } from './sign-templates.mjs'
 // Actual CLI export/import and ordinary email links; no SQL or dev identities.
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
@@ -36,6 +37,8 @@ const request = (base, path, cookie, body) => fetch(base + path, { method: body 
 const apiAt = base => async (path, cookie, body, status = 200) => { const r = await request(base, `/api/willow/${path}`, cookie, body); const text = await r.text(); assert.equal(r.status, status, `${path}: ${r.status} ${text.slice(0, 200)}`); return JSON.parse(text) }
 async function clone(path) {
   execFileSync('git', ['clone', '--quiet', process.cwd(), path])
+  execFileSync('git', ['config','user.name','Run Edit Run fleet'],{cwd:path})
+  execFileSync('git', ['config','user.email','fleet@runeditrun.com'],{cwd:path})
   // The root verifies the final committed SHA; this focused proof also runs before commit.
   const changed = new Set([
     ...execFileSync('git', ['diff', '--name-only', 'HEAD'], { encoding: 'utf8' }).trim().split('\n'),
@@ -120,6 +123,8 @@ try {
   const api = apiAt(origin)
   const f = await fixture({ api, signIn: (email,options) => server.signIn(email,options) }, owner)
   const { staff: s } = f
+  await signatureTemplateProof(server,owner,s)
+  const signatureDefinitions=await api('signature-templates',owner)
   const policyFollowup=await api('policy.escalate',s.employee.cookie,{})
   // Native level-bound credentials are environment authority, never portable data.
   const credentialReview = await api('level.preview', owner, { kind: 'level', name: 'synthetic-willow-restore-credential', permissions: [], scope: { kind: 'everyone' } })
@@ -199,6 +204,7 @@ try {
   assert.ok(!data.includes(Buffer.from(credential.token)), 'Archive bytes never contain the generated bearer token')
   for(const secret of [oauthClient.token,oauthToken,code,partner.access_token,partner.refresh_token])assert.ok(!data.includes(Buffer.from(secret)),'OAuth authority never enters archive bytes')
   for (const table of ['wl_api_credentials', 'wl_api_credential_limits','wl_oauth_tokens','wl_oauth_codes','wl_oauth_refresh','wl_webhooks','wl_webhook_deliveries']) assert.ok(!header.tables.some(item => item.name === table), `${table} is excluded from the archive inventory`)
+  for(const table of ['wl_sign_templates','wl_sign_template_approvals']) assert.ok(header.tables.some(t=>t.name===table),'Native signature definitions and approval history enter the owner archive')
   assert.ok(!header.tables.some(t => /^oa_/.test(t.name)), 'auth credentials, sessions and tokens excluded')
   const items = records.filter(r => r.kind === 'part').flatMap(r => r.items)
   assert.ok(!items.some(item => ['wl_api_credentials', 'wl_api_credential_limits','wl_oauth_tokens','wl_oauth_codes','wl_oauth_refresh','wl_webhooks','wl_webhook_deliveries'].includes(item.table)), 'Credential custody and limits have no archived rows')
@@ -271,6 +277,10 @@ try {
   const newOwner = await destination.signIn('owner@example.com')
   await confirm(restored, newOwner)
   const after = apiAt(restored)
+  assert.deepEqual(await after('signature-templates',newOwner),signatureDefinitions,'Native template versions, exact digests, placements and historical approvals survive the actual CLI restore')
+  await after('signature-templates',owner,undefined,401)
+  const restoredTemplateSource=await destination.raw(signatureDefinitions[0].sourceUrl,{cookie:newOwner})
+  assert.equal(restoredTemplateSource.status,200,'The pinned shared PDF remains in destination custody')
   assert.equal((await fetch(restored + '/api/willow/people', { headers: { authorization: `Bearer ${credential.token}` } })).status, 401, 'A source bearer credential cannot authenticate after restore')
   assert.equal((await exchange(restored)).status,401,'Source OAuth client cannot exchange after restore')
   assert.equal((await fetch(restored+'/api/willow/people',{headers:{authorization:'Bearer '+partner.access_token}})).status,401,'Source partner access token cannot read after restore')

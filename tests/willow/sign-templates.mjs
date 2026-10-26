@@ -55,5 +55,6 @@ export async function signatureTemplateProof(h,owner,staff) {
  const audit=await api('audit')
  assert.ok(audit.some(event=>event.action==='signature.template.approve'&&event.actor===staff.hr.member&&event.subject===template.id))
  assert.ok(!audit.some(event=>event.action==='signature.send'||event.action==='signature.sign'),'Template approval never sends or signs a document')
+ console.log('Native signature templates: PASS — exact PDF and placement review, immutable approval history, stale-source and authority refusal; no send or signing claim')
  return {template:template.id,version:v2.id,digest:row.digest}
 }
