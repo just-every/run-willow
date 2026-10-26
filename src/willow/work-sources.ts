@@ -1,3 +1,4 @@
+import { POLICY_ESCALATION_PATH, reviewsPolicyEscalations } from './ai-policy-escalations'
 import { readsSelfChange, reviewsChange, SELF_CHANGE_SELECT } from './self-service/view'
 import { performanceWork } from './performance/work'
 import { surveyWork } from './surveys/work'
@@ -86,6 +87,7 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
   if (step) add('change-request',r,'Approve employee change request',`/app/changes/${r.id}`,deadline(r.updated_at),a=>mayRead(a,r,steps),a=>!!decide.get(a.id),step.member,`Waiting on step ${r.step+1} of ${steps.length}`,true)
   else add('change-request',r,'Revise returned change request',`/app/changes/${r.id}`,deadline(r.updated_at),a=>a.id===r.requested_by,a=>a.id===r.requested_by,r.requested_by,'Sent back with comments')
  }
+ for(const r of await all(env,"SELECT id,requested_by,person_id,created_at FROM wl_ai_policy_escalations WHERE status='open'")) add('policy-followup',r,'Contact requester about policy',POLICY_ESCALATION_PATH,deadline(r.created_at),a=>a.id===r.requested_by||reviewsPolicyEscalations(a),reviewsPolicyEscalations,null,'HR contact requested; question and answer are not retained',true)
  for (const r of await all(env,"SELECT id,written_at FROM wl_policy_versions WHERE status='draft'")) add('policy',r,'Review leave policy','/app/settings',deadline(r.written_at),a=>a.owner)
  for (const r of await all(env,"SELECT a.id,a.created_at,p.person_id FROM wl_leave_accounts a JOIN wl_periods p ON p.id=a.period_id WHERE a.opening_status='proposed'")) add('opening',r,'Review opening balance',`/app/people/${r.person_id}`,deadline(r.created_at),a=>canAbout(a,'leave.manage',r.person_id))
  for (const r of await all(env,"SELECT id,proposed_at,status FROM wl_model_drafts WHERE status='pending'")) add('model',r,r.status==='failed'?'Resolve failed model draft':'Review model draft',`/app/proposals?draft=${r.id}`,deadline(r.proposed_at),hr,hr,null,r.status==='failed'?'Provider draft failed; no work executed':'Awaiting review')

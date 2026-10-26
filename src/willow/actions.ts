@@ -1,3 +1,4 @@
+import { requestPolicyEscalation, resolvePolicyEscalation } from './ai-policy-escalations'
 import { writeHandbook, approveHandbook, includeHandbook, withdrawHandbook } from './ai-handbooks'
 import { createAiWorkflowDraft, publishAiWorkflow, workflowStepApprove, previewAiWorkflow } from './ai-workflows'
 import { configureAi } from './ai-provider'
@@ -73,6 +74,7 @@ import { runWorkNow } from './work-scheduler'
 export const actions: Record<string, Handler> = {
   'workflow.step.approve': workflowStepApprove, 'workflow.preview': previewAiWorkflow, 'workflow.draft': createAiWorkflowDraft, 'workflow.publish': publishAiWorkflow,
   'ai.handbook.write':writeHandbook, 'ai.handbook.approve':approveHandbook, 'ai.handbook.include':includeHandbook, 'ai.handbook.withdraw':withdrawHandbook,
+  'policy.escalate':requestPolicyEscalation, 'policy.escalation.resolve':resolvePolicyEscalation,
   'ai.configure': configureAi, 'ai.policy.include': includeAiPolicy, 'policy.answer': policyAnswer,
   'webhook.disable':disableWebhook,'webhook.approve':approveWebhook,'webhook.replay':replayWebhook,'webhook.run':runWebhooksNow,
   'preboarding.send': createPacket, 'preboarding.withdraw': withdrawPacket,

@@ -101,7 +101,8 @@
           "migrations/core/0085_ai_workflows.sql",
           "migrations/core/0086_ai_workflow_step_approvals.sql",
           "migrations/core/0087_ai_consent.sql",
-          "migrations/core/0088_ai_handbooks.sql"
+          "migrations/core/0088_ai_handbooks.sql",
+          "migrations/core/0089_ai_policy_followup.sql"
         ]
       }
     },

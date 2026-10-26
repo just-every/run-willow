@@ -1,3 +1,4 @@
+import { POLICY_ESCALATION_PATH } from './ai-policy-escalations'
 import type { Bindings } from '../auth.server'
 import { requirePermission, type Actor } from './actor'
 import { FACET_LABELS, facets, type Facet } from './access'
@@ -40,7 +41,7 @@ export async function policyAnswer(env: Bindings, actor: Actor, input: Input): P
  const topic = policyTopic(question) ?? await handbookQuestionTopic(env,actor,question)
  const visible = id ? facets(actor,id) : new Set<Facet>()
  const withheld = (Object.keys(FACET_LABELS) as Facet[]).filter(facet=>!visible.has(facet)).map(facet=>FACET_LABELS[facet])
- const refusal = { status: 'unsupported', claims: [], withheld, needsHr: true, escalation: '/app/company', message: 'No included policy in your scope supports this question. Ask HR; no entitlement is inferred.' }
+ const refusal = { status: 'unsupported', claims: [], withheld, needsHr: true, escalation: POLICY_ESCALATION_PATH, message: 'No included policy in your scope supports this question. Ask HR; no entitlement is inferred.' }
  if (!topic || id && !readsLeaveField(actor,id,'policies')) return refusal
  const {policies,inputs} = await policyContext(env,actor,id,topic,settings.data_scope === 'policy-and-leave-numbers')
  if (!policies.length) return refusal
@@ -61,6 +62,6 @@ export async function policyAnswer(env: Bindings, actor: Actor, input: Input): P
   return { text:claim.text, citation:{versionId:source.versionId,version:source.version,approvedAt:source.approvedAt,clause:source.clause,quote:claim.quote,kind:source.kind,...(source.applicableFrom?{applicableFrom:source.applicableFrom}:{})} }
  })
  if (!claims.length) return { ...refusal, callId:response.callId }
- return { status:'answered', claims, inputs, calculations:await policyCalculations(env,actor,id,currentPolicies), withheld, needsHr: true, escalation:'/app/company', ...(topic==='policy-conflict'?{message:'HR must compare the included policy versions and confirm which terms apply. This assistant cannot resolve conflicting eligibility terms.'}:{}), callId:response.callId, responseId:response.responseId, model:response.model }
+ return { status:'answered', claims, inputs, calculations:await policyCalculations(env,actor,id,currentPolicies), withheld, needsHr: true, escalation:POLICY_ESCALATION_PATH, ...(topic==='policy-conflict'?{message:'HR must compare the included policy versions and confirm which terms apply. This assistant cannot resolve conflicting eligibility terms.'}:{}), callId:response.callId, responseId:response.responseId, model:response.model }
  } catch(error) { await rejectAiCall(env,response.callId,error); throw error }
 }

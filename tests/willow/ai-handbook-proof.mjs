@@ -4,8 +4,8 @@ import { day } from './regression-fixture.mjs'
 export async function handbookProof({h,api,owner,staff:s,ask,calls,live,onCall,receipts}) {
  const hr=(path,body,status)=>h.api(path,s.hr.cookie,body,status)
  const clauses=[
-  {clauseId:1,topic:'remote-work',applicableFrom:day(-1),text:'Remote work requires written manager approval. It does not change the employee employment location.'},
-  {clauseId:2,topic:'attendance',applicableFrom:day(1),text:'From the stated effective date, notify your manager before a late arrival.'},
+  {clauseId:1,topic:'remote-work',applicableFrom:day(-30),text:'Remote work requires written manager approval. It does not change the employee employment location.'},
+  {clauseId:2,topic:'attendance',applicableFrom:day(30),text:'From the stated effective date, notify your manager before a late arrival.'},
  ]
  const body={title:'Workplace policy handbook',clauses}
  await h.api('ai.handbook.write',s.employee.cookie,body,403)

@@ -39,6 +39,7 @@ const cls = (key: ClassKey): Kind => ({ class: key })
 const s = (id: string, table: string, label: string, kind: Kind, from: string, extra: Partial<Store> = {}): Store => ({ id, table, label, kind, from: `${table} t WHERE ${from}`, ...extra })
 
 export const STORES: Store[] = [
+  s('ai_policy_followup','wl_ai_policy_escalations','Content-free HR policy follow-up','erase','t.requested_by=?2 OR t.person_id=?1',{ms:'t.created_at'}),
   s('ai_workflow_step_approvals','wl_ai_workflow_step_approvals','AI workflow privileged step signoffs','erase','t.approved_by=?2',{ms:'t.approved_at'}),
   s('ai_call_context','wl_ai_calls','Minimized model-call subject custody','erase','t.person_id=?1',{ms:'t.created_at'}),
   s('ai_workflow_reviews','wl_workflow_reviews','AI workflow publication preview custody','erase',"EXISTS(SELECT 1 FROM wl_ai_workflows w WHERE w.review_id=t.id) AND (t.actor=?2 OR instr(t.detail,?1)>0)"),
@@ -154,6 +155,7 @@ export const STORES: Store[] = [
 
 // Rows another person's records keep: the person's attribution is replaced by the erasure label.
 export const AUTHORED: [string, string][] = [
+  ['wl_ai_policy_escalations','resolved_by'],
   ['wl_ai_handbooks','created_by'], ['wl_ai_handbooks','withdrawn_by'], ['wl_ai_handbook_versions','created_by'], ['wl_ai_handbook_approvals','approved_by'], ['wl_ai_handbook_inclusions','included_by'],
   ['wl_ai_workflows','published_by'], ['wl_ai_calls','actor'], ['wl_ai_sources','approved_by'],
   ['wl_default_access', 'approved_by'],

@@ -70,6 +70,7 @@ try {
   const policyVersion=(await api('policies'))[0].versions.find(version=>version.status==='approved')
   await api('ai.policy.include',{version:policyVersion.id,included:true})
   assert.equal((await h.api('policy.answer',quinnCookie,{question:'What is my PTO balance?'})).status,'answered')
+  const policyFollowup=await h.api('policy.escalate',quinnCookie,{})
   const oakland = await api('location.create', { name: 'Oakland', timezone: 'UTC', workState: 'CA' })
   await api('mover.schedule', { period: quinn.period, effectiveFrom: day(-50), locationId: oakland.id, reason: 'Moved' })
   await h.api('goal.create', quinnCookie, { person: q, title: 'synthetic-willow-6', milestones: ['Start'], dueDate: day(60), development: true, owner: quinnMemberId })
@@ -84,7 +85,7 @@ try {
   const kinds = new Set(first.blockers.map(b => b.kind))
   for (const kind of ['open_case', 'retention_not_adopted', 'state_unconfirmed', 'unmapped_class', 'pending_self_change']) assert.ok(kinds.has(kind), `${kind} blocks`)
   assert.equal(first.confirmable, false)
-  assert.ok(first.examined > 140, 'the inventory classified every table')
+  assert.ok(first.items.some(item=>item.id==='ai_policy_followup'&&item.rows>0),'The real HR contact request is included in the erasure preview')
   const byId = Object.fromEntries(first.items.map(item => [item.id, item]))
   for (const id of ['people', 'private', 'periods', 'terms', 'leave_accounts', 'eeo', 'members', 'sessions', 'audit', 'cases', `custom_field:${badge.id}`, `documents:${offers}`, `documents:${forms}`, 'document_proposals']) assert.ok(byId[id]?.rows > 0, `${id} is classified`)
   assert.equal(byId.eeo.class, 'eeo')
@@ -354,5 +355,6 @@ try {
   assert.ok(stores.has('terms') && stores.has(`documents:${forms}`) && stores.has('people'), 'longer rules, holds and the identity they need remain')
   assert.ok((await api('audit')).some(event => event.action === 'retained.purge'), 'the purge is audited without values')
   assert.equal((await rowCounts(directory)).blobs, beforePurge.blobs - 2, 'the purged offer letter\'s and resume\'s bytes go with their last record')
+  assert.ok(!(await h.api('policy-escalations',owner)).some(row=>row.id===policyFollowup.id),'Erasure removes the personal HR contact request')
   console.log('DATA-002 retention census: passed')
 } finally { await h.close(); await rm(directory, { recursive: true, force: true }) }

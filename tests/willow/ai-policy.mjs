@@ -1,3 +1,4 @@
+import { escalationProof } from './ai-escalation-proof.mjs'
 // Public Worker doors, real data and storage. Only the provider edge is faked.
 import assert from 'node:assert/strict'
 import { harness } from './harness.mjs'
@@ -27,6 +28,7 @@ try{
  const owner=await h.signIn(h.vars.OWNER_EMAIL)
  await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})
  const f=await fixture(h,owner,{names:{employee:'Elena Patel',managera:'Jules Chen',managerb:'Ari Morgan',hr:'Nora Brooks',payroll:'Mina Costa',ended:'Sam Reed',invited:'Theo Park'}}),s=f.staff,api=f.api
+ if(!live)await escalationProof({h,owner,staff:s})
  const config={enabled:true,policies:true,workflows:true,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
  const ask=(cookie,person='me',question='Am I eligible for PTO and what is my balance?',status=200)=>h.api('policy.answer',cookie,{person,question},status)
  const sources=await api('policies'),version=sources[0].versions.find(v=>v.status==='approved')

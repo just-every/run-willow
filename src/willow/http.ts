@@ -1,3 +1,4 @@
+import { POLICY_ESCALATION_PATH } from './ai-policy-escalations'
 import { aiWorkflowApprovalPage } from './ui/ai-workflows'
 import { policyAssistantPage } from './ui/ai-policy'
 import { policyAnswer } from './ai-policy'
@@ -115,7 +116,7 @@ export async function willowResponse(request: Request, original: Bindings): Prom
   } catch (error) {
     const { code, status, detail } = failure(error)
     if (api || request.headers.has('authorization') || actor&&isCredentialActor(actor)) {
-      const response=json({ error: code, ...(url.pathname === '/api/willow/policy.answer' && status !== 401 ? { limitation: 'No policy answer is available. Ask HR before relying on an entitlement or taking action.', needsHr: true, escalation: '/app/company' } : {}), ...(detail === undefined ? {} : { detail }) }, status)
+      const response=json({ error: code, ...(url.pathname === '/api/willow/policy.answer' && status !== 401 ? { limitation: 'No policy answer is available. Ask HR before relying on an entitlement or taking action.', needsHr: true, escalation: POLICY_ESCALATION_PATH } : {}), ...(detail === undefined ? {} : { detail }) }, status)
       return request.headers.has('authorization')?credentialResponse(request,response):response
     }
     if (status === 404) return page('Not found', actor, h`<h1>Not found</h1><p>There is nothing here you can open.</p><p><a href="/app">Back to Willow</a></p>`, { status: 404 })
@@ -165,7 +166,7 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
       return redirect(env, returnTo.replace('{id}', encodeURIComponent(result?.id ?? '')), 'notice', failed ? 'Saved. Email notice delivery failed; continue the work in Willow.' : result?.notice ?? 'Saved.')
     } catch (error) {
       const { code, status } = failure(error)
-      if (name === 'policy.answer' && error instanceof WillowError) return policyAssistantPage(env,actor,policyUrl,{status:'unavailable',claims:[],withheld:[],needsHr:true,escalation:'/app/company',message:'No supported policy answer is available. HR must resolve the source or provider limitation before you rely on an entitlement or take action.'})
+      if (name === 'policy.answer' && error instanceof WillowError) return policyAssistantPage(env,actor,policyUrl,{status:'unavailable',claims:[],withheld:[],needsHr:true,escalation:POLICY_ESCALATION_PATH,message:'No supported policy answer is available. HR must resolve the source or provider limitation before you rely on an entitlement or take action.'})
       if (status >= 500) throw error
       return redirect(env, returnTo.replace('/{id}', ''), 'error', code)
     }
