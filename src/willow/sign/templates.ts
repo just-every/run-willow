@@ -3,6 +3,7 @@ import type { Bindings } from '../../auth.server'
 import { requirePermission, type Actor } from '../actor'
 import { all, commit, guard, insist, newId, now, one, sha256Hex, stmt, type Row } from '../core'
 import type { Input } from '../input'
+import { serve } from '../files'
 
 const SESSION=`SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email)
  WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?
@@ -61,6 +62,9 @@ export async function approveSignatureTemplate(env:Bindings,actor:Actor,input:In
  insist(input.flag('reviewed'),'signature_review_required')
  const row=await one(env,'SELECT * FROM wl_sign_templates WHERE id=?',input.text('template',{max:100}))
  insist(row,'signature_template_not_found',404)
+ const source=await one(env,'SELECT * FROM wl_company_file_versions WHERE id=?',row.source_version)
+ insist(source,'signature_source_not_found',404)
+ await serve(env,{filename:source.filename,mediaType:source.media_type,size:source.size,sha256:source.sha256},{download:true})
  const hash=await digest(row)
  insist(input.text('digest',{max:64})===hash,'signature_template_changed',409)
  insist(!await one(env,'SELECT 1 FROM wl_sign_template_approvals WHERE template_id=?',row.id),'signature_already_approved',409)
