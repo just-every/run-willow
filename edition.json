@@ -103,7 +103,8 @@
           "migrations/core/0087_ai_consent.sql",
           "migrations/core/0088_ai_handbooks.sql",
           "migrations/core/0089_ai_policy_followup.sql",
-          "migrations/core/0091_signature_templates.sql"
+          "migrations/core/0091_signature_templates.sql",
+          "migrations/core/0092_native_signing.sql"
         ]
       }
     },

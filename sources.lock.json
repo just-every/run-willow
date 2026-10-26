@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "people/willow",
-  "manifest": "61f091e03b775479af49514bdc560cb72fc685db2af7f86ed9ff850f764af62a",
+  "manifest": "8158174fd9f5ff68bd9f67aeec4af165aa254ead3ad519b1b00cd78bfdf96c74",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -103,7 +103,8 @@
           "migrations/core/0087_ai_consent.sql",
           "migrations/core/0088_ai_handbooks.sql",
           "migrations/core/0089_ai_policy_followup.sql",
-          "migrations/core/0091_signature_templates.sql"
+          "migrations/core/0091_signature_templates.sql",
+          "migrations/core/0092_native_signing.sql"
         ]
       },
       "baseline": null
@@ -721,7 +722,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "9f96777945ff9efb6df804b002eeae3048149a8befad3ff3e7aff82d01584bc6",
+      "sha256": "3abaa627ae47f360e2bc6c9fba2584d663159ab48eb7257615e5d04f6751d0a6",
       "executable": false
     },
     "DEMO.md": {
@@ -777,7 +778,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "61f091e03b775479af49514bdc560cb72fc685db2af7f86ed9ff850f764af62a",
+      "sha256": "8158174fd9f5ff68bd9f67aeec4af165aa254ead3ad519b1b00cd78bfdf96c74",
       "executable": false
     },
     "EXPORTING.md": {
@@ -1174,6 +1175,10 @@
     },
     "migrations/core/0091_signature_templates.sql": {
       "sha256": "eb017406046591d3bf732d2400b412c80181e4d0535900a1f37e7df4768e896d",
+      "executable": false
+    },
+    "migrations/core/0092_native_signing.sql": {
+      "sha256": "ed4546812196cad04d88a9a365ea0fa4cdd031c493322b0a25413fe749feadf3",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -4604,6 +4609,10 @@
       "sha256": "232c21398a319ee4db5eb0425f18ed3b721a91e85c300ca2af36f527ba15a7c5",
       "executable": false
     },
+    "src/willow/sign/requests.ts": {
+      "sha256": "e7408787b495b1cf1bee28abe112d72da55be0f869fc5cfcd35bc00e2d6d8e21",
+      "executable": false
+    },
     "src/willow/sign/templates.ts": {
       "sha256": "ad63ea3517dfd77d5ddf06a0db2a37fe4263a7604e9e3018fd510fadd8c9dad7",
       "executable": false
@@ -4862,6 +4871,10 @@
     },
     "src/willow/ui/settings.ts": {
       "sha256": "e55897e577afa6a202efdd1244742479ba00f4e27e9b8b3429a876f7e0eb9e5d",
+      "executable": false
+    },
+    "src/willow/ui/signatures.ts": {
+      "sha256": "eb4ed5ec833191af1882a426e3147c3ffaec6ebf9ff63604cf03136655002e34",
       "executable": false
     },
     "src/willow/ui/survey-plan.ts": {
@@ -5374,6 +5387,10 @@
     },
     "tests/willow/self-service.mjs": {
       "sha256": "0401b9b23119dd25492fe4ce0399e6649a391b6c3b5aefadeac151338290aa43",
+      "executable": false
+    },
+    "tests/willow/sign-native.mjs": {
+      "sha256": "4d238d3e4f942a8cfa7afd394da9e30838a2c7224bb9dcad15b1f0c4c1104e04",
       "executable": false
     },
     "tests/willow/sign-templates.mjs": {
