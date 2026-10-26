@@ -1,3 +1,4 @@
+import { signingCustodyProof } from './sign-custody.mjs'
 import { signatureCohortProof } from './sign-cohorts.mjs'
 import { signatureReportingProof } from './sign-reporting.mjs'
 import { nativeSigningProof } from './sign-native.mjs'
@@ -14,9 +15,10 @@ try {
   await h.raw('/auth/bootstrap', { body: { token: h.vars.SETUP_TOKEN, displayName: 'Olive Owner' } })
   const owner = await h.signIn(h.vars.OWNER_EMAIL)
   await h.raw('/setup', { cookie: owner, form: new URLSearchParams({ confirm: 'yes' }) })
-  const { api, staff: s, join, schedule } = await fixture(h, owner)
+  const { api, staff: s, join, schedule } = await fixture(h, owner,{names:{employee:'Maya Chen',hr:'Riley Morgan',managera:'Jordan Lee',managerb:'Sam Rivera',payroll:'Alex Patel'}})
   await signatureTemplateProof(h,owner,s)
   await nativeSigningProof(h,owner,s,join)
+  await signingCustodyProof(h,owner,s)
   await signatureReportingProof(h,owner,s)
   await signatureCohortProof(h,owner,s,join)
   const employee = s.employee.cookie, outsider = s.managerb.cookie, hr = s.hr.cookie

@@ -1,3 +1,4 @@
+import { signatureRequests } from '../sign/requests'
 import { excludesText } from '../retention/excluded'
 import { readsCustomField } from '../custom-fields/read'
 // REPORT-001: saved definitions, authorized results and versioned delivery schedules.
@@ -22,7 +23,7 @@ function relatedReports(actor: Actor) {
 
 async function visibleDefinitions(env:Bindings,actor:Actor,date:string) { const [dated,current]=await Promise.all([effectiveFieldDefinitions(env,date),effectiveFieldDefinitions(env,actor.today)]);return dated.filter(f=>{const c=current.find(c=>c.fieldId===f.fieldId);return c&&[actor.personId??'',...actor.reports].some(id=>readsCustomField(actor,id,c))}) }
 
-function definitionFields(definition: ReportDefinition, custom: EffectiveField[]) {
+function definitionFields(definition: ReportDefinition, custom: EffectiveField[], signatures: Awaited<ReturnType<typeof signatureRequests>>) {
   const standard = Object.entries(STANDARD_COLUMNS).map(([value, label]) => ({ value, label }))
   const customChoices = custom.filter(item => !item.retired || definition.columns.includes(`custom.${item.key}`)).map(item => ({ value: `custom.${item.key}`, label: `${item.label} (custom)` }))
   // Keep selected historical fields visible when their definition is absent on this date.
@@ -33,16 +34,16 @@ function definitionFields(definition: ReportDefinition, custom: EffectiveField[]
     field('Turnover from', 'from', { type: 'date', value: definition.from }), field('Turnover through', 'to', { type: 'date', value: definition.to }),
     field('Department', 'department', { required: false, value: definition.department, hint: 'Exact department name. Leave blank for all permitted departments.' }),
     field('Location', 'location', { required: false, value: definition.location, hint: 'Exact location name. Leave blank for all permitted locations.' }),
-    field('Signature template ID (optional)','signatureTemplate',{required:false,value:definition.signatureTemplate??''}),field('Signature cohort ID (optional)','signatureCohort',{required:false,value:definition.signatureCohort??''}),select('Signature state','signatureState',[{value:'',label:'All observed states'},...['sent','viewed','signed','declined','expired','voided','withdrawn','unknown'].map(value=>({value,label:value}))],definition.signatureState??''),
+    select('Signature template','signatureTemplate',[...new Map(signatures.map(s=>[s.template,{value:s.template,label:s.title}])).values()],definition.signatureTemplate??'',{required:false,blank:'All permitted templates'}),select('Signature cohort','signatureCohort',[...new Map(signatures.map(s=>[s.cohort,{value:s.cohort,label:s.title+' · '+new Date(s.createdAt).toISOString().slice(0,10)}])).values()],definition.signatureCohort??'',{required:false,blank:'All permitted cohorts'}),select('Signature state','signatureState',[{value:'',label:'All observed states'},...['sent','viewed','signed','declined','expired','voided','withdrawn','unknown'].map(value=>({value,label:value}))],definition.signatureState??''),
     select('People to include', 'status', [{ value: 'active', label: 'Active people' }, { value: 'all', label: 'All permitted people' }], definition.status)]
 }
 
 export async function customReportsPage(env: Bindings, actor: Actor, url: URL) {
-  const [reports, custom, zone] = await Promise.all([savedReports(env, actor), visibleDefinitions(env, actor, actor.today), employerZone(env)])
+  const [reports, custom, zone, signatures] = await Promise.all([savedReports(env, actor), visibleDefinitions(env, actor, actor.today), employerZone(env),signatureRequests(env,actor)])
   const definition: ReportDefinition = { name: '', columns: ['name', 'jobTitle', 'department', 'location', 'fte'], asOf: actor.today, from: `${actor.today.slice(0, 7)}-01`, to: actor.today, department: '', location: '', status: 'active' }
   return page('Custom reports', actor, h`${isReporter(actor)?h`<p class="back"><a href="/app/reports">← Reports</a></p>`:''}<h1>Custom reports</h1><p>Save the columns, dates and filters you need. Each run uses your current access to people and fields.</p>${relatedReports(actor)}
 <section class="card"><h2>Saved reports</h2>${reports.length ? table(['Report', 'Version', 'Record as of', 'Created'], reports.map(report => [h`<a href="${route}/${report.id}">${report.definition.name}</a>`, report.version, report.definition.asOf === 'today' ? 'Today, when run' : formatDate(report.definition.asOf), when(report.createdAt, zone)])) : h`<p class="muted">No saved reports in your scope.</p>`}</section>
-${isReporter(actor)?h`<section class="card"><h2>Create a report</h2><p>Organization reporting requires reports access. Managers see their current direct team. Restricted values stay withheld even when a saved report includes their columns.</p>${form('report.save', `${route}/{id}`, definitionFields(definition, custom), 'Save report')}</section>`:''}`,  { current: isReporter(actor)?'/app/reports':'/app/reports/custom', url })
+${isReporter(actor)?h`<section class="card"><h2>Create a report</h2><p>Organization reporting requires reports access. Managers see their current direct team. Restricted values stay withheld even when a saved report includes their columns.</p>${form('report.save', `${route}/{id}`, definitionFields(definition, custom, signatures), 'Save report')}</section>`:''}`,  { current: isReporter(actor)?'/app/reports':'/app/reports/custom', url })
 }
 
 function resultRows(result: ReportResult) {
@@ -91,11 +92,11 @@ ${editable ? form('report.schedule', `${route}/${report.id}`, [hidden('report', 
 
 export async function customReportPage(env: Bindings, actor: Actor, id: string, url: URL) {
   const report = await savedReport(env, actor, id)
-  const [result, scheduled, members, custom, zone] = await Promise.all([runReport(env, actor, report.definition,report.id), scheduleStatus(env, actor, id), workMembers(env), visibleDefinitions(env, actor, report.definition.asOf === 'today' ? actor.today : report.definition.asOf), employerZone(env)])
+  const [result, scheduled, members, custom, zone, signatures] = await Promise.all([runReport(env, actor, report.definition,report.id), scheduleStatus(env, actor, id), workMembers(env), visibleDefinitions(env, actor, report.definition.asOf === 'today' ? actor.today : report.definition.asOf), employerZone(env),signatureRequests(env,actor)])
   return page(report.definition.name, actor, h`<p class="back"><a href="${route}">← Custom reports</a></p><header class="page-head"><h1>${report.definition.name}</h1><p>Version ${report.version} · ${result.scope} · record as of ${formatDate(result.asOf)}</p></header>${relatedReports(actor)}
 <p class="actions"><a class="button secondary" href="${route}/${id}.csv">Download CSV</a><a class="button secondary" href="${route}/${id}.xlsx">Download XLSX</a><a href="#calculations">Calculations and unknown values</a></p>
 <section class="card"><h2>Report results</h2><dl class="facts"><dt>Generated</dt><dd>${when(result.generatedAt, zone)}</dd><dt>Latest business event</dt><dd>${when(result.sourceFreshness.recordedThrough, zone)}</dd><dt>Department</dt><dd>${report.definition.department || 'All permitted departments'}</dd><dt>Location</dt><dd>${report.definition.location || 'All permitted locations'}</dd><dt>People included</dt><dd>${report.definition.status === 'active' ? 'Active people' : 'All permitted people'}</dd></dl><p>Withheld means your current access does not permit the value. Unknown / not recorded means no value is available in the readable record.</p>${resultRows(result)}</section>
 ${totals(result)}${result.signatureTotals?h`<section class="card"><h2>Signature totals</h2><p>${result.signatureCoverage?.basis}</p><p>Observed through ${when(result.signatureCoverage?.observedThrough,zone)}. ${result.signatureTotals.withheldPeople} people have withheld signature status.</p>${table(['State','Requests'],[['Pending',result.signatureTotals.signaturePending],['Signed',result.signatureTotals.signatureSigned],['Declined',result.signatureTotals.signatureDeclined],['Expired',result.signatureTotals.signatureExpired],['Voided',result.signatureTotals.signatureVoided],['Withdrawn',result.signatureTotals.signatureWithdrawn],['Unknown',result.signatureTotals.signatureUnknown]])}</section>`:''}
-${isReporter(actor)&&(actor.owner || actor.id === report.createdBy) ? h`<section class="card"><details><summary>Save a new report version</summary>${form('report.save', `${route}/${id}`, [hidden('report', id), ...definitionFields(report.definition, custom)], 'Save new version')}</details></section>` : ''}
+${isReporter(actor)&&(actor.owner || actor.id === report.createdBy) ? h`<section class="card"><details><summary>Save a new report version</summary>${form('report.save', `${route}/${id}`, [hidden('report', id), ...definitionFields(report.definition, custom, signatures)], 'Save new version')}</details></section>` : ''}
 ${schedulePanel(actor, report, scheduled, members, zone)}`, { current: isReporter(actor)?'/app/reports':'/app/reports/custom', url })
 }

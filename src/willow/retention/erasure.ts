@@ -7,6 +7,7 @@ import { all, auditRead, commit, guard, insist, newId, now, one, sha256Hex, stmt
 import { isDate, today as dayOf } from '../dates'
 import type { Input } from '../input'
 import { holds, type Hold } from './holds'
+import { CATEGORY_SIGNATURE_STORES, signingCategories, signingCategoryStores } from './signatures'
 import { unclaimedFiles } from './blob-custody'
 import { selectImportErasure } from './import-custody'
 import { AUTHORED_STORES, DYNAMIC, OUT_OF_SCOPE, STORES, type Store } from './inventory'
@@ -153,6 +154,7 @@ export async function planErasure(env: Bindings, actor: Actor, personId: string)
   const staged: { store: Store; measured: Awaited<ReturnType<typeof measure>> }[] = []
   const latest = new Map<string, string>()
   for (const store of [...STORES, ...AUTHORED_STORES]) {
+    if (CATEGORY_SIGNATURE_STORES.has(store.id) && store.id !== 'signature_files') continue
     const measured = await measure(env, store, subject, zone)
     if (!measured.rows) continue
     staged.push({ store, measured })
@@ -161,6 +163,19 @@ export async function planErasure(env: Bindings, actor: Actor, personId: string)
   for (const { store, measured } of staged) {
     const record = measured.record ?? (typeof store.kind === 'object' ? latest.get(store.kind.class) ?? null : null)
     items.push(classify(context, store, store.kind, null, { ...measured, record }))
+  }
+  for (const category of await signingCategories(env, personId)) {
+    const cls = (mapped.get(`document_category:${category.id}`) ?? null) as ClassKey | null
+    if (!cls) blockers.push({ kind: 'unmapped_class', ref: category.id, reason: `Signing category “${category.name}” has no retention class` })
+    // Use the same latest record date as documents in this category, so child custody cannot expire early.
+    const document = await one<{ ms: number | null }>(env, `SELECT MAX(v.uploaded_at) AS ms FROM wl_documents d JOIN wl_document_versions v ON v.document_id=d.id WHERE d.person_id=? AND d.category_id=?`, personId, category.id)
+    const record = dayOf(zone, document?.ms ?? category.ms)
+    for (const store of signingCategoryStores(category.id)) {
+      const measured = await measure(env, store, subject, zone)
+      if (!measured.rows) continue
+      items.push(cls ? classify(context, store, { class: cls }, cls, { ...measured, record }, category.id)
+        : { id: store.id, table: store.table, label: store.label, disposition: 'retained', class: null, rule: null, expiry: null, hold: null, rows: measured.rows, blobs: measured.blobs, bytes: measured.bytes })
+    }
   }
   for (const row of await all<{ category: string; name: string; docs: number; versions: number; blobs: number; bytes: number; ms: number | null }>(env, `SELECT d.category_id AS category, c.name, COUNT(DISTINCT d.id) AS docs, COUNT(v.id) AS versions, COUNT(DISTINCT v.sha256) AS blobs, COALESCE(SUM(v.size), 0) AS bytes, MAX(v.uploaded_at) AS ms
       FROM wl_documents d JOIN wl_doc_categories c ON c.id = d.category_id LEFT JOIN wl_document_versions v ON v.document_id = d.id WHERE d.person_id = ? GROUP BY d.category_id, c.name`, personId)) {

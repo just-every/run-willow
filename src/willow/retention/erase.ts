@@ -1,3 +1,4 @@
+import { CATEGORY_SIGNATURE_STORES, signingCategoryStores, redactSigningReviews } from './signatures'
 import { confirmPreboarding } from './preboarding'
 // DATA-002 execution: the owner confirms a preview's digest and one journaled D1 batch removes the
 // person. Retained and held records move to restricted custody, erasable rows are deleted, the person's
@@ -32,6 +33,9 @@ export function targets(plan: Plan): Target[] {
     if (kind === 'documents') {
       result.push({ id: item.id + ':versions', table: 'wl_document_versions', label: item.label, item, blob: 't.size', from: `wl_document_versions t WHERE t.document_id IN (SELECT id FROM wl_documents WHERE person_id = ?1 AND category_id = ${category})` })
       result.push({ id: item.id, table: 'wl_documents', label: item.label, item, from: `wl_documents t WHERE t.person_id = ?1 AND t.category_id = ${category}` })
+    } else if (CATEGORY_SIGNATURE_STORES.has(kind) && ref) {
+      const store = signingCategoryStores(ref).find(store => store.id === item.id)!
+      result.push({ id: item.id, table: store.table, label: store.label, item, blob: store.blob, from: store.from })
     } else if (kind === 'custom_field') result.push({ id: item.id, table: 'wl_custom_field_values', label: item.label, item, from: `wl_custom_field_values t WHERE t.person_id = ?1 AND t.field_id = ${category}` })
     else if (kind === 'record_table') {
       result.push({ id: item.id + ':versions', table: 'wl_record_row_versions', label: item.label, item, from: `wl_record_row_versions t WHERE t.row_id IN (SELECT id FROM wl_record_rows WHERE person_id = ?1 AND table_id = ${category})` })
@@ -65,7 +69,7 @@ export async function readTargets(env: Bindings, rowTargets: RowTarget[], params
   }
   // Content-addressed bytes still referenced by a record that stays, here or elsewhere, are kept.
   for (const [sha] of [...blobs]) {
-    const refs = (await one<{ n: number }>(env, `SELECT (${SOURCE_TABLES.map(table => `(SELECT COUNT(*) FROM ${table} WHERE sha256 = ?1)`).join(' + ')} + (SELECT COUNT(*) FROM wl_change_requests WHERE instr(attachments_json, ?1) > 0)) AS n`, sha))!.n
+    const refs = (await one<{ n: number }>(env, `SELECT (${SOURCE_TABLES.map(table => `(SELECT COUNT(*) FROM ${table} WHERE sha256 = ?1)`).join(' + ')} + (SELECT COUNT(*) FROM wl_retained_records WHERE instr(row_json, ?1) > 0) + (SELECT COUNT(*) FROM wl_change_requests WHERE instr(attachments_json, ?1) > 0)) AS n`, sha))!.n
     if (refs > (erasedShas.get(sha) ?? 0)) blobs.delete(sha)
   }
   return { ids, blobs }
@@ -85,9 +89,9 @@ export async function moveRows(env: Bindings, rowTargets: RowTarget[], ids: Map<
         SELECT ?2, ?3, ?4, ?5, ?6, ?7, ?8, json_object(${columns.map(column => `'${column}', t.${column}`).join(', ')}), ?9 FROM ${target.table} t WHERE ${meta.rowid ? 't.rowid' : `json_array(${meta.pk.map(column => `t.${column}`).join(', ')})`} IN (SELECT value FROM json_each(?1))`,
         JSON.stringify(list), erasureId, target.id, target.table, target.item.class, target.item.rule, target.item.expiry, target.item.hold, at))
     }
-    // A peer's award remains live after its author's identity is erased. Holds
-    // preserve the original in restricted custody; the native row is scrubbed.
-    if (target.id !== COMPENSATION_AUTHORSHIP) statements.push(stmt(env, `DELETE FROM ${target.table} WHERE ${where}`, JSON.stringify(list)))
+    // Peer awards and shared signing records stay live with anonymized attribution.
+    // Holds preserve the original in restricted custody before that redaction.
+    if (target.id !== COMPENSATION_AUTHORSHIP && !(target.id.startsWith('wl_sign_') || ['signature_reviews', 'signature_cohorts'].includes(target.id))) statements.push(stmt(env, `DELETE FROM ${target.table} WHERE ${where}`, JSON.stringify(list)))
   }
   return statements
 }
@@ -132,7 +136,7 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
     stmt(env, "INSERT INTO wl_members (id, email, name, person_id, status, created_at) VALUES (?, ?, ?, ?, 'ended', ?)", stubMember, `erased-${hex(8)}@erased.invalid`, label, stubPerson, at),
   ]
   for (const [store, table] of recipientStores) if (subject.memberId) statements.push(stmt(env, `UPDATE ${table} SET recipients_json = (SELECT COALESCE(json_group_array(value), '[]') FROM json_each(recipients_json) WHERE value NOT IN (?1, 'member:' || ?1, ?2, ?3)) WHERE ?1 <> '' AND instr(recipients_json, ?1) > 0`, subject.memberId, subject.workEmail, subject.memberEmail))
-  statements.push(...await moveRows(env, rowTargets, ids, erasureId, at), ...await redactPayroll(env, subject, view.items.find(item => item.id === 'payroll_batches'), erasureId, at))
+  statements.push(...await moveRows(env, rowTargets, ids, erasureId, at), ...redactSigningReviews(env, subject.personId, subject.memberId, stubMember, at), ...await redactPayroll(env, subject, view.items.find(item => item.id === 'payroll_batches'), erasureId, at))
   for (const { tbl, col, parent } of fk) {
     if (tbl === 'wl_members' && col === 'person_id') continue
     const [real, stub] = parent === 'wl_members' ? [subject.memberId, stubMember] : [subject.personId, stubPerson]

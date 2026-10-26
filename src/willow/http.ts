@@ -1,3 +1,4 @@
+import { signatureTemplateSettings } from './ui/signature-templates'
 import { signaturePayloadFile } from './sign/payloads'
 import { signaturesPage,signaturePage,signaturePreviewPage,signatureConsentPage } from './ui/signatures'
 import { signatureFile,signatureCsv,signatureReviewFile } from './sign/requests'
@@ -217,6 +218,7 @@ const pages: Record<string, Page> = {
   compensation: (env,actor,_request,url)=>compensationPage(env,actor,url),
   compensationCycle: (env,actor,_request,url,id)=>cyclePage(env,actor,id,url),
   compensationEquity: (env,actor,_request,url)=>equityPage(env,actor,url),
+  signatureTemplateSettings,
   signaturePayloadFile:(env,actor,_request,_url,id)=>signaturePayloadFile(env,actor,id),
   signatureReviewFile:(env,actor,_request,url,id)=>signatureReviewFile(env,actor,id,url),
   signatures:(env,actor,_request,url)=>signaturesPage(env,actor,url), signatureRequest:(env,actor,_request,url,id)=>signaturePage(env,actor,id,url), signatureFile:(env,actor,_request,_url,id)=>signatureFile(env,actor,id),signatureCsv,

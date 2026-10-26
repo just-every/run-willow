@@ -22,3 +22,16 @@ CREATE TABLE wl_sign_notifications (
  failure TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
  UNIQUE(request_id,signer)
 );
+
+-- Existing issued requests acquire portal work without granting inclusion or outbound authority.
+INSERT INTO wl_sign_cohorts(id,initiator,template_id,source_version,source_sha256,template_digest,
+ category_id,hr_member,cohort_kind,cohort_value,future_joiners,notify,expiry_duration,created_at)
+SELECT r.id,r.actor,t.id,t.source_version,t.source_sha256,json_extract(r.snapshot,'$.templateDigest'),
+ t.category_id,json_extract(r.snapshot,'$.hr'),json_extract(r.snapshot,'$.cohortKind'),
+ COALESCE(json_extract(r.snapshot,'$.cohortValue'),''),0,0,
+ MAX(1,json_extract(r.snapshot,'$.expiresAt')-r.created_at),r.used_at
+FROM wl_sign_reviews r JOIN wl_sign_templates t ON t.id=r.template_id JOIN wl_members m ON m.id=r.actor
+WHERE r.used_at IS NOT NULL AND EXISTS(SELECT 1 FROM wl_sign_requests q WHERE q.cohort=r.id)
+ AND json_type(r.snapshot,'$.templateDigest')='text' AND json_type(r.snapshot,'$.expiresAt')='integer'
+ AND json_extract(r.snapshot,'$.cohortKind') IN ('named','everyone','location','department','employment_type','access_level')
+ AND EXISTS(SELECT 1 FROM wl_members c WHERE c.id=json_extract(r.snapshot,'$.hr'));

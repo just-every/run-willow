@@ -98,5 +98,23 @@ export async function signatureReportingProof(h,owner,s) {
  s.payroll.cookie=await h.signIn('payroll@example.com')
  await as(s.payroll.cookie,'custom-reports/'+saved.id,undefined,403)
  await api('report.schedule',{report:saved.id,version:saved.versionId,firstDate:today,cadenceDays:1,recipients:[s.payroll.member],enabled:true},403)
+ await reportScreens(h,owner,s.managera.cookie,saved.id,managerSaved.id)
  console.log('Saved signature reports: PASS — dated authorized sources, reconciled counts, filters, CSV/XLSX, selected-report isolation and reviewed schedule')
+}
+
+async function reportScreens(h,owner,manager,report,managerReport) {
+ if(process.env.WILLOW_SIGN_BROWSER!=='1')return
+ const {mkdir}=await import('node:fs/promises');const destination=process.env.WILLOW_EVIDENCE_DIR;assert.ok(destination);await mkdir(destination,{recursive:true})
+ const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH??'@playwright/test')
+ const browser=await chromium.launch({headless:true,...(process.env.WILLOW_CHROMIUM?{executablePath:process.env.WILLOW_CHROMIUM}:{}),args:['--use-mock-keychain','--password-store=basic']})
+ try {for(const [cookie,id,role] of [[owner,report,'HR'],[manager,managerReport,'manager']]) {
+  const context=await browser.newContext({ignoreHTTPSErrors:true});await context.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})))
+  const page=await context.newPage()
+  for(const width of [1440,390])for(const [path,label] of [['/app/reports/custom','definitions'],['/app/reports/custom/'+id,'report']]) {
+   await page.setViewportSize({width,height:1000});assert.equal((await page.goto(h.origin+path)).status(),200);await page.evaluate(()=>document.fonts.ready)
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${destination}/SIGN-${role}-${label}-${width}.png`,fullPage:true})
+   const bell=page.getByRole('link',{name:'Open your task list'});await bell.focus();await page.getByRole('tooltip').waitFor({state:'visible'});await bell.hover();await page.waitForTimeout(350);assert.ok(await page.getByRole('tooltip').isVisible())
+  }
+  await context.close()
+ }} finally {await browser.close()}
 }

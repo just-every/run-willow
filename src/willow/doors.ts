@@ -36,6 +36,7 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/settings/signatures$','signatureTemplateSettings'],
   ['^/app/signature-payloads/([\\w-]+)\\.pdf$','signaturePayloadFile'],
   ['^/app/signature-reviews/([\\w-]+)$','signatureReviewFile'],
   ['^/app/signatures$','signatures'],['^/app/signatures\\.csv$','signatureCsv'],['^/app/signatures/([\\w-]+)\\.pdf$','signatureFile'],['^/app/signatures/([\\w-]+)$','signatureRequest'],

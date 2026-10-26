@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { harness } from './harness.mjs'
 import { fixture, day } from './regression-fixture.mjs'
 import { verifyWillowWebhook } from '../../public/willow-webhook-verifier.mjs'
+import { signatureWebhookProof } from './sign-webhooks.mjs'
 
 export async function webhookProof(h,owner,fx,deliveries,receiver) {
  const api=(path,body,status)=>h.api(path,owner,body,status)
@@ -162,6 +163,8 @@ if(import.meta.url==='file://'+process.argv[1]) {
   assert.equal((await h.raw('/auth/bootstrap',{body:{token:h.vars.SETUP_TOKEN,displayName:'synthetic-willow-15012'}})).status,303)
   const owner=await h.signIn(h.vars.OWNER_EMAIL)
   assert.equal((await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})).status,303)
-  await webhookProof(h,owner,await fixture(h,owner),deliveries,receiver)
+  const fx=await fixture(h,owner)
+  await webhookProof(h,owner,fx,deliveries,receiver)
+  await signatureWebhookProof(h,owner,fx,deliveries,receiver)
  } finally {await h.close()}
 }

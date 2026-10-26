@@ -12,6 +12,7 @@ import { tableRows } from './record-tables/report'
 import type { Column } from './record-tables/schema'
 import { exportModuleHistory } from './export-module-history'
 import { exportReviewHistory } from './export-review-history'
+import { exportSigningRecords } from './sign/export'
 
 export const EXPORT_SECTIONS = { employment: 'Employment history', leave: 'Leave accounts, ledger and requests', lifecycle: 'Lifecycle cases and tasks', documents: 'Document versions and receipts', tables: 'Record tables (contacts, education, certifications, assets, custom tables)', profileChanges: 'Profile requests, HR decisions and handoffs', goals: 'Goals, check-ins and development completion', reviews: 'Performance reviews and released feedback' } as const
 // Record tables carry their own per-table access in the shared projection.
@@ -75,6 +76,7 @@ export async function employeeBundle(env: Bindings, actor: Actor, url: URL, requ
         record.lifecycle = cases
       }
       if (section === 'documents') {
+        record.signing = await exportSigningRecords(env, actor, person.id, data.asOf, zone)
         record.documents = person.documents.map((document: Record<string, any>) => ({ ...document, versions: document.versions.map((version: Record<string, any>) => {
           const path = `documents/${encodeURIComponent(person.id)}/${encodeURIComponent(version.id)}.bin`
           files.push({ name: path, size: version.size, open: async () => {

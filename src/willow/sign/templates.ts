@@ -16,7 +16,11 @@ const currentTemplate=`NOT EXISTS(SELECT 1 FROM wl_sign_templates newer WHERE ne
 const digest=(row:Row)=>sha256Hex(JSON.stringify({id:row.id,family:row.family,version:row.version,title:row.title,source:row.source_version,sha256:row.source_sha256,category:row.category_id,signers:JSON.parse(row.signers_json),fields:JSON.parse(row.fields_json)}))
 
 function configuration(input:Input) {
- const signers=input.json('signers'),fields=input.json('fields')
+ const signers=input.has('signerOrder')?(input.text('signerOrder')==='employee_hr'?['employee','hr']:['employee']):input.json('signers')
+ const kinds=input.list('fieldKind',{keepEmpty:true})
+ const columns=Object.fromEntries(['fieldSigner','fieldPage','fieldX','fieldY','fieldWidth','fieldHeight'].map(key=>[key,input.list(key,{keepEmpty:true})]))
+ const fields=input.has('fields')?input.json('fields'):kinds.flatMap((kind,i)=>kind?[{signer:Number(columns.fieldSigner[i]),kind,page:Number(columns.fieldPage[i]),x:Number(columns.fieldX[i])/100,y:Number(columns.fieldY[i])/100,width:Number(columns.fieldWidth[i])/100,height:Number(columns.fieldHeight[i])/100}]:[])
+
  insist(Array.isArray(signers)&&signers.length>0&&signers.length<=4,'invalid_signers')
  insist(signers.every((role:unknown)=>role==='employee'||role==='hr')&&new Set(signers).size===signers.length,'invalid_signers')
  insist(Array.isArray(fields)&&fields.length>0&&fields.length<=40,'invalid_signature_fields')
@@ -25,7 +29,7 @@ function configuration(input:Input) {
   const row=value as Record<string,unknown>
   insist(Object.keys(row).length===7&&Object.keys(row).every(key=>['signer','kind','page','x','y','width','height'].includes(key)),'invalid_signature_field')
   insist(Number.isInteger(row.signer)&&Number(row.signer)>=0&&Number(row.signer)<signers.length,'invalid_signature_signer')
-  insist(typeof row.kind==='string'&&['signature','initial','date','text','employee_name','job_title','compensation'].includes(row.kind),'invalid_signature_field_kind')
+  insist(typeof row.kind==='string'&&['signature','initial','date','text','employee_name','job_title','compensation','work_email','employee_number','start_date','department','location'].includes(row.kind),'invalid_signature_field_kind')
   insist(Number.isInteger(row.page)&&Number(row.page)>0&&Number(row.page)<=1000,'invalid_signature_page')
   for(const key of ['x','y','width','height']) insist(typeof row[key]==='number'&&Number.isFinite(row[key])&&Number(row[key])>=0&&Number(row[key])<=1,'invalid_signature_position')
   insist(Number(row.width)>0&&Number(row.height)>0&&Number(row.x)+Number(row.width)<=1&&Number(row.y)+Number(row.height)<=1,'invalid_signature_position')
@@ -37,7 +41,7 @@ function configuration(input:Input) {
 
 export async function writeSignatureTemplate(env:Bindings,actor:Actor,input:Input) {
  requirePermission(actor,'people.manage')
- input.only(['template','source','title','category','signers','fields','returnTo'])
+ input.only(['template','source','title','category','signers','fields','signerOrder','fieldKind','fieldSigner','fieldPage','fieldX','fieldY','fieldWidth','fieldHeight','returnTo'])
  const prior=input.text('template',{optional:true,max:100})
  const old=prior?await one(env,'SELECT * FROM wl_sign_templates WHERE id=?',prior):null
  insist(!prior||old,'signature_template_not_found',404)

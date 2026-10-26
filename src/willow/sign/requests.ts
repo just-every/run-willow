@@ -1,3 +1,4 @@
+import { signingMember } from './cohort-access'
 import { employerZone } from '../actor'
 import { isDate } from '../dates'
 import { datedSignatureSources } from '../reporting/signatures'
@@ -51,6 +52,8 @@ export async function previewSignatures(env:Bindings,actor:Actor,input:Input) {
  const hr=input.text('hr',{optional:roles.length===1,max:100})||actor.id
  const counter=await one(env,`SELECT m.id FROM wl_members m WHERE m.id=? AND m.status='active' AND (EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission='people.manage') OR EXISTS(SELECT 1 FROM oa_operators o WHERE lower(o.email)=m.email AND o.role='owner' AND o.status='active'))`,hr)
  insist(counter,'signature_hr_required')
+ const counterActor=await signingMember(env,hr)
+ insist(counterActor&&can(counterActor,'people.manage'),'signature_hr_required',403)
  const expiresAt=input.has('expiryDays')?now()+input.integer('expiryDays',{min:1,max:90})!*86400000:input.integer('expiresAt',{min:now()+60_000,max:now()+90*86400000})!
  const source=await one(env,'SELECT * FROM wl_company_file_versions WHERE id=?',template.sourceVersion)
  insist(source,'signature_source_missing',409)
@@ -63,7 +66,7 @@ export async function previewSignatures(env:Bindings,actor:Actor,input:Input) {
   const member=await one(env,"SELECT id FROM wl_members WHERE person_id=? AND status='active'",id)
   insist(person&&person.status==='active'&&member,'signature_active_recipient_required')
   const category=await one(env,'SELECT * FROM wl_doc_categories WHERE id=?',template.category)
-  insist(category&&category.subject_reads&&readsCategory(actor,id,category),'signature_category_denied',403)
+  insist(category&&category.subject_reads&&readsCategory(actor,id,category)&&readsCategory(counterActor,id,category),'signature_category_denied',403)
   insist(member.id!==hr||roles.length===1,'signature_distinct_signers_required')
   const merged=await mergeValues(env,actor,id,template.fields)
   let rendered={sha256:source.sha256,size:source.size}
@@ -106,6 +109,8 @@ export async function sendSignatures(env:Bindings,actor:Actor,input:Input, workf
  const statements=[session(env,actor),authority(env,actor),guard(env,'signature_inputs_changed',SEQUENCE+'=?',sequence),guard(env,'signature_review_used','EXISTS(SELECT 1 FROM wl_sign_reviews WHERE id=? AND used_at IS NULL)',review.id),
  guard(env,'signature_template_changed','NOT EXISTS(SELECT 1 FROM wl_sign_templates WHERE family=? AND version>?)',template.family,template.version),
  stmt(env,'UPDATE wl_sign_reviews SET used_at=? WHERE id=?',now(),review.id)]
+ const counterActor=await signingMember(env,snapshot.hr)
+ insist(counterActor&&can(counterActor,'people.manage'),'signature_hr_required',403)
  const visible=await directory(env,actor)
  const periods=snapshot.cohortKind==='employment_type'?await selectedPeriods(env,actor.today):new Map()
  const requests=[]
@@ -118,7 +123,7 @@ export async function sendSignatures(env:Bindings,actor:Actor,input:Input, workf
   if(snapshot.cohortKind==='employment_type')insist(periods.get(current.id)?.employment_type===snapshot.cohortValue,'signature_cohort_changed',409)
   if(snapshot.cohortKind==='access_level')insist(await one(env,'SELECT 1 FROM wl_member_levels l JOIN wl_members m ON m.id=l.member_id WHERE l.level_id=? AND m.person_id=?',snapshot.cohortValue,recipient.id),'signature_cohort_changed',409)
   const category=await one(env,'SELECT * FROM wl_doc_categories WHERE id=?',snapshot.category)
-  insist(category&&category.subject_reads&&readsCategory(actor,recipient.id,category),'signature_category_denied',403)
+  insist(category&&category.subject_reads&&readsCategory(actor,recipient.id,category)&&readsCategory(counterActor,recipient.id,category),'signature_category_denied',403)
   statements.push(guard(env,'signature_recipient_changed',"EXISTS(SELECT 1 FROM wl_members WHERE id=? AND person_id=? AND status='active')",recipient.member,recipient.id))
   insist(JSON.stringify(await mergeValues(env,actor,recipient.id,template.fields))===JSON.stringify(recipient.merged),'signature_merge_changed',409)
   const id=newId(),document=newId()
@@ -141,15 +146,16 @@ export async function signatureRequest(env:Bindings,actor:Actor,id:string,asOf?:
   insist(isDate(asOf),'invalid_asOf')
   const source=(await datedSignatureSources(env,actor,asOf,await employerZone(env))).find(r=>r.id===id)
   insist(source,'not_found',404)
-  return {...source,person:source.personId,asOf,revision:row.revision,digest:null,canSign:false,canManage:false,participant:false,signer:0,fields:[],signers:[],signed:[],sealedVersion:null,certificate:null}
+  return {...source,person:source.personId,asOf,revision:row.revision,digest:null,canSign:false,canManage:false,participant:false,signer:0,fields:[],signers:[],signed:[],sealedVersion:null,certificate:null,deliveries:[],category:row.category_name}
  }
+ const deliveries=await all(env,'SELECT signer,status,failure,created_at FROM wl_sign_notifications WHERE request_id=? ORDER BY created_at,id',id)
  const events=await all(env,'SELECT * FROM wl_sign_events WHERE request_id=? ORDER BY at,id',id)
  const signers=JSON.parse(row.signers_json),signed=events.filter(e=>e.kind==='sign'),index=signed.length
  const eligible=index===0?actor.personId===row.person_id:actor.id===row.hr_member&&can(actor,'people.manage')
  const isPending=pending(row)&&row.expires_at>now()
  const sourceEligible=!isPending||await eligibleSource(env,actor,row.source_version,row.person_id)
  const participant=actor.personId===row.person_id||actor.id===row.hr_member||can(actor,'people.manage')
- return {id:row.id,title:row.title,person:row.person_id,state:pending(row)&&!isPending?'expired':row.state,revision:row.revision,digest:participant?row.rendered_sha256:null,expiresAt:row.expires_at,canSign:isPending&&sourceEligible&&eligible&&index<signers.length,canManage:can(actor,'people.manage'),participant,signer:index,fields:participant?JSON.parse(row.fields_json):[],signers:participant?signers:[],signed:participant?signed.map(e=>({member:e.member_id,at:e.at,signer:e.signer})):[],sealedVersion:participant?row.sealed_version:null,certificate:participant&&row.certificate?JSON.parse(row.certificate):null}
+ return {id:row.id,title:row.title,category:row.category_name,deliveries:participant?deliveries:[],person:row.person_id,state:pending(row)&&!isPending?'expired':row.state,revision:row.revision,digest:participant?row.rendered_sha256:null,expiresAt:row.expires_at,canSign:isPending&&sourceEligible&&eligible&&index<signers.length,canManage:can(actor,'people.manage'),participant,signer:index,fields:participant?JSON.parse(row.fields_json):[],signers:participant?signers:[],signed:participant?signed.map(e=>({member:e.member_id,at:e.at,signer:e.signer})):[],sealedVersion:participant?row.sealed_version:null,certificate:participant&&row.certificate?JSON.parse(row.certificate):null}
 }
 
 export async function actSignature(env:Bindings,actor:Actor,input:Input,request:Request) {
