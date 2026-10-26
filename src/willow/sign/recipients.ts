@@ -33,7 +33,7 @@ export async function enrollSignatureRecipient(env:Bindings,actor:Actor,snapshot
  const rendered=Object.keys(merged).length?await store(env,{filename:'reviewed.pdf',bytes:await pdf.save()}):{sha256:source.sha256,size:source.size}
  const id=newId(),document=newId(),instant=now()
  statements.push(guard(env,'signature_recipient_changed',"EXISTS(SELECT 1 FROM wl_members WHERE id=? AND person_id=? AND status='active')",member.id,personId),
-  stmt(env,'INSERT INTO wl_sign_files(id,request_id,person_id,sha256,size,created_at) VALUES(?,NULL,?,?,?,?)',newId(),personId,rendered.sha256,rendered.size,instant),
-  stmt(env,"INSERT INTO wl_sign_requests(id,cohort,template_id,person_id,hr_member,document_id,rendered_sha256,rendered_size,state,expires_at,created_at,approved_sha256) VALUES(?,?,?,?,?,?,?,?,'sent',?,?,?)",id,cohort,template.id,personId,snapshot.hr,document,rendered.sha256,rendered.size,instant+snapshot.expiryDuration,instant,rendered.sha256))
+  stmt(env,"INSERT INTO wl_sign_requests(id,cohort,template_id,person_id,hr_member,document_id,rendered_sha256,rendered_size,state,expires_at,created_at,approved_sha256) VALUES(?,?,?,?,?,?,?,?,'sent',?,?,?)",id,cohort,template.id,personId,snapshot.hr,document,rendered.sha256,rendered.size,instant+snapshot.expiryDuration,instant,rendered.sha256),
+  stmt(env,'INSERT INTO wl_sign_files(id,request_id,person_id,sha256,size,created_at) VALUES(?,?,?,?,?,?)',newId(),id,personId,rendered.sha256,rendered.size,instant))
  return id
 }

@@ -129,6 +129,7 @@ export async function sendSignatures(env:Bindings,actor:Actor,input:Input, workf
   insist(JSON.stringify(await mergeValues(env,actor,recipient.id,template.fields))===JSON.stringify(recipient.merged),'signature_merge_changed',409)
   const id=newId(),document=newId()
   statements.push(stmt(env,`INSERT INTO wl_sign_requests(id,cohort,template_id,person_id,hr_member,document_id,rendered_sha256,rendered_size,state,expires_at,created_at,approved_sha256) VALUES(?,?,?,?,?,?,?,?,'sent',?,?,?)`,id,review.id,template.id,recipient.id,snapshot.hr,document,recipient.sha256,recipient.size,snapshot.expiresAt,now(),recipient.sha256))
+  statements.push(stmt(env,'INSERT INTO wl_sign_files(id,request_id,person_id,sha256,size,created_at) VALUES(?,?,?,?,?,?)',newId(),id,recipient.id,recipient.sha256,recipient.size,now()))
   requests.push(id)
  }
  await commit(env,[...statements,...cohortIssueStatements(env,actor,review,snapshot),...workflowStatements],{actor:actor.id,action:'signature.send',subject:review.id,detail:{requests,count:requests.length,outbound:false}})

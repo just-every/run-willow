@@ -4678,7 +4678,7 @@
       "executable": false
     },
     "src/willow/sign/recipients.ts": {
-      "sha256": "da94d54a84e9b8779ba11f0c13ec81bc78c57bce31c2a3cbf743687816f88a55",
+      "sha256": "f48c931bb83ba5efcfcdd6e1c0c73178054c34d30fcf0b77712105f8a2450142",
       "executable": false
     },
     "src/willow/sign/rendering.ts": {
@@ -4686,7 +4686,7 @@
       "executable": false
     },
     "src/willow/sign/requests.ts": {
-      "sha256": "a287c81e84268d63d994fd3cb9125c02321c89a63e542e5bf9e7fe5686d4132b",
+      "sha256": "2a1d06206eea5c4fb4d98088999f976d2efaa8debf96ab01668f6431a8629783",
       "executable": false
     },
     "src/willow/sign/source.ts": {
