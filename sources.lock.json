@@ -5331,7 +5331,7 @@
       "executable": false
     },
     "tests/willow/levels-personal.mjs": {
-      "sha256": "0af335fa53d63f16f9c042270fbc78c39766577de37601f010de07a9dcea3668",
+      "sha256": "61ce444b4709a689bdfec420b3442d71b448f90e59dc31a26937f1f9b0411c61",
       "executable": false
     },
     "tests/willow/levels-scope-browser.mjs": {

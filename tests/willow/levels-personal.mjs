@@ -120,7 +120,7 @@ export async function otherPersonalProof(h,owner,s) {
  await api('person.field',{person:s.employee.person,field:'preferredName',value:values.preferredName,revision:(await api(`people/${s.employee.person}`)).revision})
  const location=await api('location.create',{name:'Personal field group',timezone:'UTC'})
  const day=offset=>new Date(Date.now()+offset*86400000).toISOString().slice(0,10)
- await api('mover.schedule',{period:s.employee.period,effectiveFrom:day(-2),locationId:location.id,reason:'Move into personal field scope'})
+ const incoming=await api('mover.schedule',{period:s.employee.period,effectiveFrom:day(-2),locationId:location.id,reason:'Move into personal field scope'})
  const rules=Object.fromEntries(fields.map(field=>[field,'none']))
  const plan={kind:'level',name:'Scoped personal fields',permissions:[],otherFields:rules,scope:{kind:'group',dimensions:{location:[location.id]}}}
  const level=await apply(plan)
@@ -240,7 +240,7 @@ export async function otherPersonalProof(h,owner,s) {
  s.managerb.cookie=await h.signIn('managerb@example.com')
  await assign([level.id])
  const transfer=await propose()
- await api('mover.schedule',{period:s.employee.period,effectiveFrom:day(-1),locationId:(await api('location.create',{name:'Outside personal field group',timezone:'UTC'})).id,reason:'Leave personal field scope'})
+ const outgoing=await api('mover.schedule',{period:s.employee.period,effectiveFrom:day(-1),locationId:(await api('location.create',{name:'Outside personal field group',timezone:'UTC'})).id,reason:'Leave personal field scope'})
  assert.equal((await read()).private,undefined,'Dated scope membership is reevaluated on the next request')
  await hr('self.decide',{change:transfer.id,decision:'approve',comment:'No current reach'},403)
  await hr('self.decide',{change:transfer.id,decision:'reject',comment:'Scope ended'})
@@ -253,6 +253,7 @@ export async function otherPersonalProof(h,owner,s) {
  assert.deepEqual(Object.keys((await read()).private).sort(),fields.filter(f=>f!=='preferredName').sort())
  await api('member.permissions',{member:s.managerb.member,permissions:[]})
  assert.equal((await read()).private,undefined)
+ for(const mover of [outgoing,incoming]) await api('terms.cancel',{terms:mover.terms,reason:'End personal field fixture scope'})
  console.log('ROLE-001 personal fields about others: PASS — selective scoped reads, every mode, native edits, immutable HR routing, source/mode/scope fences, exact union and same-session revocation')
 }
 
