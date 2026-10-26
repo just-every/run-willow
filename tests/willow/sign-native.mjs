@@ -61,6 +61,7 @@ export async function nativeSigningProof(h,owner,s,join) {
  await as(s.employee.cookie,'signature.act',{...freshBound,action:'sign',consent:true,payload:boundPayload.id,name:'Changed after review'},400)
  const exactPayload=await h.raw('/app/signature-payloads/'+boundPayload.id+'.pdf',{cookie:s.employee.cookie})
  assert.equal(exactPayload.status,200)
+ assert.equal((await h.raw('/app/signature-payloads/'+boundPayload.id+'.pdf',{cookie:s.managera.cookie})).status,404,'Manager status access grants no exact signing payload')
  assert.equal(createHash('sha256').update(Buffer.from(await exactPayload.arrayBuffer())).digest('hex'),boundPayload.sha256)
  await as(s.payroll.cookie,'signature-requests/'+id,undefined,404)
  assert.deepEqual(await as(s.payroll.cookie,'signature-requests'),[])

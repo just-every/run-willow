@@ -5203,7 +5203,7 @@
       "executable": false
     },
     "tests/willow/flows.mjs": {
-      "sha256": "09751833acb71d3588f0c1a078c6dc180b561f85517c7459396d01c430d69335",
+      "sha256": "e29503b0b2e3e580d704084a667d5f6af5edc9645d225a48e3901ffc3a7a44f8",
       "executable": false
     },
     "tests/willow/harness.mjs": {
@@ -5511,7 +5511,7 @@
       "executable": false
     },
     "tests/willow/sign-native.mjs": {
-      "sha256": "a9d40c18f30405dfbd021a18f2930a3091be84bac0654114846b1337abbd2053",
+      "sha256": "b0d721ff7d51ba45c09c06e7cdc5c02a1dead0ad51a565496bf211bf24e117ea",
       "executable": false
     },
     "tests/willow/sign-reporting.mjs": {
