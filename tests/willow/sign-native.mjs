@@ -231,6 +231,11 @@ async function phoneCohortSigner(h,employeeCookie,hrCookie,id) {
    await page.getByLabel('Signature name',{exact:true}).fill(name)
    if(width===390){await page.getByLabel('Initials',{exact:true}).fill('PC');await page.getByLabel('Text field',{exact:true}).fill('Agreed')}
    await page.getByRole('button',{name:'Review signing document'}).click();assert.ok(!new URL(page.url()).searchParams.has('error'))
+   await page.evaluate(()=>document.fonts.ready)
+   if(!await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)) {
+    await page.screenshot({path:process.env.WILLOW_EVIDENCE_DIR+'/SIGN-overflow-'+width+'.png',fullPage:true})
+    console.log('Signing overflow:',await page.evaluate(()=>[...document.querySelectorAll('*')].filter(e=>e.getBoundingClientRect().right>innerWidth).map(e=>({tag:e.tagName,class:e.className,width:e.getBoundingClientRect().width,right:e.getBoundingClientRect().right})).slice(-15)))
+   }
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
    await page.screenshot({path:process.env.WILLOW_EVIDENCE_DIR+'/SIGN-location-payload-'+width+'.png',fullPage:true})
    await page.locator('input[name="consent"]').check();await page.getByRole('button',{name:'Sign exact document'}).click()

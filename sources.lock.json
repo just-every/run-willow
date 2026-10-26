@@ -1507,7 +1507,7 @@
       "executable": false
     },
     "public/willow-signatures.css": {
-      "sha256": "42155f61cf787d4db4631d0efd221de7716d7713465149d063e29b91e855433d",
+      "sha256": "b16d9624867cb25aa948f3c6fe75c06c5ca0674a204179185edef5bd1bac5e2c",
       "executable": false
     },
     "public/willow-tokens.css": {
@@ -5503,7 +5503,7 @@
       "executable": false
     },
     "tests/willow/sign-native.mjs": {
-      "sha256": "684479f7836a87b9ab496b821dee958175f3c6079cb48b15e93a0494df919dea",
+      "sha256": "2b7e495a16df71641c6be9aa3816921cca2fa3161cd1faaf1bff1371f466af79",
       "executable": false
     },
     "tests/willow/sign-reporting.mjs": {

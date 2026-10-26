@@ -1,3 +1,9 @@
 /* Readable metadata on signing, signing-workflow and signature-report screens. */
 body:has(main[data-signing-surface]) .avatar { font-size: 13px; }
 main[data-signing-surface] .table-wrap td[data-label]::before { font-size: 13px; }
+main[data-signing-surface] .card,
+main[data-signing-surface] .table-wrap,
+main[data-signing-surface] td { min-width: 0; }
+main[data-signing-surface] code,
+main[data-signing-surface] td { overflow-wrap: anywhere; word-break: break-word; }
+main[data-signing-surface] code { white-space: normal; }
