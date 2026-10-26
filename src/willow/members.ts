@@ -112,15 +112,15 @@ export async function importAccess(env: Bindings, actor: Actor, input: Input, re
   const job=input.text('job',{max:100}),choice=input.text('choice',{max:20}),reason=input.text('reason',{max:400})
   insist(choice==='invite'||choice==='defer','invalid_invitation_choice')
   const installation=await doorKey(env)
-  const completed=`EXISTS(SELECT 1 FROM ik_jobs j JOIN ik_door_plans p ON p.job_id=j.id WHERE j.id=? AND j.state='completed' AND j.namespace='bamboohr' AND j.destination='people' AND p.installation_id=?)`
+  const completed=`EXISTS(SELECT 1 FROM ik_jobs j JOIN ik_door_plans p ON p.job_id=j.id WHERE j.id=? AND j.state='completed' AND p.namespace='bamboohr' AND j.destination='people' AND p.installation_id=? AND NOT EXISTS(SELECT 1 FROM wl_import_erasure_fences f WHERE f.job_id=j.id))`
   insist(await one(env,'SELECT 1 WHERE '+completed,job,installation),'completed_import_required',409)
   const people=(await all<{id:string}>(env,`SELECT DISTINCT p.target_id AS id FROM ik_provenance p JOIN wl_people person ON person.id=p.target_id WHERE p.job_id=? AND p.target_kind='person' AND p.reversed=0 ORDER BY p.target_id`,job)).map(row=>row.id)
   insist(people.length>0,'import_has_no_people',409)
+  if(choice==='invite') insist(people.length<=100,'import_invitation_selection_required',409)
   // Both decisions are auditable and fenced to the owner's live session and completed job.
   await commit(env,[levelSessionFence(env,actor),guard(env,'import_changed',completed,job,installation)],
     {actor:actor.id,action:'access.import',subject:job,detail:{choice,people,reason}})
   if(choice==='defer') return {invited:[],skipped:[],deferred:people,notice:'Portal invitations deferred. No access was changed and no invitations were sent.'}
-  insist(people.length<=100,'import_invitation_selection_required',409)
   return bulkGiveAccess(env,actor,Input.of({people,reason}),request)
 }
 
