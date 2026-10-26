@@ -66,7 +66,7 @@ try {
   await as('hr', 'customField.write', { person: q, effectiveFrom: day(-1), values: { badge: 'synthetic-willow-3' } })
   await as('hr', 'recordRow.write', { person: q, table: 'certifications', effectiveFrom: day(-1), values: { name: 'Forklift', issuer: 'Board', number: 'FL-9', issued_on: day(-300), expires_on: day(40) } })
   const quinnAccount = await f.account(quinn.period)
-  await api('ai.configure',{enabled:true,policies:true,workflows:false,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard'})
+  await api('ai.configure',{enabled:true,policies:true,workflows:false,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true})
   const policyVersion=(await api('policies'))[0].versions.find(version=>version.status==='approved')
   await api('ai.policy.include',{version:policyVersion.id,included:true})
   assert.equal((await h.api('policy.answer',quinnCookie,{question:'What is my PTO balance?'})).status,'answered')

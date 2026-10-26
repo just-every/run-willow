@@ -15,12 +15,13 @@ export async function freshAiActor(env: Bindings, actor: Actor) {
 
 export async function configureAi(env: Bindings, actor: Actor, input: Input) {
  requireOwner(actor)
- input.only(['enabled','policies','workflows','model','capUsd','dataScope','retention','providerRetention','returnTo'])
+ input.only(['enabled','policies','workflows','model','capUsd','dataScope','retention','providerRetention','policyConsent','workflowConsent','returnTo'])
  const enabled = input.flag('enabled'), model = input.text('model'), scope = input.text('dataScope'), retention = input.text('retention'), providerRetention = input.text('providerRetention')
  const cap = Number(input.text('capUsd')) * 1_000_000
  insist(Object.hasOwn(MODELS,model) && ['policies-only','policy-and-leave-numbers'].includes(scope) && retention === 'no-content' && ['unapproved','standard'].includes(providerRetention), 'invalid_ai_configuration')
  insist(Number.isSafeInteger(cap) && cap > 0 && cap <= 50000, 'invalid_ai_cap')
  insist(!enabled || providerRetention === 'standard' && !!env.MODELS_KEY && env.MODELS_ENDPOINT === 'https://api.openai.com/v1/chat/completions', 'ai_consent_or_binding_required', 409)
+ insist(!enabled || (!input.flag('policies') || input.flag('policyConsent')) && (!input.flag('workflows') || input.flag('workflowConsent')), 'ai_explicit_consent_required', 409)
  await commit(env, [stmt(env, `INSERT INTO wl_ai_settings(singleton,enabled,policies,workflows,model,cap_microusd,data_scope,retention,provider_retention,revision) VALUES(1,?,?,?,?,?,?,?,?,?) ON CONFLICT(singleton) DO UPDATE SET enabled=excluded.enabled,policies=excluded.policies,workflows=excluded.workflows,model=excluded.model,cap_microusd=excluded.cap_microusd,data_scope=excluded.data_scope,retention=excluded.retention,provider_retention=excluded.provider_retention,revision=excluded.revision`, Number(enabled), Number(input.flag('policies')), Number(input.flag('workflows')), model, cap, scope, retention, providerRetention, newId())], { actor: actor.id, action: 'ai.configure', subject: 'connections', detail: { enabled, model, scope, retention, providerRetention, capMicrousd: cap } })
  return { enabled }
 }
@@ -30,7 +31,7 @@ export async function aiControls(env: Bindings, actor: Actor) {
  return { settings: await aiSettings(env), calls: await all(env, 'SELECT id,feature,provider,model,status,response_id,failure,cap_microusd,reserved_microusd,actual_microusd,created_at FROM wl_ai_calls ORDER BY created_at DESC LIMIT 30') }
 }
 
-export async function callModel(env: Bindings, actor: Actor, feature: string, context: unknown, instruction: string, custody: { person?: string; sequence?: number } = {}) {
+export async function callModel(env: Bindings, actor: Actor, feature: string, context: unknown, instruction: string, custody: { person?: string; sequence?: number; sources?: {id:string;revision:number}[]; fields?: string[] } = {}) {
  actor = await freshAiActor(env,actor)
  if(feature.includes('workflow'))requirePermission(actor,'people.manage')
  const settings = await aiSettings(env)
@@ -46,7 +47,7 @@ export async function callModel(env: Bindings, actor: Actor, feature: string, co
  const reserve = Math.ceil((bytes + 256) * inputRate + maxTokens * outputRate)
  insist(reserve <= settings.cap_microusd, 'ai_spend_cap', 409)
  const id = newId()
- await commit(env, [guard(env,'ai_authority_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email) WHERE s.id=? AND m.id=? AND s.revoked_at IS NULL AND s.expires_at>? AND s.operator_version=o.version AND o.status='active' AND m.status='active')`,actor.sessionId,actor.id,now()), ...(custody.sequence===undefined?[]:[guard(env,'ai_source_changed','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',custody.sequence)]), guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_ai_settings WHERE revision=? AND enabled=1)', settings.revision), stmt(env, `INSERT INTO wl_ai_calls(id,actor,feature,model,provider,settings_revision,cap_microusd,reserved_microusd,status,created_at,person_id) VALUES(?,?,?,?,'OpenAI',?,?,?,'pending',?,?)`, id, actor.id, feature, settings.model, settings.revision, settings.cap_microusd, reserve, now(), custody.person ?? null)], { actor: actor.id, action: 'ai.call', subject: id, detail: { feature, model: settings.model, provider: 'OpenAI', capMicrousd: settings.cap_microusd } })
+ await commit(env, [guard(env,'ai_authority_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email) WHERE s.id=? AND m.id=? AND s.revoked_at IS NULL AND s.expires_at>? AND s.operator_version=o.version AND o.status='active' AND m.status='active')`,actor.sessionId,actor.id,now()), ...(custody.sequence===undefined?[]:[guard(env,'ai_source_changed','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',custody.sequence)]), guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_ai_settings WHERE revision=? AND enabled=1)', settings.revision), stmt(env, `INSERT INTO wl_ai_calls(id,actor,feature,model,provider,settings_revision,cap_microusd,reserved_microusd,status,created_at,person_id) VALUES(?,?,?,?,'OpenAI',?,?,?,'pending',?,?)`, id, actor.id, feature, settings.model, settings.revision, settings.cap_microusd, reserve, now(), custody.person ?? null)], { actor: actor.id, action: 'ai.call', subject: id, detail: { feature, model: settings.model, provider: 'OpenAI', consentVersion: settings.revision, sources: custody.sources ?? [], inputFields: custody.fields ?? [], capMicrousd: settings.cap_microusd } })
  try {
   const response = await fetch(env.MODELS_ENDPOINT, { method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(30000), headers: { 'content-type': 'application/json', authorization: `Bearer ${env.MODELS_KEY}`, 'x-models-feature': feature }, body: JSON.stringify({ model: settings.model, store: false, max_tokens: maxTokens, temperature: 0, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: instruction }, { role: 'user', content }] }) })
   if (!response.ok) throw new WillowError(`ai_provider_http_${response.status}`, 502)

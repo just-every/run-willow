@@ -27,7 +27,7 @@ export async function createAiWorkflowDraft(env: Bindings, actor: Actor, input: 
   try {
     // Exactly the proposed structural plan crosses the network. Template names,
     // task titles, system labels, original prose and all person data stay local.
-    const result = await callModel(env, actor, 'willow-workflow-draft', expected, WORKFLOW_INSTRUCTION)
+    const result = await callModel(env, actor, 'willow-workflow-draft', expected, WORKFLOW_INSTRUCTION, {sources:[{id:source.template.id,revision:source.template.version}],fields:['normalized-workflow-structure']})
     const output = validateWorkflowOutput(result.value, expected)
     actor = await workflowAuthority(env, actor)
     await requireWorkflowSource(env, source)

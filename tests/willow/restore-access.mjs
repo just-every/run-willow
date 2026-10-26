@@ -9,12 +9,13 @@ import { freePort, harness } from './harness.mjs'
 import { fixture, day } from './regression-fixture.mjs'
 import { readArchive } from '@runeditrun/rer/modules/portability'
 import { enabledArchive } from './restore-archive-fixture.mjs'
+import { publishTemplate } from './publish-template.mjs'
 import { pathToFileURL } from 'node:url'
 const work = await mkdtemp(join(tmpdir(), 'willow-restore-access-'))
 const source = join(work, 'source'), target = join(work, 'target')
 let origin, restored
 let server, destination, browser
-const modelBindings = { MODELS_ENDPOINT: 'https://models.example.test/v1/chat/completions', MODELS_KEY: 'restore-test-provider-key' }
+const modelBindings = { MODELS_ENDPOINT: 'https://api.openai.com/v1/chat/completions', MODELS_KEY: 'synthetic-willow-16800' }
 let sourceNotices = 0, restoredNotices = 0, modelCalls = 0
 const provider = side => async request => {
   if (new URL(request.url).hostname === 'api.sendgrid.com') {
@@ -23,8 +24,11 @@ const provider = side => async request => {
     return new Response(null, { status: 202 })
   }
   if(new URL(request.url).hostname==='synthetic-willow-16100.example.com')return new Response(null,{status:204})
+  assert.equal(side,'source','No model call is authorized during restore')
   modelCalls++
-  throw new Error('No model call is authorized during restore')
+  const body=await request.json(),context=JSON.parse(body.messages[1].content)
+  const value=context.policies?{claims:[{text:context.policies[0].summary,quote:context.policies[0].summary,versionId:context.policies[0].id}],needsHr:true,unusedProviderContent:'synthetic-willow-16803'}:context
+  return Response.json({id:'synthetic-willow-16802',choices:[{message:{content:JSON.stringify(value)}}]})
 }
 const request = (base, path, cookie, body) => fetch(base + path, { method: body === undefined ? 'GET' : 'POST', redirect: 'manual', headers: { ...(cookie ? { cookie } : {}), ...(body === undefined ? {} : { origin: base, 'content-type': 'application/json' }) }, body: body === undefined ? undefined : JSON.stringify(body) })
 const apiAt = base => async (path, cookie, body, status = 200) => { const r = await request(base, `/api/willow/${path}`, cookie, body); const text = await r.text(); assert.equal(r.status, status, `${path}: ${r.status} ${text.slice(0, 200)}`); return JSON.parse(text) }
@@ -153,6 +157,18 @@ try {
   // DATA-001: restored authority must pause even when provider bindings are available.
   await api('connections.notices', owner, { enabled: true })
   await api('connections.model', owner, { model: 'restore-proof-model' })
+  const aiConfig={enabled:true,policies:true,workflows:true,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
+  await api('ai.configure',owner,aiConfig)
+  const included=(await api('policies',owner))[0].versions.find(version=>version.status==='approved')
+  await api('ai.policy.include',owner,{version:included.id,included:true})
+  await api('policy.answer',s.employee.cookie,{question:'What is my PTO balance? synthetic-willow-16801'})
+  const aiSource=await publishTemplate(server,owner,{kind:'mover',name:'Approval restore',taskTitle:['Review payroll handoff'],taskAssignee:['payroll'],taskDueDays:['0']})
+  const workflow=await api('workflow.draft',owner,{template:aiSource.id,request:'For everyone, assign task 1 to payroll due 0 days after start.'})
+  // The provider edge returns the controlled structure without extra fields.
+  assert.equal(workflow.status,'pending')
+  const workflowBefore=await api(`ai-workflows/${workflow.id}`,owner)
+  await api('workflow.step.approve',s.payroll.cookie,{workflow:workflow.id,position:1,authority:'payroll',revision:workflowBefore.revision})
+  assert.equal((await api(`ai-workflows/${workflow.id}`,owner)).approvals[0].approvals.length,1)
   await api('import.settings', owner, { enabled: true, revokedKids: ['restore-revoked-key'] })
   const sourceImportSettings = await api('import-settings', owner)
   assert.equal(sourceImportSettings.enabled, true, 'DATA-001: source Business imports enabled through owner action')
@@ -172,6 +188,7 @@ try {
   await server.close(); server = null
   await command(source, ['export', '--output', 'exports/access.rer'])
   const data = await readFile(join(source, 'exports/access.rer')), records = []
+  for(const canary of ['synthetic-willow-16801','synthetic-willow-16803'])assert.ok(!data.includes(Buffer.from(canary)),'Raw question and provider response content never enters an archive')
   for await (const record of readArchive(new ReadableStream({ start(c) { c.enqueue(data); c.close() } }))) records.push(record)
   const header = records[0]
   assert.ok(!data.includes(Buffer.from(webhook.secret)),'Webhook signing authority never enters archive bytes')
@@ -199,6 +216,8 @@ try {
   server = await harness({persistTo:join(source,'.wrangler/state'),port:sourcePort,bindings:modelBindings,provider:provider('source')})
   const sourceOwner = await server.signIn('owner@example.com')
   const sourceConnections = await api('connections', sourceOwner)
+  assert.equal((await api('ai-controls',sourceOwner)).settings.enabled,1,'Export leaves source assistant consent enabled')
+  assert.equal((await api(`ai-workflows/${workflow.id}`,sourceOwner)).approvals[0].approvals.length,1,'Export leaves source signoffs unchanged')
   assert.equal(sourceConnections.notices, true)
   assert.equal(sourceConnections.model.selected, 'restore-proof-model', 'export leaves source authority unchanged')
   assert.deepEqual(await api('import-settings', sourceOwner), sourceImportSettings, 'DATA-001: export leaves source Business authority and revoked keys unchanged')
@@ -223,11 +242,15 @@ try {
   assert.ok(report, 'DATA-001: public import returns a successful receipt')
   assert.deepEqual(report.safetyChanges?.toSorted((a, b) => a.table.localeCompare(b.table) || a.column.localeCompare(b.column)), [
     { table: 'ik_door_settings', column: 'enabled', value: 0, rows: 1 },
+    { table: 'wl_ai_settings', column: 'enabled', value: 0, rows: 1 },
+    { table: 'wl_ai_settings', column: 'policies', value: 0, rows: 1 },
+    { table: 'wl_ai_settings', column: 'provider_retention', value: 'unapproved', rows: 1 },
+    { table: 'wl_ai_settings', column: 'workflows', value: 0, rows: 1 },
     { table: 'wl_connections', column: 'model', value: null, rows: 1 },
     { table: 'wl_connections', column: 'notices', value: 0, rows: 1 },
     { table: 'wl_connections', column: 'oidc', value: 0, rows: 1 },
   ], 'DATA-001: Base reports actual staged changes, with only safe values and aggregate counts')
-  assert.deepEqual(report.ownerReauthorizationRequired, ['notices', 'oidc', 'model', 'businessImport'])
+  assert.deepEqual(report.ownerReauthorizationRequired, ['notices', 'oidc', 'model', 'businessImport', 'policyAssistant', 'workflowAssistant'])
   assert.equal(report.archiveHash, legacyRecords.at(-1).archiveHash, 'DATA-001: receipt authenticates original archive bytes')
   assert.equal(report.contentHash, legacyRecords.at(-1).contentHash, 'DATA-001: original content integrity is preserved')
   assert.deepEqual(await readFile(join(target, 'exports/enabled.rer')), oldArchive, 'DATA-001: original backup bytes untouched')
@@ -304,7 +327,14 @@ try {
   assert.equal(paused.model.configured, true)
   assert.equal(paused.model.selected, null)
   assert.equal((await after('model.draft', newOwner, { template: f.templates.joiner }, 409)).error, 'model_not_configured')
-  assert.equal(modelCalls, 0)
+  const restoredAi=(await after('ai-controls',newOwner)).settings
+  assert.equal(restoredAi.enabled,0);assert.equal(restoredAi.policies,0);assert.equal(restoredAi.workflows,0);assert.equal(restoredAi.provider_retention,'unapproved')
+  await after('policy.answer',cookies.employee,{question:'What is my PTO balance?'},409)
+  await after('workflow.draft',newOwner,{template:aiSource.id,request:'For everyone, assign task 1 to payroll due 0 days after start.'},409)
+  const restoredWorkflow=await after(`ai-workflows/${workflow.id}`,newOwner)
+  assert.equal(restoredWorkflow.approvals[0].approvals.length,0,'Portable history cannot authorize privileged publication')
+  await after('workflow.preview',newOwner,{workflow:workflow.id},409)
+  assert.equal(modelCalls,2,'Restored calls are refused before the provider edge')
   assert.deepEqual((await after(`cases/${pending.case}`, newOwner)).tasks, pendingCase.tasks)
   assert.equal((await after(`payroll/${payroll.id}`, newOwner)).status, 'draft')
   for (const notice of noticeHistory) assert.deepEqual(paused.history.find(row => row.id === notice.id), notice)

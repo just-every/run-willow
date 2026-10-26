@@ -3,6 +3,7 @@ import type { Actor } from '../actor'
 import { aiControls } from '../ai-provider'
 import { aiPolicySources } from '../ai-policy'
 import { can } from '../actor'
+import { POLICY_CONSENT, WORKFLOW_CONSENT } from '../ai-consent'
 import { field, form, h, hidden, select, table } from './html'
 
 export async function aiControlsSection(env: Bindings, actor: Actor) {
@@ -19,6 +20,7 @@ export async function aiControlsSection(env: Bindings, actor: Actor) {
  select('Data scope','dataScope',[{value:'policies-only',label:'Included policy clauses only'},{value:'policy-and-leave-numbers',label:'Included policies and permitted leave numbers'}],s.data_scope),
  select('Willow retention','retention',[{value:'no-content',label:'No prompt or answer content retained'}],s.retention),
  select('Provider retention consent','providerRetention',[{value:'unapproved',label:'Not approved: calls denied'},{value:'standard',label:'Approve standard provider retention'}],s.provider_retention),
- h`<p>Calls request store=false. OpenAI may retain abuse-monitoring logs for up to 30 days under standard API controls. This is not a promise of zero provider retention.</p>`],'Apply assistant controls')}</details>${inclusion}
+ h`<details><summary>Policy handling consent</summary><p>${POLICY_CONSENT}</p><label class="check"><input type="checkbox" name="policyConsent" value="true"> I attest to the policy handling statement</label></details>`,
+ h`<details><summary>Workflow handling consent</summary><p>${WORKFLOW_CONSENT}</p><label class="check"><input type="checkbox" name="workflowConsent" value="true"> I attest to the workflow handling statement</label></details>`],'Apply assistant controls')}</details>${inclusion}
  <details><summary>Call history</summary>${table(['Feature','Provider and model','State','Reserved USD','Actual USD','Response'],calls.map(call=>[call.feature,`${call.provider} ${call.model}`,call.failure??call.status,(call.reserved_microusd/1000000).toFixed(6),call.actual_microusd===null?'Unknown':(call.actual_microusd/1000000).toFixed(6),call.response_id??'None']))}</details></section>`
 }

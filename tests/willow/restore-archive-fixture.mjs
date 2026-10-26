@@ -8,6 +8,7 @@ export async function enabledArchive(records) {
     part.items.map(item => {
       if (item.kind !== 'row') return item
       if (item.table === 'wl_connections') return { ...item, row: { ...item.row, notices: 1, oidc: 1, model: 'restore-proof-model' } }
+      if (item.table === 'wl_ai_settings') return { ...item, row: { ...item.row, enabled: 1, policies: 1, workflows: 1, provider_retention: 'standard' } }
       if (item.table === 'ik_door_settings') return { ...item, row: { ...item.row, enabled: 1 } }
       return item
     }))))

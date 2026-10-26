@@ -14,7 +14,21 @@ export async function policyScreens(h,owner,staff){
    const page=await context.newPage()
    for(const width of [1440,390]){
     await page.setViewportSize({width,height:1000});await page.goto(h.origin+path);await page.evaluate(()=>document.fonts.ready)
-    if(name==='assistant-settings')await page.getByText('Configure assistant',{exact:true}).click()
+    if(name==='assistant-settings'){
+     await page.getByText('Configure assistant',{exact:true}).click()
+     await page.getByRole('button',{name:'Apply assistant controls',exact:true}).click()
+     await page.getByRole('alert').waitFor()
+     await page.screenshot({path:join(evidenceDirectory,`assistant-consent-required-${width}.png`),fullPage:true})
+     await page.getByText('Configure assistant',{exact:true}).click()
+     await page.getByText('Policy handling consent',{exact:true}).click()
+     await page.getByText('Workflow handling consent',{exact:true}).click()
+     await page.getByLabel('I attest to the policy handling statement',{exact:true}).check()
+     await page.getByLabel('I attest to the workflow handling statement',{exact:true}).check()
+     await page.screenshot({path:join(evidenceDirectory,`assistant-consent-${width}.png`),fullPage:true})
+     await page.getByRole('button',{name:'Apply assistant controls',exact:true}).click()
+     await page.getByRole('status').waitFor()
+     await page.getByText('Configure assistant',{exact:true}).click()
+    }
     if(name==='assistant-inclusion')await page.getByText('Policy inclusion',{exact:true}).first().click()
     if(name==='assistant'){
      await page.getByLabel('Question',{exact:true}).fill('Am I eligible for PTO?')

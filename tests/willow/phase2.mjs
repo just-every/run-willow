@@ -377,7 +377,7 @@ try {
   })
   await check('AI-002 reviewed typed workflows preserve scope and refuse stale or privileged publication',async()=>{
     const endpoint = 'https://api.openai.com/v1/chat/completions'
-    const config = {enabled:true,policies:false,workflows:true,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policies-only',retention:'no-content',providerRetention:'standard'}
+    const config = {enabled:true,policies:false,workflows:true,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policies-only',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
     await h.setBindings({MODELS_ENDPOINT:endpoint,MODELS_KEY:'synthetic-willow-3303'})
     const source = await publishTemplate(h,owner,{kind:'joiner',name:'PRIVATE-WORKFLOW-SOURCE',taskTitle:['PRIVATE-GATE','PRIVATE-CA-WORK','PRIVATE-NY-WORK'],taskAssignee:['hr','hr','hr'],taskDueDays:['0','0','0']})
     const request = 'For everyone, assign task 1 to hr due 0 days after start as approval gate.\nFor work state CA, assign task 2 to manager due 2 days after start after task 1.\nFor work state NY, assign task 3 to hr due 1 day before start after task 1.'

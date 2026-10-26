@@ -6,11 +6,12 @@ import { fixture } from './regression-fixture.mjs'
 import { policyScreens, disabledPolicyScreen } from './ai-policy-browser.mjs'
 
 const live = process.env.WILLOW_AI_LIVE === '1'
-let mode='valid', calls=[]
+let mode='valid', calls=[], duringCall
 const h=await harness({transientBindings:{MODELS_ENDPOINT:'https://api.openai.com/v1/chat/completions',MODELS_KEY:live?process.env.MODELS_KEY:'synthetic-willow-1'},provider:async request=>{
  if(new URL(request.url).hostname==='api.sendgrid.com')return new Response(null,{status:202})
  assert.equal(new URL(request.url).hostname,'api.openai.com')
  const body=await request.clone().json();calls.push(body)
+ if(duringCall){const run=duringCall;duringCall=null;await run()}
  if(live)return fetch(request)
  if(mode==='failed')return new Response('synthetic-willow-provider-error',{status:429})
  const context=JSON.parse(body.messages[1].content),source=context.policies[0]
@@ -22,10 +23,12 @@ try{
  const owner=await h.signIn(h.vars.OWNER_EMAIL)
  await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})
  const f=await fixture(h,owner),s=f.staff,api=f.api
- const config={enabled:true,policies:true,workflows:true,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard'}
+ const config={enabled:true,policies:true,workflows:true,model:'gpt-4.1-nano',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
  const ask=(cookie,person='me',question='Am I eligible for PTO and what is my balance?',status=200)=>h.api('policy.answer',cookie,{person,question},status)
  await ask(s.employee.cookie,'me','What is my PTO balance?',409)
  await h.api('ai.configure',s.hr.cookie,config,403)
+ await api('ai.configure',{...config,policyConsent:false},409)
+ await api('ai.configure',{...config,workflowConsent:false},409)
  await api('ai.configure',config)
  assert.equal((await ask(s.employee.cookie)).status,'unsupported','No HR inclusion means no call')
  assert.equal(calls.length,0)
@@ -51,13 +54,35 @@ try{
  assert.equal((await ask(s.managerb.cookie,s.employee.person)).status,'unsupported')
  assert.equal((await ask(s.employee.cookie,'me','Who is the highest paid worker?')).status,'unsupported')
  assert.equal(calls.length,before)
+ await h.api('policy.answer',s.employee.cookie,{question:'What is my PTO?',prompt:'synthetic-willow-201'},400)
+ assert.equal(calls.length,before,'A free-text payload extension is refused before egress')
  await ask(s.employee.cookie,'synthetic-willow-unknown','What is PTO?',404)
  await policyScreens(h,owner,s,answer)
  if(!live){
+  const policyOnly=await ask(s.employee.cookie,'me','Explain the PTO eligibility rules')
+  assert.equal(policyOnly.status,'answered');assert.deepEqual(calls.at(-1).messages.map(message=>message.role),['system','user'])
+  const reduced=JSON.parse(calls.at(-1).messages[1].content)
+  assert.deepEqual(Object.keys(reduced).sort(),['inputs','policies','topic'])
+  assert.deepEqual(reduced.inputs,[],'Policy interpretation needs no leave numbers')
+  await api('ai.configure',{...config,dataScope:'policies-only'})
+  assert.equal((await ask(s.employee.cookie)).status,'answered')
+  assert.deepEqual(JSON.parse(calls.at(-1).messages[1].content).inputs,[],'Owner scope excludes sensitive numbers')
+  await api('ai.configure',config)
   mode='uncited';await ask(s.employee.cookie,'me','What is my PTO?',502)
   mode='fabricated';await ask(s.employee.cookie,'me','What is my PTO?',502)
   mode='failed';assert.equal((await ask(s.employee.cookie,'me','What is my PTO?',502)).error,'ai_provider_http_429')
+  const unavailable=await h.raw('/app/do/policy.answer',{cookie:s.employee.cookie,form:new URLSearchParams({question:'What is my PTO?',person:'me',returnTo:'/app/policy-assistant'})})
+  assert.equal(unavailable.status,200);assert.ok((await unavailable.text()).includes('HR must resolve the source or provider limitation'))
   mode='valid'
+  duringCall=()=>h.api('ai.policy.include',s.hr.cookie,{version:version.id,included:false})
+  assert.equal((await ask(s.employee.cookie,'me','What is my PTO?',409)).error,'ai_source_changed','An in-flight source withdrawal cannot return an answer')
+  await h.api('ai.policy.include',s.hr.cookie,{version:version.id,included:true})
+  duringCall=()=>api('member.permissions',{member:s.employee.member,permissions:[]})
+  await ask(s.employee.cookie,'me','What is my PTO?',409)
+  const revokedCalls=calls.length
+  await ask(s.employee.cookie,'me','What is my PTO?',401)
+  assert.equal(calls.length,revokedCalls,'Revoked sessions cannot call the provider')
+  s.employee.cookie=await h.signIn('employee@example.com')
   await api('ai.configure',{...config,capUsd:'0.000001'})
   const capped=calls.length
   assert.equal((await ask(s.employee.cookie,'me','What is my PTO?',409)).error,'ai_spend_cap');assert.equal(calls.length,capped)
@@ -104,6 +129,10 @@ try{
  assert.equal(history.calls.length,calls.length)
  for(const value of ['PRIVATE-employee','81234.56','Question','highest paid','synthetic-willow-provider-error'])assert.ok(!JSON.stringify(history).includes(value))
  assert.ok(history.calls.every(call=>call.reserved_microusd<=call.cap_microusd))
+ const audit=await api('audit')
+ const callAudit=audit.filter(event=>event.action==='ai.call')
+ assert.ok(callAudit.length)
+ for(const event of callAudit){const detail=typeof event.detail==='string'?JSON.parse(event.detail):event.detail;assert.ok(detail.consentVersion);assert.ok(detail.sources.length);assert.ok(detail.inputFields.length)}
  await h.api('ai-controls',s.employee.cookie,undefined,403)
  if(live)assert.ok(history.calls.reduce((sum,call)=>sum+call.reserved_microusd,0)<=10000,'Whole live journey is capped at USD 0.01')
  if(live)console.log(JSON.stringify({calls:history.calls.map(call=>({responseId:call.response_id,model:call.model,status:call.status,actualMicrousd:call.actual_microusd,capMicrousd:call.cap_microusd}))}))

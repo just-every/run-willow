@@ -22,6 +22,10 @@ export async function workflowScreens(h, owner, staff, inputs) {
     let localSource = inputs.localSource
     const capture = async (page, name, width) => {
       await page.evaluate(() => document.fonts.ready)
+      const bell = page.getByRole('link', {name:'Open your task list',exact:true})
+      await bell.focus()
+      assert.ok(await page.getByRole('tooltip',{name:'Your tasks',exact:true}).isVisible())
+      await page.locator('h1').click()
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${name}: no horizontal overflow`)
       await page.screenshot({ path: join(evidenceDirectory, `workflow-${name}-${width}.png`), fullPage: true })
     }
