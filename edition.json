@@ -108,7 +108,8 @@
           "public/willow-signatures.css",
           "migrations/core/0093_sign_cohorts.sql",
           "migrations/core/0094_workflow_signing.sql",
-          "migrations/core/0095_signature_payloads.sql"
+          "migrations/core/0095_signature_payloads.sql",
+          "migrations/core/0096_signature_closure.sql"
         ]
       }
     },

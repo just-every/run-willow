@@ -102,7 +102,7 @@ export async function nativeSigningProof(h,owner,s,join) {
  const report=await csv.text();assert.ok(report.includes(id));assert.ok(!report.includes(other))
  await api('signature.cancel',{cohort:sent.id})
  assert.equal((await detail()).state,'signed')
- assert.equal((await as(s.managerb.cookie,'signature-requests/'+other)).state,'voided')
+ assert.equal((await as(s.managerb.cookie,'signature-requests/'+other)).state,'cancelled')
  const reissue=await api('signature.preview',{...input,people:[s.employee.person]})
  const next=await api('signature.send',{review:reissue.id,digest:reissue.digest,approved:true})
  assert.notEqual(next.requests[0],id)
@@ -166,7 +166,7 @@ export async function nativeSigningProof(h,owner,s,join) {
  }
  await api('signature.cancel',{cohort:locationSend.id})
  const cohortStates=(await api('signature-requests')).filter(r=>locationSend.requests.includes(r.id))
- assert.equal(cohortStates.filter(r=>r.state==='voided').length,3)
+ assert.equal(cohortStates.filter(r=>r.state==='cancelled').length,3)
  assert.equal(cohortStates.filter(r=>r.state==='signed').length,2)
  const expiryReview=await api('signature.preview',{...input,template:revised.id,people:[s.employee.person],expiresAt:Date.now()+65000})
  const expiry=await api('signature.send',{review:expiryReview.id,digest:expiryReview.digest,approved:true})

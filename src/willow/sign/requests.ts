@@ -13,7 +13,7 @@ import { signatureTemplates } from './templates'
 import { selectedPeriods } from '../employment'
 import { directory,personView } from '../profile'
 
-import { CONSENT, session, authority, pending, SEQUENCE, rowFor, readable, bytes, draw } from './custody'
+import { CONSENT, session, authority, pending, requestState, SEQUENCE, rowFor, readable, bytes, draw } from './custody'
 export { CONSENT } from './custody'
 import { consumePayload } from './payloads'
 
@@ -50,7 +50,7 @@ export async function previewSignatures(env:Bindings,actor:Actor,input:Input) {
  }
  insist(people.length>0&&people.length<=200,'signature_recipients_required')
  const hr=input.text('hr',{optional:roles.length===1,max:100})||actor.id
- const counter=await one(env,`SELECT m.id FROM wl_members m WHERE m.id=? AND m.status='active' AND (EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission='people.manage') OR EXISTS(SELECT 1 FROM oa_operators o WHERE lower(o.email)=m.email AND o.role='owner' AND o.status='active'))`,hr)
+ const counter=await one(env,`SELECT m.id,m.name FROM wl_members m WHERE m.id=? AND m.status='active' AND (EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission='people.manage') OR EXISTS(SELECT 1 FROM oa_operators o WHERE lower(o.email)=m.email AND o.role='owner' AND o.status='active'))`,hr)
  insist(counter,'signature_hr_required')
  const counterActor=await signingMember(env,hr)
  insist(counterActor&&can(counterActor,'people.manage'),'signature_hr_required',403)
@@ -83,7 +83,11 @@ export async function previewSignatures(env:Bindings,actor:Actor,input:Input) {
   }
   recipients.push({id,name:person.name,member:member.id,merged,sha256:rendered.sha256,size:rendered.size})
  }
- const snapshot={...cohortPolicy(input,cohortKind),expiryDuration:expiresAt-now(),cohortKind,cohortValue,template:template.id,templateDigest:template.digest,source:template.sourceVersion,sourceSha256:template.sourceSha256,category:template.category,title:template.title,hr,expiresAt,recipients}
+ const categoryName=(await one(env,'SELECT name FROM wl_doc_categories WHERE id=?',template.category))!.name
+ let cohortLabel=cohortKind==='named'?'Named people':cohortKind.replaceAll('_',' ')
+ if(['location','department','access_level'].includes(cohortKind))cohortLabel+=': '+(await one(env,'SELECT name FROM '+({location:'wl_locations',department:'wl_departments',access_level:'wl_levels'} as Record<string,string>)[cohortKind]+' WHERE id=?',cohortValue))?.name
+ if(cohortKind==='employment_type')cohortLabel+=': '+cohortValue.replaceAll('_',' ')
+ const snapshot={categoryName,hrName:counter.name,cohortLabel,templateVersion:template.version,...cohortPolicy(input,cohortKind),expiryDuration:expiresAt-now(),cohortKind,cohortValue,template:template.id,templateDigest:template.digest,source:template.sourceVersion,sourceSha256:template.sourceSha256,category:template.category,title:template.title,hr,expiresAt,recipients}
  const encoded=JSON.stringify(snapshot),digest=await sha256Hex(encoded),id=newId()
  await commit(env,[session(env,actor),authority(env,actor),...files,stmt(env,'INSERT INTO wl_sign_reviews(id,actor,template_id,snapshot,digest,created_at) VALUES(?,?,?,?,?,?)',id,actor.id,template.id,encoded,digest,now())],{actor:actor.id,action:'signature.preview',subject:id,detail:{template:template.id,count:people.length}})
  return {id,digest,...snapshot}
@@ -139,7 +143,7 @@ export async function sendSignatures(env:Bindings,actor:Actor,input:Input, workf
 
 export async function signatureRequests(env:Bindings,actor:Actor) {
  const rows=await all(env,`SELECT r.*,t.title,t.category_id,c.subject_reads,c.manager_reads FROM wl_sign_requests r JOIN wl_sign_templates t ON t.id=r.template_id JOIN wl_doc_categories c ON c.id=t.category_id ORDER BY r.created_at DESC,r.id`)
- return rows.filter(row=>readable(actor,row)).map(row=>({id:row.id,cohort:row.cohort,template:row.template_id,person:row.person_id,title:row.title,state:pending(row)&&row.expires_at<=now()?'expired':row.state,createdAt:row.created_at,expiresAt:row.expires_at,sealedVersion:row.sealed_version}))
+ return rows.filter(row=>readable(actor,row)).map(row=>({id:row.id,cohort:row.cohort,template:row.template_id,person:row.person_id,title:row.title,state:pending(row)&&row.expires_at<=now()?'expired':requestState(row),createdAt:row.created_at,expiresAt:row.expires_at,sealedVersion:row.sealed_version}))
 }
 export async function signatureRequest(env:Bindings,actor:Actor,id:string,asOf?:string) {
  const row=await rowFor(env,id)
@@ -157,7 +161,7 @@ export async function signatureRequest(env:Bindings,actor:Actor,id:string,asOf?:
  const isPending=pending(row)&&row.expires_at>now()
  const sourceEligible=!isPending||await eligibleSource(env,actor,row.source_version,row.person_id)
  const participant=actor.personId===row.person_id||actor.id===row.hr_member||can(actor,'people.manage')
- return {id:row.id,title:row.title,category:row.category_name,deliveries:participant?deliveries:[],person:row.person_id,state:pending(row)&&!isPending?'expired':row.state,revision:row.revision,digest:participant?row.rendered_sha256:null,expiresAt:row.expires_at,canSign:isPending&&sourceEligible&&eligible&&index<signers.length,canManage:can(actor,'people.manage'),participant,signer:index,fields:participant?JSON.parse(row.fields_json):[],signers:participant?signers:[],signed:participant?signed.map(e=>({member:e.member_id,at:e.at,signer:e.signer})):[],sealedVersion:participant?row.sealed_version:null,certificate:participant&&row.certificate?JSON.parse(row.certificate):null}
+ return {id:row.id,title:row.title,category:row.category_name,deliveries:participant?deliveries:[],person:row.person_id,state:pending(row)&&!isPending?'expired':requestState(row),revision:row.revision,digest:participant?row.rendered_sha256:null,expiresAt:row.expires_at,canSign:isPending&&sourceEligible&&eligible&&index<signers.length,canManage:can(actor,'people.manage'),participant,signer:index,fields:participant?JSON.parse(row.fields_json):[],signers:participant?signers:[],signed:participant?signed.map(e=>({member:e.member_id,at:e.at,signer:e.signer})):[],sealedVersion:participant?row.sealed_version:null,certificate:participant&&row.certificate?JSON.parse(row.certificate):null}
 }
 
 export async function actSignature(env:Bindings,actor:Actor,input:Input,request:Request) {
@@ -210,7 +214,7 @@ export async function cancelSignatures(env:Bindings,actor:Actor,input:Input) {
  input.only(['cohort','returnTo'])
  const cohort=input.text('cohort',{max:100})
  insist(await one(env,'SELECT 1 FROM wl_sign_reviews WHERE id=? AND used_at IS NOT NULL',cohort),'not_found',404)
- await commit(env,[session(env,actor),authority(env,actor),...cohortCancelStatements(env,cohort),stmt(env,"UPDATE wl_sign_requests SET state='voided',revision=revision+1 WHERE cohort=? AND state IN ('sent','viewed')",cohort)],{actor:actor.id,action:'signature.cohort.cancel',subject:cohort})
+ await commit(env,[session(env,actor),authority(env,actor),...cohortCancelStatements(env,cohort),stmt(env,"UPDATE wl_sign_requests SET state='voided',closure_reason='cohort-cancelled',revision=revision+1 WHERE cohort=? AND state IN ('sent','viewed')",cohort)],{actor:actor.id,action:'signature.cohort.cancel',subject:cohort})
  return {id:cohort}
 }
 

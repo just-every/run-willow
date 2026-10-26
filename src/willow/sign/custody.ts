@@ -7,6 +7,7 @@ export const CONSENT='I consent to electronic records and signatures for this ex
 export const SESSION=`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email) WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?)`
 export const session=(env:Bindings,actor:Actor)=>guard(env,'signature_session_changed',SESSION,actor.sessionId,actor.id,now())
 export const authority=(env:Bindings,actor:Actor)=>guard(env,'signature_authority_changed',`EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=? AND permission='people.manage') OR EXISTS(SELECT 1 FROM oa_operators WHERE email=? AND role='owner' AND status='active')`,actor.id,actor.email)
+export const requestState=(row:Row)=>row.state==='voided'&&row.closure_reason==='cohort-cancelled'?'cancelled':row.state
 export const pending=(row:Row)=>['sent','viewed'].includes(row.state)
 export const SEQUENCE="COALESCE((SELECT MAX(seq) FROM wl_audit WHERE action NOT LIKE '%.read' AND action NOT LIKE '%.download'),0)"
 export const rowFor=(env:Bindings,id:string)=>one(env,`SELECT r.*,t.title,t.source_version,t.category_id,t.signers_json,t.fields_json,c.name AS category_name,c.subject_reads,c.manager_reads FROM wl_sign_requests r JOIN wl_sign_templates t ON t.id=r.template_id JOIN wl_doc_categories c ON c.id=t.category_id WHERE r.id=?`,id)

@@ -19,7 +19,7 @@ export async function signatureReportingProof(h,owner,s) {
  await api('signature.template.approve',{template:template.id,digest:configured.digest,reviewed:true})
  const review=await api('signature.preview',{template:template.id,people:[s.employee.person,s.managerb.person],hr:s.hr.member,expiresAt:Date.now()+7*86400000})
  const cohort=await api('signature.send',{review:review.id,digest:review.digest,approved:true})
- const columns=['name','signatureRequests','signaturePending','signatureViewed','signatureSigned','signatureVoided','signatureUnknown']
+ const columns=['name','signatureRequests','signaturePending','signatureViewed','signatureSigned','signatureCancelled','signatureUnknown']
  const issuedRecord=(await api('signature-requests')).find(r=>r.id===cohort.requests[0])
  const recordDay=new Date(issuedRecord.createdAt).toISOString().slice(0,10),recordDate=new Date(issuedRecord.expiresAt).toISOString().slice(0,10)
  const pastDate=new Date(issuedRecord.createdAt-2*86400000).toISOString().slice(0,10),beforeRange=new Date(issuedRecord.createdAt-86400000).toISOString().slice(0,10)
@@ -48,7 +48,7 @@ export async function signatureReportingProof(h,owner,s) {
  await act(s.hr.cookie,'sign',{consent:true,name:'synthetic-willow-15307'})
  await api('signature.cancel',{cohort:cohort.id})
  r=await result()
- assert.equal(r.signatureTotals.signatureSigned,1);assert.equal(r.signatureTotals.signatureVoided,1);assert.equal(r.signatureTotals.signaturePending,0)
+ assert.equal(r.signatureTotals.signatureSigned,1);assert.equal(r.signatureTotals.signatureCancelled,1);assert.equal(r.signatureTotals.signaturePending,0)
  assert.equal(r.signatureTotals.signatureUnknown,0)
  for(const record of r.signatureTotals.sources) {
   assert.equal((await h.raw(record.source,{cookie:owner})).status,200)
