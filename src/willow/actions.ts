@@ -55,7 +55,7 @@ import { configureEmployer, createCategory, createDepartment, createDivision, cr
 import type { Input } from './input'
 import { accrue, adjust, approveOpening, approvePolicy, cancelLeave, correctLeave, createPolicy, decideLeave, openAccount, requestLeave, withdrawLeave } from './leave'
 import { completeCase, completeTask, createTemplate, scheduleMover, startJoiner, startLeaver } from './lifecycle'
-import { bulkGiveAccess, configureDefaultAccess, endAccess, giveAccess, setPermissions } from './members'
+import { importAccess, bulkGiveAccess, configureDefaultAccess, endAccess, giveAccess, setPermissions } from './members'
 import { acknowledgeBatch, createBatch, discardBatch, exportBatch } from './payroll'
 import { cancelTerms, setPayrollId, updatePerson } from './people'
 import { decideProposal, propose } from './proposals'
@@ -147,6 +147,7 @@ export const actions: Record<string, Handler> = {
   'member.permissions': (env, actor, input, request) => setPermissions(env, actor, input, request),
   'access.default': configureDefaultAccess,
   'access.bulk': bulkGiveAccess,
+  'import.access': importAccess,
   'access.give': (env, actor, input, request) => giveAccess(env, actor, input, request),
   'access.end': (env, actor, input, request) => endAccess(env, actor, input, request),
   'custom.propose':proposeCustomField,
