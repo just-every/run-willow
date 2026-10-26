@@ -98,6 +98,7 @@ export async function sendSignatures(env:Bindings,actor:Actor,input:Input, workf
  insist(input.text('digest',{max:64})===review.digest,'signature_review_changed',409)
  const sequence=(await one(env,'SELECT '+SEQUENCE+' AS n'))!.n
  const snapshot=JSON.parse(review.snapshot)
+ insist(snapshot.expiresAt>now(),'signature_expiry_passed',409)
  const template=(await signatureTemplates(env,actor)).find(t=>t.id===snapshot.template)
  insist(template?.current&&template.approvedAt&&template.digest===snapshot.templateDigest,'signature_template_changed',409)
  const source=await one(env,'SELECT * FROM wl_company_file_versions WHERE id=?',snapshot.source)
@@ -193,7 +194,7 @@ export async function actSignature(env:Bindings,actor:Actor,input:Input,request:
  else if(action==='void') { requirePermission(actor,'people.manage');state='voided' }
  else insist(false,'invalid_signature_action')
  statements.push(stmt(env,'INSERT INTO wl_sign_events(id,request_id,member_id,kind,signer,at,detail) VALUES(?,?,?,?,?,?,?)',newId(),row.id,actor.id,action,action==='sign'?detail.signer:null,now(),JSON.stringify(event)),stmt(env,'UPDATE wl_sign_requests SET state=?,revision=revision+1,sealed_version=?,certificate=? WHERE id=?',state,sealed,certificate?JSON.stringify(certificate):null,row.id))
- await commit(env,statements,{actor:actor.id,action:'signature.'+action,subject:row.id,detail:{state,revisionBefore:row.revision,revisionAfter:row.revision+1,template:row.template_id,signer:action==='sign'?detail.signer:null,consentReference:action==='sign'?input.text('payload'):null,sourceDigest:row.rendered_sha256,sealedDigest:certificate?.sha256??null}})
+ await commit(env,statements,{actor:actor.id,action:'signature.'+action,subject:row.id,detail:{state,outcome:'committed',person:row.person_id,category:row.category_id,authority:self?'employee':'employer-wide-hr',namedCountersigner:row.hr_member,revisionBefore:row.revision,revisionAfter:row.revision+1,template:row.template_id,signer:action==='sign'?detail.signer:null,consentReference:action==='sign'?input.text('payload'):null,sourceDigest:row.rendered_sha256,sealedDigest:certificate?.sha256??null}})
  return {id:row.id,state,sealedVersion:sealed}
 }
 export async function signatureFile(env:Bindings,actor:Actor,id:string) {
