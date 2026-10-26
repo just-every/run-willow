@@ -1,4 +1,4 @@
-import { launchSigningBrowser } from './sign-browser.mjs'
+import { launchSigningBrowser,prepareSigningCapture } from './sign-browser.mjs'
 // Signing inherits the real lifecycle graph through the same public JSON doors.
 import assert from 'node:assert/strict'
 import { PDFDocument } from 'pdf-lib'
@@ -126,7 +126,7 @@ async function signingWorkflowBrowser(h) {
       await page.setViewportSize({ width, height: 1000 })
       await page.evaluate(() => document.fonts.ready)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label} fits ${width}`)
-      await page.screenshot({ path: `${destination}/SIGN-workflow-${label}-${width}.png`, fullPage: true })
+      await prepareSigningCapture(page);await page.screenshot({ path: `${destination}/SIGN-workflow-${label}-${width}.png`, fullPage: true })
     }
   }
   return {

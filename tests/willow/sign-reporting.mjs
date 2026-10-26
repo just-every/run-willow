@@ -1,4 +1,4 @@
-import { launchSigningBrowser } from './sign-browser.mjs'
+import { launchSigningBrowser,prepareSigningCapture } from './sign-browser.mjs'
 // SIGN-002 inherits the saved-report public doors, dated sources and current rights.
 import assert from 'node:assert/strict'
 import { file } from './harness.mjs'
@@ -133,7 +133,7 @@ async function reportScreens(h,owner,manager,report,managerReport) {
   const page=await context.newPage()
   for(const width of [1440,390])for(const [path,label] of [['/app/reports/custom','definitions'],['/app/reports/custom/'+id,'report']]) {
    await page.setViewportSize({width,height:1000});assert.equal((await page.goto(h.origin+path)).status(),200);await page.evaluate(()=>document.fonts.ready)
-   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${destination}/SIGN-${role}-${label}-${width}.png`,fullPage:true})
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await prepareSigningCapture(page);await page.screenshot({path:`${destination}/SIGN-${role}-${label}-${width}.png`,fullPage:true})
    const bell=page.getByRole('link',{name:'Open your task list'});await bell.focus();await page.getByRole('tooltip').waitFor({state:'visible'});await bell.hover();await page.waitForTimeout(350);assert.ok(await page.getByRole('tooltip').isVisible())
   }
   await context.close()

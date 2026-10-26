@@ -5,3 +5,8 @@ export async function launchSigningBrowser() {
  const env=process.env.WILLOW_BROWSER_HOME?{...process.env,HOME:process.env.WILLOW_BROWSER_HOME}:process.env
  return chromium.launch({headless:true,...(executablePath?{executablePath}:{}),env,args:['--use-mock-keychain','--password-store=basic']})
 }
+export async function prepareSigningCapture(page) {
+ await page.waitForLoadState('load')
+ await page.evaluate(()=>document.fonts.ready)
+ await page.evaluate(()=>{window.scrollTo(0,0);return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
+}

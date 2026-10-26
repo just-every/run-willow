@@ -1,4 +1,4 @@
-import { launchSigningBrowser } from './sign-browser.mjs'
+import { launchSigningBrowser,prepareSigningCapture } from './sign-browser.mjs'
 import { day } from './regression-fixture.mjs'
 // Native signature business journeys extend the existing company-file acceptance.
 import assert from 'node:assert/strict'
@@ -13,7 +13,7 @@ export async function nativeSigningProof(h,owner,s,join) {
  await api('person.update',{person:s.employee.person,revision:employeeRecord.revision,legalName:'Maya Chen',workEmail:'employee@example.com',employeeNumber:'WIL-103'})
  const mergeLocation=await api('location.create',{name:'Brisbane office',timezone:'Australia/Brisbane'})
  const mergeDepartment=await api('department.create',{name:'Field operations'})
- await api('mover.schedule',{period:s.employee.period,effectiveFrom:day(-1),locationId:mergeLocation.id,departmentId:mergeDepartment.id,reason:'Reviewed office assignment'})
+ await api('mover.schedule',{period:s.employee.period,effectiveFrom:day(-2),locationId:mergeLocation.id,departmentId:mergeDepartment.id,reason:'Reviewed office assignment'})
  const mergeRecord=await api('people/'+s.employee.person)
  const folder=await api('company.folder',{name:'synthetic-willow-15200',audience:{kind:'everyone',id:null}})
  const pdf=await PDFDocument.create(),font=await pdf.embedFont(StandardFonts.Helvetica)
@@ -197,7 +197,7 @@ async function signingBrowser(h,owner,s,id,oldId,newId,expiredId) {
  const browser=await launchSigningBrowser()
  const contexts=[]
  const enter=async cookie=>{const c=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(c);await c.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})));return c.newPage()}
- const capture=async(page,path,name)=>{for(const width of [1440,390]){await page.setViewportSize({width,height:1000});assert.equal((await page.goto(h.origin+path)).status(),200);await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),name+' fits '+width);await page.screenshot({path:`${destination}/SIGN-${name}-${width}.png`,fullPage:true});const bell=page.getByRole('link',{name:'Open your task list'});await bell.focus();await page.getByRole('tooltip').waitFor({state:'visible'});await bell.hover();await page.waitForTimeout(350);assert.ok(await page.getByRole('tooltip').isVisible());await page.screenshot({path:`${destination}/SIGN-${name}-tooltip-${width}.png`,fullPage:true})}}
+ const capture=async(page,path,name)=>{for(const width of [1440,390]){await page.setViewportSize({width,height:1000});assert.equal((await page.goto(h.origin+path)).status(),200);await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),name+' fits '+width);await prepareSigningCapture(page);await page.screenshot({path:`${destination}/SIGN-${name}-${width}.png`,fullPage:true});const bell=page.getByRole('link',{name:'Open your task list'});await bell.focus();await page.getByRole('tooltip').waitFor({state:'visible'});await bell.hover();await page.waitForTimeout(350);assert.ok(await page.getByRole('tooltip').isVisible());await prepareSigningCapture(page);await page.screenshot({path:`${destination}/SIGN-${name}-tooltip-${width}.png`,fullPage:true})}}
  try {
   const admin=await enter(owner),employee=await enter(s.employee.cookie),hr=await enter(s.hr.cookie),manager=await enter(s.managera.cookie)
   await capture(employee,'/app/signatures/'+oldId,'old-link');assert.equal(await employee.getByRole('button',{name:'Review signing document'}).count(),0);assert.equal((await h.api('signature-requests/'+newId,s.employee.cookie)).state,'sent')
@@ -208,7 +208,7 @@ async function signingBrowser(h,owner,s,id,oldId,newId,expiredId) {
    const editor=admin.locator('form[action="/app/do/signature.template"]')
    await editor.getByLabel('Template title',{exact:true}).fill(title)
    await editor.getByLabel('Filing category',{exact:true}).selectOption({label:'Signed agreements'})
-   for(const width of [1440,390]){await admin.setViewportSize({width,height:1000});await admin.screenshot({path:`${destination}/SIGN-template-editor-${title.replaceAll(' ','-')}-${width}.png`,fullPage:true})}
+   for(const width of [1440,390]){await admin.setViewportSize({width,height:1000});await prepareSigningCapture(admin);await admin.screenshot({path:`${destination}/SIGN-template-editor-${title.replaceAll(' ','-')}-${width}.png`,fullPage:true})}
    await editor.getByRole('button',{name:'Save template revision'}).click();assert.ok(!new URL(admin.url()).searchParams.has('error'))
    const approve=admin.locator('form[action="/app/do/signature.template.approve"]').last()
    await approve.locator('input[name="reviewed"]').check();await approve.getByRole('button',{name:'Approve exact template'}).click();assert.ok(!new URL(admin.url()).searchParams.has('error'))
@@ -217,9 +217,9 @@ async function signingBrowser(h,owner,s,id,oldId,newId,expiredId) {
   await capture(admin,'/app/signatures','requests')
   const f=admin.locator('form[action="/app/do/signature.preview"]');await f.locator(`input[value="${s.employee.person}"]`).check();await f.getByLabel('HR countersigner').selectOption(s.hr.member);await f.getByRole('button',{name:'Review recipients'}).click()
   assert.ok(!new URL(admin.url()).searchParams.has('error'))
-  for(const width of [1440,390]){await admin.setViewportSize({width,height:1000});await admin.screenshot({path:`${destination}/SIGN-review-${width}.png`,fullPage:true})}
+  for(const width of [1440,390]){await admin.setViewportSize({width,height:1000});await prepareSigningCapture(admin);await admin.screenshot({path:`${destination}/SIGN-review-${width}.png`,fullPage:true})}
   await capture(employee,'/app/signatures/'+id,'employee-consent')
-  await employee.getByLabel('Signature name',{exact:true}).fill('Employee form signer');await employee.getByLabel('Initials',{exact:true}).fill('EF');await employee.getByLabel('Text field',{exact:true}).fill('Agreed');await employee.getByRole('button',{name:'Review signing document'}).click();assert.ok(!new URL(employee.url()).searchParams.has('error'));for(const width of [1440,390]){await employee.setViewportSize({width,height:1000});await employee.screenshot({path:`${destination}/SIGN-payload-review-${width}.png`,fullPage:true})}await employee.locator('input[name="consent"]').check();await employee.getByRole('button',{name:'Sign exact document'}).click();assert.ok(!new URL(employee.url()).searchParams.has('error'))
+  await employee.getByLabel('Signature name',{exact:true}).fill('Employee form signer');await employee.getByLabel('Initials',{exact:true}).fill('EF');await employee.getByLabel('Text field',{exact:true}).fill('Agreed');await employee.getByRole('button',{name:'Review signing document'}).click();assert.ok(!new URL(employee.url()).searchParams.has('error'));for(const width of [1440,390]){await employee.setViewportSize({width,height:1000});await prepareSigningCapture(employee);await employee.screenshot({path:`${destination}/SIGN-payload-review-${width}.png`,fullPage:true})}await employee.locator('input[name="consent"]').check();await employee.getByRole('button',{name:'Sign exact document'}).click();assert.ok(!new URL(employee.url()).searchParams.has('error'))
   await capture(hr,'/app/signatures/'+id,'hr-countersign')
   await hr.getByLabel('Signature name',{exact:true}).fill('HR form signer');await hr.getByRole('button',{name:'Review signing document'}).click();assert.ok(!new URL(hr.url()).searchParams.has('error'));await hr.locator('input[name="consent"]').check();await hr.getByRole('button',{name:'Sign exact document'}).click();assert.ok(!new URL(hr.url()).searchParams.has('error'))
   await capture(employee,'/app/signatures/'+id,'sealed-certificate');await capture(manager,'/app/signatures','manager-report')
@@ -238,14 +238,14 @@ async function phoneCohortSigner(h,employeeCookie,hrCookie,id) {
    await page.getByRole('button',{name:'Review signing document'}).click();assert.ok(!new URL(page.url()).searchParams.has('error'))
    await page.evaluate(()=>document.fonts.ready)
    if(!await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)) {
-    await page.screenshot({path:process.env.WILLOW_EVIDENCE_DIR+'/SIGN-overflow-'+width+'.png',fullPage:true})
+    await prepareSigningCapture(page);await page.screenshot({path:process.env.WILLOW_EVIDENCE_DIR+'/SIGN-overflow-'+width+'.png',fullPage:true})
     console.log('Signing overflow:',await page.evaluate(()=>[...document.querySelectorAll('*')].filter(e=>e.getBoundingClientRect().right>innerWidth).map(e=>({tag:e.tagName,class:e.className,width:e.getBoundingClientRect().width,right:e.getBoundingClientRect().right})).slice(-15)))
    }
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
-   await page.screenshot({path:process.env.WILLOW_EVIDENCE_DIR+'/SIGN-location-payload-'+width+'.png',fullPage:true})
+   await prepareSigningCapture(page);await page.screenshot({path:process.env.WILLOW_EVIDENCE_DIR+'/SIGN-location-payload-'+width+'.png',fullPage:true})
    await page.locator('input[name="consent"]').check();await page.getByRole('button',{name:'Sign exact document'}).click()
    assert.ok(!new URL(page.url()).searchParams.has('error'))
-   await page.screenshot({path:process.env.WILLOW_EVIDENCE_DIR+'/SIGN-location-signed-'+width+'.png',fullPage:true});await context.close()
+   await prepareSigningCapture(page);await page.screenshot({path:process.env.WILLOW_EVIDENCE_DIR+'/SIGN-location-signed-'+width+'.png',fullPage:true});await context.close()
   }
  } finally {await browser.close()}
 }
