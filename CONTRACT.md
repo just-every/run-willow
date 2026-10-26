@@ -1182,7 +1182,7 @@ Every capability claim on the homepage (`src/site/landing/`, the owner-approved 
 
 ## Status
 
-The table records current clause implementation and named public-door proof. ROLE-009 is a locally proven landing candidate in this round; exact-candidate Verify, publication scanning and maintained landing remain release gates. Prior ct judgments retain their recorded scope.
+Judged from the code and tests at commit `0497caac7cd702abb9b61e66729853e39f304a6a` (26 October 2026). The candidate adds an independent scope-combination assertion; exact-candidate Verify, publication scanning and maintained landing remain release gates. Prior ct judgments retain their recorded scope.
 
 103 clauses: 51 done, 30 partial, 22 missing. ROLE-004–015 were added as missing by the ct split ruling of 22 October 2026; ROLE-001 is certified by the combined every-door crawl and real legacy-upgrade journey. EEO-003 completed on 22 October 2026 with named invitation, promotion, applicant separation, privacy and phone journey acceptance. ROLE-002 completed on 22 October 2026 with named public-door scope, transfer, control-member, decision and revert acceptance. HIRING-003 now has a tested manual API and native-form pipeline foundation and remains partial for its explicit Gap. PERFORM-001 completed with named public-door review, succession and goals acceptance. ENGAGE-001 completed on 20 October 2026 with named public-door collection, privacy and action acceptance. COMP-001 completed on 20 October 2026 with named budget, approval, payroll and equity proof. SELF-002 completed with named targeted-delivery, shared-file and consent acceptance in this round. LEAVE-001 completed with named public-door policy, scheduler and protected-case acceptance in this round. REPORT-001 completed and EEO-001 gained its voluntary self-ID and reporting foundation in this round. SELF-001 completed in this round with its named public-door proof. FLOW-001, FLOW-002, FLOW-004, PEOPLE-001, PEOPLE-002, PEOPLE-003, PEOPLE-004, PEOPLE-005 and OPEN-001 were completed on 19 October 2026 with their named public-door proofs; the remaining statuses retain their prior judgment. Evidence cites the
 repository paths that back a done or partial row; a partial citation proves
@@ -1192,8 +1192,8 @@ released contract; push-further clauses are the agent section. Earlier judgments
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 21 | 0 | 0 | 21 |
-| Target and push further | 29 | 30 | 23 | 82 |
-| All | 50 | 30 | 23 | 103 |
+| Target and push further | 30 | 30 | 22 | 82 |
+| All | 51 | 30 | 22 | 103 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
