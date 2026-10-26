@@ -3,12 +3,12 @@ import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
 import { evidenceDirectory } from './evidence.mjs'
 
-export async function policyScreens(h,owner,staff){
+export async function policyScreens(h,owner,staff,calculationPerson){
  if(process.env.WILLOW_AI_BROWSER!=='1')return
  const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
  const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
  try{
-  for(const [name,cookie,path] of [['assistant',staff.employee.cookie,'/app/policy-assistant'],['assistant-settings',owner,'/app/connections'],['assistant-inclusion',staff.hr.cookie,'/app/settings'],['assistant-leave',staff.employee.cookie,'/app/leave'],['assistant-tasks',staff.payroll.cookie,'/app/tasks']]){
+  for(const [name,cookie,path] of [['assistant',staff.employee.cookie,'/app/policy-assistant'],['assistant-settings',owner,'/app/connections'],['assistant-inclusion',staff.hr.cookie,'/app/settings'],['assistant-leave',staff.employee.cookie,'/app/leave'],['assistant-tasks',staff.payroll.cookie,'/app/tasks'],...(calculationPerson?[['assistant-calculation',staff.managera.cookie,`/app/policy-assistant?person=${calculationPerson}`]]:[])]){
    const context=await browser.newContext({ignoreHTTPSErrors:true})
    await context.addCookies(cookie.split('; ').map(c=>({name:c.slice(0,c.indexOf('=')),value:c.slice(c.indexOf('=')+1),url:h.origin})))
    const page=await context.newPage()
@@ -30,10 +30,11 @@ export async function policyScreens(h,owner,staff){
      await page.getByText('Configure assistant',{exact:true}).click()
     }
     if(name==='assistant-inclusion')await page.getByText('Policy inclusion',{exact:true}).first().click()
-    if(name==='assistant'){
+    if(name==='assistant'||name==='assistant-calculation'){
      await page.getByLabel('Question',{exact:true}).fill('Am I eligible for PTO?')
      await page.getByRole('button',{name:'Ask about policy',exact:true}).click()
      await page.getByRole('heading',{name:'Cited answer',exact:true}).waitFor()
+     if(name==='assistant-calculation')await page.getByRole('heading',{name:'Willow leave calculation',exact:true}).waitFor()
     }
     const bell=page.getByRole('link',{name:'Open your task list',exact:true})
     await bell.focus();assert.ok(await page.getByRole('tooltip',{name:'Your tasks',exact:true}).isVisible())

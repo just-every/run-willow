@@ -5,6 +5,7 @@ import { publishTemplate } from './publish-template.mjs'
 import { fixture } from './regression-fixture.mjs'
 import { policyScreens, disabledPolicyScreen } from './ai-policy-browser.mjs'
 import { handbookProof } from './ai-handbook-proof.mjs'
+import { calculationProof } from './ai-calculation-proof.mjs'
 import { handbookScreens } from './ai-handbook-browser.mjs'
 import { liveProviderRequest } from './ai-live-edge.mjs'
 
@@ -75,7 +76,8 @@ try{
  await h.api('policy.answer',s.employee.cookie,{question:'What is my PTO?',prompt:'synthetic-willow-201'},400)
  assert.equal(calls.length,before,'A free-text payload extension is refused before egress')
  await ask(s.employee.cookie,'synthetic-willow-unknown','What is PTO?',404)
- await policyScreens(h,owner,s,answer)
+ const calculationPerson=live?null:await calculationProof({h,api,fixture:f,staff:s,ask,calls})
+ await policyScreens(h,owner,s,calculationPerson)
  await handbookProof({h,api,owner,staff:s,ask,calls,live,onCall:run=>{duringCall=run},receipts})
  await handbookScreens(h,s,calls)
  if(!live){

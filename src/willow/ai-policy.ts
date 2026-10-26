@@ -6,6 +6,7 @@ import type { Input } from './input'
 import { readablePolicies } from './leave'
 import { readsLeaveField } from './levels/leave'
 import { policyContext, policyTopic } from './ai-policy-context'
+import { policyCalculations, type PolicyCalculation } from './ai-policy-calculations'
 import { personView } from './profile'
 import { aiSettings, callModel, freshAiActor, rejectAiCall } from './ai-provider'
 
@@ -25,7 +26,7 @@ export async function aiPolicySources(env: Bindings, actor: Actor) {
 }
 
 export interface PolicyClaim { text: string; citation: {versionId: string; version: number; approvedAt: number; clause: string; quote: string; kind: string; applicableFrom?: string} }
-export interface PolicyAnswer {status:string;claims:PolicyClaim[];withheld:string[];needsHr:boolean;escalation:string;message?:string;inputs?:Record<string,any>[];callId?:string;responseId?:string;model?:string}
+export interface PolicyAnswer {status:string;claims:PolicyClaim[];withheld:string[];needsHr:boolean;escalation:string;message?:string;inputs?:Record<string,any>[];calculations?:PolicyCalculation[];callId?:string;responseId?:string;model?:string}
 const admit = (env:Bindings,actor:Actor,id:string) => personView(env,actor,id,{audit:false,facets:new Set<Facet>(['directory']),personalFields:()=>false,compensationFields:()=>false,customFields:()=>false,recordTables:()=>false})
 export async function policyAnswer(env: Bindings, actor: Actor, input: Input): Promise<PolicyAnswer> {
  input.only(['question','person','returnTo'])
@@ -60,6 +61,6 @@ export async function policyAnswer(env: Bindings, actor: Actor, input: Input): P
   return { text:claim.text, citation:{versionId:source.versionId,version:source.version,approvedAt:source.approvedAt,clause:source.clause,quote:claim.quote,kind:source.kind,...(source.applicableFrom?{applicableFrom:source.applicableFrom}:{})} }
  })
  if (!claims.length) return { ...refusal, callId:response.callId }
- return { status:'answered', claims, inputs, withheld, needsHr: true, escalation:'/app/company', ...(topic==='policy-conflict'?{message:'HR must compare the included policy versions and confirm which terms apply. This assistant cannot resolve conflicting eligibility terms.'}:{}), callId:response.callId, responseId:response.responseId, model:response.model }
+ return { status:'answered', claims, inputs, calculations:await policyCalculations(env,actor,id,currentPolicies), withheld, needsHr: true, escalation:'/app/company', ...(topic==='policy-conflict'?{message:'HR must compare the included policy versions and confirm which terms apply. This assistant cannot resolve conflicting eligibility terms.'}:{}), callId:response.callId, responseId:response.responseId, model:response.model }
  } catch(error) { await rejectAiCall(env,response.callId,error); throw error }
 }
