@@ -591,7 +591,7 @@ export async function reviewMigrationProof() {
  } finally {await h.close()}
 }
 
-async function trainingModeProof(h,owner,cookie,s,inside,outside,day,join) {
+export async function trainingModeProof(h,owner,cookie,s,inside,outside,day,join) {
  const api=(path,body,status)=>h.api(path,owner,body,status),write=(path,body,status)=>h.api(path,cookie,body,status),hr=(path,body,status)=>h.api(path,s.hr.cookie,body,status)
  const apply=async value=>api('level.apply',{review:(await api('level.preview',value)).id})
  const location=await api('location.create',{name:'synthetic-willow-10300 training scope',timezone:'UTC'})
