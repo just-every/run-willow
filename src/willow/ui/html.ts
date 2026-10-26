@@ -1,4 +1,4 @@
-import { canLevelAdmin } from '../actor'
+import { canCredentialAdmin } from '../actor'
 import { holdsSetting } from '../levels/settings'
 // Page frame and small form helpers. Every value is escaped; pages need no script.
 import branding from '../../branding.json'
@@ -60,7 +60,7 @@ const NAV: NavItem[][] = [[
   {href:'/app/settings/payroll-connections',label:'Payroll settings',icon:'wallet',show:actor=>holdsSetting(actor,'payroll-connections')},
   {href:'/app/settings/sign-in',label:'Sign-in settings',icon:'shield',show:actor=>holdsSetting(actor,'sign-in')},
   {href:'/app/settings/retention',label:'Retention settings',icon:'shield',show:actor=>holdsSetting(actor,'retention')&&!actor.owner},
-  {href:'/app/api-credentials',label:'API credentials',icon:'shield',show:actor=>holdsSetting(actor,'api-credentials')||canLevelAdmin(actor)},
+  {href:'/app/api-credentials',label:'API credentials',icon:'shield',show:actor=>holdsSetting(actor,'api-credentials')||canCredentialAdmin(actor)},
   { href: '/app/audit', label: 'Audit', icon: 'document', show: actor => can(actor, 'audit.read') },
 ], [
   { href: '/app/settings', label: 'Settings', icon: 'gear', show: actor => can(actor, 'people.manage') || can(actor, 'leave.manage') },

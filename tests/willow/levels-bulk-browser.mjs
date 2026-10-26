@@ -145,3 +145,57 @@ export async function delegatedBrowserProof(browser,h,owner,staff,ids) {
   }
  } finally {for(const context of contexts) await context.close()}
 }
+
+export async function scopedDelegationBrowserProof(h,owner,staff,{location,originalHR,delegation}) {
+ const {pathToFileURL}=await import('node:url')
+ const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
+ const browser=await chromium.launch({headless:true,executablePath:process.env.WILLOW_CHROMIUM_PATH,args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
+ const api=(path,body,status)=>h.api(path,owner,body,status)
+ const assignHR=async levels=>api('level.apply',{review:(await api('level.preview',{kind:'assignment',member:staff.hr.member,levels})).id})
+ try {
+  const context=await browser.newContext({ignoreHTTPSErrors:true})
+  await context.addCookies(staff.hr.cookie.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})))
+  const page=await context.newPage()
+  const submit=async(form,label)=>{
+   await form.getByRole('button',{name:label,exact:true}).click()
+   await page.waitForURL(url=>url.searchParams.has('notice')||url.searchParams.has('error'))
+   assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())
+  }
+  const capture=async(name,width)=>{
+   await page.evaluate(()=>document.fonts.ready)
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
+   const bell=page.locator('.bell'),tip=page.getByRole('tooltip',{name:'Your tasks'})
+   await page.mouse.move(0,0);await bell.hover();await page.waitForTimeout(150);assert.equal(await tip.isVisible(),false);await tip.waitFor({state:'visible'})
+   await page.mouse.move(0,0);await bell.focus();assert.equal(await tip.isVisible(),true)
+   await page.screenshot({path:evidenceDirectory+'/ROLE-003-scoped-'+name+'-'+width+'.png',fullPage:true})
+  }
+  for(const width of [1440,390]) {
+   await page.setViewportSize({width,height:1000})
+   await page.goto(h.origin+'/app/access')
+   const create=page.locator('details').filter({has:page.locator('summary').filter({hasText:/^Create a level$/})}).first()
+   await create.locator('summary').click()
+   await create.getByLabel('Level name',{exact:true}).fill('synthetic-willow-15220-'+width)
+   await create.getByLabel('Scope',{exact:true}).selectOption('group')
+   await create.locator('[name="scopeLocation"][value="'+location+'"]').check()
+   await capture('create',width)
+   await submit(create,'Review level')
+   await capture('review',width)
+   await submit(page.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   const level=(await h.api('levels',staff.hr.cookie)).levels.find(item=>item.name==='synthetic-willow-15220-'+width)
+   const form=page.locator('form[action="/app/do/level.preview"]').filter({has:page.locator('input[name="kind"][value="assignment"]')})
+   assert.equal(await form.locator('[name="member"] option[value="'+staff.managera.member+'"]').count(),0)
+   await form.getByLabel('Assign levels to',{exact:true}).selectOption(staff.employee.member)
+   await form.locator('[name="levels"][value="'+level.id+'"]').check()
+   await submit(form,'Review assignment')
+   await capture('assignment-review',width)
+   await submit(page.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   assert.ok((await h.api('levels',staff.hr.cookie)).assignments.some(item=>item.member_id===staff.employee.member&&item.level_id===level.id))
+   await capture('assigned',width)
+   await assignHR(originalHR)
+   await page.goto(h.origin+'/app/access')
+   assert.equal(await page.locator('form[action="/app/do/level.preview"]').count(),0)
+   await capture('revoked',width)
+   await assignHR([...originalHR,delegation])
+  }
+ } finally {await browser.close()}
+}

@@ -1,5 +1,5 @@
 import { doorKey } from './movein/authority'
-import { currentLevelAdmin, delegatedPayReview, validateDelegation, levelSessionFence } from './levels/delegation'
+import { administratesPerson, administrativeScopes, currentLevelAdmin, delegatedPayReview, validateDelegation, levelSessionFence } from './levels/delegation'
 import { levels } from './levels/store'
 import { PERFORMANCE_FIELDS, PERFORMANCE_LABELS, readsPerformanceField } from './levels/performance'
 import { readsLeaveField, LEAVE_FIELDS, LEAVE_LABELS } from './levels/leave'
@@ -147,6 +147,7 @@ export async function giveAccess(env: Bindings, actor: Actor, input: Input, requ
   requirePermission(actor, 'people.manage')
   const person = await one(env, 'SELECT id, legal_name, preferred_name, work_email FROM wl_people WHERE id = ?', input.text('person', { max: 100 }))
   insist(person, 'person_not_found', 404)
+  await checkAdministrativePerson(env,actor,person.id)
   insist(person.work_email, 'work_email_required')
   const activeSql='EXISTS(SELECT 1 FROM wl_periods WHERE person_id=? AND start_date<=? AND (end_date IS NULL OR end_date>=?))'
   if(currentOnly) insist(await one(env,'SELECT 1 WHERE '+activeSql,person.id,actor.today,actor.today),'not_current_employee',409)
@@ -187,6 +188,7 @@ export async function giveAccess(env: Bindings, actor: Actor, input: Input, requ
 /** Deactivates the person's sign-in, ends every session and clears their permissions; returns the Willow statements to commit. */
 export async function endAccessStatements(env: Bindings, actor: Actor, request: Request, personId: string): Promise<D1PreparedStatement[]> {
   requirePermission(actor, 'people.manage')
+  await checkAdministrativePerson(env,actor,personId)
   const member = await one(env, 'SELECT * FROM wl_members WHERE person_id = ?', personId)
   if (!member || member.status === 'ended') return []
   const auth = operatorAuth(env), operator = await operatorByEmail(env, request, member.email)
@@ -237,4 +239,12 @@ export async function visibilityPreview(env: Bindings, actor: Actor, memberId: s
     facets: (Object.keys(FACET_LABELS) as Facet[]).map(facet => ({ facet, label: FACET_LABELS[facet], visible: theirs.has(facet), withheldFromYou: theirs.has(facet) && !mine.has(facet) })),
     view,
   }
+}
+
+async function checkAdministrativePerson(env: Bindings,actor:Actor,person:string) {
+ if(actor.owner||!administrativeScopes(actor)?.length)return
+ if(!administratesPerson(actor,person)) {
+  await auditRead(env,actor.id,'access.denied',actor.id,{reason:'administrative_scope'})
+  insist(false,'administrative_scope',403)
+ }
 }

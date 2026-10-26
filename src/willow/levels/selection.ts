@@ -1,4 +1,5 @@
 // A filter resolves once at preview time; the audited snapshot fences later changes.
+import { administratesPerson } from './delegation'
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
 import { insist } from '../core'
@@ -18,5 +19,5 @@ export async function bulkSelection(env: Bindings, actor: Actor, input: Input, m
  const filter=Object.fromEntries(keys.map(key=>[key,input.text(key,{optional:true})]))
  const filters=directoryFilters(new URLSearchParams(filter),actor.today)
  const people=new Set(filterDirectory(await directory(env,actor),filters).map(person=>person.id))
- return {filter:{...filter,status:filters.status},members:members.filter(member=>member.status==='active'&&!member.owner&&people.has(member.person_id)).map(member=>member.id).sort()}
+ return {filter:{...filter,status:filters.status},members:members.filter(member=>administratesPerson(actor,member.person_id)&&member.status==='active'&&!member.owner&&people.has(member.person_id)).map(member=>member.id).sort()}
 }

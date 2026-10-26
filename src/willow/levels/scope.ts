@@ -13,7 +13,7 @@ export const SCOPE_LABELS: Record<ScopeKind, string> = { everyone: 'Everyone', d
 /** Group dimensions: AND across dimensions, OR within one. A custom field is `field:<id>`. */
 export type Scope = { kind: 'everyone' | 'direct' | 'indirect' } | { kind: 'group'; dimensions: Record<string, string[]> }
 /** Permissions a scoped level may carry: each is enforced per person at every door. The rest are employer-wide. */
-export const SCOPEABLE: readonly Permission[] = ['people.manage', 'people.private', 'pay.read', 'documents.private', 'leave.manage', 'reports.read']
+export const SCOPEABLE: readonly Permission[] = ['people.manage', 'people.private', 'pay.read', 'documents.private', 'leave.manage', 'reports.read', 'access.admin']
 export const SCOPE_INPUTS = ['scope', 'scopeKind', 'scopeLocation', 'scopeDepartment', 'scopeDivision', 'scopeEmploymentType', 'scopeLegalEntity', 'scopeField', 'scopeFieldValue']
 const FORM_DIMENSIONS: [string, string][] = [['scopeLocation', 'location'], ['scopeDepartment', 'department'], ['scopeDivision', 'division'], ['scopeEmploymentType', 'employment_type'], ['scopeLegalEntity', 'legal_entity']]
 export const EVERYONE: Scope = { kind: 'everyone' }
@@ -45,6 +45,7 @@ function normalize(value: unknown): Record<string, string[]> {
 /** Rejects empty groups, unknown references, restricted custom fields and rights that are not enforced per person. */
 export async function validateScope(env: Bindings, scope: Scope, permissions: string[]) {
  if (scope.kind === 'everyone') return
+ insist(!permissions.includes('access.admin')||scope.kind==='group','administrative_group_required',400)
  insist(permissions.every(permission => (SCOPEABLE as readonly string[]).includes(permission)), 'scope_unsupported_permission', 400)
  if (scope.kind !== 'group') return
  const dimensions = Object.entries(scope.dimensions)
@@ -158,3 +159,6 @@ export async function scopeFence(env: Bindings, actor: Actor, personId: string, 
  insist(permissions.every(permission => rights.has(permission)), 'forbidden', 403)
  return [guard(env, 'scope_changed', '(SELECT COALESCE(MAX(seq), 0) FROM wl_audit) = ?', seq)]
 }
+
+/** Administrative groups use structural containment, including future membership changes. */
+export const coversScope=(cover: Scope,requested: Scope)=>cover.kind==='everyone' || cover.kind==='group' && requested.kind==='group' && Object.entries(cover.dimensions).every(([dimension,allowed])=>!!requested.dimensions[dimension] && requested.dimensions[dimension].every(value=>allowed.includes(value)))

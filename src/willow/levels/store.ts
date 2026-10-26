@@ -12,8 +12,9 @@ import { documentRuleRows } from './documents'
 import type { OtherRules } from './other-personal'
 import type { SelfRules } from './personal'
 import { EVERYONE, levelScopes } from './scope'
+import { administrativeScopes, administratesPerson, administratesScope } from './delegation'
 
-export async function levels(env: Bindings, actor: Actor) {
+export async function levelData(env: Bindings, actor: Actor) {
  requireLevelAdmin(actor)
  const [rows, grants, assignments, members, migration, fields, scopes, otherFields, documentFields] = await Promise.all([
   all<{id:string;name:string;version:number;follow_own_changes:number}>(env,'SELECT * FROM wl_levels ORDER BY name'),
@@ -38,4 +39,15 @@ export async function levels(env: Bindings, actor: Actor) {
 
 export async function effectivePermissions(env: Bindings, member: string) {
  return (await all(env,'SELECT permission FROM wl_effective_permissions WHERE member_id=? ORDER BY permission',member)).map(p=>p.permission as Permission)
+}
+
+/** Only the administrative projection crosses the public level door. */
+export async function levels(env: Bindings, actor: Actor) {
+ const data=await levelData(env,actor)
+ if(administrativeScopes(actor)===null)return data
+ const members=data.members.filter(member=>administratesPerson(actor,member.person_id))
+ const memberIds=new Set(members.map(member=>member.id))
+ const visible=data.levels.filter(level=>administratesScope(actor,level.scope)&&level.members.every(id=>memberIds.has(id)))
+ const levelIds=new Set(visible.map(level=>level.id))
+ return {...data,members,levels:visible,assignments:data.assignments.filter(item=>memberIds.has(item.member_id)&&levelIds.has(item.level_id)),migration:[],batches:[],approvals:[]}
 }

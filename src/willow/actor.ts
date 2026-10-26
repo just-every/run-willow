@@ -133,7 +133,8 @@ export function requirePermission(actor: Actor, ...permissions: Permission[]) {
   insist(permissions.every(permission => can(actor, permission)), 'forbidden', 403)
 }
 
-export const canLevelAdmin=(actor: Actor)=>actor.owner || (can(actor,'people.manage') && can(actor,'access.admin'))
+export const canCredentialAdmin=(actor: Actor)=>actor.owner || (can(actor,'people.manage') && can(actor,'access.admin'))
+export const canLevelAdmin=(actor: Actor)=>actor.owner || (can(actor,'people.manage') && (can(actor,'access.admin') || actor.scoped.some(grant=>grant.permissions.has('access.admin')&&grant.scope.kind==='group')))
 export function requireLevelAdmin(actor: Actor) { insist(canLevelAdmin(actor),'access_administrator_required',403) }
 
 export function requireOwner(actor: Actor) {

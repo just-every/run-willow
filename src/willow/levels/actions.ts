@@ -11,7 +11,7 @@ import { operatorAuth, type Bindings } from '../../auth.server'
 import { PERMISSIONS, requireLevelAdmin, type Actor } from '../actor'
 import { all, auditRead, commit, guard, insist, newId, now, one, stmt, WillowError } from '../core'
 import type { Input } from '../input'
-import { effectivePermissions, levels } from './store'
+import { effectivePermissions, levels, levelData } from './store'
 import { bulkSelection } from './selection'
 import { revertPlan, type RevertPlan } from './revert'
 import { readDocumentRules, emptyDocumentRules, type DocumentRules } from './documents'
@@ -21,7 +21,7 @@ import { EVERYONE, SCOPE_INPUTS, readScope, scopeMembers, validateScope, type Sc
 
 export type Plan = { kind: 'level'; level: string; name: string; permissions: string[]; settings: SettingsKey[]; approvals: string[]; performanceFields: PerformanceRules; jobFields: JobRules; leaveFields: LeaveRules; compensationFields: CompensationRules; reports: string[]; documentCategories: DocumentRules; otherFields: OtherRules; selfFields: SelfRules; followOwnChanges: boolean; scope: Scope } | { kind: 'assignment'; member: string; levels: string[] } | { kind: 'bulk-assignment'; members: string[]; levels: string[]; filter?: Record<string,string> } | RevertPlan
 
-import { currentLevelAdmin, delegatedPayReview, levelSessionFence, validateDelegation } from './delegation'
+import { administrativeScopes, currentLevelAdmin, delegatedPayReview, levelSessionFence, validateDelegation } from './delegation'
 
 export async function previewLevel(env: Bindings, actor: Actor, input: Input) {
  try { return await prepareLevelReview(env,actor,input) }
@@ -32,7 +32,7 @@ async function prepareLevelReview(env: Bindings, actor: Actor, input: Input) {
  const categories=await all<{id:string}>(env,'SELECT id FROM wl_doc_categories')
  input.only([...PERFORMANCE_INPUTS,...SETTINGS_INPUTS,...APPROVAL_INPUTS,...LEAVE_INPUTS,...COMPENSATION_INPUTS,...JOB_INPUTS,'reports','reportSelection','documentCategories',...categories.flatMap(category=>['self','others'].map(relation=>`documentMode.${relation}.${category.id}`)),'kind','level','name','permissions','member','members','levels','returnTo','selfFields','otherFields',...SELF_FIELDS.map(field=>`otherMode.${field}`),'followOwnChanges','selection','q','location','department','role','status','batch',...SCOPE_INPUTS,...SELF_FIELDS.map(field=>`selfMode.${field}`)])
  const snapshot=(await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
- const data=await levels(env,actor), kind=input.text('kind')
+ const data=await levelData(env,actor), kind=input.text('kind')
  let plan: Plan
  if(kind==='level') {
   const level=input.text('level',{optional:true}) || newId(), name=input.text('name',{max:120})
@@ -117,6 +117,7 @@ export async function levelReview(env: Bindings, actor: Actor, id: string) {
  requireLevelAdmin(actor)
  const row=await one<{id:string;actor:string;snapshot:number;consumed:number;plan:string;impact:string;needs_approval:number;approval_impact:string}>(env,'SELECT * FROM wl_level_reviews WHERE id=?',id)
  insist(row && (row.actor===actor.id || row.needs_approval),'review_not_found',404)
+ if(administrativeScopes(actor)!==null) await validateDelegation(env,actor,JSON.parse(row.plan),await levelData(env,actor))
  return {...row,needsApproval:!!row.needs_approval,plan:JSON.parse(row.plan),impact:JSON.parse(row.impact),approvalImpact:JSON.parse(row.approval_impact)}
 }
 
@@ -133,13 +134,13 @@ async function applyReviewedLevel(env: Bindings, actor: Actor, input: Input, req
  insist(plan.kind!=='level'||(Array.isArray(plan.settings) && Array.isArray(plan.approvals) && plan.performanceFields && plan.leaveFields && plan.compensationFields && plan.jobFields && Array.isArray(plan.reports) && plan.documentCategories && plan.otherFields && plan.selfFields && typeof plan.followOwnChanges==='boolean' && plan.scope),'review_stale',409)
  insist(review.impact.every((item:Record<string,unknown>)=>Array.isArray(item.beforePerformance)&&Array.isArray(item.afterPerformance)&&Array.isArray(item.beforeSettings)&&Array.isArray(item.afterSettings)&&Array.isArray(item.beforeApprovals)&&Array.isArray(item.afterApprovals)&&Array.isArray(item.beforeLeave)&&Array.isArray(item.afterLeave)&&Array.isArray(item.beforeCompensation)&&Array.isArray(item.afterCompensation)),'review_stale',409)
  insist((await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq===review.snapshot,'review_stale',409)
- const data=await levels(env,actor)
+ const data=await levelData(env,actor)
  insist(plan.kind!=='level'||plan.reports.every(id=>data.reportChoices.some(report=>report.id===id)),'review_stale',409)
  const creator=review.actor===actor.id ? actor : await currentLevelAdmin(env,{...actor,id:review.actor})
  await validateDelegation(env,creator,plan,data)
  await validateDelegation(env,actor,plan,data)
  insist(!review.needsApproval || actor.owner || actor.id!==review.actor,'second_administrator_required',403)
- if(plan.kind==='revert') await revertPlan(env,actor,plan.batch,await levels(env,actor))
+ if(plan.kind==='revert') await revertPlan(env,actor,plan.batch,await levelData(env,actor))
  // Native grants and Base administrator transitions share one transaction.
  // Base's version/last-owner triggers remain authoritative and revoke prior sessions on transitions.
  const operators=await operatorAuth(env).listOperators(request)

@@ -1,6 +1,6 @@
 // Administrator-managed credential custody. Only the issuing response carries bearer bytes.
 import type { Bindings } from '../../auth.server'
-import type { Actor } from '../actor'
+import { canCredentialAdmin, type Actor } from '../actor'
 import { all, auditRead, commit, guard, insist, newId, now, one, sha256Hex, stmt, WillowError } from '../core'
 import type { Input } from '../input'
 import { currentLevelAdmin, validateDelegation } from '../levels/delegation'
@@ -19,6 +19,7 @@ const businessSnapshot=async(env:Bindings)=>(await one<{seq:number}>(env,"SELECT
 export async function administratorAuthority(env:Bindings,actor:Actor) {
  const snapshot=await businessSnapshot(env)
  actor=await currentLevelAdmin(env,actor)
+ insist(canCredentialAdmin(actor),'access_administrator_required',403)
  const row=await one<{id:string;version:number}>(env,`SELECT o.id,o.version FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email)
  WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?`,actor.sessionId,actor.id,now())
  insist(row,'access_administrator_required',403)

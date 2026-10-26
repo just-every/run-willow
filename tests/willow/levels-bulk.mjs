@@ -240,6 +240,7 @@ export async function delegatedLevelProof(h,owner,s) {
  await hr('levels',undefined,403)
  console.log('ROLE-003 delegated levels: PASS — explicit HR grant, exact ceilings, no self/owner/EEO/re-delegation escalation, audited refusals, reviewed bulk assignment, independent pay approval and current-rights revocation')
  await defaultAccessProof(h,owner,s)
+ await scopedDelegationProof(h,owner,s)
  return {delegation:delegation.id,pay:pay.id,payCeiling:privatePay.id,originalHR,originalManager,originalTarget,hrBundle}
 }
 
@@ -360,4 +361,77 @@ export async function defaultAccessProof(h,owner,s) {
  }
  await api('access.default',{level:'',reason:'synthetic-willow-14712'})
  console.log('ROLE-003 defaults: PASS — owner consent, exact default version, 50-person native import, owner invite-or-defer control, bounded rate deferral, former exclusion, idempotent retry and native forms')
+}
+
+// Scoped administration follows current members and structural rights, including shared definitions.
+export async function scopedDelegationProof(h,owner,s) {
+ const api=(path,body,status)=>h.api(path,owner,body,status)
+ const hr=(path,body,status)=>h.api(path,s.hr.cookie,body,status)
+ const apply=async(plan,who=api)=>who('level.apply',{review:(await who('level.preview',plan)).id})
+ const data=await api('levels'),originalHR=data.assignments.filter(row=>row.member_id===s.hr.member).map(row=>row.level_id)
+ const originalTarget=data.assignments.filter(row=>row.member_id===s.managerb.member).map(row=>row.level_id)
+ const originalEmployee=data.assignments.filter(row=>row.member_id===s.employee.member).map(row=>row.level_id)
+ const a=await api('location.create',{name:'synthetic-willow-15200',timezone:'UTC'}),b=await api('location.create',{name:'synthetic-willow-15201',timezone:'UTC'})
+ const scope={kind:'group',dimensions:{location:[a.id]}}
+ const {day}=await import('./regression-fixture.mjs')
+ for(const who of ['managerb','employee','managera'])await api('mover.schedule',{period:s[who].period,effectiveFrom:day(-1),locationId:who==='managera'?b.id:a.id,reason:'synthetic-willow-15202'})
+ await api('level.preview',{kind:'level',name:'synthetic-willow-15203',permissions:['access.admin'],scope:{kind:'direct'}},400)
+ const delegation=await apply({kind:'level',name:'synthetic-willow-15204',permissions:['access.admin'],scope})
+ const enable=()=>apply({kind:'assignment',member:s.hr.member,levels:[...originalHR,delegation.id]})
+ await enable()
+ const visible=await hr('levels')
+ assert.ok(visible.members.some(member=>member.id===s.managerb.member))
+ assert.ok(!visible.members.some(member=>member.id===s.managera.member))
+ assert.ok(!visible.levels.some(level=>level.id===delegation.id),'A delegate cannot edit the level assigned to their own out-of-scope identity')
+ const bounded=await apply({kind:'level',name:'synthetic-willow-15205',permissions:['people.private'],scope},hr)
+ await apply({kind:'assignment',member:s.managerb.member,levels:[bounded.id]},hr)
+ assert.ok((await h.api('me',s.managerb.cookie)).scoped.some(grant=>grant.permissions.includes('people.private')))
+ for(const requested of [{kind:'everyone'},{kind:'group',dimensions:{location:[b.id]}},{kind:'group',dimensions:{location:[a.id,b.id]}}]) {
+  assert.equal((await hr('level.preview',{kind:'level',name:'synthetic-willow-15206',permissions:[],scope:requested},403)).error,'administrative_scope')
+ }
+ await hr('level.preview',{kind:'assignment',member:s.managera.member,levels:[]},403)
+ await hr('level.preview',{kind:'bulk-assignment',members:[s.managerb.member,s.managera.member],levels:[]},403)
+ assert.ok((await hr('levels')).assignments.some(row=>row.member_id===s.managerb.member&&row.level_id===bounded.id),'A refused mixed batch changes nobody')
+ const filtered=await hr('level.preview',{kind:'bulk-assignment',selection:'filter',levels:[bounded.id]})
+ assert.deepEqual(filtered.plan.members.sort(),[s.employee.member,s.managerb.member].sort())
+ await hr('level.apply',{review:filtered.id})
+ // A shared level cannot be edited through a hidden out-of-scope assignee.
+ await apply({kind:'assignment',member:s.managera.member,levels:[bounded.id]})
+ await hr('level.preview',{kind:'level',level:bounded.id,name:'synthetic-willow-15205',permissions:[],scope},403)
+ assert.ok(!(await hr('levels')).levels.some(level=>level.id===bounded.id))
+ await apply({kind:'assignment',member:s.managera.member,levels:[]})
+ // Neither global rights nor separate administrative groups may be combined into a wider structural grant.
+ const other=await apply({kind:'level',name:'synthetic-willow-15207',permissions:['access.admin'],scope:{kind:'group',dimensions:{location:[b.id]}}})
+ await apply({kind:'assignment',member:s.hr.member,levels:[...originalHR,delegation.id,other.id]})
+ await hr('level.preview',{kind:'level',name:'synthetic-willow-15208',permissions:[],scope:{kind:'group',dimensions:{location:[a.id,b.id]}}},403)
+ await enable()
+ await hr('access.end',{person:s.managera.person},403)
+ assert.equal((await h.api('me',s.managera.cookie)).id,s.managera.member)
+ await hr('apiKey.issue',{name:'synthetic-willow-15209',level:bounded.id,expiresAt:'2098-01-01T00:00:00Z'},403)
+ const pay=await apply({kind:'level',name:'synthetic-willow-15210',permissions:['pay.read']})
+ await apply({kind:'assignment',member:s.hr.member,levels:[...originalHR,delegation.id,pay.id]})
+ const sensitive={kind:'level',name:'synthetic-willow-15211',permissions:['pay.read'],scope}
+ const alone=await hr('level.preview',sensitive)
+ assert.equal(alone.needsApproval,true)
+ await hr('level.apply',{review:alone.id},403)
+ await api('level.apply',{review:(await hr('level.preview',sensitive)).id})
+ await enable()
+ if(process.env.WILLOW_LEVELS_BROWSER==='1') {
+  const {scopedDelegationBrowserProof}=await import('./levels-bulk-browser.mjs')
+  await scopedDelegationBrowserProof(h,owner,s,{scope,location:a.id,originalHR,delegation:delegation.id})
+ }
+ const pending=await hr('level.preview',{kind:'assignment',member:s.managerb.member,levels:[]})
+ // Current population follows dated transfers without another sign-in.
+ await api('mover.schedule',{period:s.managerb.period,effectiveFrom:day(0),locationId:b.id,reason:'synthetic-willow-15212'})
+ await hr('level.apply',{review:pending.id},403)
+ await hr('level.preview',{kind:'assignment',member:s.managerb.member,levels:[]},403)
+ assert.ok(!(await hr('levels')).members.some(member=>member.id===s.managerb.member))
+ await apply({kind:'assignment',member:s.hr.member,levels:originalHR})
+ await hr('levels',undefined,403)
+ const audit=await api('audit')
+ assert.ok(audit.some(row=>row.actor===s.hr.member&&row.action==='level.denied'&&JSON.parse(row.detail).code==='administrative_scope'))
+ assert.ok(audit.some(row=>row.actor===s.hr.member&&row.action==='access.denied'&&JSON.parse(row.detail).reason==='administrative_scope'))
+ await apply({kind:'assignment',member:s.managerb.member,levels:originalTarget})
+ await apply({kind:'assignment',member:s.employee.member,levels:originalEmployee})
+ console.log('ROLE-003 scoped delegation: PASS — bounded creation and assignment and filter, no scope union or shared-level bypass, independent pay approval, current transfer and revocation, native 1440 and 390 forms')
 }
