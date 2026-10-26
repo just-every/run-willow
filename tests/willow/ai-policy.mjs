@@ -98,12 +98,17 @@ try{
   duringCall=()=>h.api('ai.policy.include',s.hr.cookie,{version:version.id,included:false})
   assert.equal((await ask(s.employee.cookie,'me','What is my PTO?',409)).error,'ai_source_changed','An in-flight source withdrawal cannot return an answer')
   await h.api('ai.policy.include',s.hr.cookie,{version:version.id,included:true})
-  duringCall=()=>api('member.permissions',{member:s.employee.member,permissions:[]})
+  duringCall=()=>api('access.end',{person:s.employee.person})
   await ask(s.employee.cookie,'me','What is my PTO?',409)
   const revokedCalls=calls.length
   await ask(s.employee.cookie,'me','What is my PTO?',401)
   assert.equal(calls.length,revokedCalls,'Revoked sessions cannot call the provider')
+  await api('access.give',{person:s.employee.person})
   s.employee.cookie=await h.signIn('employee@example.com')
+  duringCall=()=>api('member.permissions',{member:s.hr.member,permissions:['people.manage','people.private','documents.private']})
+  await ask(s.hr.cookie,s.employee.person,'What is the PTO balance?',409)
+  await api('member.permissions',{member:s.hr.member,permissions:['people.manage','people.private','documents.private','leave.manage']})
+  s.hr.cookie=await h.signIn('hr@example.com')
   await api('ai.configure',{...config,capUsd:'0.000001'})
   const capped=calls.length
   assert.equal((await ask(s.employee.cookie,'me','What is my PTO?',409)).error,'ai_spend_cap');assert.equal(calls.length,capped)
