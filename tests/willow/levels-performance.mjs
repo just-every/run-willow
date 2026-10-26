@@ -292,7 +292,7 @@ async function engagementThemeProof(h,owner,cookie,s,plan,level,inside,outside,a
  const create=async(member,name,extras=[])=>api('survey.create',{name,kind:'pulse',mode:'named',deliveryDate:today,dueDate:day(7),members:[member,...extras],questions:[{key:'comment',label:'Named feedback',type:'text'}]})
  await h.signIn('synthetic-willow-10003@example.com',{requested:true})
  const named=await create(insideMember.id,'synthetic-willow-10060 scoped named survey',extraMembers.map(m=>m.member))
- const small=await create(insideMember.id,'synthetic-willow-10410 small named survey')
+ const small=await create(insideMember.id,'synthetic-willow-10410 small named survey',extraMembers.slice(0,3).map(m=>m.member))
  const external=await create(outsideMember.id,'synthetic-willow-10061 outside survey')
  await h.api('survey.respond',insideCookie,{survey:named.id,answers:{comment:'synthetic-willow-10062 confidential named response'}})
  const publish=async(survey,theme)=>api('survey.plan',{survey,theme,plan:'synthetic-willow-10063 published action',ownerMember:s.hr.member,dueDate:day(10)})

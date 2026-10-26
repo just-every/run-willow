@@ -728,7 +728,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "a67f6de9b7ed239ee2974ca9b8a8227b92559175eb54bcb4ad43ce03a31d6069",
+      "sha256": "c47feb68566a3f871919e7f240648c64a4cca7dec3551d7287fdb51c0683f21a",
       "executable": false
     },
     "DEMO.md": {
@@ -5336,7 +5336,7 @@
       "executable": false
     },
     "tests/willow/levels-performance.mjs": {
-      "sha256": "69aa7777fd6784f6d01d26efb4d627598232f585906c4320e410d1089d780aa5",
+      "sha256": "59d863413dc9ad1bd2e21d33389f882ee64751fcd1e84e3a2f5ddf86d8225d40",
       "executable": false
     },
     "tests/willow/levels-personal-browser.mjs": {
