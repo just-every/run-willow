@@ -43,6 +43,8 @@ export interface Bindings {
  MAIL_ACCOUNT_ID?: string
  OIDC_PROVIDERS?: string
  OIDC_TRANSACTION_SECRET?: string
+ OKTA_ORG_URL?: string
+ OKTA_API_TOKEN?: string
  MODELS_ENDPOINT?: string
  MODELS_KEY?: string
 }

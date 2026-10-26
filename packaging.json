@@ -51,7 +51,9 @@
         "MAIL_API_KEY",
         "OIDC_PROVIDERS",
         "OIDC_TRANSACTION_SECRET",
-        "MODELS_KEY"
+        "MODELS_KEY",
+        "OKTA_ORG_URL",
+        "OKTA_API_TOKEN"
       ],
       "migrationPrefix": "core-",
       "healthPath": "/health",

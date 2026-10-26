@@ -42,6 +42,48 @@ archives serialize database records and document bytes, not runtime bindings;
 Base excludes `oa_%` identity/session tables and the local mail outbox.
 After restore, reconfigure runtime bindings and relink OIDC explicitly.
 
+## Reviewed Okta account work
+
+Set secret runtime bindings `OKTA_ORG_URL` and `OKTA_API_TOKEN` for the employer’s
+Okta organization, then enable explicit consent on Connections with a reason.
+Add these optional secret bindings to the chosen deployment configuration; never
+put their values in tracked files. The token needs the user lifecycle, group
+membership and read permissions required by the reviewed actions.
+
+Publish a lifecycle template with an IT task whose external system is
+`Okta connected`. Map an existing Okta user ID to the employee explicitly; the
+provider email must equal the recorded work email. The mapping is fixed and
+never inferred from a token’s groups. Preview the complete desired set of ordinary
+Okta groups, the exact HR display name, title and department, and the account
+lifecycle action. Joiner activation and mover changes wait for the case date;
+leavers suspend the account, request revocation of Okta sessions and OAuth tokens,
+and remove reviewed ordinary groups. No activation email is sent. This slice
+requires an existing provider account; it does not create an account or assign
+application licenses.
+
+Only the owner can consent, map, preview or execute this initial slice. An exact,
+one-use preview expires after 15 minutes. Current owner session, consent, native
+employment, workflow dependencies and provider before-state are checked again.
+Provider writes have no automatic retry. An uncertain response leaves an open IT
+exception and blocks the case. Observe actual state without repeating writes;
+closing an exception completes no task and permits only a fresh reviewed attempt.
+Remaining application links keep a leaver task open. Acknowledgment of Okta’s
+revocation request does not establish every downstream application session ended.
+
+The JSON actions are `okta.configure`, `okta.link`, `okta.preview`, `okta.apply`,
+`okta.observe` and `okta.exception.close`; their HTML forms are on Connections.
+Group IDs are a JSON array or comma-separated form values. Provider credentials
+never enter views, audit details or archives. Restore disables consent and closes
+unfinished execution reviews; verified observations and account mappings remain
+historical records. The erasure
+inventory includes mappings and previews, and declares an outside Okta copy for
+a tracked deletion request rather than claiming deletion from Okta.
+
+The owner-only authority and minimal attribute egress default awaits ct approval;
+IDENTITY-001 remains partial. All Google Workspace and Microsoft 365 provisioning,
+application and license reconciliation, data ownership handoffs, complete timed
+execution and the full multi-provider sandbox journey remain required.
+
 ## Draft boundary
 
 A holder of `people.manage` can select an active template revision on Proposals.

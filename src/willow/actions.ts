@@ -1,3 +1,4 @@
+import { configureOkta, linkOktaAccount, previewOkta, applyOkta, observeOkta, closeOktaException } from './identity/okta-actions'
 import { requestPolicyEscalation, resolvePolicyEscalation } from './ai-policy-escalations'
 import { writeHandbook, approveHandbook, includeHandbook, withdrawHandbook } from './ai-handbooks'
 import { createAiWorkflowDraft, publishAiWorkflow, workflowStepApprove, previewAiWorkflow } from './ai-workflows'
@@ -72,6 +73,7 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'okta.configure':configureOkta, 'okta.link':linkOktaAccount, 'okta.preview':previewOkta, 'okta.apply':applyOkta, 'okta.observe':observeOkta, 'okta.exception.close':closeOktaException,
   'workflow.step.approve': workflowStepApprove, 'workflow.preview': previewAiWorkflow, 'workflow.draft': createAiWorkflowDraft, 'workflow.publish': publishAiWorkflow,
   'ai.handbook.write':writeHandbook, 'ai.handbook.approve':approveHandbook, 'ai.handbook.include':includeHandbook, 'ai.handbook.withdraw':withdrawHandbook,
   'policy.escalate':requestPolicyEscalation, 'policy.escalation.resolve':resolvePolicyEscalation,

@@ -1,3 +1,4 @@
+import { OKTA_SYSTEM } from './identity/okta-store'
 import { promotePacketStatements } from './preboarding'
 // Flows 4, 6, 11 and 12: versioned lifecycle templates and joiner, mover and
 // leaver cases. Tasks go to HR, the manager, IT, payroll or the employee with
@@ -44,6 +45,7 @@ export async function createTemplate(env: Bindings, actor: Actor, input: Input) 
     insist(/^-?\d{1,3}$/.test(task.offset), 'invalid_taskDueDays')
     insist(!task.system || task.system.length <= 80, 'too_long_taskSystem')
     insist(!task.action || task.action === 'end_access', 'invalid_taskAction')
+    insist(task.system !== OKTA_SYSTEM || task.assignee === 'it' && !task.action, 'okta_task_requires_it')
     // External account and device work always needs recorded evidence; Willow's own action is its own record.
     if (task.system) task.evidence = true
   }
@@ -186,6 +188,7 @@ export async function completeTask(env: Bindings, actor: Actor, input: Input, re
   insist(answersFor(actor, task, caseRow), 'not_your_task', 403)
   // HR work reached only through a scoped level is rechecked against fresh terms inside the write (ROLE-002).
   const scopeAuthority = (task.assignee === 'hr' || (task.assignee === 'manager' && !task.assignee_person_id)) && !can(actor, 'people.manage') ? await scopeFence(env, actor, caseRow.person_id, 'people.manage') : []
+  insist(task.system !== OKTA_SYSTEM, 'okta_readback_required',409)
   insist(task.status === 'open' && !task.superseded_at, 'task_already_done', 409)
   insist(!(await blockedBy(env, task)).length, 'dependencies_open', 409)
   const evidence = input.text('evidence', { optional: true, max: 2000 })

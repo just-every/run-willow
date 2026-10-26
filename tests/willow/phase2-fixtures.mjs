@@ -4,7 +4,7 @@ export const genericColumns = ['provider_employee_id','employee_number','name','
 export function providerFixture() {
   const { privateKey, publicKey } = generateKeyPairSync('rsa', {modulusLength:2048})
   const jwk = {...publicKey.export({format:'jwk'}),kid:'test-key',alg:'RS256',use:'sig'}
-  const edge = { mode:'valid', workflowMode:'valid', mail:'accepted', oidc:'valid', email:'employee@example.com', nonce:'', calls:[], messages:[] }
+  const edge = { mode:'valid', workflowMode:'valid', mail:'accepted', oidc:'valid', email:'employee@example.com', nonce:'', enterprise:{}, calls:[], messages:[] }
   const json = (body,status=200) => new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}})
   edge.fetch = async request => {
     const url = new URL(request.url)
@@ -33,6 +33,24 @@ export function providerFixture() {
       edge.messages.push(await request.json())
       return edge.mail === 'accepted' ? new Response(null,{status:202,headers:{'x-message-id':'fixture-message'}}) : json({error:'PRIVATE-PROVIDER-ERROR'},edge.mail==='refused'?403:500)
     }
+    const enterpriseProvider = enterpriseOidcProviders.find(provider => url.origin === new URL(provider.issuer).origin)
+    if (enterpriseProvider) {
+      const issuer = enterpriseProvider.issuer
+      if (url.href === `${issuer}/.well-known/openid-configuration`) return json({issuer,authorization_endpoint:`${issuer}/authorize`,token_endpoint:`${issuer}/token`,jwks_uri:`${issuer}/keys`,id_token_signing_alg_values_supported:['RS256'],response_types_supported:['code'],token_endpoint_auth_methods_supported:['client_secret_basic']})
+      if (url.href === `${issuer}/keys`) return json({keys:[jwk]})
+      if (url.href === `${issuer}/token`) {
+        const clientId = Buffer.from(request.headers.get('authorization').slice('Basic '.length),'base64').toString('utf8').split(':')[0]
+        const t = Math.floor(Date.now()/1000), identity = edge.enterprise
+        const tokenIssuer = identity.mode === 'issuer' ? 'https://synthetic-willow-4298.example.test' : identity.mode === 'tenant' ? issuer.replace('synthetic-willow-4202','synthetic-willow-4297') : issuer
+        const claims = {iss:tokenIssuer,sub:identity.subject,aud:clientId,iat:t,exp:t+300,nonce:edge.nonce,email:identity.email ?? 'owner@example.com',email_verified:true,groups:identity.groups ?? ['owner','hr','payroll'],role:'owner'}
+        const header = Buffer.from(JSON.stringify({alg:'RS256',kid:jwk.kid})).toString('base64url')
+        const payload = Buffer.from(JSON.stringify(claims)).toString('base64url')
+        const value = `${header}.${payload}`
+        const signature = sign('RSA-SHA256',Buffer.from(value),privateKey).toString('base64url')
+        return json({id_token:`${value}.${signature}`,token_type:'Bearer',access_token:'synthetic-willow-4203'})
+      }
+      throw new Error(`Unexpected enterprise provider request to ${url.pathname}`)
+    }
     if (url.hostname === 'accounts.google.com') {
       return json({issuer:'https://accounts.google.com',authorization_endpoint:'https://accounts.google.com/authorize',token_endpoint:'https://oauth2.googleapis.com/token',jwks_uri:'https://www.googleapis.com/keys',id_token_signing_alg_values_supported:['RS256'],response_types_supported:['code'],token_endpoint_auth_methods_supported:['client_secret_basic']})
     }
@@ -57,3 +75,9 @@ function assertWorkflowFeature(request) {
   if (request.headers.get('x-models-feature') !== 'willow-workflow-draft') throw new Error('Unexpected AI capability at workflow fixture edge')
 }
 export const oidcProviders = [{id:'google',preset:'google',clientId:'willow-test',clientSecret:'test-client-secret',tokenAuthMethod:'client_secret_basic'}]
+export const enterpriseSubjects = {employee:'synthetic-willow-4211',hr:'synthetic-willow-4212',payroll:'synthetic-willow-4213',ended:'synthetic-willow-4214'}
+const subjectEmails = Object.fromEntries(Object.entries(enterpriseSubjects).map(([name,subject]) => [subject,`${name}@example.com`]))
+export const enterpriseOidcProviders = [
+  {id:'entra',preset:'microsoft',tenant:'synthetic-willow-4202',issuer:'https://login.microsoftonline.com/synthetic-willow-4202/v2.0',clientId:'synthetic-willow-4204',clientSecret:'synthetic-willow-4205',tokenAuthMethod:'client_secret_basic',subjectEmails},
+  {id:'okta',preset:'okta',issuer:'https://synthetic-willow-4201.okta.example.test',clientId:'synthetic-willow-4206',clientSecret:'synthetic-willow-4207',tokenAuthMethod:'client_secret_basic',subjectEmails},
+]

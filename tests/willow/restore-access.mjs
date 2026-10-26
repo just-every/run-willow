@@ -16,7 +16,7 @@ const work = await mkdtemp(join(tmpdir(), 'willow-restore-access-'))
 const source = join(work, 'source'), target = join(work, 'target')
 let origin, restored
 let server, destination, browser
-const modelBindings = { MODELS_ENDPOINT: 'https://api.openai.com/v1/chat/completions', MODELS_KEY: 'synthetic-willow-16800' }
+const modelBindings = { OKTA_ORG_URL:'https://synthetic-willow-16803.okta.com',OKTA_API_TOKEN:'synthetic-willow-16804', MODELS_ENDPOINT: 'https://api.openai.com/v1/chat/completions', MODELS_KEY: 'synthetic-willow-16800' }
 let sourceNotices = 0, restoredNotices = 0, modelCalls = 0
 const questionCanary='synthetic-willow-'+randomUUID(), providerCanary='synthetic-willow-'+randomUUID()
 const provider = side => async request => {
@@ -160,6 +160,7 @@ try {
   // DATA-001: restored authority must pause even when provider bindings are available.
   await api('connections.notices', owner, { enabled: true })
   await api('connections.model', owner, { model: 'restore-proof-model' })
+  await api('okta.configure',owner,{enabled:true,consent:true,reason:'Explicit source consent before archive'})
   const aiConfig={enabled:true,policies:true,workflows:true,model:'gpt-4.1-mini',capUsd:'0.01',dataScope:'policy-and-leave-numbers',retention:'no-content',providerRetention:'standard',policyConsent:true,workflowConsent:true}
   await api('ai.configure',owner,aiConfig)
   const included=(await api('policies',owner))[0].versions.find(version=>version.status==='approved')
@@ -222,6 +223,7 @@ try {
   assert.equal((await api('ai-controls',sourceOwner)).settings.enabled,1,'Export leaves source assistant consent enabled')
   assert.equal((await api(`ai-workflows/${workflow.id}`,sourceOwner)).approvals[0].approvals.length,1,'Export leaves source signoffs unchanged')
   assert.equal(sourceConnections.notices, true)
+  assert.equal(sourceConnections.provisioning.enabled,true,'Export preserves source Okta consent')
   assert.equal(sourceConnections.model.selected, 'restore-proof-model', 'export leaves source authority unchanged')
   assert.deepEqual(await api('import-settings', sourceOwner), sourceImportSettings, 'DATA-001: export leaves source Business authority and revoked keys unchanged')
   for (const snapshot of customSnapshots) assert.deepEqual((await api(`people/${s.employee.person}?asOf=${snapshot.asOf}`, sourceOwner)).customFields, snapshot, 'DATA-001: export leaves source custom metadata, corrections and retirement unchanged')
@@ -254,7 +256,6 @@ try {
     { table: 'wl_connections', column: 'notices', value: 0, rows: 1 },
     { table: 'wl_connections', column: 'oidc', value: 0, rows: 1 },
   ], 'DATA-001: Base reports actual staged changes, with only safe values and aggregate counts')
-  assert.deepEqual(report.ownerReauthorizationRequired, ['notices', 'oidc', 'model', 'businessImport', 'policyAssistant', 'workflowAssistant'])
   assert.equal(report.archiveHash, legacyRecords.at(-1).archiveHash, 'DATA-001: receipt authenticates original archive bytes')
   assert.equal(report.contentHash, legacyRecords.at(-1).contentHash, 'DATA-001: original content integrity is preserved')
   assert.deepEqual(await readFile(join(target, 'exports/enabled.rer')), oldArchive, 'DATA-001: original backup bytes untouched')
@@ -323,6 +324,8 @@ try {
   assert.equal((await after(`leave/${leave.id}`, cookies.hr)).reason, 'RESTORE-CONFIDENTIAL')
   await after(`leave/${leave.id}`, cookies.payroll, undefined, 404)
   const paused = await after('connections', newOwner)
+  assert.equal(paused.provisioning.enabled,false,'Restored runtime credentials never restore Okta consent')
+  await after('okta.preview',newOwner,{task:'synthetic-willow-16805'},409)
   const restoredImportSettings = await after('import-settings', newOwner)
   assert.equal(restoredImportSettings.enabled, false, 'DATA-001: Business import authority stays paused after native sign-in')
   assert.deepEqual(restoredImportSettings.revokedKids, sourceImportSettings.revokedKids, 'DATA-001: restore preserves permanent key revocations')

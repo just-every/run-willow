@@ -1,3 +1,4 @@
+import { enterpriseOidcJourney } from './enterprise-oidc.mjs'
 // Four public-door integration flows against the built Worker, D1 and R2.
 // Network fakes are confined to the mail, Models and identity provider edges.
 import assert from 'node:assert/strict'
@@ -343,6 +344,7 @@ try {
     assert.equal((await h.api('me',await h.signIn('employee@example.com'))).id,baseline.id)
     await screenshot(owner,'/app/connections','oidc-malformed')
     await h.setBindings({OIDC_PROVIDERS:JSON.stringify(oidcProviders)});edge.oidc='valid'
+    await enterpriseOidcJourney(h,owner,s,api,edge)
   })
   await check('WIL-20 cited structured model proposals never execute employment changes',async()=>{
     assert.ok(!(await(await h.raw('/app/proposals',{cookie:owner})).text()).includes('Request draft'))

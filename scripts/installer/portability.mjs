@@ -1,7 +1,9 @@
 import { localPortability } from '@runeditrun/rer/portability';
 
-const ownerReauthorizationRequired = ['notices', 'oidc', 'model', 'businessImport', 'policyAssistant', 'workflowAssistant'];
+const ownerReauthorizationRequired = ['notices', 'oidc', 'model', 'businessImport', 'policyAssistant', 'workflowAssistant', 'oktaProvisioning'];
 const pauseConnections = (table, row) => {
+ if (table === 'wl_okta_reviews') return { ...row, status: row.status === 'verified' ? 'verified' : 'closed' };
+ if (table === 'wl_okta_settings') return { ...row, enabled: 0 };
  if (table === 'wl_ai_settings') return { ...row, enabled: 0, policies: 0, workflows: 0, provider_retention: 'unapproved', consent_version: '' };
  if (table === 'wl_connections') return { ...row, notices: 0, oidc: 0, model: null };
  if (table === 'ik_door_settings') return { ...row, enabled: 0 };
@@ -20,6 +22,8 @@ export default {
  requiredConfiguration: ['OWNER_EMAIL', 'SESSION_SECRET', 'SETUP_TOKEN', 'AUTH_ORIGIN', 'MAIL_PROVIDER', 'MAIL_FROM'],
  exportRow: pauseConnections,
  importSafety: {
+  wl_okta_settings: { enabled: [0] },
+  wl_okta_reviews: { status: ['verified','closed'] },
   wl_ai_settings: { enabled: [0], policies: [0], workflows: [0], provider_retention: ['unapproved'], consent_version: [''] },
   wl_connections: { notices: [0], oidc: [0], model: [null] },
   ik_door_settings: { enabled: [0] },
@@ -36,7 +40,7 @@ export function willowPortability() {
  return { ...transfer,
   async import(context) {
    const result = await transfer.import(context);
-   context.store.report('Owner reauthorization required for notices, OIDC, model connections, policy answers, workflow assistance and Business imports. Review provider handling and consent in Connections, relink identity and enable Business imports in Import settings when ready. Privileged workflow steps need fresh signoffs.');
+   context.store.report('Owner reauthorization required for notices, OIDC, model connections, policy answers, workflow assistance, Okta account work and Business imports. Review provider handling and consent in Connections, relink identity and enable Business imports in Import settings when ready. Privileged workflow steps need fresh signoffs.');
    return { ...result, ownerReauthorizationRequired: [...ownerReauthorizationRequired] };
   },
  };
