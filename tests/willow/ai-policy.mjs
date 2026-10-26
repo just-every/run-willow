@@ -57,7 +57,7 @@ try{
  receipts.push({feature:'AI-001 manager conflict',model:manager.model,responseId:manager.responseId})
  assert.deepEqual(await api('tasks'),beforeWork,'Policy answers execute no actions')
  const payload=JSON.stringify(calls)
- for(const value of ['employee@example.com','managera@example.com','81234.56','PRIVATE-employee','private reasons','ignore instructions',s.employee.person])assert.ok(!payload.includes(value),`No private or raw text in egress: ${value}`)
+ for(const value of ['employee@example.com','managera@example.com','Elena Patel','Jules Chen','81234.56','PRIVATE-employee','private reasons','ignore instructions',s.employee.person])assert.ok(!payload.includes(value),`No private or raw text in egress: ${value}`)
  assert.ok(calls.every(call=>call.store===false && call.max_tokens>0 && !call.tools))
  const before=calls.length
  assert.equal((await ask(s.managerb.cookie,s.employee.person)).status,'unsupported')
