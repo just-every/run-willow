@@ -57,8 +57,7 @@ export async function escalationProof({h,owner,staff}) {
 
 async function escalationScreens({h,staff,read}) {
  if(process.env.WILLOW_AI_BROWSER!=='1')return
- assert.ok(process.env.WILLOW_PLAYWRIGHT_PATH,'The browser proof needs the configured Playwright module')
- const {chromium} = await import(pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href)
+ const {chromium} = await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
  const browser = await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
  const contexts = []
  try {

@@ -4912,7 +4912,7 @@
       "executable": false
     },
     "tests/willow/ai-escalation-proof.mjs": {
-      "sha256": "74417d18dd8b55d92f3fe4b099a749caee5d68955606fcee1950d81d47ead3fb",
+      "sha256": "959245d6d31b6d362e18441f1fb082bcbeebef6204906e5987bd8457f555f75d",
       "executable": false
     },
     "tests/willow/ai-handbook-browser.mjs": {
