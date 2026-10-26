@@ -76,7 +76,8 @@ export async function signatureCohortProof(h,owner,s,join) {
  assert.equal(task.deliveries.length,1)
  assert.equal(task.deliveries[0].recipient,d.member)
  assert.equal(task.deliveries[0].status,'accepted')
- await h.restart()
+ // Updating the real mail binding reloads the Worker against the same durable database.
+ await h.setBindings({MAIL_FROM:'synthetic-willow-15316@localhost.test'})
  await api('work.run',{})
  assert.equal((await api('work')).items.find(w=>w.source===key).deliveries.length,1,'A restarted scheduler and later tick retains the durable claim instead of resending')
  const escalation=(await api('work')).items.find(w=>w.source==='signature-escalation:'+byPerson.get(d.person)+':0')

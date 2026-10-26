@@ -181,7 +181,7 @@ export async function harness({ bindings = {}, transientBindings = {}, provider,
     return new URL(links.get(email)).searchParams.get('token')
   }
 
-  return { origin, vars, raw, outstanding, businessMail:()=>businessMail, restart:async()=>{assert.ok(mf);await mf.dispose();mf=new Miniflare(convertOptions(mfOptions));await mf.ready}, upgradeSnapshot, setBindings: async changes => { assert.ok(mf); Object.assign(vars, changes); await mf.setOptions(convertOptions({...mfOptions,bindings:{...vars,...transientBindings}})) },  api, submit, signIn, close, output: ()=>capturedOutput.join('\n') }
+  return { origin, vars, raw, outstanding, businessMail:()=>businessMail,  upgradeSnapshot, setBindings: async changes => { assert.ok(mf); Object.assign(vars, changes); await mf.setOptions(convertOptions({...mfOptions,bindings:{...vars,...transientBindings}})) },  api, submit, signIn, close, output: ()=>capturedOutput.join('\n') }
 }
 
 export const file = (filename, content, type = 'application/octet-stream') => ({ filename, base64: Buffer.from(content).toString('base64'), type })

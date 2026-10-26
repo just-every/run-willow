@@ -5207,7 +5207,7 @@
       "executable": false
     },
     "tests/willow/harness.mjs": {
-      "sha256": "408d6ae19a6caf3bfebd05a3cd10557e56d79e737d05db4efea6444e2b13a267",
+      "sha256": "06fd3e23ef86c9881f6303c45b8b4b10a622cdb970a829bc1fd2c06cb7a2a050",
       "executable": false
     },
     "tests/willow/hiring-browser.mjs": {
@@ -5499,7 +5499,7 @@
       "executable": false
     },
     "tests/willow/sign-cohorts.mjs": {
-      "sha256": "6a3c2aabd5d07d4cd03c4633f4e3094c16ac29825f422f3f09908d13e849d91d",
+      "sha256": "4d0cd0175a8d574570a5e05e114ab13db0f809fa971ad7290afbcd6ce6dab564",
       "executable": false
     },
     "tests/willow/sign-custody.mjs": {
@@ -5507,7 +5507,7 @@
       "executable": false
     },
     "tests/willow/sign-native.mjs": {
-      "sha256": "2b7e495a16df71641c6be9aa3816921cca2fa3161cd1faaf1bff1371f466af79",
+      "sha256": "360f8bf2001f22611910ed04e9d776c2d8d94550fc3633e7159dd27caec43349",
       "executable": false
     },
     "tests/willow/sign-reporting.mjs": {
