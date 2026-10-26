@@ -1,3 +1,4 @@
+import { signatureTemplates } from './sign/templates'
 import { policyEscalations } from './ai-policy-escalations'
 import { handbookSources } from './ai-handbooks'
 import { aiWorkflows, aiWorkflow, aiWorkflowApprovals } from './ai-workflows'
@@ -71,6 +72,7 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  signatureTemplates,
   policyEscalations,
   handbooks: (env,actor) => handbookSources(env,actor),
   handbookManagement: (env,actor) => handbookSources(env,actor,{manage:true}),

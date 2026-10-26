@@ -1,5 +1,8 @@
 // ROLE-002: reviewed filtered selection and dependency-aware exact restoration.
 import assert from 'node:assert/strict'
+import { imports } from './import-transport.mjs'
+import { HEADERS } from './fixtures.mjs'
+import { file } from './harness.mjs'
 
 export async function bulkLevelProof(h, owner, staff, join) {
  const api=(path,body,status)=>h.api(path,owner,body,status)
@@ -249,15 +252,27 @@ export async function defaultAccessProof(h,owner,s) {
  await api('access.default',{level:defaults.id,reason:'synthetic-willow-14702'})
  const template=(await api('templates')).find(row=>row.kind==='joiner'&&row.status==='active')
  const settings=await api('settings')
- const people=[]
- for(let index=0;index<50;index++) {
-  const row=await api('joiner.start',{template:template.id,legalName:'synthetic-willow-147'+index,workEmail:'synthetic-willow-147'+index+'@example.test',startDate:'2000-01-01',employmentType:'full_time',jobTitle:'synthetic-willow-14703',scheduleId:settings.schedules[0].id,payBasis:'unknown'})
-  people.push(row.person)
+ const importer=imports(h,owner)
+ const csv=[HEADERS.join(',')]
+ for(let index=0;index<51;index++) {
+  const row={id:'synthetic-willow-147'+index,firstName:'synthetic-willow-147'+index,lastName:'Example',workEmail:'synthetic-willow-147'+index+'@example.test',hireDate:'2000-01-01',terminationDate:index===50?'2000-02-01':'',status:index===50?'Inactive':'Active',employmentStatus:'Full-Time',jobTitle:'synthetic-willow-14703'}
+  csv.push(HEADERS.map(header=>row[header]??'').join(','))
  }
- const former=await api('joiner.start',{template:template.id,legalName:'synthetic-willow-14704',workEmail:'synthetic-willow-14704@example.test',startDate:'2000-01-01',employmentType:'full_time',jobTitle:'synthetic-willow-14703',scheduleId:settings.schedules[0].id,payBasis:'unknown'})
- const formerView=await api('people/'+former.person)
- await api('leaver.start',{template:(await api('templates')).find(row=>row.kind==='leaver'&&row.status==='active').id,period:former.period,revision:formerView.employment[0].revision,endDate:'2000-02-01',reason:'synthetic-willow-14713'})
- const result=await api('access.bulk',{people:[...people,former.person],reason:'synthetic-willow-14705'})
+ const plan=await importer.plan({employees:file('employees.csv',csv.join('\r\n')+'\r\n'),dateFormat:'YMD',schedule:settings.schedules[0].id})
+ const imported=await importer.apply(plan)
+ const importedPeople=(await api('people')).filter(person=>person.name.startsWith('synthetic-willow-147'))
+ const people=importedPeople.filter(person=>person.name!=='synthetic-willow-14750 Example').map(person=>person.id)
+ const former={person:importedPeople.find(person=>person.name==='synthetic-willow-14750 Example').id}
+ assert.equal(people.length,50)
+ const choice={job:imported.job.id,reason:'synthetic-willow-14705'}
+ await h.api('import.access',s.hr.cookie,{...choice,choice:'invite'},403)
+ await api('import.access',{...choice,job:'synthetic-willow-unknown',choice:'invite'},409)
+ await api('import.access',{...choice,choice:'invalid'},400)
+ assert.ok(!(await api('members')).some(member=>people.includes(member.person)))
+ const deferred=await api('import.access',{...choice,choice:'defer'})
+ assert.equal(deferred.deferred.length,51)
+ assert.ok(!(await api('members')).some(member=>people.includes(member.person)))
+ const result=await api('import.access',{...choice,choice:'invite'})
  assert.ok(result.invited.length>0)
  assert.equal(result.invited.length+result.deferred.length,50)
  assert.deepEqual(result.skipped,[former.person])
@@ -270,7 +285,8 @@ export async function defaultAccessProof(h,owner,s) {
  }
  assert.ok(!members.some(row=>row.person===former.person))
  assert.ok(result.deferred.every(person=>!members.some(row=>row.person===person)))
- const repeat=await api('access.bulk',{people:[...people,former.person],reason:'synthetic-willow-14706'})
+ await h.setBindings({})
+ const repeat=await api('import.access',{...choice,choice:'invite'})
  assert.ok(repeat.invited.every(person=>result.deferred.includes(person)))
  assert.ok(repeat.invited.every(person=>!result.invited.includes(person)),'A retry never duplicates an existing invitation')
  assert.equal(result.invited.length+repeat.invited.length+repeat.deferred.length,50)
@@ -286,6 +302,7 @@ export async function defaultAccessProof(h,owner,s) {
  assert.equal((await h.api('access.give',s.hr.cookie,{person:former.person},403)).error,'independent_approval_required')
  assert.ok((await api('audit')).some(row=>row.action==='access.denied'&&row.actor===s.hr.member&&JSON.parse(row.detail).reason==='independent_approval_required'))
  assert.ok(!(await api('members')).some(row=>row.person===former.person))
+ assert.ok((await api('audit')).some(row=>row.action==='access.import'&&row.subject===imported.job.id&&JSON.parse(row.detail).choice==='defer'))
  await apply({kind:'assignment',member:s.hr.member,levels:originalHR})
  await api('access.default',{level:defaults.id,reason:'synthetic-willow-14717'})
  const first=members.find(row=>row.person===people[0])
@@ -301,7 +318,7 @@ export async function defaultAccessProof(h,owner,s) {
  if(process.env.WILLOW_LEVELS_BROWSER==='1') {
   const {pathToFileURL}=await import('node:url'),{evidenceDirectory}=await import('./evidence.mjs')
   const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
-  const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+  const browser=await chromium.launch({headless:true,...(process.env.WILLOW_CHROMIUM_PATH?{executablePath:process.env.WILLOW_CHROMIUM_PATH}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
   try {
    const context=await browser.newContext({ignoreHTTPSErrors:true})
    await context.addCookies(owner.split('; ').map(item=>({name:item.slice(0,item.indexOf('=')),value:item.slice(item.indexOf('=')+1),url:h.origin})))
@@ -325,10 +342,22 @@ export async function defaultAccessProof(h,owner,s) {
     await bell.hover();await page.waitForTimeout(150);assert.equal(await tip.isVisible(),false);await tip.waitFor({state:'visible'})
     await page.mouse.move(0,0);await bell.focus();assert.equal(await tip.isVisible(),true)
     await page.screenshot({path:evidenceDirectory+'/ROLE-003-default-access-'+width+'.png',fullPage:true})
+    await page.goto(h.origin+'/app/import')
+    const importedForm=page.locator('form[action="/app/do/import.access"]').filter({has:page.locator('input[name="job"][value="'+imported.job.id+'"]')})
+    assert.equal(await importedForm.locator('[name="choice"]').inputValue(),'defer')
+    await importedForm.locator('[name="reason"]').fill('synthetic-willow-14718')
+    await importedForm.getByRole('button',{name:'Save invitation choice'}).click()
+    await page.waitForURL(url=>url.searchParams.has('notice'))
+    assert.match(new URL(page.url()).searchParams.get('notice'),/invitations deferred/)
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
+    const importBell=page.locator('.bell'),importTip=page.getByRole('tooltip',{name:'Your tasks'})
+    await importBell.focus();assert.equal(await importTip.isVisible(),true)
+    await page.screenshot({path:evidenceDirectory+'/ROLE-003-import-invitations-'+width+'.png',fullPage:true})
+
    }
    await context.close()
   }finally{await browser.close()}
  }
  await api('access.default',{level:'',reason:'synthetic-willow-14712'})
- console.log('ROLE-003 defaults: PASS — owner consent, exact default version, 50-person selection with bounded rate deferral, former exclusion, idempotent retry and native forms')
+ console.log('ROLE-003 defaults: PASS — owner consent, exact default version, 50-person native import, owner invite-or-defer control, bounded rate deferral, former exclusion, idempotent retry and native forms')
 }

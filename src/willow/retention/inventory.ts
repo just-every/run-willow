@@ -157,6 +157,7 @@ export const STORES: Store[] = [
 
 // Rows another person's records keep: the person's attribution is replaced by the erasure label.
 export const AUTHORED: [string, string][] = [
+  ['wl_sign_templates','recorded_by'], ['wl_sign_template_approvals','approved_by'],
   ['wl_okta_accounts','linked_by'], ['wl_okta_reviews','actor'], ['wl_okta_settings','approved_by'],
   ['wl_ai_policy_escalations','resolved_by'],
   ['wl_ai_handbooks','created_by'], ['wl_ai_handbooks','withdrawn_by'], ['wl_ai_handbook_versions','created_by'], ['wl_ai_handbook_approvals','approved_by'], ['wl_ai_handbook_inclusions','included_by'],
@@ -192,7 +193,7 @@ const NONE = (reason: string, ...tables: string[]): [string, string][] => tables
 export const OUT_OF_SCOPE = new Map<string, string>([
   ...NONE('Private erasure HMAC key and value-free source tombstones; installation archives preserve the fence', 'wl_retention_import_secret', 'wl_erased_import_keys', 'wl_import_erasure_fences'),
   ...NONE('employer configuration', 'wl_okta_settings', 'wl_ai_handbooks', 'wl_ai_handbook_versions', 'wl_ai_handbook_approvals', 'wl_ai_handbook_inclusions', 'wl_ai_settings', 'wl_employer', 'wl_connections', 'wl_import_door', 'wl_payroll_layout', 'wl_work_policy', 'wl_locations', 'wl_departments', 'wl_divisions', 'wl_legal_entities', 'wl_schedules', 'wl_doc_categories'),
-  ...NONE('policy and template definitions', 'wl_policy_versions', 'wl_leave_policies', 'wl_leave_policy_rules', 'wl_template_tasks', 'wl_levels', 'wl_level_permissions', 'wl_level_scope_values', 'wl_level_self_fields', 'wl_level_other_fields', 'wl_level_document_categories', 'wl_level_reports', 'wl_level_builtin_reports', 'wl_level_settings', 'wl_level_job_fields', 'wl_level_compensation_fields', 'wl_level_leave_fields', 'wl_level_performance_fields', 'wl_level_approvals', 'wl_hiring_openings', 'wl_review_cycles', 'wl_company_announcements', 'wl_company_folders', 'wl_company_files'),
+  ...NONE('policy and template definitions', 'wl_sign_templates', 'wl_sign_template_approvals', 'wl_policy_versions', 'wl_leave_policies', 'wl_leave_policy_rules', 'wl_template_tasks', 'wl_levels', 'wl_level_permissions', 'wl_level_scope_values', 'wl_level_self_fields', 'wl_level_other_fields', 'wl_level_document_categories', 'wl_level_reports', 'wl_level_builtin_reports', 'wl_level_settings', 'wl_level_job_fields', 'wl_level_compensation_fields', 'wl_level_leave_fields', 'wl_level_performance_fields', 'wl_level_approvals', 'wl_hiring_openings', 'wl_review_cycles', 'wl_company_announcements', 'wl_company_folders', 'wl_company_files'),
   ...NONE('the erasure window: one row inside the journaled erasure batch, never committed', 'wl_erasure_window'),
   ...NONE('restricted custody of records already removed from every live table: owner-read only, purged by rule', 'wl_retained_records'),
   ...NONE('value-free erasure receipts and the post-commit blob work list: counts, labels and content digests only', 'wl_erasure_receipts', 'wl_erasure_blobs'),
