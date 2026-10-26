@@ -164,3 +164,12 @@ provider deletion requests for minimized leave inputs.
 [OpenAI pricing](https://developers.openai.com/api/docs/pricing), [model documentation](https://developers.openai.com/api/docs/models/gpt-4.1-nano)
 and [OpenAI data controls](https://developers.openai.com/api/docs/guides/your-data)
 describe the provider settings and rates used here (checked 26 October 2026).
+
+
+### Assistant capability checks — 26 October 2026
+
+The supported provider is OpenAI. Its [standard API data controls](https://developers.openai.com/api/docs/guides/your-data) describe abuse-monitoring retention and its legal and safety exceptions. A successful model request proves access to that model, not account-specific retention, deletion or compliance. Applicable account terms and retention controls remain an owner evidence dependency before production-readiness claims.
+
+Current vendor pages describe shipped capabilities that overlap these targets. [Ask BambooHR](https://www.bamboohr.com/product-updates/ask-bamboohr-ai-assistant) states that permission-filtered HRIS answers are available in Core and Pro, with selected company documents in Pro. [Rippling workflows](https://www.rippling.com/en-GB/platform/workflows) describes natural-language triggers, conditions, routing and actions, affected-person review before publication, and connected application data and actions. These are public vendor capability statements, not a trial of any employer account. Exact version invalidation, conflict behaviour, distinct privileged signoffs and country-specific account entitlements were not established by those pages. Willow's narrower supported implementation does not establish parity with every advertised capability.
+
+AI-002 connected-system simulation still needs native typed provider adapters, capability and scope snapshots, reviewed account mappings, authorized external-state reads and an effect planner. No provider adapter or account state is invented when those inputs are absent. Exercising those integrations additionally needs an authorized employer tenant and its applicable provider credentials, scopes, mapping identifiers and any required partner approval. The existing identity connection supplies sign-in, not account provisioning.
