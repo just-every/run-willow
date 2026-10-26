@@ -242,6 +242,7 @@ try {
   assert.ok(report, 'DATA-001: public import returns a successful receipt')
   assert.deepEqual(report.safetyChanges?.toSorted((a, b) => a.table.localeCompare(b.table) || a.column.localeCompare(b.column)), [
     { table: 'ik_door_settings', column: 'enabled', value: 0, rows: 1 },
+    { table: 'wl_ai_settings', column: 'consent_version', value: '', rows: 1 },
     { table: 'wl_ai_settings', column: 'enabled', value: 0, rows: 1 },
     { table: 'wl_ai_settings', column: 'policies', value: 0, rows: 1 },
     { table: 'wl_ai_settings', column: 'provider_retention', value: 'unapproved', rows: 1 },

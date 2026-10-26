@@ -2,7 +2,7 @@ import { localPortability } from '@runeditrun/rer/portability';
 
 const ownerReauthorizationRequired = ['notices', 'oidc', 'model', 'businessImport', 'policyAssistant', 'workflowAssistant'];
 const pauseConnections = (table, row) => {
- if (table === 'wl_ai_settings') return { ...row, enabled: 0, policies: 0, workflows: 0, provider_retention: 'unapproved' };
+ if (table === 'wl_ai_settings') return { ...row, enabled: 0, policies: 0, workflows: 0, provider_retention: 'unapproved', consent_version: '' };
  if (table === 'wl_connections') return { ...row, notices: 0, oidc: 0, model: null };
  if (table === 'ik_door_settings') return { ...row, enabled: 0 };
  return row;
@@ -20,7 +20,7 @@ export default {
  requiredConfiguration: ['OWNER_EMAIL', 'SESSION_SECRET', 'SETUP_TOKEN', 'AUTH_ORIGIN', 'MAIL_PROVIDER', 'MAIL_FROM'],
  exportRow: pauseConnections,
  importSafety: {
-  wl_ai_settings: { enabled: [0], policies: [0], workflows: [0], provider_retention: ['unapproved'] },
+  wl_ai_settings: { enabled: [0], policies: [0], workflows: [0], provider_retention: ['unapproved'], consent_version: [''] },
   wl_connections: { notices: [0], oidc: [0], model: [null] },
   ik_door_settings: { enabled: [0] },
  },

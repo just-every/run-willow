@@ -1152,6 +1152,10 @@
       "sha256": "12ed79ac260862e8d328e4387b6d07c84dda09f27360e6d080dc5019172fc9e0",
       "executable": false
     },
+    "migrations/core/0087_ai_consent.sql": {
+      "sha256": "a5432beb449446f0e2c6b1fc65bdc393b70b7211e135cc716975764a69c4be4b",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "70696e2e2f1cf5c20d8042cf2d833271656a6d81d1151eb9dd6e236ba3e1c5a9",
       "executable": false
@@ -1673,7 +1677,7 @@
       "executable": false
     },
     "scripts/installer/portability.mjs": {
-      "sha256": "bcedb2b7b80ff74a68401f5d6a0d8980ba9ad2f462f3c70fea86984f7bf9a699",
+      "sha256": "5da4090cfacd68b9b6f33d9224e5688563d89853ef49bde7cc854ff2274207ff",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -3685,15 +3689,15 @@
       "executable": false
     },
     "src/willow/ai-consent.ts": {
-      "sha256": "51aad4b5700b70ef65682dff29f0c9f052d8446caadb8850896b35a4aa2055bc",
+      "sha256": "0e08c43dfebdf00766515c20bce3e095e82b2a265fcb21212eb552f60a2e1dfc",
       "executable": false
     },
     "src/willow/ai-policy.ts": {
-      "sha256": "4b76148ad52db92bb291939e1ce334705a5a03f1a97a15f8ce31b79c6bd3ada6",
+      "sha256": "4f392feb600be428527ad3a91c287371f432e7202415a3f130fa3a410fa6686c",
       "executable": false
     },
     "src/willow/ai-provider.ts": {
-      "sha256": "030797fbaf3891d3ba7252a8ab7b46e26918d8a28a437603f384ab37a8e2aaa1",
+      "sha256": "1f981a78f44cafc689c02b856434dfe1b1b0e3154f68b288f865fc0394a0c0f6",
       "executable": false
     },
     "src/willow/ai-workflows-approvals.ts": {
@@ -5225,11 +5229,11 @@
       "executable": false
     },
     "tests/willow/restore-access.mjs": {
-      "sha256": "49149b26c454e0eef3d8bf8814c0badb1f4ab2eed56237ee423213b2d9b3cae0",
+      "sha256": "2829429b5c6a4abbb6b29d3ef3ff6f9309c6230f66eaff95600f08b35195baa5",
       "executable": false
     },
     "tests/willow/restore-archive-fixture.mjs": {
-      "sha256": "f0f3767276ce4e5af8d160b452135283905a189609810adca5e07ce5a1abe751",
+      "sha256": "2e9da80c9cf70b69ed12538147d9c0b60577e4d491daf2ff255f3470cd6bec05",
       "executable": false
     },
     "tests/willow/restore-erasure.mjs": {

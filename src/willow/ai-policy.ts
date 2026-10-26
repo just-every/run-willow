@@ -8,9 +8,11 @@ import { personView } from './profile'
 import { aiSettings, callModel, freshAiActor, rejectAiCall } from './ai-provider'
 
 export async function includeAiPolicy(env: Bindings, actor: Actor, input: Input) {
+ input.only(['version','included','returnTo'])
+ actor = await freshAiActor(env,actor)
  requirePermission(actor, 'leave.manage')
  const version = input.text('version'), included = input.flag('included')
- await commit(env, [guard(env,'policy_not_approved',"EXISTS(SELECT 1 FROM wl_policy_versions WHERE id=? AND status='approved')",version), included ? stmt(env, "INSERT INTO wl_ai_sources(version_id,approved_by,approved_at) SELECT id,?,? FROM wl_policy_versions WHERE id=? AND status='approved' ON CONFLICT(version_id) DO UPDATE SET approved_by=excluded.approved_by,approved_at=excluded.approved_at", actor.id, now(), version) : stmt(env, 'DELETE FROM wl_ai_sources WHERE version_id=?',version)], { actor: actor.id, action: 'ai.policy.inclusion', subject: version, detail: { included } })
+ await commit(env, [guard(env,'ai_authority_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email) WHERE s.id=? AND m.id=? AND o.status='active' AND m.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>? AND (o.role='owner' OR EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission='leave.manage')))`,actor.sessionId,actor.id,now()), guard(env,'policy_not_approved',"EXISTS(SELECT 1 FROM wl_policy_versions WHERE id=? AND status='approved')",version), included ? stmt(env, "INSERT INTO wl_ai_sources(version_id,approved_by,approved_at) SELECT id,?,? FROM wl_policy_versions WHERE id=? AND status='approved' ON CONFLICT(version_id) DO UPDATE SET approved_by=excluded.approved_by,approved_at=excluded.approved_at", actor.id, now(), version) : stmt(env, 'DELETE FROM wl_ai_sources WHERE version_id=?',version)], { actor: actor.id, action: 'ai.policy.inclusion', subject: version, detail: { included } })
  return { included }
 }
 
