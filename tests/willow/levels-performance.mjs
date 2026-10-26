@@ -645,6 +645,8 @@ export async function trainingModeProof(h,owner,cookie,s,inside,outside,day,join
  assert.ok((await hr('work')).items.some(item=>item.source===`training-request:${pending.id}`))
  assert.ok(!(await write('training')).assignments.some(r=>r.id===pending.assignment))
  assert.deepEqual((await write('training')).requests.find(r=>r.id===pending.id).payload,assignment)
+ assert.equal((await write('training')).requests.find(r=>r.id===pending.id).personName,'synthetic-willow-10301')
+ assert.equal((await write('training')).requests.find(r=>r.id===pending.id).courseTitle,'synthetic-willow-10302 reviewed course')
  await write('training.decide',{request:pending.id,decision:'approve',reason:'No self approval'},403)
  await hr('training.decide',{request:pending.id,decision:'approve',reason:'Reviewed exact assignment'})
  const completion=await write('training.complete',{assignment:pending.assignment,evidence:'synthetic-willow-10307 pending completion',certificate:'synthetic-willow-10308 pending certificate'})
