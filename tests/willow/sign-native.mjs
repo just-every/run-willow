@@ -60,7 +60,7 @@ export async function nativeSigningProof(h,owner,s,join) {
  const contents=sealedPdf.getPage(0).node.Contents()
  const streams=contents instanceof PDFArray?Array.from({length:contents.size()},(_,i)=>sealedPdf.context.lookup(contents.get(i))):[contents]
  const operators=streams.map(stream=>Buffer.from(decodePDFRawStream(stream).decode()).toString()).join('\n')
- for(const text of ['employee','Present role','AUD 81234.56 salary','Employee signer','ES','Agreed','HR signer'])assert.ok(operators.includes(Buffer.from(text).toString('hex').toUpperCase()),'Sealed PDF renders '+text)
+ for(const text of ['employee','Present role','AUD 81234.56 salary','Employee signer','ES','Agreed','HR signer',completed.certificate.signers[0].values.date])assert.ok(operators.includes(Buffer.from(text).toString('hex').toUpperCase()),'Sealed PDF renders '+text)
  assert.ok(operators.includes('61.2'),'The configured signature placement is present in the sealed PDF')
  await as(s.employee.cookie,'signature.act',{request:id,revision:completed.revision,digest:completed.digest,action:'withdraw'},409)
  assert.equal((await h.raw('/app/files/document/'+completed.sealedVersion,{cookie:s.payroll.cookie})).status,404)

@@ -4874,7 +4874,7 @@
       "executable": false
     },
     "src/willow/ui/signatures.ts": {
-      "sha256": "7cb842e58f41828119372a1b8c8f7258b80b719edd60829ad363fd41e70ca894",
+      "sha256": "488fbb2a1fdde541cda0b175723da81b0ac25d4005a83722dea33f73fd39d3d4",
       "executable": false
     },
     "src/willow/ui/survey-plan.ts": {
@@ -5390,7 +5390,7 @@
       "executable": false
     },
     "tests/willow/sign-native.mjs": {
-      "sha256": "fbf268631c254d55714f3e39ea04f99c8b0f533469cd3c21c370a56c69c8c0ce",
+      "sha256": "351cb746f0fd9fc2f60f4c3083a841257ee0d54f94303d2aab7c6ca4f0e769c3",
       "executable": false
     },
     "tests/willow/sign-templates.mjs": {
