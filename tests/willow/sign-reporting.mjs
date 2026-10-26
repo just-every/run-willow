@@ -1,3 +1,4 @@
+import { launchSigningBrowser } from './sign-browser.mjs'
 // SIGN-002 inherits the saved-report public doors, dated sources and current rights.
 import assert from 'node:assert/strict'
 import { file } from './harness.mjs'
@@ -126,8 +127,7 @@ export async function signatureReportingProof(h,owner,s) {
 async function reportScreens(h,owner,manager,report,managerReport) {
  if(process.env.WILLOW_SIGN_BROWSER!=='1')return
  const {mkdir}=await import('node:fs/promises');const destination=process.env.WILLOW_EVIDENCE_DIR;assert.ok(destination);await mkdir(destination,{recursive:true})
- const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH??'@playwright/test')
- const browser=await chromium.launch({headless:true,...(process.env.WILLOW_CHROMIUM?{executablePath:process.env.WILLOW_CHROMIUM}:{}),args:['--use-mock-keychain','--password-store=basic']})
+ const browser=await launchSigningBrowser()
  try {for(const [cookie,id,role] of [[owner,report,'HR'],[manager,managerReport,'manager']]) {
   const context=await browser.newContext({ignoreHTTPSErrors:true});await context.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})))
   const page=await context.newPage()

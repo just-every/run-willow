@@ -1,3 +1,4 @@
+import { launchSigningBrowser } from './sign-browser.mjs'
 import { day } from './regression-fixture.mjs'
 // Native signature business journeys extend the existing company-file acceptance.
 import assert from 'node:assert/strict'
@@ -193,8 +194,7 @@ export async function nativeSigningProof(h,owner,s,join) {
 async function signingBrowser(h,owner,s,id,oldId,newId,expiredId) {
  if(process.env.WILLOW_SIGN_BROWSER!=='1')return
  const destination=process.env.WILLOW_EVIDENCE_DIR;assert.ok(destination);await mkdir(destination,{recursive:true})
- const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH??'@playwright/test')
- const browser=await chromium.launch({headless:true,...(process.env.WILLOW_CHROMIUM?{executablePath:process.env.WILLOW_CHROMIUM}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
+ const browser=await launchSigningBrowser()
  const contexts=[]
  const enter=async cookie=>{const c=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(c);await c.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})));return c.newPage()}
  const capture=async(page,path,name)=>{for(const width of [1440,390]){await page.setViewportSize({width,height:1000});assert.equal((await page.goto(h.origin+path)).status(),200);await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),name+' fits '+width);await page.screenshot({path:`${destination}/SIGN-${name}-${width}.png`,fullPage:true});const bell=page.getByRole('link',{name:'Open your task list'});await bell.focus();await page.getByRole('tooltip').waitFor({state:'visible'});await bell.hover();await page.waitForTimeout(350);assert.ok(await page.getByRole('tooltip').isVisible());await page.screenshot({path:`${destination}/SIGN-${name}-tooltip-${width}.png`,fullPage:true})}}
@@ -227,8 +227,7 @@ async function signingBrowser(h,owner,s,id,oldId,newId,expiredId) {
 }
 
 async function phoneCohortSigner(h,employeeCookie,hrCookie,id) {
- const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH??'@playwright/test')
- const browser=await chromium.launch({headless:true,...(process.env.WILLOW_CHROMIUM?{executablePath:process.env.WILLOW_CHROMIUM}:{}),args:['--use-mock-keychain','--password-store=basic']})
+ const browser=await launchSigningBrowser()
  try {
   for(const [cookie,width,name] of [[employeeCookie,390,'Phone cohort signer'],[hrCookie,1440,'Named cohort HR']]) {
    const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width,height:1000}})

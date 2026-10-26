@@ -1,3 +1,4 @@
+import { launchSigningBrowser } from './sign-browser.mjs'
 // Signing inherits the real lifecycle graph through the same public JSON doors.
 import assert from 'node:assert/strict'
 import { PDFDocument } from 'pdf-lib'
@@ -113,9 +114,7 @@ async function signingWorkflowBrowser(h) {
   if (process.env.WILLOW_SIGN_BROWSER !== '1' && process.env.WILLOW_WORKFLOW_BROWSER !== '1') return null
   const destination = process.env.WILLOW_EVIDENCE_DIR; assert.ok(destination)
   await mkdir(destination, { recursive: true })
-  const { chromium } = process.env.WILLOW_PLAYWRIGHT_PATH ? await import(pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href) : await import('@playwright/test')
-  const executablePath = process.env.WILLOW_CHROMIUM_PATH || process.env.WILLOW_CHROMIUM
-  const browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}), args: ['--use-mock-keychain', '--password-store=basic'] })
+  const browser = await launchSigningBrowser()
   const contexts = []
   const enter = async cookie => {
     const context = await browser.newContext({ ignoreHTTPSErrors: true }); contexts.push(context)
