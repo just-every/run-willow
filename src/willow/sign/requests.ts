@@ -6,6 +6,7 @@ import { all, auditRead, commit, guard, insist, newId, now, one, sha256Hex, stmt
 import { serve, store } from '../files'
 import type { Input } from '../input'
 import { signatureTemplates } from './templates'
+import { selectedPeriods } from '../employment'
 import { directory,personView } from '../profile'
 
 export const CONSENT='I consent to electronic records and signatures for this exact document. I can download a copy and withdraw before completion. I intend my entered name and initials to be my signature.'
@@ -45,18 +46,34 @@ async function mergeValues(env:Bindings,actor:Actor,person:string,fields:Row[]) 
 
 export async function previewSignatures(env:Bindings,actor:Actor,input:Input) {
  requirePermission(actor,'people.manage')
- input.only(['template','people','hr','expiresAt','returnTo'])
+ input.only(['template','people','cohortKind','cohortValue','cohortSelection','hr','expiresAt','expiryDays','returnTo'])
  const template=(await signatureTemplates(env,actor)).find(t=>t.id===input.text('template',{max:100}))
  insist(template?.approvedAt&&template.current,'signature_approved_template_required',409)
  const roles=template.signers
  insist(roles[0]==='employee'&&(roles.length===1||(roles.length===2&&roles[1]==='hr')),'signature_order_unsupported')
- const people=[...new Set(input.list('people'))]
+ const visible=await directory(env,actor)
+ const selection=input.text('cohortSelection',{optional:true,max:150}).split(':')
+ const cohortKind=selection[0]||input.text('cohortKind',{optional:true})||'named',cohortValue=selection[1]||input.text('cohortValue',{optional:true,max:100})
+ insist(['named','everyone','location','department','employment_type','access_level'].includes(cohortKind),'invalid_signature_cohort')
+ const periods=cohortKind==='employment_type'?await selectedPeriods(env,actor.today):new Map()
+ let people=[...new Set(input.list('people'))]
+ if(cohortKind!=='named') {
+  insist(people.length===0,'signature_cohort_ambiguous')
+  let selected=visible.filter(p=>p.status==='active')
+  if(cohortKind==='location')selected=selected.filter(p=>p.location?.id===cohortValue)
+  if(cohortKind==='department')selected=selected.filter(p=>p.department?.id===cohortValue)
+  if(cohortKind==='employment_type')selected=selected.filter(p=>periods.get(p.id)?.employment_type===cohortValue)
+  if(cohortKind==='access_level') {
+   const members=await all(env,"SELECT m.person_id FROM wl_member_levels l JOIN wl_members m ON m.id=l.member_id WHERE l.level_id=? AND m.status='active'",cohortValue)
+   selected=selected.filter(p=>members.some(m=>m.person_id===p.id))
+  }
+  people=selected.map(p=>p.id)
+ }
  insist(people.length>0&&people.length<=200,'signature_recipients_required')
  const hr=input.text('hr',{optional:roles.length===1,max:100})||actor.id
  const counter=await one(env,`SELECT m.id FROM wl_members m WHERE m.id=? AND m.status='active' AND (EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission='people.manage') OR EXISTS(SELECT 1 FROM oa_operators o WHERE lower(o.email)=m.email AND o.role='owner' AND o.status='active'))`,hr)
  insist(counter,'signature_hr_required')
- const expiresAt=input.integer('expiresAt',{min:now()+60_000,max:now()+90*86400000})!
- const visible=await directory(env,actor)
+ const expiresAt=input.has('expiryDays')?now()+input.integer('expiryDays',{min:1,max:90})!*86400000:input.integer('expiresAt',{min:now()+60_000,max:now()+90*86400000})!
  const source=await one(env,'SELECT * FROM wl_company_file_versions WHERE id=?',template.sourceVersion)
  insist(source,'signature_source_missing',409)
  const original=await bytes(env,source.sha256,source.size)
@@ -84,7 +101,7 @@ export async function previewSignatures(env:Bindings,actor:Actor,input:Input) {
   }
   recipients.push({id,name:person.name,member:member.id,merged,sha256:rendered.sha256,size:rendered.size})
  }
- const snapshot={template:template.id,templateDigest:template.digest,source:template.sourceVersion,sourceSha256:template.sourceSha256,category:template.category,title:template.title,hr,expiresAt,recipients}
+ const snapshot={cohortKind,cohortValue,template:template.id,templateDigest:template.digest,source:template.sourceVersion,sourceSha256:template.sourceSha256,category:template.category,title:template.title,hr,expiresAt,recipients}
  const encoded=JSON.stringify(snapshot),digest=await sha256Hex(encoded),id=newId()
  await commit(env,[session(env,actor),authority(env,actor),...files,stmt(env,'INSERT INTO wl_sign_reviews(id,actor,template_id,snapshot,digest,created_at) VALUES(?,?,?,?,?,?)',id,actor.id,template.id,encoded,digest,now())],{actor:actor.id,action:'signature.preview',subject:id,detail:{template:template.id,count:people.length}})
  return {id,digest,...snapshot}
@@ -111,9 +128,15 @@ export async function sendSignatures(env:Bindings,actor:Actor,input:Input) {
  guard(env,'signature_template_changed','NOT EXISTS(SELECT 1 FROM wl_sign_templates WHERE family=? AND version>?)',template.family,template.version),
  stmt(env,'UPDATE wl_sign_reviews SET used_at=? WHERE id=?',now(),review.id)]
  const visible=await directory(env,actor)
+ const periods=snapshot.cohortKind==='employment_type'?await selectedPeriods(env,actor.today):new Map()
  const requests=[]
  for(const recipient of snapshot.recipients) {
-  insist(visible.some(p=>p.id===recipient.id&&p.status==='active'),'signature_recipient_changed',409)
+  const current=visible.find(p=>p.id===recipient.id&&p.status==='active')
+  insist(current,'signature_recipient_changed',409)
+  if(snapshot.cohortKind==='location')insist(current.location?.id===snapshot.cohortValue,'signature_cohort_changed',409)
+  if(snapshot.cohortKind==='department')insist(current.department?.id===snapshot.cohortValue,'signature_cohort_changed',409)
+  if(snapshot.cohortKind==='employment_type')insist(periods.get(current.id)?.employment_type===snapshot.cohortValue,'signature_cohort_changed',409)
+  if(snapshot.cohortKind==='access_level')insist(await one(env,'SELECT 1 FROM wl_member_levels l JOIN wl_members m ON m.id=l.member_id WHERE l.level_id=? AND m.person_id=?',snapshot.cohortValue,recipient.id),'signature_cohort_changed',409)
   const category=await one(env,'SELECT * FROM wl_doc_categories WHERE id=?',snapshot.category)
   insist(category&&category.subject_reads&&readsCategory(actor,recipient.id,category),'signature_category_denied',403)
   statements.push(guard(env,'signature_recipient_changed',"EXISTS(SELECT 1 FROM wl_members WHERE id=? AND person_id=? AND status='active')",recipient.member,recipient.id))

@@ -14,7 +14,7 @@ try {
   await h.raw('/setup', { cookie: owner, form: new URLSearchParams({ confirm: 'yes' }) })
   const { api, staff: s, join, schedule } = await fixture(h, owner)
   await signatureTemplateProof(h,owner,s)
-  await nativeSigningProof(h,owner,s)
+  await nativeSigningProof(h,owner,s,join)
   const employee = s.employee.cookie, outsider = s.managerb.cookie, hr = s.hr.cookie
   const as = (cookie, path, body, status = 200) => h.api(path, cookie, body, status)
   const home = cookie => as(cookie, 'company')

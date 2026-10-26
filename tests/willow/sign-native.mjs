@@ -1,10 +1,10 @@
 // Native signature business journeys extend the existing company-file acceptance.
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { PDFDocument,StandardFonts } from 'pdf-lib'
+import { PDFDocument,StandardFonts,PDFArray,decodePDFRawStream } from 'pdf-lib'
 import { file } from './harness.mjs'
 import { mkdir } from 'node:fs/promises'
-export async function nativeSigningProof(h,owner,s) {
+export async function nativeSigningProof(h,owner,s,join) {
  const api=(path,body,status)=>h.api(path,owner,body,status)
  const as=(cookie,path,body,status)=>h.api(path,cookie,body,status)
  const folder=await api('company.folder',{name:'synthetic-willow-15200',audience:{kind:'everyone',id:null}})
@@ -55,7 +55,13 @@ export async function nativeSigningProof(h,owner,s) {
  assert.equal(downloaded.status,200)
  const sealed=Buffer.from(await downloaded.arrayBuffer())
  assert.equal(createHash('sha256').update(sealed).digest('hex'),completed.certificate.sha256)
- assert.equal((await PDFDocument.load(sealed)).getPageCount(),1)
+ const sealedPdf=await PDFDocument.load(sealed)
+ assert.equal(sealedPdf.getPageCount(),1)
+ const contents=sealedPdf.getPage(0).node.Contents()
+ const streams=contents instanceof PDFArray?Array.from({length:contents.size()},(_,i)=>sealedPdf.context.lookup(contents.get(i))):[contents]
+ const operators=streams.map(stream=>Buffer.from(decodePDFRawStream(stream).decode()).toString()).join('\n')
+ for(const text of ['employee','Present role','AUD 81234.56 salary','Employee signer','ES','Agreed','HR signer'])assert.ok(operators.includes(Buffer.from(text).toString('hex').toUpperCase()),'Sealed PDF renders '+text)
+ assert.ok(operators.includes('61.2'),'The configured signature placement is present in the sealed PDF')
  await as(s.employee.cookie,'signature.act',{request:id,revision:completed.revision,digest:completed.digest,action:'withdraw'},409)
  assert.equal((await h.raw('/app/files/document/'+completed.sealedVersion,{cookie:s.payroll.cookie})).status,404)
  const manager=await as(s.managera.cookie,'signature-requests')
@@ -89,6 +95,21 @@ export async function nativeSigningProof(h,owner,s) {
  const changedSend=await api('signature.send',{review:changedReview.id,digest:changedReview.digest,approved:true})
  await as(s.employee.cookie,'signature.act',{request:oldRequest.id,revision:oldRequest.revision,digest:oldRequest.digest,action:'sign',consent:true,name:'Old signer'},409)
  assert.equal((await as(s.employee.cookie,'signature-requests/'+changedSend.requests[0])).state,'sent')
+ const location=await api('location.create',{name:'Signature cohort office',timezone:'UTC'})
+ const cohortPeople=[]
+ for(let i=0;i<5;i++) {
+  const person=await join('synthetic-willow-sign-'+i,{locationId:location.id})
+  await api('access.give',{person:person.person})
+  cohortPeople.push(person.person)
+ }
+ const cohortReview=await api('signature.preview',{template:revised.id,cohortKind:'location',cohortValue:location.id,hr:s.hr.member,expiresAt:Date.now()+7*86400000})
+ assert.deepEqual(cohortReview.recipients.map(p=>p.id).sort(),cohortPeople.sort())
+ const locationSend=await api('signature.send',{review:cohortReview.id,digest:cohortReview.digest,approved:true})
+ assert.equal(locationSend.requests.length,5)
+ const nonmatching=await as(s.managera.cookie,'signature-requests')
+ assert.ok(!nonmatching.some(r=>locationSend.requests.includes(r.id)))
+ await api('signature.cancel',{cohort:locationSend.id})
+ assert.equal((await api('signature-requests')).filter(r=>locationSend.requests.includes(r.id)&&r.state==='voided').length,5)
  await signingBrowser(h,owner,s,next.requests[0])
  console.log('Native signing: PASS — consent, ordered signatures, sealed bytes, certificate, scoped cohort status, cancellation and old request refusal')
 }
