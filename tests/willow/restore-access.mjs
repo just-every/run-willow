@@ -1,3 +1,4 @@
+import { signingRestoreSource,signingRestoreProof } from './sign-restore.mjs'
 import { signatureTemplateProof } from './sign-templates.mjs'
 // Actual CLI export/import and ordinary email links; no SQL or dev identities.
 import assert from 'node:assert/strict'
@@ -124,6 +125,7 @@ try {
   const f = await fixture({ api, signIn: (email,options) => server.signIn(email,options) }, owner)
   const { staff: s } = f
   await signatureTemplateProof(server,owner,s)
+  const signingState=await signingRestoreSource(server,owner,s)
   const signatureDefinitions=await api('signature-templates',owner)
   const policyFollowup=await api('policy.escalate',s.employee.cookie,{})
   // Native level-bound credentials are environment authority, never portable data.
@@ -277,6 +279,7 @@ try {
   const newOwner = await destination.signIn('owner@example.com')
   await confirm(restored, newOwner)
   const after = apiAt(restored)
+  await signingRestoreProof(destination,newOwner,htmlEmployee,signingState)
   assert.deepEqual(await after('signature-templates',newOwner),signatureDefinitions,'Native template versions, exact digests, placements and historical approvals survive the actual CLI restore')
   await after('signature-templates',owner,undefined,401)
   const restoredTemplateSource=await destination.raw(signatureDefinitions[0].sourceUrl,{cookie:newOwner})
@@ -376,6 +379,8 @@ try {
   const newcomer = await after('joiner.start', cookies.hr, { template: f.templates.joiner, legalName: 'After restore', workEmail: 'new@example.com', startDate: day(0), employmentType: 'full_time', jobTitle: 'Staff', scheduleId: f.schedule })
   await after('access.give', cookies.hr, { person: newcomer.person })
   await after('access.end', cookies.hr, { person: newcomer.person })
+  await after('work.run',newOwner,{})
+  assert.ok(!(await after('signature-requests',newOwner)).some(r=>r.cohort===signingState.cohort&&r.person===newcomer.person),'Restore cannot resume the prior future-joiner policy')
   assert.equal(restoredNotices, 0, 'business work stays quiet until owner reauthorization')
   assert.equal((await after('connections', newOwner)).history.length, noticeHistory.length)
   await after('connections.notices', newOwner, { enabled: true })

@@ -99,7 +99,7 @@ export async function signatureReportingProof(h,owner,s) {
  await as(s.payroll.cookie,'custom-reports/'+saved.id,undefined,403)
  await api('report.schedule',{report:saved.id,version:saved.versionId,firstDate:today,cadenceDays:1,recipients:[s.payroll.member],enabled:true},403)
  await reportScreens(h,owner,s.managera.cookie,saved.id,managerSaved.id)
- console.log('Saved signature reports: PASS — dated authorized sources, reconciled counts, filters, CSV/XLSX, selected-report isolation and reviewed schedule')
+ console.log('Saved signature reports: PASS — dated authorized sources, reconciled counts, filters, CSV and XLSX, selected-report isolation and reviewed schedule')
 }
 
 async function reportScreens(h,owner,manager,report,managerReport) {

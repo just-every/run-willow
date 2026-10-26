@@ -16,7 +16,8 @@ export async function bytes(env:Bindings,hash:string,size:number) {
  return new Uint8Array(await response.arrayBuffer())
 }
 export function draw(page:any,font:any,text:string,field:Row) {
- insist(/^[\x20-\x7e]*$/.test(text),'signature_text_unsupported')
+ insist(!/[\x00-\x1f\x7f]/.test(text),'signature_text_unsupported')
+ try {font.encodeText(text)}catch{insist(false,'signature_text_unsupported')}
  const {width,height}=page.getSize(),w=field.width*width,h=field.height*height
  const size=Math.min(14,h*0.7,w/Math.max(font.widthOfTextAtSize(text||' ',1),1))
  insist(size>=6,'signature_text_does_not_fit')

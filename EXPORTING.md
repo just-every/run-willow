@@ -132,8 +132,8 @@ reader and its existing size bound. The current bundle format is standard
 ZIP32, so more than its 4 GiB size/address range or 65,534 entries is refused
 as `export_bundle.zip32_limit` before download. Reference-size multipart/ZIP64
 transfer remains OPS-002 work. Only selected sections that exist in this edition
-are exported; signatures, benefits and other module
-histories, complete target-product archives and erasure restore fences remain the
+are exported; benefits and other unfinished module histories, complete
+target-product archives and erasure restore fences remain the
 outstanding DATA-001 target.
 
 ## Profile approvals and goals
@@ -227,3 +227,25 @@ refuses executable policy modules on container transport. New exports use
 Base's verified atomic publication and never overwrite an existing backup.
 This restore consent slice leaves DATA-001 partial: complete target-product
 portability and the other outstanding export work above remain open.
+
+## Signing custody
+
+Selecting the documents section includes permitted native signing lineage,
+exact consent wording and language, signing values, protected execution events
+and a completed certificate. The employee and authorized employer-wide HR need
+current category rights; a manager status grant exports no execution evidence.
+Session bindings and unused payload reviews are excluded from employee bundles.
+The sealed document bytes remain in the existing documents collection and the
+manifest verifies their SHA-256 against the execution certificate.
+
+Request-owned signing records inherit their filing category's retention class,
+expiry and holds. Erasure moves retained evidence into restricted custody and
+keeps other recipients' shared-cohort records independent. Unassigned rendered
+preview files retain the existing preview-custody boundary; full erasure and
+purge coverage is still recorded as partial in the signing clauses.
+
+Owner archives preserve historical signed records and consent evidence, while
+excluding payload reviews, consuming old issue reviews, voiding unsigned requests
+and stopping cohort enrollment and outbound policies. Restore never recreates
+source sessions or authority to continue an unfinished signing request. Reissue
+requires fresh employer review and each signer's own applicable consent.

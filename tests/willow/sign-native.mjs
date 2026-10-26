@@ -1,3 +1,4 @@
+import { day } from './regression-fixture.mjs'
 // Native signature business journeys extend the existing company-file acceptance.
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -7,12 +8,20 @@ import { mkdir } from 'node:fs/promises'
 export async function nativeSigningProof(h,owner,s,join) {
  const api=(path,body,status)=>h.api(path,owner,body,status)
  const as=(cookie,path,body,status)=>h.api(path,cookie,body,status)
+ const employeeRecord=await api('people/'+s.employee.person)
+ await api('person.update',{person:s.employee.person,revision:employeeRecord.revision,legalName:'Maya Chen',workEmail:'employee@example.com',employeeNumber:'WIL-103'})
+ const mergeLocation=await api('location.create',{name:'Brisbane office',timezone:'Australia/Brisbane'})
+ const mergeDepartment=await api('department.create',{name:'Field operations'})
+ await api('mover.schedule',{period:s.employee.period,effectiveFrom:day(-1),locationId:mergeLocation.id,departmentId:mergeDepartment.id,reason:'Reviewed office assignment'})
+ const mergeRecord=await api('people/'+s.employee.person)
  const folder=await api('company.folder',{name:'synthetic-willow-15200',audience:{kind:'everyone',id:null}})
  const pdf=await PDFDocument.create(),font=await pdf.embedFont(StandardFonts.Helvetica)
  pdf.addPage([612,792]).drawText('Employment agreement for synthetic Willow employee',{x:40,y:730,font,size:14})
+ pdf.addPage([612,792])
  const source=await api('company.file',{folder:folder.id,title:'Employment agreement',file:file('agreement.pdf',await pdf.save())})
  const category=await api('category.create',{name:'Signed agreements',subjectReads:true,managerReads:true})
  const fields=[{signer:0,kind:'employee_name',page:1,x:0.1,y:0.1,width:0.5,height:0.05},{signer:0,kind:'job_title',page:1,x:0.1,y:0.2,width:0.5,height:0.05},{signer:0,kind:'compensation',page:1,x:0.1,y:0.3,width:0.7,height:0.05},{signer:0,kind:'signature',page:1,x:0.1,y:0.4,width:0.4,height:0.07},{signer:0,kind:'initial',page:1,x:0.1,y:0.5,width:0.2,height:0.05},{signer:0,kind:'date',page:1,x:0.5,y:0.5,width:0.3,height:0.05},{signer:0,kind:'text',page:1,x:0.1,y:0.6,width:0.5,height:0.05},{signer:1,kind:'signature',page:1,x:0.1,y:0.8,width:0.5,height:0.07}]
+ fields.push(...['work_email','employee_number','start_date','department','location'].map((kind,i)=>({signer:0,kind,page:2,x:0.1,y:0.1+i*0.12,width:0.8,height:0.08})))
  const t=await api('signature.template',{source:source.versionId,title:'Employment agreement',category:category.id,signers:['employee','hr'],fields})
  const template=(await api('signature-templates')).find(x=>x.id===t.id)
  await api('signature.template.approve',{template:t.id,digest:template.digest,reviewed:true})
@@ -22,6 +31,7 @@ export async function nativeSigningProof(h,owner,s,join) {
  assert.equal(review.recipients.length,2)
  assert.equal(review.recipients[0].merged.employee_name,'Maya Chen')
  assert.ok(review.recipients[0].merged.compensation.includes('81234.56'))
+ assert.deepEqual(Object.fromEntries(['work_email','employee_number','start_date','department','location'].map(key=>[key,review.recipients[0].merged[key]])),{work_email:'employee@example.com',employee_number:'WIL-103',start_date:mergeRecord.employment.find(p=>p.id===mergeRecord.selectedPeriod).startDate,department:'Field operations',location:'Brisbane office'})
  const preview=await h.raw('/app/signature-reviews/'+review.id+'?person='+s.employee.person,{cookie:owner})
  assert.equal(preview.status,200)
  assert.equal(createHash('sha256').update(Buffer.from(await preview.arrayBuffer())).digest('hex'),review.recipients[0].sha256)
@@ -77,11 +87,10 @@ export async function nativeSigningProof(h,owner,s,join) {
  const sealed=Buffer.from(await downloaded.arrayBuffer())
  assert.equal(createHash('sha256').update(sealed).digest('hex'),completed.certificate.sha256)
  const sealedPdf=await PDFDocument.load(sealed)
- assert.equal(sealedPdf.getPageCount(),1)
- const contents=sealedPdf.getPage(0).node.Contents()
- const streams=contents instanceof PDFArray?Array.from({length:contents.size()},(_,i)=>sealedPdf.context.lookup(contents.get(i))):[contents]
+ assert.equal(sealedPdf.getPageCount(),2)
+ const streams=sealedPdf.getPages().flatMap(page=>{const contents=page.node.Contents();return contents instanceof PDFArray?Array.from({length:contents.size()},(_,i)=>sealedPdf.context.lookup(contents.get(i))):[contents]})
  const operators=streams.map(stream=>Buffer.from(decodePDFRawStream(stream).decode()).toString()).join('\n')
- for(const text of ['Maya Chen','Present role','AUD 81234.56 salary','Employee signer','ES','Agreed','HR signer',completed.certificate.signers[0].values.date])assert.ok(operators.includes(Buffer.from(text).toString('hex').toUpperCase()),'Sealed PDF renders '+text)
+ for(const text of ['Maya Chen','Present role','AUD 81234.56 salary','Employee signer','ES','Agreed','HR signer','employee@example.com','WIL-103','Field operations','Brisbane office',review.recipients[0].merged.start_date,completed.certificate.signers[0].values.date])assert.ok(operators.includes(Buffer.from(text).toString('hex').toUpperCase()),'Sealed PDF renders '+text)
  assert.ok(operators.includes('61.2'),'The configured signature placement is present in the sealed PDF')
  await as(s.employee.cookie,'signature.act',{request:id,revision:completed.revision,digest:completed.digest,action:'withdraw'},409)
  assert.equal((await h.raw('/app/files/document/'+completed.sealedVersion,{cookie:s.payroll.cookie})).status,404)

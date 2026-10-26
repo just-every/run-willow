@@ -83,5 +83,5 @@ export async function signatureWebhookProof(h,owner,fx,deliveries,receiver) {
  await api('webhook.replay',{delivery:failed.id},401)
  receiver.status=204;await api('webhook.run',{})
  assert.equal(deliveries.length,count,'Loss of the category level invalidates the credential before replay or retry')
- console.log('Signature completion webhooks: PASS — observed final state only, category/population boundaries, protected payload, signed deduplication, durable replay and authority loss')
+ console.log('Signature completion webhooks: PASS — observed final state only, category and population boundaries, protected payload, signed deduplication, durable replay and authority loss')
 }

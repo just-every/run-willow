@@ -367,7 +367,59 @@ After reviewing the source bytes and configuration, HR posts `template`, the
 returned `digest` and `reviewed: true` to
 `POST /api/willow/signature.template.approve`. A new draft or changed source
 prevents approval of an obsolete version. Historical approval remains recorded.
-This foundation has no send or signing action: approval creates neither a
-signature request nor employee consent. Native forms, merge fields, rendered
-placements, signer authentication, sealing, certificates, cohort work and
-DocuSign remain explicit contract gaps.
+Template approval creates neither a request nor employee consent. Native forms
+are under `/app/settings/signatures`; the original PDF stays pinned. Merge kinds
+also include `employee_name`, `job_title`, `compensation`, `work_email`,
+`employee_number`, `start_date`, `department` and `location`. Current source-field
+rights apply to rendered recipient previews. Standard PDF fonts support their
+encoded characters; unsupported characters fail explicitly rather than being
+replaced.
+
+`signature.preview` fixes the template, rendered bytes, category, named employer
+countersigner, expiry and resolved recipients. Select `people`, or `cohortKind`
+with `cohortValue`: `everyone`, `location`, `department`, `employment_type` or
+`access_level`. `futureJoiners` and `notify` both default false. The former
+requires a filter and explicitly includes new matching employment periods; the
+latter authorizes fixed authenticated email links and the approved FLOW-002
+cadence. Both depend on current eligibility and category rights at dispatch.
+`signature.send` consumes the actor-bound `review` and `digest` once with
+`approved: true`. Provider acceptance is recorded separately from employee
+receipt or signing; uncertain sends are never retried automatically.
+
+`GET /api/willow/signature-requests` returns current permitted status. Read one
+with `signature-requests/:id`; `?asOf=YYYY-MM-DD` returns dated status only with
+current authority. Native request URLs are `/app/signatures/:id`. Old URLs stay
+bound to their original request, so void and reissue never retarget an old link.
+No emailed bearer credential is implemented; signing requires an active session.
+
+A signer first posts `request`, `revision`, `digest`, `name` and any `initial`
+and `text` to `signature.prepare`. It returns an actor and session-bound payload
+review with the exact rendered PDF digest and entered values. Its protected PDF
+is `/app/signature-payloads/:id.pdf`. After reviewing those bytes and the consent
+wording, post `signature.act` with the request binding, `action: "sign"`,
+`payload` and `consent: true`. The signing action accepts no replacement field
+values. Employee signing precedes the named employer countersigner. Other
+request actions are `view`, `decline`, `withdraw` and authorized `void`.
+`signature.cancel` closes unsigned work and future enrollment for a cohort;
+completed records remain. Expiry is committed by the scheduled instant.
+
+Lifecycle rules can carry `signature: {template, hr, cohortKind, cohortValue}`.
+`task.signature.preview`, `task.signature.issue` and `task.signature.verify`
+review, issue and verify observed sealed custody. Free-text task completion
+cannot substitute for signing. Dependencies and case closure stay blocked until
+the completed records are verified. Publication and deliberate upgrades preserve
+the pinned graph and completed evidence.
+
+Saved reports support the `signatureRequests`, `signaturePending`,
+`signatureViewed`, `signatureSigned`, `signatureDeclined`, `signatureExpired`,
+`signatureVoided`, `signatureWithdrawn` and `signatureUnknown` columns, with
+optional `signatureTemplate`, `signatureCohort` and `signatureState` filters.
+Sources reconcile dated observed status; manager access remains status-only.
+CSV and XLSX and scheduled authenticated report links use the same current
+projection. `signature.completed` uses the existing explicitly approved webhook
+transport and current credential population and category authority. It describes
+observed sealing and never grants document access or proves delivery.
+
+Connected DocuSign operation, returned records and old callbacks remain
+unproved. SIGN-001 and SIGN-002 remain PARTIAL; these native capabilities do not
+establish ESIGN or UETA legal suitability.

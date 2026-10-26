@@ -1,7 +1,8 @@
 import { localPortability } from '@runeditrun/rer/portability';
 
-const ownerReauthorizationRequired = ['notices', 'oidc', 'model', 'businessImport', 'policyAssistant', 'workflowAssistant', 'oktaProvisioning'];
+const ownerReauthorizationRequired = ['notices', 'oidc', 'model', 'businessImport', 'policyAssistant', 'workflowAssistant', 'oktaProvisioning','signing'];
 const pauseConnections = (table, row) => {
+ if (table === 'wl_sign_reviews') return {...row,used_at:row.used_at??Date.now()};
  if (table === 'wl_sign_requests' && ['sent','viewed'].includes(row.state)) return {...row,state:'voided',revision:row.revision+1};
  if (table === 'wl_sign_cohorts') return {...row,future_joiners:0,notify:0,stopped_at:row.stopped_at??Date.now()};
  if (table === 'wl_okta_reviews') return { ...row, status: row.status === 'verified' ? 'verified' : 'closed' };
@@ -44,7 +45,7 @@ export function willowPortability() {
  return { ...transfer,
   async import(context) {
    const result = await transfer.import(context);
-   context.store.report('Owner reauthorization required for notices, OIDC, model connections, policy answers, workflow assistance, Okta account work and Business imports. Review provider handling and consent in Connections, relink identity and enable Business imports in Import settings when ready. Privileged workflow steps need fresh signoffs.');
+   context.store.report('Owner reauthorization required for notices, OIDC, model connections, policy answers, workflow assistance, Okta account work and Business imports. Review provider handling and consent in Connections, relink identity and enable Business imports in Import settings when ready. Privileged workflow steps need fresh signoffs. Unsigned signature requests and cohort enrollment remain stopped; reissue requires fresh review and consent.');
    return { ...result, ownerReauthorizationRequired: [...ownerReauthorizationRequired] };
   },
  };
