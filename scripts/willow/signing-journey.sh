@@ -3,8 +3,11 @@ set -eu
 : "${WILLOW_PLAYWRIGHT_PATH:?Set a current Playwright module path}"
 : "${WILLOW_EVIDENCE_DIR:?Set an external screenshot directory}"
 mkdir -p "$WILLOW_EVIDENCE_DIR"
-# Verify's signing-journeys job runs this; retention, webhooks and restore keep their own Verify jobs.
+# Verify's signing group runs this; retention, webhooks and restore keep their own commands.
 export WILLOW_SIGN_BROWSER=1
-pnpm exec vite build
+# CI downloads the build job's artifact; direct runs still prepare their own.
+if [ "${CI:-}" != true ] || [ "${WILLOW_CI_BUILT:-}" != 1 ]; then
+  pnpm exec vite build
+fi
 node tests/willow/company-home.mjs
 node tests/willow/workflows.mjs

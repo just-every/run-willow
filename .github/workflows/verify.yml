@@ -64,23 +64,15 @@ jobs:
           fi
           echo "skip=$skip" >> "$GITHUB_OUTPUT"
 
-  shards:
+  build:
     needs: plan
     if: needs.plan.outputs.skip != 'true'
-    name: verify (${{ matrix.shard }})
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [core, records-people, records-work, records-policy]
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 10
     env:
       CI: 'true'
-      WILLOW_VERIFY_SHARD: ${{ matrix.shard }}
       WRANGLER_SEND_METRICS: 'false'
     steps:
-      - name: Set external evidence directory
-        run: printf 'WILLOW_EVIDENCE_DIR=%s/willow-evidence\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -94,19 +86,59 @@ jobs:
       - run: npm install --global pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer check --profile first-party
-      - run: pnpm exec rer verify
-      - if: matrix.shard == 'core'
-        run: pnpm run test:site
+      - name: Check edition source lock freshness
+        run: node scripts/edition-authoring/cli.mjs check
+      - run: node scripts/edition-authoring/cli.mjs verify-base --offline
+      - run: node scripts/edition-authoring/cli.mjs verify-base --record migrations/base-copies.json --offline
+      # rer build invokes build:app (vite build) once, retaining its output guards.
+      - run: pnpm run build
+      - run: pnpm run typecheck
+      - name: Pack shared build without runtime state
+        run: tar -cf "$RUNNER_TEMP/willow-build.tar" dist .wrangler/deploy/config.json
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: willow-pages-${{ matrix.shard }}
-          path: |
-            ${{ runner.temp }}/willow-evidence/*.png
+          name: willow-build
+          path: ${{ runner.temp }}/willow-build.tar
+          retention-days: 1
 
-  performance:
-    needs: plan
+  shards:
+    name: verify (${{ matrix.shard }})
+    needs: [plan, build]
     if: needs.plan.outputs.skip != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Before-run test seconds, excluding repeated setup/build:
+          # 517, 520, 581, 574, 525, 533, 520. Commands run separately (651).
+          - shard: core
+            browser: full
+            current-browser: false
+            disk: true
+          - shard: policy-sections
+            browser: full
+            current-browser: true
+            disk: true
+          - shard: people-scope-pay
+            browser: full
+            current-browser: true
+            disk: true
+          - shard: restore-api-approvals
+            browser: none
+            current-browser: true
+            disk: true
+          - shard: access-signing-job
+            browser: shell
+            current-browser: true
+            disk: false
+          - shard: work-credentials-leave
+            browser: full
+            current-browser: true
+            disk: true
+          - shard: retention-performance-phase2
+            browser: full
+            current-browser: false
+            disk: false
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -119,27 +151,113 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Reclaim unused hosted-runner SDKs
+        if: ${{ matrix.disk && runner.environment == 'github-hosted' && runner.os == 'Linux' }}
+        run: bash scripts/ci/reclaim-disk.sh
       - uses: actions/setup-node@v4
         with:
           node-version: '22.20.0'
       - run: npm install --global pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec vite build
+      - uses: actions/download-artifact@v4
+        with:
+          name: willow-build
+          path: ${{ runner.temp }}/willow-build
+      - name: Unpack shared build
+        run: tar -xf "$RUNNER_TEMP/willow-build/willow-build.tar"
       - name: Install Chromium
+        if: matrix.browser != 'none'
+        env:
+          BROWSER: ${{ matrix.browser }}
         run: |
           set -euo pipefail
-          pnpm exec playwright install chromium
+          if [ "$BROWSER" = shell ]; then
+            pnpm exec playwright install --only-shell chromium
+          else
+            pnpm exec playwright install chromium
+          fi
           # Hosted ubuntu-24.04 already carries Chromium's libraries. Use apt only when a real launch fails.
           node scripts/ci/chromium-probe.mjs || {
             timeout 420 pnpm exec playwright install-deps chromium
             node scripts/ci/chromium-probe.mjs
           }
-      - run: WILLOW_PERFORMANCE_BROWSER=1 node tests/willow/performance.mjs
+      - name: Install current signing and section browser
+        if: matrix.current-browser
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/willow-playwright" --no-save playwright@1.64.1
+          export WILLOW_PLAYWRIGHT_PATH="$RUNNER_TEMP/willow-playwright/node_modules/playwright/index.mjs"
+          node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install --only-shell chromium
+          node scripts/ci/chromium-probe.mjs || {
+            timeout 420 node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install-deps chromium
+            node scripts/ci/chromium-probe.mjs
+          }
+          printf 'WILLOW_CURRENT_PLAYWRIGHT_PATH=%s/willow-playwright/node_modules/playwright/index.mjs\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Core verification and run site
+        if: matrix.shard == 'core'
+        env:
+          WILLOW_VERIFY_SHARD: core
+          WILLOW_CI_BUILT: '1'
+        run: |
+          pnpm exec rer verify
+          pnpm run test:site
+      - name: Policy records and built-in sections
+        if: matrix.shard == 'policy-sections'
+        env:
+          WILLOW_VERIFY_SHARD: records-policy
+          WILLOW_CI_BUILT: '1'
+        run: |
+          pnpm exec rer verify
+          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs builtinSelection builtinBrowser builtinCustody
+      - name: People records, scoped levels and pay sections
+        if: matrix.shard == 'people-scope-pay'
+        env:
+          WILLOW_VERIFY_SHARD: records-people
+          WILLOW_CI_BUILT: '1'
+        run: |
+          pnpm exec rer verify
+          WILLOW_VERIFY_SHARD=browser-scope WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
+          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs pay records definitions
+      - name: Restore erasure, API roster, webhooks and approvals
+        if: matrix.shard == 'restore-api-approvals'
+        run: |
+          pnpm run test:restore-erasure
+          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs apiRoster
+          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/webhooks.mjs
+          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs approvalPersonal approvalRouting approvalBrowser
+      - name: Access, signing and job levels
+        if: matrix.shard == 'access-signing-job'
+        env:
+          WILLOW_CI_BUILT: '1'
+        run: |
+          WILLOW_VERIFY_SHARD=browser-access WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
+          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" sh scripts/willow/signing-journey.sh
+          WILLOW_VERIFY_SHARD=browser-job WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
+      - name: Work records, credentials and leave sections
+        if: matrix.shard == 'work-credentials-leave'
+        env:
+          WILLOW_VERIFY_SHARD: records-work
+          WILLOW_CI_BUILT: '1'
+        run: |
+          pnpm exec rer verify
+          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs settingsSelection apiKeys settingsBrowser
+          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs leave custody browser
+      - name: Retention, EEO, performance and phase two browsers
+        if: matrix.shard == 'retention-performance-phase2'
+        env:
+          WILLOW_EEO_INVITATIONS_BROWSER: '1'
+          WILLOW_EEO_BROWSER: '1'
+        run: |
+          pnpm run test:retention-eeo
+          WILLOW_PERFORMANCE_BROWSER=1 node tests/willow/performance.mjs
+          pnpm run test:phase2-browser
+          WILLOW_AI_BROWSER=1 node tests/willow/ai-policy.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: willow-performance-pages
+          name: willow-pages-${{ matrix.shard }}
           path: ${{ runner.temp }}/willow-evidence/*.png
+
 
   commands-and-restore:
     needs: plan
@@ -184,213 +302,8 @@ jobs:
           name: willow-command-pages
           path: ${{ runner.temp }}/willow-evidence/*.png
 
-  retention-and-eeo:
-    needs: plan
-    if: needs.plan.outputs.skip != 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    env:
-      CI: 'true'
-      WRANGLER_SEND_METRICS: 'false'
-      WILLOW_EEO_INVITATIONS_BROWSER: '1'
-      WILLOW_EEO_BROWSER: '1'
-    steps:
-      - name: Set external evidence directory
-        run: printf 'WILLOW_EVIDENCE_DIR=%s/willow-evidence\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.20.0'
-      - run: npm install --global pnpm@10.12.4
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec vite build
-      - name: Install Chromium
-        run: |
-          set -euo pipefail
-          pnpm exec playwright install chromium
-          # Hosted ubuntu-24.04 already carries Chromium's libraries. Use apt only when a real launch fails.
-          node scripts/ci/chromium-probe.mjs || {
-            timeout 420 pnpm exec playwright install-deps chromium
-            node scripts/ci/chromium-probe.mjs
-          }
-      - run: pnpm run test:retention-eeo
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: willow-eeo-pages
-          path: ${{ runner.temp }}/willow-evidence/*.png
-
-  restore-erasure:
-    needs: plan
-    if: needs.plan.outputs.skip != 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    env:
-      CI: 'true'
-      WRANGLER_SEND_METRICS: 'false'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.20.0'
-      - run: npm install --global pnpm@10.12.4
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec vite build
-      - run: pnpm run test:restore-erasure
-
-  browser-journeys:
-    needs: plan
-    if: needs.plan.outputs.skip != 'true'
-    name: browser-journeys (${{ matrix.shard }})
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [browser-access, browser-scope, browser-job, browser-phase2]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    env:
-      CI: 'true'
-      WILLOW_VERIFY_SHARD: ${{ matrix.shard }}
-      WRANGLER_SEND_METRICS: 'false'
-    steps:
-      - name: Set external evidence directory
-        run: printf 'WILLOW_EVIDENCE_DIR=%s/willow-evidence\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.20.0'
-      - run: npm install --global pnpm@10.12.4
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec vite build
-      - name: Install Chromium
-        run: |
-          set -euo pipefail
-          pnpm exec playwright install --only-shell chromium
-          # Hosted ubuntu-24.04 already carries Chromium's libraries. Use apt only when a real launch fails.
-          node scripts/ci/chromium-probe.mjs || {
-            timeout 420 pnpm exec playwright install-deps chromium
-            node scripts/ci/chromium-probe.mjs
-          }
-      - if: matrix.shard != 'browser-phase2'
-        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
-      - if: matrix.shard == 'browser-phase2'
-        run: pnpm run test:phase2-browser
-      - if: matrix.shard == 'browser-phase2'
-        run: WILLOW_AI_BROWSER=1 node tests/willow/ai-policy.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: willow-browser-pages-${{ matrix.shard }}
-          path: ${{ runner.temp }}/willow-evidence/*.png
-
-  # SIGN-001 and SIGN-002 phone, old-link, report and workflow screens at 1440 and 390.
-  signing-journeys:
-    needs: plan
-    if: needs.plan.outputs.skip != 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    env:
-      CI: 'true'
-      WRANGLER_SEND_METRICS: 'false'
-    steps:
-      - name: Set external evidence directory
-        run: printf 'WILLOW_EVIDENCE_DIR=%s/willow-evidence\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.20.0'
-      - run: npm install --global pnpm@10.12.4
-      - run: pnpm install --frozen-lockfile
-      - name: Install current signing browser
-        run: |
-          set -euo pipefail
-          npm install --prefix "$RUNNER_TEMP/willow-playwright" --no-save playwright@1.64.1
-          export WILLOW_PLAYWRIGHT_PATH="$RUNNER_TEMP/willow-playwright/node_modules/playwright/index.mjs"
-          node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install --only-shell chromium
-          node scripts/ci/chromium-probe.mjs || {
-            timeout 420 node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install-deps chromium
-            node scripts/ci/chromium-probe.mjs
-          }
-          printf 'WILLOW_PLAYWRIGHT_PATH=%s/willow-playwright/node_modules/playwright/index.mjs\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-      - run: sh scripts/willow/signing-journey.sh
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: willow-signing-pages
-          path: ${{ runner.temp }}/willow-evidence/*.png
-
-  section-journeys:
-    needs: plan
-    if: needs.plan.outputs.skip != 'true'
-    name: section-journeys (${{ matrix.shard }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - shard: api
-            sections: apiRoster
-          - shard: credentials
-            sections: settingsSelection apiKeys settingsBrowser
-          - shard: pay
-            sections: pay records definitions
-          - shard: leave
-            sections: leave custody browser
-          - shard: approvals
-            sections: approvalPersonal approvalRouting approvalBrowser
-          - shard: builtins
-            sections: builtinSelection builtinBrowser builtinCustody
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    env:
-      CI: 'true'
-      WRANGLER_SEND_METRICS: 'false'
-    steps:
-      - name: Set external evidence directory
-        run: printf 'WILLOW_EVIDENCE_DIR=%s/willow-evidence\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.20.0'
-      - run: npm install --global pnpm@10.12.4
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec vite build
-      - name: Install current section browser
-        run: |
-          set -euo pipefail
-          npm install --prefix "$RUNNER_TEMP/willow-playwright" --no-save playwright@1.64.1
-          export WILLOW_PLAYWRIGHT_PATH="$RUNNER_TEMP/willow-playwright/node_modules/playwright/index.mjs"
-          node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install --only-shell chromium
-          node scripts/ci/chromium-probe.mjs || {
-            timeout 420 node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install-deps chromium
-            node scripts/ci/chromium-probe.mjs
-          }
-          printf 'WILLOW_PLAYWRIGHT_PATH=%s/willow-playwright/node_modules/playwright/index.mjs\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-      - run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs ${{ matrix.sections }}
-      - if: matrix.shard == 'api'
-        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/webhooks.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: willow-section-pages-${{ matrix.shard }}
-          path: ${{ runner.temp }}/willow-evidence/*.png
-
   verify:
-    needs: [plan, shards, performance, commands-and-restore, retention-and-eeo, restore-erasure, browser-journeys, signing-journeys, section-journeys]
+    needs: [plan, build, shards, commands-and-restore]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 1
