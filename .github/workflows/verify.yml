@@ -85,19 +85,14 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      # rer's servers keep their real 15 GiB free-space guard; Willow uses none of
-      # these preinstalled SDKs, so remove them on GitHub's disposable runner.
       - name: Reclaim unused hosted-runner SDKs
         if: ${{ runner.environment == 'github-hosted' && runner.os == 'Linux' }}
-        run: |
-          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP"
+        run: bash scripts/ci/reclaim-disk.sh
       - uses: actions/setup-node@v4
         with:
           node-version: '22.20.0'
       - run: npm install --global pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec rer install
       - run: pnpm exec rer check --profile first-party
       - run: pnpm exec rer verify
       - if: matrix.shard == 'core'
@@ -129,7 +124,6 @@ jobs:
           node-version: '22.20.0'
       - run: npm install --global pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec rer install
       - run: pnpm exec vite build
       - name: Install Chromium
         run: |
@@ -162,19 +156,14 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      # rer's servers keep their real 15 GiB free-space guard; Willow uses none of
-      # these preinstalled SDKs, so remove them on GitHub's disposable runner.
       - name: Reclaim unused hosted-runner SDKs
         if: ${{ runner.environment == 'github-hosted' && runner.os == 'Linux' }}
-        run: |
-          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP"
+        run: bash scripts/ci/reclaim-disk.sh
       - uses: actions/setup-node@v4
         with:
           node-version: '22.20.0'
       - run: npm install --global pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec rer install
       - name: Install Chromium
         run: |
           set -euo pipefail
@@ -217,7 +206,6 @@ jobs:
           node-version: '22.20.0'
       - run: npm install --global pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec rer install
       - run: pnpm exec vite build
       - name: Install Chromium
         run: |
@@ -253,7 +241,6 @@ jobs:
           node-version: '22.20.0'
       - run: npm install --global pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec rer install
       - run: pnpm exec vite build
       - run: pnpm run test:restore-erasure
 
@@ -283,7 +270,6 @@ jobs:
           node-version: '22.20.0'
       - run: npm install --global pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec rer install
       - run: pnpm exec vite build
       - name: Install Chromium
         run: |
@@ -327,7 +313,6 @@ jobs:
           node-version: '22.20.0'
       - run: npm install --global pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec rer install
       - name: Install current signing browser
         run: |
           set -euo pipefail
@@ -383,7 +368,6 @@ jobs:
           node-version: '22.20.0'
       - run: npm install --global pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec rer install
       - run: pnpm exec vite build
       - name: Install current section browser
         run: |
