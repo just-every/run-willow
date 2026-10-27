@@ -130,6 +130,37 @@ export async function nativeSigningProof(h,owner,s,join) {
   await as(action==='void'?owner:s.employee.cookie,'signature.act',{request:r.id,revision:r.revision,digest:r.digest,action})
   await as(s.employee.cookie,'signature.act',{request:r.id,revision:r.revision,digest:r.digest,action:'sign',consent:true},409)
  }
+ // A real countersigner payload must lose authority when only category access is revoked.
+ const custodyReview=await api('signature.preview',{...input,people:[s.employee.person]})
+ const custodySend=await api('signature.send',{review:custodyReview.id,digest:custodyReview.digest,approved:true})
+ const custodyId=custodySend.requests[0]
+ const employeePending=await as(s.employee.cookie,'signature-requests/'+custodyId)
+ const employeeBound={request:custodyId,revision:employeePending.revision,digest:employeePending.digest}
+ const employeePayload=await as(s.employee.cookie,'signature.prepare',{...employeeBound,name:'synthetic-willow-15230',initial:'SW',text:'Agreed'})
+ await as(s.employee.cookie,'signature.act',{...employeeBound,action:'sign',consent:true,payload:employeePayload.id})
+ const preservedBefore=await api('signature-requests/'+custodyId)
+ const counterBound={request:custodyId,revision:preservedBefore.revision,digest:preservedBefore.digest}
+ const counterPayload=await as(s.hr.cookie,'signature.prepare',{...counterBound,name:'synthetic-willow-15231'})
+ assert.equal((await h.raw('/app/signature-payloads/'+counterPayload.id+'.pdf',{cookie:s.hr.cookie})).status,200)
+ const originalLevels=(await api('levels')).assignments.filter(a=>a.member_id===s.hr.member).map(a=>a.level_id)
+ const restrictedReview=await api('level.preview',{kind:'level',name:'synthetic-willow-15232',permissions:['people.manage','people.private','leave.manage']})
+ const restricted=await api('level.apply',{review:restrictedReview.id})
+ const revoke=await api('level.preview',{kind:'assignment',member:s.hr.member,levels:[restricted.id]})
+ await api('level.apply',{review:revoke.id})
+ assert.ok((await as(s.hr.cookie,'me')).permissions.includes('people.manage'),'The same live HR session retains employer-wide authority')
+ await as(s.hr.cookie,'signature.act',{...counterBound,action:'sign',consent:true,payload:counterPayload.id},404)
+ assert.equal((await h.raw('/app/signature-payloads/'+counterPayload.id+'.pdf',{cookie:s.hr.cookie})).status,404,'Category revocation also closes the prepared document door')
+ const preservedAfter=await api('signature-requests/'+custodyId)
+ for(const key of ['state','revision','digest','signed','sealedVersion','certificate'])assert.deepEqual(preservedAfter[key],preservedBefore[key],'Denied signing preserves '+key)
+ assert.equal(preservedAfter.signed.length,1)
+ assert.equal(preservedAfter.sealedVersion,null)
+ const retained=await h.raw('/app/signatures/'+custodyId+'.pdf',{cookie:owner})
+ assert.equal(retained.status,200)
+ assert.equal(createHash('sha256').update(Buffer.from(await retained.arrayBuffer())).digest('hex'),preservedBefore.digest,'The employee-signed bytes survive the denied countersignature')
+ const restoreCategory=await api('level.preview',{kind:'assignment',member:s.hr.member,levels:originalLevels})
+ await api('level.apply',{review:restoreCategory.id})
+ await as(s.hr.cookie,'signature.act',{...counterBound,action:'sign',consent:true,payload:counterPayload.id})
+ assert.equal((await api('signature-requests/'+custodyId)).state,'signed','Refusal neither consumes the prepared consent nor damages completion after authority is restored')
  const oldReview=await api('signature.preview',{...input,people:[s.employee.person]})
  const oldSend=await api('signature.send',{review:oldReview.id,digest:oldReview.digest,approved:true})
  const oldRequest=await as(s.employee.cookie,'signature-requests/'+oldSend.requests[0])
@@ -236,6 +267,7 @@ export async function nativeSigningProof(h,owner,s,join) {
  assert.ok(nativeAudit.some(e=>e.action==='signature.attempt.read'&&JSON.parse(e.detail).outcome==='denied'))
  assert.ok(!nativeAudit.filter(e=>e.action.startsWith('signature.')).some(e=>['Employee signer','HR signer','Session bound signer','Agreed'].some(value=>e.detail.includes(value))))
  console.log('Native signing: PASS — consent, ordered signatures, sealed bytes, certificate, scoped cohort status, cancellation and old request refusal')
+ return [...cohortPeople,joiner.person]
 }
 async function signingBrowser(h,owner,s,id,oldId,newId,expiredId) {
  if(process.env.WILLOW_SIGN_BROWSER!=='1')return

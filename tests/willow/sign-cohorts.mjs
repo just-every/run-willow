@@ -2,8 +2,9 @@
 import assert from 'node:assert/strict'
 import { PDFDocument } from 'pdf-lib'
 import { file } from './harness.mjs'
+import { day } from './regression-fixture.mjs'
 
-export async function signatureCohortProof(h,owner,s,join) {
+export async function signatureCohortProof(h,owner,s,join,nativeRecipients) {
  const api=(path,body,status)=>h.api(path,owner,body,status)
  const as=(cookie,path,body,status)=>h.api(path,cookie,body,status)
  const location=await api('location.create',{name:'synthetic-willow-15300',timezone:'UTC'})
@@ -16,6 +17,8 @@ export async function signatureCohortProof(h,owner,s,join) {
   return {...person,member:member.id,cookie:await h.signIn(name+'@example.com',{requested:true})}
  }
  const a=await create(15303),b=await create(15304,{employmentType:'part_time'})
+ const future=await create(15317,{startDate:day(10)})
+ const everyone=[...Object.values(s).map(person=>person.person),...nativeRecipients,a.person,b.person].sort()
  const folder=await api('company.folder',{name:'synthetic-willow-15305',audience:{kind:'everyone',id:null}})
  const pdf=await PDFDocument.create();pdf.addPage([612,792])
  const source=await api('company.file',{folder:folder.id,title:'synthetic-willow-15306',file:file('synthetic-willow-15306.pdf',await pdf.save())})
@@ -31,11 +34,21 @@ export async function signatureCohortProof(h,owner,s,join) {
  const assignment=await api('level.preview',{kind:'assignment',member:a.member,levels:[level.id]})
  await api('level.apply',{review:assignment.id})
  a.cookie=await h.signIn('synthetic-willow-15303@example.com')
- for(const [kind,value,people] of [['named','',[a.person]],['everyone','',null],['department',department.id,null],['employment_type','part_time',null],['access_level',level.id,null]]) {
+ for(const [kind,value,people,expected,excluded] of [
+  ['named','',[a.person],[a.person],[b.person,future.person]],
+  ['everyone','',null,everyone,[future.person]],
+  ['department',department.id,null,[a.person,b.person],[s.employee.person,future.person]],
+  ['employment_type','part_time',null,[b.person],[a.person,s.employee.person,future.person]],
+  ['access_level',level.id,null,[a.person],[b.person,future.person]]
+ ]) {
   const review=await api('signature.preview',{...base,cohortKind:kind,cohortValue:value,...(people?{people}:{})})
-  assert.ok(review.recipients.some(r=>r.id===(kind==='employment_type'?b.person:a.person)))
-  if(kind==='access_level'||kind==='named')assert.deepEqual(review.recipients.map(r=>r.id),[a.person])
+  assert.deepEqual(review.recipients.map(r=>r.id).sort(),[...expected].sort(),kind+' review resolves the complete independently expected set')
+  for(const person of excluded)assert.ok(!review.recipients.some(r=>r.id===person),kind+' excludes nonmatching or future people')
   const issued=await api('signature.send',{review:review.id,digest:review.digest,approved:true})
+  const actual=(await api('signature-requests')).filter(r=>r.cohort===issued.id)
+  assert.deepEqual(actual.map(r=>r.person).sort(),[...expected].sort(),kind+' issue creates exactly the reviewed recipient set')
+  assert.equal(issued.requests.length,expected.length)
+  for(const person of excluded)assert.ok(!actual.some(r=>r.person===person),kind+' issue preserves exclusions')
   await api('signature.cancel',{cohort:issued.id})
  }
  const issue=async(extra={})=>{
