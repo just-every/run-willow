@@ -170,7 +170,9 @@ export async function webhookProof(h,owner,fx,deliveries,receiver) {
  await tick(Date.parse(day(4)+'T12:00:00Z'))
  assert.equal(deliveries.length,lifecycleBefore+4,'Future termination is delivered only once at each boundary')
  await api('webhook.disable',{webhook:lifecycle.data.id})
- const afterLifecycle=deliveries.length
+ let afterLifecycle=deliveries.length
+ await webhookSourceProof(h,owner,fx,deliveries,globalPerson)
+ afterLifecycle=deliveries.length
  // Losing the creating owner's authority stops a separate global subscription.
  const operators=await (await h.raw('/auth/operators',{cookie:owner})).json()
  const promoted=operators.find(row=>row.email==='managera@example.com')
@@ -185,6 +187,93 @@ export async function webhookProof(h,owner,fx,deliveries,receiver) {
  await api('webhook.approve',{webhook:ended.data.id,consent:true},403)
  assert.ok(!JSON.stringify(await api('audit')).includes(global.secret))
  console.log('API-003 webhooks: PASS — exact location reach, restricted-field omission, independent HMAC, timestamp and replay checks, durable retries/pause/log/manual replay, future effective event and key revocation')
+}
+
+// Extend the existing API-003 journey; all records and approvals use public doors.
+async function webhookSourceProof(h,owner,fx,deliveries,former) {
+ const api=(path,body,status)=>h.api(path,owner,body,status)
+ const tick=async offset=>{
+  const response=await fetch(h.origin+'/cdn-cgi/local/scheduled?time='+Date.parse(day(offset)+'T12:00:00Z')+'&cron='+encodeURIComponent('*/15 * * * *')+'&format=json')
+  assert.equal(response.status,200,await response.text())
+ }
+ const register=async (fields,monitoredFields,events=['employee.updated'])=>{
+  const hook=await api('webhook.register',{endpoint:'https://synthetic-willow-15003.example.com/receive',fields,monitoredFields,events})
+  await api('webhook.approve',{webhook:hook.data.id,consent:true})
+  return hook.data.id
+ }
+ const person=fx.staff.employee.person
+ // Every personal field can be selected independently of unrelated readable fields.
+ const values={legalName:'synthetic-willow-15200',preferredName:'synthetic-willow-15201',personal_email:'synthetic-willow-15202@example.com',phone:'synthetic-willow-15203',address:'synthetic-willow-15204',date_of_birth:'1990-02-03',emergency_contact:'synthetic-willow-15205'}
+ for(const [field,value] of Object.entries(values)) {
+  const id=await register(['name','private'],[field]),before=deliveries.length
+  let view=await api('people/'+person)
+  await api('person.update',{person,revision:view.revision,legalName:view.legalName,preferredName:view.preferredName??'',workEmail:'synthetic-willow-15206@example.com',employeeNumber:'unmonitored'})
+  await api('webhook.run',{})
+  assert.equal(deliveries.length,before,'Unrelated directory edits do not signal '+field)
+  view=await api('people/'+person)
+  await api('person.field',{person,revision:view.revision,field,value})
+  await api('webhook.run',{})
+  assert.equal(deliveries.length,before+1,'Readable selected field emits exactly once: '+field)
+  const body=JSON.parse(deliveries.at(-1).body)
+  assert.equal(body.data.id,person)
+  assert.equal(field==='legalName'?body.data.name:field==='preferredName'?body.data.name:body.data.private[field],value)
+  await api('webhook.disable',{webhook:id})
+ }
+ // Approval publishes its actual field; merely asking or rejecting sends nothing.
+ const approved=await register(['name','legalName'],['legalName']),beforeApproval=deliveries.length
+ const change=await h.api('self.request',fx.staff.employee.cookie,{kind:'legalName',legalName:'synthetic-willow-15207'})
+ await api('webhook.run',{});assert.equal(deliveries.length,beforeApproval)
+ await api('self.decide',{change:change.id,decision:'approve',comment:'synthetic-willow-15208'})
+ await api('webhook.run',{})
+ assert.equal(deliveries.length,beforeApproval+1,'Approved native legal-name change emits')
+ assert.equal(JSON.parse(deliveries.at(-1).body).data.legalName,'synthetic-willow-15207')
+ await api('webhook.disable',{webhook:approved})
+ // Future typed values have a recorded notification and a distinct effective notification.
+ const definition=await api('customField.define',{definition:{key:'synthetic_webhook_number',label:'Synthetic number',classification:'general',type:'number',validation:{min:'0',max:'100'},required:false,employeeRead:true,managerRead:true,effectiveFrom:day(-10)}})
+ const typed=await register(['customFields','recordTables'],['customFields','recordTables'])
+ const start=deliveries.length
+ await api('customField.write',{person,effectiveFrom:day(6),values:{synthetic_webhook_number:'17.5'}})
+ const row=await api('recordRow.write',{person,table:'education',effectiveFrom:day(6),values:{institution:'synthetic-willow-15209',credential:'synthetic-willow-15210'}})
+ await api('webhook.run',{})
+ assert.equal(deliveries.length,start+2,'Both typed sources notify when recorded')
+ const recorded=deliveries.slice(start).map(item=>JSON.parse(item.body))
+ assert.equal(recorded[0].data.customFields.fields.find(item=>item.key==='synthetic_webhook_number').value,null)
+ assert.equal(recorded[1].data.recordTables.tables.find(item=>item.key==='education').rows.length,0)
+ await tick(5);assert.equal(deliveries.length,start+2,'Neither typed source fires early')
+ await tick(6)
+ assert.equal(deliveries.length,start+4,'Both typed sources notify when effective')
+ const effective=deliveries.slice(start+2).map(item=>JSON.parse(item.body))
+ for(const body of effective) {
+  assert.equal(body.data.customFields.fields.find(item=>item.key==='synthetic_webhook_number').value,'17.5')
+  assert.equal(body.data.recordTables.tables.find(item=>item.key==='education').rows.find(item=>item.id===row.id).values.institution,'synthetic-willow-15209')
+ }
+ assert.equal(new Set(deliveries.slice(start).map(item=>item.id)).size,4,'Each source and boundary has its own durable identity')
+ await tick(7);assert.equal(deliveries.length,start+4,'Effective typed events do not repeat')
+ // Native approval of typed and table requests is also a publication source.
+ const typedProposal=await h.api('custom.propose',fx.staff.hr.cookie,{person,field:definition.id,effectiveFrom:day(0),value:'19'})
+ await api('self.decide',{change:typedProposal.id,decision:'approve',comment:'synthetic-willow-15211'})
+ const tableLevel=await api('level.apply',{review:(await api('level.preview',{kind:'level',name:'synthetic-willow-15216',permissions:['people.manage']})).id})
+ const tableKey=await api('apiKey.issue',{name:'synthetic-willow-15217',level:tableLevel.id,writeScopes:['tables.approval'],expiresAt:new Date(Date.now()+30*86400000).toISOString()})
+ const tableResponse=await fetch(h.origin+'/api/willow/v1/table-changes',{method:'POST',headers:{authorization:'Bearer '+tableKey.token,'content-type':'application/json'},body:JSON.stringify({person,table:'education',effectiveFrom:day(0),values:{institution:'synthetic-willow-15212',credential:'synthetic-willow-15213'}})})
+ assert.equal(tableResponse.status,200)
+ const tableProposal=(await tableResponse.json()).data
+ await api('self.decide',{change:tableProposal.id,decision:'approve',comment:'synthetic-willow-15214'})
+ await api('webhook.run',{})
+ assert.equal(deliveries.length,start+6,'Both approved typed sources emit')
+ assert.equal(JSON.parse(deliveries.at(-2).body).data.customFields.fields.find(item=>item.key==='synthetic_webhook_number').value,'19')
+ assert.equal(JSON.parse(deliveries.at(-1).body).data.recordTables.tables.find(item=>item.key==='education').rows.some(item=>item.values.institution==='synthetic-willow-15212'),true)
+ await api('webhook.disable',{webhook:typed})
+ // Rehire is independent of employee creation and has both future boundaries.
+ const lifecycle=await register(['status'],['status'],['employee.rehired']),startRehire=deliveries.length
+ await api('joiner.start',{person:former.person,template:fx.templates.joiner,startDate:day(8),employmentType:'part_time',jobTitle:'synthetic-willow-15215',scheduleId:fx.schedule})
+ await api('webhook.run',{})
+ assert.deepEqual(deliveries.slice(startRehire).map(item=>[JSON.parse(item.body).type,JSON.parse(item.body).data.id]),[['employee.rehired',former.person]])
+ await tick(7);assert.equal(deliveries.length,startRehire+1,'Rehire cannot fire early')
+ await tick(8);assert.equal(deliveries.length,startRehire+2)
+ assert.notEqual(deliveries[startRehire].id,deliveries[startRehire+1].id)
+ await tick(9);assert.equal(deliveries.length,startRehire+2,'Rehire effective delivery is unique')
+ await api('webhook.disable',{webhook:lifecycle})
+ console.log('API-003 sources: PASS — independently monitored personal fields, approved native sources, typed recorded and effective boundaries, future rehire')
 }
 
 async function webhookBrowserProof(h,owner,hr,id,action) {

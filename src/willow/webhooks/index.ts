@@ -16,6 +16,7 @@ import { protectSecret, recoverSecret, sign } from './crypto'
 
 export const WEBHOOK_EVENTS=['employee.created','employee.updated','employee.terminated','employee.rehired','terms.recorded','terms.effective','timeoff.approved','timeoff.canceled','signature.completed'] as const
 const FIELDS=['name','legalName','preferredName','workEmail','employeeNumber','status','current','employment','private','pay','leave','documents','customFields','recordTables','compensation']
+const MONITORED_FIELDS=[...FIELDS,'personal_email','phone','address','date_of_birth','emergency_contact']
 // Global subscriptions retain explicit owner authority, never a portable session.
 const globals=new WeakMap<Actor,{version:number;snapshot:number}>()
 const snapshot=async(env:Bindings)=>(await one(env,"SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download'"))!.seq
@@ -69,7 +70,7 @@ export async function registerWebhook(env:Bindings,actor:Actor,input:Input) {
  if(!context)requireOwner(actor)
  else insist(context.writeScopes.includes('webhooks.manage'),'credential_read_only',403)
  const fields=input.list('fields'),events=input.list('events'),monitored=input.provided('monitoredFields')?input.list('monitoredFields'):fields
- insist(monitored.length>0&&new Set(monitored).size===monitored.length&&monitored.every(field=>FIELDS.includes(field)),'invalid_monitored_fields')
+ insist(monitored.length>0&&new Set(monitored).size===monitored.length&&monitored.every(field=>MONITORED_FIELDS.includes(field)),'invalid_monitored_fields')
  insist(fields.length>0&&new Set(fields).size===fields.length&&fields.every(field=>FIELDS.includes(field)),'invalid_webhook_fields')
  insist(events.length>0&&new Set(events).size===events.length&&events.every(event=>(WEBHOOK_EVENTS as readonly string[]).includes(event)),'invalid_webhook_events')
  const url=endpoint(input.text('endpoint',{max:2000})),id=newId(),secret=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('')
@@ -114,6 +115,24 @@ export async function replayWebhook(env:Bindings,actor:Actor,input:Input) {
  await commit(env,[levelSessionFence(env,actor),hookFence(env,principal),guard(env,'stale',"EXISTS(SELECT 1 FROM wl_webhook_deliveries WHERE id=? AND status IN ('failed','uncertain'))",id),stmt(env,"UPDATE wl_webhook_deliveries SET status='pending',attempts=0,due_at=?,response_code=NULL WHERE id=?",now(),id),stmt(env,'UPDATE wl_webhooks SET paused=0,failures=0 WHERE id=?',row.webhook_id)],{actor:actor.id,action:'webhook.replay',subject:id})
  return {id,status:'pending'}
 }
+// Resolve the actual published source, including changes approved through the native queue.
+async function updateSource(env:Bindings,audit:Row) {
+ const detail=JSON.parse(audit.detail)
+ if(audit.action==='person.update')return {fields:detail.changed??[],keys:detail.customFieldKeys??[]}
+ if(audit.action==='person.field')return {fields:[detail.field]}
+ if(audit.action==='customField.write')return {fields:['customFields'],keys:detail.fields??[],effective:detail.effectiveFrom}
+ if(audit.action.startsWith('recordRow.'))return {fields:['recordTables'],table:detail.table,effective:detail.effectiveFrom}
+ if(audit.action==='selfChange.decide'&&detail.decision==='approve') {
+  const proposal=await one(env,'SELECT kind,row_id,after_json FROM wl_self_changes WHERE id=?',audit.subject)
+  if(!proposal)return null
+  const after=JSON.parse(proposal.after_json)
+  if(proposal.kind==='personal'||proposal.kind==='legalName')return {fields:[proposal.kind==='legalName'?'legalName':proposal.row_id]}
+  if(proposal.kind==='customField')return {fields:['customFields'],keys:[after.key],effective:after.effectiveFrom}
+  if(proposal.kind==='recordRow')return {fields:['recordTables'],table:after.key,effective:after.effectiveFrom}
+  if(proposal.kind==='dependent')return {fields:['recordTables'],table:'dependents'}
+ }
+ return null
+}
 async function eventsFor(env:Bindings,audit:Row,date:string) {
  const detail=JSON.parse(audit.detail),events:{type:string;person:string;date:string;fields?:string[]}[]=[]
  if(['joiner.start','joiner.rehire','leaver.start'].includes(audit.action)) {
@@ -124,37 +143,57 @@ async function eventsFor(env:Bindings,audit:Row,date:string) {
   if(effective&&effective>date)events.push({type,person:audit.subject,date:effective})
  }
  else if(audit.action==='terms.schedule') {
-  const row=await one(env,'SELECT p.person_id,t.effective_from FROM wl_terms t JOIN wl_periods p ON p.id=t.period_id WHERE t.id=? AND t.status=\'active\'',audit.subject)
+  const row=await one(env,"SELECT p.person_id,t.effective_from FROM wl_terms t JOIN wl_periods p ON p.id=t.period_id WHERE t.id=? AND t.status='active'",audit.subject)
   if(row)events.push({type:'terms.recorded',person:row.person_id,date},{type:'terms.effective',person:row.person_id,date:row.effective_from})
- } else if(['person.update','person.field','customField.write','recordRow.write','recordRow.remove'].includes(audit.action)) {
-  const fields=audit.action==='customField.write'?['customFields']:audit.action.startsWith('recordRow.')?['recordTables']:(audit.action==='person.field'?[detail.field]:detail.changed??[]).flatMap((field:string)=>['legalName','preferredName'].includes(field)?[field,'name']:['personal_email','phone','address','date_of_birth','emergency_contact'].includes(field)?[field,'private']:[field])
-  events.push({type:'employee.updated',person:audit.subject,date,fields})
- }
- else if(audit.action==='selfChange.decide'&&detail.decision==='approve')events.push({type:'employee.updated',person:detail.person,date})
- else if(['leave.approve','leave.cancel','leave.withdraw'].includes(audit.action)) {
-  const row=await one(env,'SELECT person_id FROM wl_leave_requests WHERE id=?',audit.subject)
-  if(row)events.push({type:audit.action==='leave.approve'?'timeoff.approved':'timeoff.canceled',person:row.person_id,date})
- }
- else if(audit.action==='signature.sign'&&detail.state==='signed') {
-  const completed=await completedSignature(env,audit.subject)
-  if(completed)events.push({type:'signature.completed',person:completed.person_id,date})
+ } else {
+  const source=await updateSource(env,audit)
+  if(source) {
+   const fields=source.fields.flatMap((field:string)=>['legalName','preferredName'].includes(field)?[field,'name']:['personal_email','phone','address','date_of_birth','emergency_contact'].includes(field)?[field,'private']:[field])
+   const person=audit.action==='selfChange.decide'?detail.person:audit.subject
+   events.push({type:'employee.updated',person,date,fields})
+   if(source.effective&&source.effective>date)events.push({type:'employee.updated',person,date:source.effective,fields})
+  } else if(['leave.approve','leave.cancel','leave.withdraw'].includes(audit.action)) {
+   const row=await one(env,'SELECT person_id FROM wl_leave_requests WHERE id=?',audit.subject)
+   if(row)events.push({type:audit.action==='leave.approve'?'timeoff.approved':'timeoff.canceled',person:row.person_id,date})
+  } else if(audit.action==='signature.sign'&&detail.state==='signed') {
+   const completed=await completedSignature(env,audit.subject)
+   if(completed)events.push({type:'signature.completed',person:completed.person_id,date})
+  }
  }
  return events
+}
+async function hookRecord(env:Bindings,actor:Actor,person:string):Promise<Row> {
+ const url=new URL('/api/willow/people/'+person,env.AUTH_ORIGIN)
+ return globals.has(actor)?await personView(env,actor,person):await credentialRead(env,actor,new Request(url),url) as Row
+}
+async function readableUpdate(env:Bindings,actor:Actor,person:string,audit:Row,monitored:string[],record:Row) {
+ const changed=await updateSource(env,audit)
+ const personal=['legalName','preferredName','personal_email','phone','address','date_of_birth','emergency_contact']
+ return !!changed?.fields.some((field:string)=>{
+  if(personal.includes(field))return readsPersonalField(actor,person,field as SelfField)&&(monitored.includes(field)||monitored.includes(['legalName','preferredName'].includes(field)?'name':'private'))
+  if(field==='customFields')return monitored.includes(field)&&(record.customFields?.fields??[]).some((item:Row)=>(changed.keys??[]).includes(item.key))
+  if(field==='recordTables')return monitored.includes(field)&&(record.recordTables?.tables??[]).some((item:Row)=>item.key===changed.table)
+  return field==='directory'?monitored.some(value=>['name','legalName','preferredName','workEmail','employeeNumber'].includes(value)&&Object.hasOwn(record,value)):monitored.includes(field)&&Object.hasOwn(record,field)
+ })
 }
 async function ingest(env:Bindings,hook:Row,instant:number,date:string,actor:Actor) {
  const audits=await all(env,'SELECT seq,action,subject,detail FROM wl_audit WHERE seq>? ORDER BY seq LIMIT 200',hook.cursor)
  if(!audits.length)return
  const events=JSON.parse(hook.events_json) as string[],statements:D1PreparedStatement[]=[]
  for(const audit of audits)for(const event of await eventsFor(env,audit,date)) {
-  if(!events.includes(event.type))continue
+  if(!events.includes(event.type)||!credentialPersonAllowed(actor,event.person))continue
   if(event.type==='signature.completed') {
    const completed=await completedSignature(env,audit.subject)
    if(!completed||!credentialPersonAllowed(actor,event.person)||!readsCategory(actor,event.person,completed))continue
   }
-  if(event.type==='employee.updated'&&event.fields&&!event.fields.some(field=>(JSON.parse(hook.monitored_fields_json) as string[]).includes(field)||field==='directory'&&(JSON.parse(hook.monitored_fields_json) as string[]).some(value=>['name','legalName','preferredName','workEmail','employeeNumber'].includes(value))))continue
+  if(event.type==='employee.updated') {
+   try {
+    if(!await readableUpdate(env,actor,event.person,audit,JSON.parse(hook.monitored_fields_json),await hookRecord(env,actor,event.person)))continue
+   }catch {continue}
+  }
   statements.push(stmt(env,'INSERT OR IGNORE INTO wl_webhook_deliveries(id,webhook_id,event_key,event_type,person_id,source_seq,due_on,due_at,created_at) SELECT ?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM wl_people WHERE id=?)',newId(),hook.id,event.type==='signature.completed'?event.type+':'+audit.subject:audit.seq+':'+event.type+':'+event.date,event.type,event.person,audit.seq,event.date,instant,instant,event.person))
  }
- await commit(env,[guard(env,'stale','EXISTS(SELECT 1 FROM wl_webhooks WHERE id=? AND cursor=? AND active=1 AND paused=0)',hook.id,hook.cursor),...statements,stmt(env,'UPDATE wl_webhooks SET cursor=? WHERE id=?',audits.at(-1)!.seq,hook.id)],{actor:'scheduler',action:'webhook.capture.read',subject:hook.id})
+ await commit(env,[hookFence(env,actor),guard(env,'stale','EXISTS(SELECT 1 FROM wl_webhooks WHERE id=? AND cursor=? AND active=1 AND paused=0)',hook.id,hook.cursor),...statements,stmt(env,'UPDATE wl_webhooks SET cursor=? WHERE id=?',audits.at(-1)!.seq,hook.id)],{actor:'scheduler',action:'webhook.capture.read',subject:hook.id})
 }
 async function dispatch(env:Bindings,hook:Row,delivery:Row,instant:number) {
  let actor:Actor
@@ -169,22 +208,11 @@ async function dispatch(env:Bindings,hook:Row,delivery:Row,instant:number) {
  }
  let record:Row
  try {
-  const url=new URL('/api/willow/people/'+delivery.person_id,env.AUTH_ORIGIN)
-  record=globals.has(actor)?await personView(env,actor,delivery.person_id):await credentialRead(env,actor,new Request(url),url) as Row
+  record=await hookRecord(env,actor,delivery.person_id)
  }catch {await stmt(env,"UPDATE wl_webhook_deliveries SET status='canceled',completed_at=? WHERE id=?",instant,delivery.id).run();return}
  if(delivery.event_type==='employee.updated') {
   const source=await one(env,'SELECT seq,action,subject,detail FROM wl_audit WHERE seq=?',delivery.source_seq)
-  const detail=source?JSON.parse(source.detail):{},monitored=JSON.parse(hook.monitored_fields_json) as string[]
-  const changed=source?.action==='person.field'?[detail.field]:source?.action==='person.update'?detail.changed??[]:[]
-  const personal=['legalName','preferredName','personal_email','phone','address','date_of_birth','emergency_contact']
-  let readable=changed.some((field:string)=>personal.includes(field)?readsPersonalField(actor,delivery.person_id,field as SelfField)&&(monitored.includes(field)||monitored.includes(['legalName','preferredName'].includes(field)?'name':'private')):field==='directory'?monitored.some(value=>['name','legalName','preferredName','workEmail','employeeNumber'].includes(value)&&Object.hasOwn(record,value)):monitored.includes(field)&&Object.hasOwn(record,field))
-  if(source?.action==='customField.write')readable=monitored.includes('customFields')&&(record.customFields?.fields??[]).some((field:Row)=>(detail.fields??[]).includes(field.key))
-  if(source?.action?.startsWith('recordRow.'))readable=monitored.includes('recordTables')&&(record.recordTables?.tables??[]).some((table:Row)=>table.key===detail.table)
-  if(source?.action==='selfChange.decide') {
-   const proposal=await one(env,'SELECT kind,row_id FROM wl_self_changes WHERE id=?',source.subject)
-   const field=proposal?.row_id
-   readable=proposal?.kind==='personal'&&personal.includes(field)&&readsPersonalField(actor,delivery.person_id,field as SelfField)&&(monitored.includes(field)||monitored.includes(['legalName','preferredName'].includes(field)?'name':'private'))
-  }
+  const readable=source&&await readableUpdate(env,actor,delivery.person_id,source,JSON.parse(hook.monitored_fields_json),record)
   if(!readable){await stmt(env,"UPDATE wl_webhook_deliveries SET status='canceled',completed_at=? WHERE id=?",instant,delivery.id).run();return}
  }
  const data:Row={id:delivery.person_id},withheld:string[]=[]

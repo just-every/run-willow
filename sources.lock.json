@@ -700,7 +700,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "bde343f39e6ebfc7c46e54cb74c9cf490243da94de17eb61f3a72dec82ffca30",
+      "sha256": "4e02c1f6d0501b4e970c5639cd64ca8cb1e3a3d60b60786ead9c0f89dbeca9b7",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -712,7 +712,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "b6da6b1f56e87a113120191d95d15cbe9c4ccf91ee13d9601031d4723ac4de17",
+      "sha256": "f75258e139095fb2f8ccb53cc2f6a4bc2384d6eea73976bbbd1380dcdf2ef9f7",
       "executable": false
     },
     "base-copies.json": {
@@ -728,7 +728,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "d5f4c5fa106c80c4f5d72fa9d4a904446f754732eff6d76565385185c2172691",
+      "sha256": "3634dca33cb84de9f8e0a7b6065ee350b30f629180774702f0bf4078da8da930",
       "executable": false
     },
     "DEMO.md": {
@@ -3960,7 +3960,7 @@
       "executable": false
     },
     "src/willow/custom-fields/actions.ts": {
-      "sha256": "a49aa83e5b3a8748189b132185e3cebf0402f01eab410ebdbc232a3c7e2e285b",
+      "sha256": "67cf1470d28c7cca656aa47db4903c4a858fe4c856b8a83edd09c2453bc346f9",
       "executable": false
     },
     "src/willow/custom-fields/import.ts": {
@@ -4396,7 +4396,7 @@
       "executable": false
     },
     "src/willow/people.ts": {
-      "sha256": "528280ed8d7b12bfcfff2c864e5aa49909a5cf0604e4945459b44a432980a974",
+      "sha256": "e1fcad2b4c037a2602a53dfa545d9e888d0d8ebfc69a29e003c490e00ddfd790",
       "executable": false
     },
     "src/willow/performance/authority.ts": {
@@ -5028,7 +5028,7 @@
       "executable": false
     },
     "src/willow/webhooks/index.ts": {
-      "sha256": "89af1189037398dfa60b0d818b9cf40c775341a88c72bc3a4320c543ebc689a2",
+      "sha256": "443c76421dc8da840b3b3eab4c4b9a91ecbade96bc46385045ea976405a3afda",
       "executable": false
     },
     "src/willow/work-approval.ts": {
@@ -5560,7 +5560,7 @@
       "executable": false
     },
     "tests/willow/webhooks.mjs": {
-      "sha256": "b270797fc504f391de2e181317b1b2017232fd2880c82dc3096150cba358e2cd",
+      "sha256": "537e1a3a328742194d927d9a6a11c016f31269e83ec9b36610b7d8ee73632188",
       "executable": false
     },
     "tests/willow/work-followup.mjs": {
