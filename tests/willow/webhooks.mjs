@@ -172,6 +172,7 @@ export async function webhookProof(h,owner,fx,deliveries,receiver) {
  await api('webhook.disable',{webhook:lifecycle.data.id})
  let afterLifecycle=deliveries.length
  await webhookSourceProof(h,owner,fx,deliveries,globalPerson)
+ await webhookAuthorityProof(h,owner,fx,deliveries,receiver)
  afterLifecycle=deliveries.length
  // Losing the creating owner's authority stops a separate global subscription.
  const operators=await (await h.raw('/auth/operators',{cookie:owner})).json()
@@ -207,7 +208,7 @@ async function webhookSourceProof(h,owner,fx,deliveries,former) {
  for(const [field,value] of Object.entries(values)) {
   const id=await register(['name','private'],[field]),before=deliveries.length
   let view=await api('people/'+person)
-  await api('person.update',{person,revision:view.revision,legalName:view.legalName,preferredName:view.preferredName??'',workEmail:'synthetic-willow-15206@example.com',employeeNumber:'unmonitored'})
+  await api('person.update',{person,revision:view.revision,legalName:view.legalName,preferredName:view.preferredName??'',workEmail:'synthetic-willow-'+field+'@example.com',employeeNumber:'unmonitored-'+field})
   await api('webhook.run',{})
   assert.equal(deliveries.length,before,'Unrelated directory edits do not signal '+field)
   view=await api('people/'+person)
@@ -229,7 +230,7 @@ async function webhookSourceProof(h,owner,fx,deliveries,former) {
  assert.equal(JSON.parse(deliveries.at(-1).body).data.legalName,'synthetic-willow-15207')
  await api('webhook.disable',{webhook:approved})
  // Future typed values have a recorded notification and a distinct effective notification.
- const definition=await api('customField.define',{definition:{key:'synthetic_webhook_number',label:'Synthetic number',classification:'general',type:'number',validation:{min:'0',max:'100'},required:false,employeeRead:true,managerRead:true,effectiveFrom:day(-10)}})
+ const definition=await api('customField.define',{definition:{key:'synthetic_webhook_number',label:'Synthetic number',classification:'general',type:'number',validation:{min:'0',max:'100'},required:false,retired:false,employeeRead:true,managerRead:true,effectiveFrom:day(-10)}})
  const typed=await register(['customFields','recordTables'],['customFields','recordTables'])
  const start=deliveries.length
  await api('customField.write',{person,effectiveFrom:day(6),values:{synthetic_webhook_number:'17.5'}})
@@ -253,7 +254,7 @@ async function webhookSourceProof(h,owner,fx,deliveries,former) {
  const typedProposal=await h.api('custom.propose',fx.staff.hr.cookie,{person,field:definition.id,effectiveFrom:day(0),value:'19'})
  await api('self.decide',{change:typedProposal.id,decision:'approve',comment:'synthetic-willow-15211'})
  const tableLevel=await api('level.apply',{review:(await api('level.preview',{kind:'level',name:'synthetic-willow-15216',permissions:['people.manage']})).id})
- const tableKey=await api('apiKey.issue',{name:'synthetic-willow-15217',level:tableLevel.id,writeScopes:['tables.approval'],expiresAt:new Date(Date.now()+30*86400000).toISOString()})
+ const tableKey=await api('apiKey.issue',{name:'synthetic-willow-15217',level:tableLevel.id,writeScopes:['tables.approval','webhooks.manage'],expiresAt:new Date(Date.now()+30*86400000).toISOString()})
  const tableResponse=await fetch(h.origin+'/api/willow/v1/table-changes',{method:'POST',headers:{authorization:'Bearer '+tableKey.token,'content-type':'application/json'},body:JSON.stringify({person,table:'education',effectiveFrom:day(0),values:{institution:'synthetic-willow-15212',credential:'synthetic-willow-15213'}})})
  assert.equal(tableResponse.status,200)
  const tableProposal=(await tableResponse.json()).data
@@ -263,6 +264,32 @@ async function webhookSourceProof(h,owner,fx,deliveries,former) {
  assert.equal(JSON.parse(deliveries.at(-2).body).data.customFields.fields.find(item=>item.key==='synthetic_webhook_number').value,'19')
  assert.equal(JSON.parse(deliveries.at(-1).body).data.recordTables.tables.find(item=>item.key==='education').rows.some(item=>item.values.institution==='synthetic-willow-15212'),true)
  await api('webhook.disable',{webhook:typed})
+ // A readable general field does not make a hidden HR field or table observable.
+ const keyCall=async(path,body,status=200)=>{
+  const response=await fetch(h.origin+'/api/willow/v1/'+path,{method:body?'POST':'GET',headers:{authorization:'Bearer '+tableKey.token,...(body?{'content-type':'application/json'}:{})},body:body?JSON.stringify(body):undefined})
+  const value=await response.json();assert.equal(response.status,status,JSON.stringify(value));return value
+ }
+ const restricted=await keyCall('webhooks',{endpoint:'https://synthetic-willow-15003.example.com/receive',fields:['customFields','recordTables','private'],events:['employee.updated'],monitoredFields:['customFields','recordTables','private']})
+ await api('webhook.approve',{webhook:restricted.data.id,consent:true})
+ await api('customField.define',{definition:{key:'synthetic_webhook_hidden',label:'Synthetic private number',classification:'hr',type:'number',validation:{min:'0',max:'100'},required:false,retired:false,employeeRead:false,managerRead:false,effectiveFrom:day(-10)}})
+ const hiddenBefore=deliveries.length
+ await api('customField.write',{person,effectiveFrom:day(0),values:{synthetic_webhook_hidden:'73'}})
+ await api('recordRow.write',{person,table:'emergency_contacts',values:{name:'synthetic-willow-15218',phone:'synthetic-willow-15219',primary:false}})
+ let privateView=await api('people/'+person)
+ await api('person.field',{person,revision:privateView.revision,field:'phone',value:'synthetic-willow-15220'})
+ await api('webhook.run',{})
+ assert.equal(deliveries.length,hiddenBefore,'Hidden changes emit no signal despite readable sibling fields and tables')
+ assert.deepEqual((await keyCall('webhooks/'+restricted.data.id+'/deliveries')).deliveries,[],'Hidden changes never enter the visible queue')
+ await api('customField.write',{person,effectiveFrom:day(0),values:{synthetic_webhook_number:'23'}})
+ await api('webhook.run',{})
+ assert.equal(deliveries.length,hiddenBefore+1,'The same credential receives its readable changed field')
+ assert.equal(JSON.parse(deliveries.at(-1).body).data.customFields.fields.find(item=>item.key==='synthetic_webhook_number').value,'23')
+ assert.equal(JSON.parse(deliveries.at(-1).body).data.customFields.fields.some(item=>item.key==='synthetic_webhook_hidden'),false)
+ await api('apiKey.revoke',{credential:tableKey.id})
+ await api('customField.write',{person,effectiveFrom:day(0),values:{synthetic_webhook_number:'24'}})
+ await api('webhook.run',{})
+ assert.equal(deliveries.length,hiddenBefore+1,'Revocation ends future capture')
+ await api('webhook.approve',{webhook:restricted.data.id,consent:true},401)
  // Rehire is independent of employee creation and has both future boundaries.
  const lifecycle=await register(['status'],['status'],['employee.rehired']),startRehire=deliveries.length
  await api('joiner.start',{person:former.person,template:fx.templates.joiner,startDate:day(8),employmentType:'part_time',jobTitle:'synthetic-willow-15215',scheduleId:fx.schedule})
@@ -274,6 +301,51 @@ async function webhookSourceProof(h,owner,fx,deliveries,former) {
  await tick(9);assert.equal(deliveries.length,startRehire+2,'Rehire effective delivery is unique')
  await api('webhook.disable',{webhook:lifecycle})
  console.log('API-003 sources: PASS — independently monitored personal fields, approved native sources, typed recorded and effective boundaries, future rehire')
+}
+
+async function webhookAuthorityProof(h,owner,fx,deliveries,receiver) {
+ const api=(path,body,status)=>h.api(path,owner,body,status)
+ const operators=await (await h.raw('/auth/operators',{cookie:owner})).json()
+ const operator=operators.find(row=>row.email==='payroll@example.com')
+ assert.ok(operator)
+ const role=async value=>assert.equal((await h.raw('/auth/operator/role',{cookie:owner,body:{operatorId:operator.id,role:value}})).status,200)
+ await role('owner')
+ const creator=await h.signIn('payroll@example.com')
+ const config={endpoint:'https://synthetic-willow-15003.example.com/receive',fields:['name'],events:['employee.created'],monitoredFields:['name']}
+ const hook=await h.api('webhook.register',creator,config)
+ await h.api('webhook.approve',creator,{webhook:hook.data.id,consent:true})
+ const before=deliveries.length
+ const first=await fx.join('synthetic-willow-15221'),second=await fx.join('synthetic-willow-15222')
+ // Revoke while the first request is already at the receiver, before it responds.
+ receiver.onDelivery=async()=>{receiver.onDelivery=null;await role('member')}
+ await api('webhook.run',{})
+ assert.equal(deliveries.length,before+1,'In-flight submission completes but the next queued attempt stops')
+ assert.equal(JSON.parse(deliveries.at(-1).body).data.id,first.person)
+ const state=(await api('webhooks')).data.find(item=>item.id===hook.data.id)
+ assert.equal(state.active,false);assert.equal(state.paused,true)
+ const logResponse=await h.raw('/app/settings/webhooks?webhook='+hook.data.id,{cookie:owner})
+ assert.equal(logResponse.status,200)
+ await h.raw('/app/settings/webhooks?webhook='+hook.data.id,{cookie:fx.staff.hr.cookie}).then(response=>assert.equal(response.status,403))
+ const html=await logResponse.text()
+ const rows=[...html.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/g)].map(match=>[...match[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/g)].map(cell=>cell[1].replace(/<[^>]*>/g,'').trim()))
+ const submitted=rows.find(row=>row[1]===deliveries.at(-1).id)
+ assert.ok(submitted,'The submitted event remains in the native owner log')
+ assert.deepEqual(submitted.slice(2,5),['delivered','1','204'])
+ assert.equal(rows.filter(row=>row[2]==='pending').length,1)
+ assert.ok(!deliveries.slice(before).some(item=>JSON.parse(item.body).data.id===second.person))
+ await api('webhook.approve',{webhook:hook.data.id,consent:true},403)
+ await role('owner')
+ await api('webhook.approve',{webhook:hook.data.id,consent:true},403)
+ await api('webhook.run',{});assert.equal(deliveries.length,before+1,'Restored role never transfers the old subscription authority')
+ await role('member')
+ const audit=await api('audit')
+ const activation=audit.find(item=>item.action==='webhook.approve'&&item.subject===hook.data.id)
+ assert.ok(activation)
+ const detail=typeof activation.detail==='string'?JSON.parse(activation.detail):activation.detail
+ assert.equal(detail.consent,true);assert.equal(detail.endpoint,config.endpoint)
+ assert.deepEqual(detail.fields,config.fields);assert.deepEqual(detail.events,config.events);assert.deepEqual(detail.monitoredFields,config.monitoredFields)
+ assert.ok(!JSON.stringify(audit).includes(hook.secret),'Audit retains exact consent metadata without signing authority')
+ console.log('API-003 authority: PASS — loss during submission preserves observed outcome, stops queued work and prevents automatic transfer')
 }
 
 async function webhookBrowserProof(h,owner,hr,id,action) {
@@ -300,6 +372,7 @@ async function webhookBrowserProof(h,owner,hr,id,action) {
    await page.evaluate(()=>document.fonts.ready)
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Webhook controls fit '+width)
    const tip=page.getByRole('tooltip',{name:'Your tasks'}),bell=page.locator('.bell')
+   await page.locator('h1').click();await page.mouse.move(0,0);await page.waitForTimeout(350)
    await bell.hover();await page.waitForTimeout(150);assert.equal(await tip.isVisible(),false)
    await tip.waitFor({state:'visible'});await page.mouse.move(0,0);await bell.focus();assert.equal(await tip.isVisible(),true)
    if(action==='consent')assert.equal(await page.locator('form').filter({has:page.locator('input[name=webhook][value="'+id+'"]')}).getByRole('button',{name:'Activate webhook'}).count(),1)
@@ -323,6 +396,7 @@ if(import.meta.url==='file://'+process.argv[1]) {
  const h=await harness({scheduled:true,provider:async request=>{
   if(new URL(request.url).hostname==='synthetic-willow-15003.example.com') {
    deliveries.push({id:request.headers.get('webhook-id'),timestamp:request.headers.get('webhook-timestamp'),signature:request.headers.get('webhook-signature'),body:await request.text()})
+   await receiver.onDelivery?.()
    return new Response(null,{status:receiver.status})
   }
   return new Response(null,{status:202})
