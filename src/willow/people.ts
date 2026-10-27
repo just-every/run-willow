@@ -151,14 +151,19 @@ export async function updatePerson(env: Bindings, actor: Actor, input: Input) {
   }
   const customInput = customValuesInput(input)
   const hasCustom = input.has('customValues') || input.has('values') || input.list('customField').length > 0
+  const customFieldKeys:string[]=[]
   if (can(actor, 'people.manage') || hasCustom) {
     const custom = await customValueStatements(env, actor, id, customInput, input.has('effectiveFrom') ? input.text('effectiveFrom') : actor.today, { requireAll: true })
     statements.push(...custom.guards, ...custom.statements)
-    if (hasCustom) changed.push('customFields')
+    if (hasCustom) {
+      changed.push('customFields')
+      const supplied=Object.keys(customInput as Record<string,unknown>)
+      customFieldKeys.push(...custom.definitions.filter(field=>supplied.includes(field.key)||supplied.includes(field.id)).map(field=>field.key))
+    }
   }
   insist(changed.length, 'nothing_to_change')
   statements.push(stmt(env, 'UPDATE wl_people SET revision = ?, updated_at = ? WHERE id = ?', next, now(), id))
-  await commit(env, statements, { actor: actor.id, action: 'person.update', subject: id, detail: { changed } })
+  await commit(env, statements, { actor: actor.id, action: 'person.update', subject: id, detail: { changed, ...(hasCustom ? { customFieldKeys, effectiveFrom: input.has('effectiveFrom') ? input.text('effectiveFrom') : actor.today } : {}) } })
   return { id, revision: next }
 }
 

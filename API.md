@@ -127,7 +127,7 @@ independently approved before webhook registration, even if an owner cookie
 accompanies the bearer token. Owner outbound consent is separate from that
 approval. Withdrawal or approver authority loss stops existing delivery.
 The conservative default remains owner-only registration of global subscriptions,
-activation and replay, with explicit audited consent; ct approval is pending.
+activation and replay, with explicit audited consent, as approved by CT on 27 October 2026.
 
 Current events are `employee.created`, `employee.updated`,
 `employee.terminated`, `employee.rehired`, `terms.recorded`, `terms.effective`,
@@ -143,7 +143,12 @@ terminations similarly queue separate recorded and effective deliveries when
 the source date is later than capture. A termination's effective notification
 uses the recorded employment end date. The employee remains active through
 that inclusive date. Each boundary has a distinct durable event ID.
-Future rehire proof, other source boundaries and exhaustive monitored-field
+Future rehire boundaries are asserted independently. Native custom-field and record-table
+writes and their approved proposals notify when recorded and when effective, with
+distinct event identities and the current permitted projection. Approved native
+personal changes are update sources too. Personal monitoring accepts each private
+field separately as well as the `private` family; unreadable changes produce no
+capture or delivery signal. Other source boundaries and exhaustive monitored-field
 coverage remain API-003 work.
 
 Deliveries use the creating key's current level and scope, with its current
