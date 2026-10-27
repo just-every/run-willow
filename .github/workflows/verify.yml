@@ -163,8 +163,6 @@ jobs:
         with:
           name: willow-build
           path: ${{ runner.temp }}/willow-build
-      - name: Unpack shared build
-        run: tar -xf "$RUNNER_TEMP/willow-build/willow-build.tar"
       - name: Install Chromium
         if: matrix.browser != 'none'
         env:
@@ -192,72 +190,115 @@ jobs:
             timeout 420 node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install-deps chromium
             node scripts/ci/chromium-probe.mjs
           }
-          printf 'WILLOW_CURRENT_PLAYWRIGHT_PATH=%s/willow-playwright/node_modules/playwright/index.mjs\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-      - name: Core verification and run site
-        if: matrix.shard == 'core'
+      - name: Unpack shared build
+        id: shared-build
+        run: tar -xf "$RUNNER_TEMP/willow-build/willow-build.tar"
+      - name: Verify core
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'core' }}
         env:
-          WILLOW_VERIFY_SHARD: core
+          WILLOW_VERIFY_SHARD: 'core'
           WILLOW_CI_BUILT: '1'
-        run: |
-          pnpm exec rer verify
-          pnpm run test:site
-      - name: Policy records and built-in sections
-        if: matrix.shard == 'policy-sections'
+        run: pnpm exec rer verify
+      - name: Verify records-policy
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'policy-sections' }}
         env:
-          WILLOW_VERIFY_SHARD: records-policy
+          WILLOW_VERIFY_SHARD: 'records-policy'
           WILLOW_CI_BUILT: '1'
-        run: |
-          pnpm exec rer verify
-          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs builtinSelection builtinBrowser builtinCustody
-      - name: People records, scoped levels and pay sections
-        if: matrix.shard == 'people-scope-pay'
+        run: pnpm exec rer verify
+      - name: Verify records-people
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'people-scope-pay' }}
         env:
-          WILLOW_VERIFY_SHARD: records-people
+          WILLOW_VERIFY_SHARD: 'records-people'
           WILLOW_CI_BUILT: '1'
-        run: |
-          pnpm exec rer verify
-          WILLOW_VERIFY_SHARD=browser-scope WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
-          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs pay records definitions
-      - name: Restore erasure, API roster, webhooks and approvals
-        if: matrix.shard == 'restore-api-approvals'
-        run: |
-          pnpm run test:restore-erasure
-          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs apiRoster
-          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/webhooks.mjs
-          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs approvalPersonal approvalRouting approvalBrowser
-      - name: Access, signing and job levels
-        if: matrix.shard == 'access-signing-job'
+        run: pnpm exec rer verify
+      - name: Verify records-work
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'work-credentials-leave' }}
+        env:
+          WILLOW_VERIFY_SHARD: 'records-work'
+          WILLOW_CI_BUILT: '1'
+        run: pnpm exec rer verify
+      - name: Run site
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'core' }}
+        run: pnpm run test:site
+      - name: browser-access
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'access-signing-job' }}
+        env:
+          WILLOW_VERIFY_SHARD: 'browser-access'
+        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
+      - name: browser-scope
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'people-scope-pay' }}
+        env:
+          WILLOW_VERIFY_SHARD: 'browser-scope'
+        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
+      - name: browser-job
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'access-signing-job' }}
+        env:
+          WILLOW_VERIFY_SHARD: 'browser-job'
+        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
+      - name: Phase two browser
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'retention-performance-phase2' }}
+        run: pnpm run test:phase2-browser
+      - name: AI policy browser
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'retention-performance-phase2' }}
+        run: WILLOW_AI_BROWSER=1 node tests/willow/ai-policy.mjs
+      - name: Signing journeys
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'access-signing-job' }}
         env:
           WILLOW_CI_BUILT: '1'
-        run: |
-          WILLOW_VERIFY_SHARD=browser-access WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
-          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" sh scripts/willow/signing-journey.sh
-          WILLOW_VERIFY_SHARD=browser-job WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
-      - name: Work records, credentials and leave sections
-        if: matrix.shard == 'work-credentials-leave'
+          WILLOW_PLAYWRIGHT_PATH: '${{ runner.temp }}/willow-playwright/node_modules/playwright/index.mjs'
+        run: sh scripts/willow/signing-journey.sh
+      - name: Section journeys (api)
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'restore-api-approvals' }}
         env:
-          WILLOW_VERIFY_SHARD: records-work
-          WILLOW_CI_BUILT: '1'
-        run: |
-          pnpm exec rer verify
-          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs settingsSelection apiKeys settingsBrowser
-          WILLOW_PLAYWRIGHT_PATH="$WILLOW_CURRENT_PLAYWRIGHT_PATH" WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs leave custody browser
-      - name: Retention, EEO, performance and phase two browsers
-        if: matrix.shard == 'retention-performance-phase2'
+          WILLOW_PLAYWRIGHT_PATH: '${{ runner.temp }}/willow-playwright/node_modules/playwright/index.mjs'
+        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs apiRoster
+      - name: Section journeys (credentials)
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'work-credentials-leave' }}
+        env:
+          WILLOW_PLAYWRIGHT_PATH: '${{ runner.temp }}/willow-playwright/node_modules/playwright/index.mjs'
+        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs settingsSelection apiKeys settingsBrowser
+      - name: Section journeys (pay)
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'people-scope-pay' }}
+        env:
+          WILLOW_PLAYWRIGHT_PATH: '${{ runner.temp }}/willow-playwright/node_modules/playwright/index.mjs'
+        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs pay records definitions
+      - name: Section journeys (leave)
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'work-credentials-leave' }}
+        env:
+          WILLOW_PLAYWRIGHT_PATH: '${{ runner.temp }}/willow-playwright/node_modules/playwright/index.mjs'
+        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs leave custody browser
+      - name: Section journeys (approvals)
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'restore-api-approvals' }}
+        env:
+          WILLOW_PLAYWRIGHT_PATH: '${{ runner.temp }}/willow-playwright/node_modules/playwright/index.mjs'
+        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs approvalPersonal approvalRouting approvalBrowser
+      - name: Section journeys (builtins)
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'policy-sections' }}
+        env:
+          WILLOW_PLAYWRIGHT_PATH: '${{ runner.temp }}/willow-playwright/node_modules/playwright/index.mjs'
+        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs builtinSelection builtinBrowser builtinCustody
+      - name: Webhooks browser
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'restore-api-approvals' }}
+        env:
+          WILLOW_PLAYWRIGHT_PATH: '${{ runner.temp }}/willow-playwright/node_modules/playwright/index.mjs'
+        run: WILLOW_LEVELS_BROWSER=1 node tests/willow/webhooks.mjs
+      - name: Retention and EEO
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'retention-performance-phase2' }}
         env:
           WILLOW_EEO_INVITATIONS_BROWSER: '1'
           WILLOW_EEO_BROWSER: '1'
-        run: |
-          pnpm run test:retention-eeo
-          WILLOW_PERFORMANCE_BROWSER=1 node tests/willow/performance.mjs
-          pnpm run test:phase2-browser
-          WILLOW_AI_BROWSER=1 node tests/willow/ai-policy.mjs
+        run: pnpm run test:retention-eeo
+      - name: Performance
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'retention-performance-phase2' }}
+        run: WILLOW_PERFORMANCE_BROWSER=1 node tests/willow/performance.mjs
+      - name: Restore erasure
+        if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'restore-api-approvals' }}
+        run: pnpm run test:restore-erasure
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: willow-pages-${{ matrix.shard }}
           path: ${{ runner.temp }}/willow-evidence/*.png
-
 
   commands-and-restore:
     needs: plan
