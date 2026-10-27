@@ -131,7 +131,7 @@ export async function updatePerson(env: Bindings, actor: Actor, input: Input) {
     const person = readPerson(input)
     await uniqueIdentity(env, person, id)
     statements.push(stmt(env, 'UPDATE wl_people SET legal_name = ?, preferred_name = ?, work_email = ?, employee_number = ? WHERE id = ?', person.legalName, person.preferredName, person.workEmail, person.employeeNumber, id))
-    changed.push('directory')
+    for (const [field,column] of [['legalName','legal_name'],['preferredName','preferred_name'],['workEmail','work_email'],['employeeNumber','employee_number']] as const) if(person[field]!==existing[column])changed.push(field)
   }
   if (self && input.provided('preferredName') && !input.has('legalName')) {
     statements.push(stmt(env, 'UPDATE wl_people SET preferred_name = ? WHERE id = ?', input.text('preferredName', { optional: true, max: 120 }) || null, id))
@@ -146,7 +146,8 @@ export async function updatePerson(env: Bindings, actor: Actor, input: Input) {
       for(const field of PRIVATE_FIELDS) if(values[field]!==previous[field]) writable(field)
     }
     statements.push(stmt(env, `UPDATE wl_person_private SET ${PRIVATE_FIELDS.map(field => `${field} = ?`).join(', ')} WHERE person_id = ?`, ...PRIVATE_FIELDS.map(field => values[field]), id))
-    changed.push('private')
+    const previous=await one(env,'SELECT * FROM wl_person_private WHERE person_id=?',id)
+    for(const field of PRIVATE_FIELDS)if(values[field]!==previous?.[field])changed.push(field)
   }
   const customInput = customValuesInput(input)
   const hasCustom = input.has('customValues') || input.has('values') || input.list('customField').length > 0

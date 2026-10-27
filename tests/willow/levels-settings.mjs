@@ -377,7 +377,13 @@ async function oauthClientProof(h,owner,fx) {
 
 export async function authorizationCodeProof() {
  const {harness}=await import('./harness.mjs'),{fixture}=await import('./regression-fixture.mjs')
- const h=await harness()
+ const outbound=[]
+ const h=await harness({provider:async request=>{
+  if(new URL(request.url).hostname==='synthetic-willow-14440.example.com') {
+   outbound.push(await request.json());return new Response(null,{status:204})
+  }
+  return new Response(null,{status:202})
+ }})
  try {
  assert.equal((await h.raw('/auth/bootstrap',{body:{token:h.vars.SETUP_TOKEN,displayName:'synthetic-willow-14421'}})).status,303)
  const owner=await h.signIn(h.vars.OWNER_EMAIL)
@@ -398,7 +404,7 @@ export async function authorizationCodeProof() {
  const assign=(member,levels)=>apply({kind:'assignment',member:member.member,levels})
  await assign(issuer,[administration.id,level.id]);await assign(approver,[administration.id])
  issuer.cookie=await h.signIn('managerb@example.com');approver.cookie=await h.signIn('ended@example.com')
- const issue=async(type='oauth_client')=>h.api('apiKey.issue',issuer.cookie,{name:'synthetic-willow-14408',level:level.id,expiresAt,credentialType:type,...(type==='oauth_client'?{redirectUri}:{})})
+ const issue=async(type='oauth_client')=>h.api('apiKey.issue',issuer.cookie,{name:'synthetic-willow-14408',level:level.id,expiresAt,credentialType:type,writeScopes:['webhooks.manage'],...(type==='oauth_client'?{redirectUri}:{})})
  const exchange=async(client,body,status=200)=>{
   const res=await fetch(h.origin+'/api/willow/oauth/token',{method:'POST',headers:{authorization:'Basic '+Buffer.from(client.id+':'+client.token).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)})
   assert.equal(res.status,status,'partner token exchange');return res.json()
@@ -449,6 +455,13 @@ export async function authorizationCodeProof() {
  const refreshed=await exchange(client,{grant_type:'refresh_token',refresh_token:tokens.refresh_token})
  await exchange(client,{grant_type:'refresh_token',refresh_token:tokens.refresh_token},400)
  for(const token of [key.token,tokens.access_token,refreshed.access_token])await read(token,401)
+ const webhookConfig={endpoint:'https://synthetic-willow-14440.example.com/receive',fields:['documents'],events:['employee.updated'],monitoredFields:['name']}
+ const register=async(token,status=200)=>{
+  const response=await fetch(h.origin+'/api/willow/v1/webhooks',{method:'POST',headers:{authorization:'Bearer '+token,cookie:owner,'content-type':'application/json'},body:JSON.stringify(webhookConfig)})
+  assert.equal(response.status,status,'Webhook registration requires independently approved document authority');return response.json()
+ }
+ for(const token of [key.token,tokens.access_token])await register(token,401)
+
  for(const credential of [key,client]) {
   await h.api('apiKey.approve',issuer.cookie,{credential:credential.id,reason:'synthetic-willow-14413'},403)
   await h.api('apiKey.approve',approver.cookie,{credential:credential.id,reason:'synthetic-willow-14414'},403)
@@ -456,6 +469,20 @@ export async function authorizationCodeProof() {
  await assign(approver,[administration.id,level.id])
  for(const credential of [key,client])await h.api('apiKey.approve',approver.cookie,{credential:credential.id,reason:'synthetic-willow-14415'})
  for(const token of [key.token,tokens.access_token,refreshed.access_token])await read(token,200)
+ const hooks=[]
+ for(const token of [key.token,tokens.access_token]) {
+  const hook=await register(token);hooks.push(hook.data.id)
+  await api('webhook.approve',{webhook:hook.data.id,consent:true})
+ }
+ const edit=async value=>api('person.field',{person:person.person,revision:(await api('people/'+person.person)).revision,field:'preferredName',value})
+ await edit('synthetic-willow-14441');await api('webhook.run',{})
+ assert.equal(outbound.length,2,'Independently approved key and OAuth grants both deliver')
+ for(const body of outbound) {
+  assert.equal(body.type,'employee.updated');assert.equal(body.data.id,person.person)
+  assert.ok(JSON.stringify(body.data.documents).includes('synthetic-willow-14403'),'The exact carried document category is delivered')
+  assert.ok(!JSON.stringify(body).includes('synthetic-willow-14405'),'Webhook metadata does not include document bytes')
+ }
+
  const active=await exchange(client,{grant_type:'refresh_token',refresh_token:refreshed.refresh_token});await read(active.access_token,200)
  const clientCredentials=await exchange(client,{grant_type:'client_credentials'});await read(clientCredentials.access_token,200)
  const browser=await import('./levels-settings-browser.mjs');await browser.delegatedCredentialBrowserProof(h,owner,issuer,approver,level.id,expiresAt)
@@ -468,9 +495,17 @@ export async function authorizationCodeProof() {
  // Immediate approval withdrawal also ends already issued access and refresh tokens.
  await h.api('apiKey.revoke',approver.cookie,{credential:client.id,reason:'synthetic-willow-14416'})
  await read(active.access_token,401);await read(clientCredentials.access_token,401);await exchange(client,{grant_type:'refresh_token',refresh_token:active.refresh_token},401)
+ await edit('synthetic-willow-14442');await api('webhook.run',{})
+ assert.equal(outbound.length,3,'Withdrawn OAuth approval stops delivery while the independent key continues')
+ assert.equal((await api('webhooks')).data.find(row=>row.id===hooks[1]).active,false)
+
  const demoted=await issue();await h.api('apiKey.approve',approver.cookie,{credential:demoted.id,reason:'synthetic-willow-14417'})
  const demotedToken=await exchange(demoted,codeBody(await codeFor(demoted)));await read(demotedToken.access_token,200)
  await assign(approver,[administration.id]);await read(key.token,401);await read(demotedToken.access_token,401)
+ await edit('synthetic-willow-14443');await api('webhook.run',{})
+ assert.equal(outbound.length,3,'Approver authority loss stops already consented delegated document delivery')
+ assert.equal((await api('webhooks')).data.find(row=>row.id===hooks[0]).active,false)
+
  await exchange(demoted,{grant_type:'refresh_token',refresh_token:demotedToken.refresh_token},401)
  await assign(approver,[administration.id,level.id]);await read(key.token,401);await read(demotedToken.access_token,401)
  const widenedKey=await issue('key');await h.api('apiKey.approve',approver.cookie,{credential:widenedKey.id,reason:'synthetic-willow-14422'});await read(widenedKey.token,200)

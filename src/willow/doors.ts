@@ -3,6 +3,7 @@
 // entry, so a new door cannot be added without being crawled.
 // Patterns are relative to /api/willow/ (API) or absolute (pages).
 export const API_DOORS: [string, string][] = [
+  ['^webhooks$','webhooks'],
   ['^training$', 'training'],
   ['^signature-requests$','signatureRequests'],['^signature-requests/([\\w-]+)$','signatureRequest'],
   ['^signature-templates$','signatureTemplates'],

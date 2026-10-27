@@ -1,3 +1,4 @@
+import { webhookList } from './webhooks'
 import { trainingHome } from './training'
 import { signatureRequests,signatureRequest } from './sign/requests'
 import { signatureTemplates } from './sign/templates'
@@ -74,6 +75,7 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  webhooks:webhookList,
   signatureRequests,signatureRequest:(env,actor,_request,id,url)=>signatureRequest(env,actor,id,url.searchParams.get('asOf')??undefined),
   signatureTemplates,
   policyEscalations,

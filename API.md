@@ -103,7 +103,7 @@ Revocation before approval refuses execution. Existing human requests and their
 append-only event history survive the forward migration.
 
 
-## Permissioned webhooks
+## Global and permissioned webhooks
 
 The owner may issue a key with `webhooks.manage`. That key registers
 `POST /api/willow/v1/webhooks` with an HTTPS `endpoint`, posted `fields`,
@@ -113,17 +113,38 @@ The owner opens Webhooks from API credentials, reviews the endpoint, fields
 and events, and checks explicit consent before activating the subscription.
 The equivalent session action is `webhook.approve` with the webhook ID and
 `consent: true`. No outbound request occurs before this audited consent.
-The conservative default is owner-only activation and replay; delegated and
-global subscriptions remain unimplemented pending ct review.
+The owner can also create an inactive global subscription through
+`POST /api/willow/webhook.register` with the same configuration. It requires
+no API key and uses the creating owner's current native read authority across
+locations. `GET /api/willow/webhooks` lists subscriptions for the owner.
+The same Settings review, explicit consent, stop and delivery log apply.
+The signing secret is returned once by registration; it is never listed.
+A change to the creating owner's sign-in version, loss of ownership or ended
+access stops delivery and refuses reactivation of that subscription. Create a
+fresh subscription and consent again after such a change.
+Delegated keys and OAuth clients carrying document-category reads must be
+independently approved before webhook registration, even if an owner cookie
+accompanies the bearer token. Owner outbound consent is separate from that
+approval. Withdrawal or approver authority loss stops existing delivery.
+The conservative default remains owner-only registration of global subscriptions,
+activation and replay, with explicit audited consent; ct approval is pending.
 
 Current events are `employee.created`, `employee.updated`,
 `employee.terminated`, `employee.rehired`, `terms.recorded`, `terms.effective`,
 `timeoff.approved`, `timeoff.canceled` and `signature.completed`. Native
 personal, typed-field and table edits select monitored field families.
+Directory monitoring accepts `name`, `legalName`, `preferredName`, `workEmail`
+and `employeeNumber`; native directory edits record the individual changed
+fields, so a name-only edit does not signal a work-email change.
 `signature.completed` describes observed native sealing, as set out under
 signatures below. Future terms changes queue one recorded event and one
-effective event in the employer's time zone. Other future source boundaries
-and complete monitored-field coverage remain API-003 work.
+effective event in the employer's time zone. Future hires, rehires and
+terminations similarly queue separate recorded and effective deliveries when
+the source date is later than capture. A termination's effective notification
+uses the recorded employment end date. The employee remains active through
+that inclusive date. Each boundary has a distinct durable event ID.
+Future rehire proof, other source boundaries and exhaustive monitored-field
+coverage remain API-003 work.
 
 Deliveries use the creating key's current level and scope, with its current
 field-safe native record. Selected unavailable fields are named in `withheld`.
@@ -172,7 +193,7 @@ provider deletion work at erasure; a successful local deletion never claims
 that an outside receiver erased its copy. Owner consent, stop and replay forms and delivery logs have native browser
 proof at 1440 and 390. The native archive and erasure journeys prove excluded
 signing authority, removed delivery custody and tracked outside copies.
-Global subscriptions and complete future event sources remain unproved. API-003 remains partial.
+Complete monitored fields and future event sources remain unproved. API-003 remains partial.
 
 ## Delegated key administration
 

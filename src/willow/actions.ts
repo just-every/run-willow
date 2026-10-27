@@ -12,7 +12,7 @@ import { includeAiPolicy, policyAnswer } from './ai-policy'
 import { authorizeOAuth } from './api-credentials/oauth'
 import { createCourse, assignTraining, completeTraining, waiveTraining, decideTraining } from './training'
 import { correctReview } from './performance/corrections'
-import { approveWebhook, replayWebhook, runWebhooksNow, disableWebhook } from './webhooks'
+import { registerWebhook, approveWebhook, replayWebhook, runWebhooksNow, disableWebhook } from './webhooks'
 import { approveCredential,issueCredential,rotateCredential,revokeCredential } from './api-credentials'
 import { resubmitCompensationRecord,resubmitCompensationDefinition } from './compensation/resubmit'
 import { editCompensationPay, proposeCompensationRecord } from './compensation/pay'
@@ -84,7 +84,7 @@ export const actions: Record<string, Handler> = {
   'ai.handbook.write':writeHandbook, 'ai.handbook.approve':approveHandbook, 'ai.handbook.include':includeHandbook, 'ai.handbook.withdraw':withdrawHandbook,
   'policy.escalate':requestPolicyEscalation, 'policy.escalation.resolve':resolvePolicyEscalation,
   'ai.configure': configureAi, 'ai.policy.include': includeAiPolicy, 'policy.answer': policyAnswer,
-  'webhook.disable':disableWebhook,'webhook.approve':approveWebhook,'webhook.replay':replayWebhook,'webhook.run':runWebhooksNow,
+  'webhook.register':registerWebhook,'webhook.disable':disableWebhook,'webhook.approve':approveWebhook,'webhook.replay':replayWebhook,'webhook.run':runWebhooksNow,
   'preboarding.send': createPacket, 'preboarding.withdraw': withdrawPacket,
   'hiring.selfId.invite': inviteApplicant, 'hiring.selfId.withdraw': revokeApplicantInvitation, 'hiring.close': closeApplication,
   'hiring.opening': createHiringOpening, 'hiring.team': setHiringTeam, 'hiring.candidate': addHiringCandidate, 'hiring.move': moveHiringCandidate, 'hiring.scorecard': scoreHiringCandidate, 'hiring.resume': addHiringResume,
