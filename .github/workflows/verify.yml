@@ -131,7 +131,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
       - run: pnpm exec vite build
-      - run: pnpm exec playwright install --with-deps chromium
+      - name: Install Chromium
+        run: |
+          set -euo pipefail
+          pnpm exec playwright install chromium
+          # Hosted ubuntu-24.04 already carries Chromium's libraries. Use apt only when a real launch fails.
+          node scripts/ci/chromium-probe.mjs || {
+            timeout 420 pnpm exec playwright install-deps chromium
+            node scripts/ci/chromium-probe.mjs
+          }
       - run: WILLOW_PERFORMANCE_BROWSER=1 node tests/willow/performance.mjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -167,7 +175,15 @@ jobs:
       - run: npm install --global pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
-      - run: pnpm exec playwright install --with-deps chromium
+      - name: Install Chromium
+        run: |
+          set -euo pipefail
+          pnpm exec playwright install chromium
+          # Hosted ubuntu-24.04 already carries Chromium's libraries. Use apt only when a real launch fails.
+          node scripts/ci/chromium-probe.mjs || {
+            timeout 420 pnpm exec playwright install-deps chromium
+            node scripts/ci/chromium-probe.mjs
+          }
       # The checkout is a fresh clone: the journey runs setup, dev, build,
       # preview, export and import in it through pnpm exec rer.
       - run: pnpm run test:journey
@@ -203,7 +219,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
       - run: pnpm exec vite build
-      - run: pnpm exec playwright install --with-deps chromium
+      - name: Install Chromium
+        run: |
+          set -euo pipefail
+          pnpm exec playwright install chromium
+          # Hosted ubuntu-24.04 already carries Chromium's libraries. Use apt only when a real launch fails.
+          node scripts/ci/chromium-probe.mjs || {
+            timeout 420 pnpm exec playwright install-deps chromium
+            node scripts/ci/chromium-probe.mjs
+          }
       - run: pnpm run test:retention-eeo
       - uses: actions/upload-artifact@v4
         if: always()
@@ -261,7 +285,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
       - run: pnpm exec vite build
-      - run: pnpm exec playwright install --only-shell chromium
+      - name: Install Chromium
+        run: |
+          set -euo pipefail
+          pnpm exec playwright install --only-shell chromium
+          # Hosted ubuntu-24.04 already carries Chromium's libraries. Use apt only when a real launch fails.
+          node scripts/ci/chromium-probe.mjs || {
+            timeout 420 pnpm exec playwright install-deps chromium
+            node scripts/ci/chromium-probe.mjs
+          }
       - if: matrix.shard != 'browser-phase2'
         run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
       - if: matrix.shard == 'browser-phase2'
@@ -298,8 +330,14 @@ jobs:
       - run: pnpm exec rer install
       - name: Install current signing browser
         run: |
+          set -euo pipefail
           npm install --prefix "$RUNNER_TEMP/willow-playwright" --no-save playwright@1.64.1
+          export WILLOW_PLAYWRIGHT_PATH="$RUNNER_TEMP/willow-playwright/node_modules/playwright/index.mjs"
           node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install --only-shell chromium
+          node scripts/ci/chromium-probe.mjs || {
+            timeout 420 node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install-deps chromium
+            node scripts/ci/chromium-probe.mjs
+          }
           printf 'WILLOW_PLAYWRIGHT_PATH=%s/willow-playwright/node_modules/playwright/index.mjs\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: sh scripts/willow/signing-journey.sh
       - uses: actions/upload-artifact@v4
@@ -349,8 +387,14 @@ jobs:
       - run: pnpm exec vite build
       - name: Install current section browser
         run: |
+          set -euo pipefail
           npm install --prefix "$RUNNER_TEMP/willow-playwright" --no-save playwright@1.64.1
+          export WILLOW_PLAYWRIGHT_PATH="$RUNNER_TEMP/willow-playwright/node_modules/playwright/index.mjs"
           node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install --only-shell chromium
+          node scripts/ci/chromium-probe.mjs || {
+            timeout 420 node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install-deps chromium
+            node scripts/ci/chromium-probe.mjs
+          }
           printf 'WILLOW_PLAYWRIGHT_PATH=%s/willow-playwright/node_modules/playwright/index.mjs\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels-sections.mjs ${{ matrix.sections }}
       - if: matrix.shard == 'api'
