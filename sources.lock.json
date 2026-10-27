@@ -688,7 +688,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "33d19770cae6af9235921c22fb55421a742956513e3a33a56be8723433b49276",
+      "sha256": "2afcff5bb4c5daa011cbab76a284e222b030090d40d2db8f2e415330bf9fcfb6",
       "executable": false
     },
     ".gitignore": {
@@ -1563,6 +1563,14 @@
       "sha256": "893c0e30767ff7b66e29dcddca33bdea6ed24bb50a4baf323beca9a848bf3089",
       "executable": false
     },
+    "scripts/ci/chromium-probe.mjs": {
+      "sha256": "8993217dd4b2cf5c19d2dcdee59bb1e54e95dbf1194aa4e15a6699e064980fda",
+      "executable": false
+    },
+    "scripts/ci/reclaim-disk.sh": {
+      "sha256": "73734db136b3ca0efdfc9bb6ae3eaf33b7695ba36e1bd9b7a4bed552191bffdd",
+      "executable": false
+    },
     "scripts/delivery/base/artifact.mjs": {
       "sha256": "129f210f1556e816ba94ffe74359ac553cd26466aaf8c6c299765e9cea29aa07",
       "executable": false
@@ -1756,7 +1764,7 @@
       "executable": false
     },
     "scripts/verify-app.mjs": {
-      "sha256": "acb01ce31dcf54261c97265ba3d3764de4b3de8525e771e950aed2b0208749fc",
+      "sha256": "a7af21e68edb52f2d3b120d35c37df122ebbc63a13503e2e742904858854c7df",
       "executable": false
     },
     "scripts/willow/import-kit-migration.mjs": {
@@ -1764,7 +1772,7 @@
       "executable": false
     },
     "scripts/willow/signing-journey.sh": {
-      "sha256": "7ce298926dc45b81470ab9b7d99b3a4a05c57dfdbfba7c899dda20afd243860f",
+      "sha256": "5d90e22c508a62c75a39612739858b07efed161edb5f26d0d1527e4dd687e341",
       "executable": false
     },
     "SEED-COMMAND-CONTRACT.md": {
