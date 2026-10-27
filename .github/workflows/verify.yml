@@ -237,9 +237,13 @@ jobs:
         run: WILLOW_LEVELS_BROWSER=1 node tests/willow/levels.mjs
       - name: Phase two browser
         if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'retention-performance-phase2' }}
+        env:
+          WILLOW_VERIFY_SHARD: browser-phase2
         run: pnpm run test:phase2-browser
       - name: AI policy browser
         if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'retention-performance-phase2' }}
+        env:
+          WILLOW_VERIFY_SHARD: browser-phase2
         run: WILLOW_AI_BROWSER=1 node tests/willow/ai-policy.mjs
       - name: Signing journeys
         if: ${{ !cancelled() && steps.shared-build.outcome == 'success' && matrix.shard == 'access-signing-job' }}
