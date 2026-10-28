@@ -5,7 +5,18 @@ import {parseContract} from '../../src/base/seed-contract.mjs'
 
 const [mode,...ids]=process.argv.slice(2)
 if(!['write','check'].includes(mode)||!ids.length)throw Error('Usage: node scripts/willow/contract-docs.mjs write|check CLAUSE...')
-let source=fs.readFileSync('CONTRACT.md','utf8')
+const originalSource=fs.readFileSync('CONTRACT.md','utf8')
+let source=originalSource
+const rows=source.split('\n').filter(line=>/^\|\s*`?[A-Z][A-Z0-9-]*-\d+`?\s*\|/.test(line)).map(line=>line.split('|').slice(1,-1).map(cell=>cell.trim()))
+const tally=selected=>({done:selected.filter(row=>row[3]==='done').length,partial:selected.filter(row=>row[3]==='partial').length,missing:selected.filter(row=>row[3]==='missing').length,total:selected.length})
+const total=tally(rows)
+source=source.replace(/\d+ clauses: \d+ done, \d+ partial, \d+ missing\./,`${total.total} clauses: ${total.done} done, ${total.partial} partial, ${total.missing} missing.`)
+for(const [label,selected] of [['Published',rows.filter(row=>row[2]==='published')],['Target and push further',rows.filter(row=>row[2]!=='published')],['All',rows]]) {
+ const count=tally(selected)
+ source=source.replace(new RegExp('^\\| '+label+' \\|.*$','m'),`| ${label} | ${count.done} | ${count.partial} | ${count.missing} | ${count.total} |`)
+}
+if(mode==='write')fs.writeFileSync('CONTRACT.md',source)
+else if(originalSource!==source)throw Error('Stale contract summary')
 const contract=parseContract(source),lines=source.split('\n')
 const clauses=new Map(contract.clauses.map(clause=>[clause.id,clause]))
 let acceptance=fs.readFileSync('ACCEPTANCE.md','utf8')
@@ -17,7 +28,7 @@ for(const id of ids) {
   if(/^#{2,4} /.test(lines[index]))break
   body.push(lines[index])
  }
- const paragraphs=body.join('\n').trim().split(/\n\s*\n/)
+ const paragraphs=body.join('\n').trim().split(/\n\s*\n/).map(text=>[['named','anonymous'],['own-input','HR-note'],['participation','reminder']].reduce((value,parts)=>value.replaceAll(parts.join('/'),parts.join(' and ')),text))
  const row=lines[clause.row-1].split('|').slice(1,-1).map(cell=>cell.trim())
  if(row.length!==6)throw Error('Unsupported table cell: '+id)
  const entry=`- **${id} — ${clause.title}. Status: ${clause.status}.** ${paragraphs[0]}${row[4]?' Current evidence: '+row[4]:''}${row[5]?' Remaining: '+row[5]:''}\n${paragraphs.length>1?'\n'+paragraphs.slice(1).join('\n\n')+'\n':''}\n`

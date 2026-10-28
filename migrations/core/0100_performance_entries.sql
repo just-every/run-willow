@@ -1,0 +1,52 @@
+-- Author-private feedback and meeting notes use shared reviewed proposals.
+CREATE TABLE wl_self_changes_performance_entries (
+ id TEXT PRIMARY KEY, person_id TEXT NOT NULL REFERENCES wl_people(id), kind TEXT NOT NULL CHECK(kind IN ('legalName','dependent','personal','document','customField','goal','review','training','performanceEntry')),
+ row_id TEXT, before_json TEXT NOT NULL CHECK(json_valid(before_json)), after_json TEXT NOT NULL CHECK(json_valid(after_json)),
+ source_revision TEXT NOT NULL, table_version_id TEXT, requested_by TEXT NOT NULL, requested_at INTEGER NOT NULL, due_date TEXT NOT NULL
+);
+CREATE TABLE wl_self_decisions_performance_entries (
+ change_id TEXT PRIMARY KEY REFERENCES wl_self_changes_performance_entries(id), outcome TEXT NOT NULL CHECK(outcome IN ('approved','rejected')),
+ decided_by TEXT NOT NULL, decided_at INTEGER NOT NULL, comment TEXT NOT NULL
+);
+CREATE TABLE wl_self_reconciliation_performance_entries (
+ change_id TEXT PRIMARY KEY REFERENCES wl_self_changes_performance_entries(id), reference TEXT NOT NULL, recorded_by TEXT NOT NULL, recorded_at INTEGER NOT NULL
+);
+INSERT INTO wl_self_changes_performance_entries SELECT * FROM wl_self_changes;
+INSERT INTO wl_self_decisions_performance_entries SELECT * FROM wl_self_decisions;
+INSERT INTO wl_self_reconciliation_performance_entries SELECT * FROM wl_self_reconciliation;
+DROP TABLE wl_self_reconciliation;
+DROP TABLE wl_self_decisions;
+DROP TABLE wl_self_changes;
+ALTER TABLE wl_self_changes_performance_entries RENAME TO wl_self_changes;
+ALTER TABLE wl_self_decisions_performance_entries RENAME TO wl_self_decisions;
+ALTER TABLE wl_self_reconciliation_performance_entries RENAME TO wl_self_reconciliation;
+CREATE TRIGGER wl_self_changes_immutable BEFORE UPDATE ON wl_self_changes WHEN NOT EXISTS(SELECT 1 FROM wl_erasure_window) BEGIN SELECT RAISE(ABORT,'willow_immutable'); END;
+CREATE TRIGGER wl_self_changes_keep BEFORE DELETE ON wl_self_changes WHEN NOT EXISTS(SELECT 1 FROM wl_erasure_window) BEGIN SELECT RAISE(ABORT,'willow_immutable'); END;
+CREATE TRIGGER wl_self_decisions_immutable BEFORE UPDATE ON wl_self_decisions WHEN NOT EXISTS(SELECT 1 FROM wl_erasure_window) BEGIN SELECT RAISE(ABORT,'willow_immutable'); END;
+CREATE TRIGGER wl_self_decisions_keep BEFORE DELETE ON wl_self_decisions WHEN NOT EXISTS(SELECT 1 FROM wl_erasure_window) BEGIN SELECT RAISE(ABORT,'willow_immutable'); END;
+CREATE TRIGGER wl_self_reconciliation_immutable BEFORE UPDATE ON wl_self_reconciliation WHEN NOT EXISTS(SELECT 1 FROM wl_erasure_window) BEGIN SELECT RAISE(ABORT,'willow_immutable'); END;
+CREATE TRIGGER wl_self_reconciliation_keep BEFORE DELETE ON wl_self_reconciliation WHEN NOT EXISTS(SELECT 1 FROM wl_erasure_window) BEGIN SELECT RAISE(ABORT,'willow_immutable'); END;
+
+
+
+
+CREATE TABLE wl_performance_entries(
+ id TEXT PRIMARY KEY, entry_id TEXT NOT NULL, version INTEGER NOT NULL,
+ person_id TEXT NOT NULL REFERENCES wl_people(id),
+ field TEXT NOT NULL CHECK(field IN ('feedback','oneOnOneNotes')),
+ author TEXT NOT NULL, content TEXT NOT NULL, created_at INTEGER NOT NULL,
+ UNIQUE(entry_id,version)
+);
+CREATE TRIGGER wl_performance_entries_update BEFORE UPDATE ON wl_performance_entries WHEN NOT EXISTS(SELECT 1 FROM wl_erasure_window) BEGIN SELECT RAISE(ABORT,'willow_immutable'); END;
+CREATE TRIGGER wl_performance_entries_delete BEFORE DELETE ON wl_performance_entries WHEN NOT EXISTS(SELECT 1 FROM wl_erasure_window) BEGIN SELECT RAISE(ABORT,'willow_immutable'); END;
+CREATE TABLE wl_level_performance_entries(
+ level_id TEXT NOT NULL REFERENCES wl_levels(id),
+ relation TEXT NOT NULL CHECK(relation IN ('self','others')),
+ field TEXT NOT NULL CHECK(field IN ('reviews','goals','engagement','trainingAssignments','trainingCompletions','trainingCertifications','feedback','oneOnOneNotes')),
+ mode TEXT NOT NULL CHECK(mode IN ('none','view','approval','edit')),
+ CHECK(field!='engagement' OR mode IN ('none','view')),
+ PRIMARY KEY(level_id,relation,field)
+);
+INSERT INTO wl_level_performance_entries SELECT * FROM wl_level_performance_fields;
+DROP TABLE wl_level_performance_fields;
+ALTER TABLE wl_level_performance_entries RENAME TO wl_level_performance_fields;

@@ -42,7 +42,7 @@ Generated from CONTRACT.md. Acceptance and delivery scope remain in that source.
 | ROLE-006 | Time off and absence | done |
 | ROLE-007 | Benefits, dependents and beneficiaries | missing |
 | ROLE-008 | Performance and engagement | partial |
-| ROLE-009 | Training and learning | partial |
+| ROLE-009 | Training and learning | done |
 | ROLE-010 | EEO, tax and identity, and medical sections | missing |
 | ROLE-011 | Approval selection | done |
 | ROLE-012 | Built-in report selection | done |

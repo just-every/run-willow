@@ -1,3 +1,4 @@
+import { savePerformanceEntry } from './performance/entries'
 import { auditedSigning } from './sign/action-audit'
 import { prepareSignature } from './sign/payloads'
 import { previewWorkflowSignatures, issueWorkflowSignatures, verifyWorkflowSignatures } from './workflow-signing'
@@ -92,7 +93,7 @@ export const actions: Record<string, Handler> = {
   'survey.create': createSurvey, 'survey.close': closeSurvey, 'survey.respond': respondSurvey,
   'survey.plan': createActionPlan, 'survey.plan.complete': completeActionPlan, 'survey.comment.hide': hideSurveyComment,
   'training.course': createCourse, 'training.assign': assignTraining, 'training.complete': completeTraining, 'training.waive': waiveTraining, 'training.decide': decideTraining,
-  'performance.cycle': createReviewCycle, 'performance.assign': assignReview, 'performance.respond': respondReview, 'performance.close': closeReviewCycle,
+  'performance.entry':savePerformanceEntry, 'performance.cycle': createReviewCycle, 'performance.assign': assignReview, 'performance.respond': respondReview, 'performance.close': closeReviewCycle,
   'performance.correct': correctReview, 'performance.note': calibrateReview, 'performance.release': releaseReview, 'performance.withhold': withholdReview, 'performance.ack': acknowledgeReview, 'performance.appeal': appealReview,
   'goal.create': saveGoal, 'goal.checkin': checkinGoal, 'goal.complete': finishDevelopment,
   'compensation.band': defineBand,
