@@ -446,8 +446,8 @@ Connected DocuSign operation, returned records and old callbacks remain
 unproved. SIGN-001 and SIGN-002 remain PARTIAL; these native capabilities do not
 establish ESIGN or UETA legal suitability.
 
-### Native training approvals
 
+### Native training and authored performance
 
 Training approval requests share the immutable Personal changes queue. Read
 `GET /api/willow/self-changes/:id` for the exact proposal and decision history;
@@ -455,3 +455,12 @@ Training approval requests share the immutable Personal changes queue. Read
 The existing `training.decide` action consumes that same decision. Replaying
 either door cannot apply the training change again. Native manual training
 creates no payroll or provider handoff.
+
+`POST /api/willow/performance.entry` accepts `person`, `field` (`feedback`
+or `oneOnOneNotes`) and `text`. Appending a revision also supplies `entry`
+and its current `revision`. Independent self and scoped other-person field
+modes govern these author-private records. HR retains native confidential
+access; a level never reveals another author's entries. Approval mode queues
+the exact before and proposed bytes for a different HR member to decide.
+`GET /api/willow/performance` returns permitted `fieldEntries` and current
+entry choices. These records grant no release, survey, payroll or agent access.

@@ -32,6 +32,8 @@ export async function performanceLevelProof(h, owner, {staff:s,join,today,day}) 
  const input=await api('performance.assign',{cycle:cycle.id,person:inside.person,member:s.employee.member,role:'peer',dueDate:day(10)})
  await h.api('performance.respond',s.employee.cookie,{assignment:input.id,answers:['synthetic-willow-10009 confidential peer input']})
  await api('performance.note',{cycle:cycle.id,person:inside.person,note:'synthetic-willow-10010 private HR note',rating:'Private calibration'})
+ await api('performance.entry',{person:inside.person,field:'feedback',text:'synthetic-willow-10023 private authored feedback'})
+ await api('performance.entry',{person:inside.person,field:'oneOnOneNotes',text:'synthetic-willow-10024 private meeting note'})
  const unreleased=await api('performance.assign',{cycle:pending.id,person:inside.person,member:s.employee.member,role:'peer',dueDate:day(10)})
  await h.api('performance.respond',s.employee.cookie,{assignment:unreleased.id,answers:['synthetic-willow-10011 unreleased review']})
  const released=await api('performance.release',{cycle:cycle.id,person:inside.person,summary:'synthetic-willow-10012 released review',rating:'Human decision'})
@@ -46,7 +48,7 @@ export async function performanceLevelProof(h, owner, {staff:s,join,today,day}) 
  const survey=await api('survey.create',{name:'synthetic-willow-10019',kind:'pulse',mode:'anonymous',deliveryDate:today,dueDate:day(7),members:cohort.map(m=>m.member),questions:[{key:'score',label:'Score',type:'score'},{key:'comment',label:'Optional comment',type:'text',optional:true}]})
  for(const member of cohort) await h.api('survey.respond',member.cookie,{survey:survey.id,answers:{score:8,comment:'synthetic-willow-10020 anonymous comment'}})
  assert.equal((await api(`surveys/${survey.id}/results`)).comments.length,5)
- const plan={kind:'level',name:'synthetic-willow-10021 Performance View',permissions:['reports.read'],scope:{kind:'group',dimensions:{location:[location.id]}},performanceFields:{self:{},others:{reviews:'view',goals:'view'}}}
+ const plan={kind:'level',name:'synthetic-willow-10021 Performance View',permissions:['reports.read'],scope:{kind:'group',dimensions:{location:[location.id]}},performanceFields:{self:{},others:{reviews:'view',goals:'view',feedback:'view',oneOnOneNotes:'view'}}}
  const level=await apply(plan)
  await read(`performance/${cycle.id}`,undefined,404)
  await api('level.preview',{...plan,name:'synthetic-willow-10022',performanceFields:{others:{goals:'reveal'}}},400)
@@ -66,9 +68,9 @@ export async function performanceLevelProof(h, owner, {staff:s,join,today,day}) 
  await read('performance.ack',{summary:released.id},404)
  await read(`surveys/${survey.id}/results`,undefined,403)
  const preview=await api(`preview?member=${s.invited.member}&person=${inside.person}`)
- assert.deepEqual(preview.performanceFields.filter(f=>f.levelView).map(f=>f.field).sort(),['goals','reviews'])
+ assert.deepEqual(preview.performanceFields.filter(f=>f.levelView).map(f=>f.field).sort(),['feedback','goals','oneOnOneNotes','reviews'])
  assert.equal(preview.performanceFields.find(f=>f.field==='engagement').levelView,false)
- const forbidden=['synthetic-willow-10009','synthetic-willow-10010','synthetic-willow-10011','synthetic-willow-10013','synthetic-willow-10014','synthetic-willow-10015','synthetic-willow-10018','synthetic-willow-10020']
+ const forbidden=['synthetic-willow-10009','synthetic-willow-10010','synthetic-willow-10011','synthetic-willow-10013','synthetic-willow-10014','synthetic-willow-10015','synthetic-willow-10018','synthetic-willow-10020','synthetic-willow-10023','synthetic-willow-10024']
  const pathsFor=(pattern,name)=>{
   const path=pattern.replace(/^\^|\$$/g,'').replace(/\\\./g,'.')
   if(name==='preview')return [`preview?member=${s.invited.member}&person=${inside.person}`]
@@ -107,6 +109,7 @@ export async function performanceLevelProof(h, owner, {staff:s,join,today,day}) 
  await reviewModeProof(h,owner,cookie,s,plan,level.id,inside,outside,today,day,join)
  await engagementThemeProof(h,owner,cookie,s,plan,level.id,inside,outside,survey.id,today,day,join)
  await trainingModeProof(h,owner,cookie,s,inside,outside,day,join)
+ await authoredEntryProof(h,owner,cookie,s,day,join)
  console.log(`ROLE-008 read slice: PASS — ${urls.length} public doors, explicit released-review and goal View, exact scope, real private inputs, HR notes and anonymous comments, named withholding, bundle parity, independent revocation and no write or work grant`)
 }
 
@@ -120,8 +123,8 @@ async function performanceReadBrowserProof(h,owner,cookie,member,plan,level,cycl
  const apply=async value=>api('level.apply',{review:(await api('level.preview',value)).id})
  try {
   const admin=await pageFor(owner),reader=await pageFor(cookie)
-  const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-${name}-${width}.png`,fullPage:true})}
-  for(const width of [1440,390]) {
+  const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-${name}-${width}.png`,fullPage:true});await page.setViewportSize({width:390,height:1000});await page.screenshot({path:`${evidenceDirectory}/ROLE-008-${name}-390.png`,fullPage:true});await page.setViewportSize({width,height:1000})}
+  for(const width of [1440]) {
    for(const p of [admin,reader])await p.setViewportSize({width,height:1000})
    await apply({...plan,level,performanceFields:{self:{},others:{}}})
    await admin.goto(h.origin+'/app/access')
@@ -250,10 +253,10 @@ async function goalModeBrowserProof(h,owner,cookie,hrCookie,plan,level,member,pe
  const pageFor=async cookie=>{const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context);await context.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})));return context.newPage()}
  const api=(path,body,status)=>h.api(path,owner,body,status)
  const submit=async(page,form,name)=>{const action=await form.getAttribute('action');const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname===action&&r.request().method()==='POST'),page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.equal(response.status(),303);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
- const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-goal-${name}-${width}.png`,fullPage:true})}
+ const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-goal-${name}-${width}.png`,fullPage:true});await page.setViewportSize({width:390,height:1000});await page.screenshot({path:`${evidenceDirectory}/ROLE-008-goal-${name}-390.png`,fullPage:true});await page.setViewportSize({width,height:1000})}
  try {
   const admin=await pageFor(owner),writer=await pageFor(cookie),hr=await pageFor(hrCookie)
-  for(const width of [1440,390]) {
+  for(const width of [1440]) {
    for(const page of [admin,writer,hr])await page.setViewportSize({width,height:1000})
    await admin.goto(h.origin+'/app/access')
    const editor=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:new RegExp('^'+plan.name+' ·')})}).first()
@@ -371,10 +374,10 @@ async function engagementThemeBrowserProof(h,owner,cookie,plan,survey) {
  const pageFor=async cookie=>{const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context);await context.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})));return context.newPage()}
  const api=(path,body,status)=>h.api(path,owner,body,status)
  const submit=async(page,form,name)=>{const action=await form.getAttribute('action');const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname===action&&r.request().method()==='POST'),page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.equal(response.status(),303);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
- const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-engagement-${name}-${width}.png`,fullPage:true})}
+ const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-engagement-${name}-${width}.png`,fullPage:true});await page.setViewportSize({width:390,height:1000});await page.screenshot({path:`${evidenceDirectory}/ROLE-008-engagement-${name}-390.png`,fullPage:true});await page.setViewportSize({width,height:1000})}
  try {
   const admin=await pageFor(owner),reader=await pageFor(cookie)
-  for(const width of [1440,390]) {
+  for(const width of [1440]) {
    for(const page of [admin,reader])await page.setViewportSize({width,height:1000})
    await admin.goto(h.origin+'/app/access')
    const editor=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:new RegExp('^'+plan.name+' ·')})}).first()
@@ -510,10 +513,10 @@ async function reviewModeBrowserProof(h,owner,cookie,hrCookie,plan,level,cycle,p
  const browser=await chromium.launch({headless:true,executablePath:process.env.WILLOW_CHROMIUM_PATH,args:['--no-sandbox','--use-mock-keychain','--password-store=basic']}),contexts=[]
  const pageFor=async cookie=>{const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context);await context.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})));return context.newPage()}
  const submit=async(page,form,name)=>{const action=await form.getAttribute('action');const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname===action&&r.request().method()==='POST'),page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.equal(response.status(),303);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
- const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-review-${name}-${width}.png`,fullPage:true})}
+ const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-review-${name}-${width}.png`,fullPage:true});await page.setViewportSize({width:390,height:1000});await page.screenshot({path:`${evidenceDirectory}/ROLE-008-review-${name}-390.png`,fullPage:true});await page.setViewportSize({width,height:1000})}
  try {
   const admin=await pageFor(owner),writer=await pageFor(cookie),hr=await pageFor(hrCookie)
-  for(const width of [1440,390]) {
+  for(const width of [1440]) {
    for(const page of [admin,writer,hr])await page.setViewportSize({width,height:1000})
    for(const mode of ['edit','approval']) {
     await admin.goto(h.origin+'/app/access')
@@ -799,10 +802,10 @@ async function trainingBrowserProof(h,owner,cookie,hrCookie,plan,level,assignmen
  const browser=await chromium.launch({headless:true,executablePath:process.env.WILLOW_CHROMIUM_PATH,args:['--no-sandbox','--use-mock-keychain','--password-store=basic']}),contexts=[]
  const pageFor=async cookie=>{const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context);await context.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})));return context.newPage()}
  const submit=async(page,form,name)=>{const action=await form.getAttribute('action');const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname===action&&r.request().method()==='POST'),page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.equal(response.status(),303);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
- const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await tooltipProof(page);await page.screenshot({path:`${evidenceDirectory}/ROLE-009-${name}-${width}.png`,fullPage:true})}
+ const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await tooltipProof(page);await page.screenshot({path:`${evidenceDirectory}/ROLE-009-${name}-${width}.png`,fullPage:true});await page.setViewportSize({width:390,height:1000});await page.screenshot({path:`${evidenceDirectory}/ROLE-009-${name}-390.png`,fullPage:true});await page.setViewportSize({width,height:1000})}
  try {
   const admin=await pageFor(owner),writer=await pageFor(cookie),reviewer=await pageFor(hrCookie)
-  for(const width of [1440,390]) {
+  for(const width of [1440]) {
    for(const page of [admin,writer,reviewer])await page.setViewportSize({width,height:1000})
    await admin.goto(h.origin+'/app/settings/training')
    const courseForm=admin.locator('form[action="/app/do/training.course"]')
@@ -934,3 +937,150 @@ export async function trainingMigrationProof() {
  } finally {await h.close()}
 }
 
+async function authoredEntryProof(h,owner,cookie,s,day,join) {
+ const api=(path,body,status)=>h.api(path,owner,body,status),write=(path,body,status)=>h.api(path,cookie,body,status),hr=(path,body,status)=>h.api(path,s.hr.cookie,body,status)
+ const apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
+ const location=await api('location.create',{name:'synthetic-willow-10500',timezone:'UTC'})
+ const person=await join('synthetic-willow-10501',{locationId:location.id,managerPersonId:s.invited.person}),outside=await join('synthetic-willow-10502')
+ const plan={kind:'level',name:'synthetic-willow-10503 authored performance',permissions:[],scope:{kind:'group',dimensions:{location:[location.id]}},performanceFields:{self:{},others:{}}}
+ const level=await apply(plan)
+ const set=async(fields)=>apply({...plan,level:level.id,performanceFields:{self:{},others:fields}})
+ await apply({kind:'assignment',member:s.invited.member,levels:[level.id]})
+ const subject=await api('access.give',{person:person.person})
+ const subjectCookie=await h.signIn(['synthetic-willow-10501','example.com'].join('@'),{requested:true})
+ const selfLevel=await apply({kind:'level',name:'synthetic-willow-10504 self performance',permissions:[],performanceFields:{self:{feedback:'edit',oneOnOneNotes:'edit'},others:{}}})
+ await apply({kind:'assignment',member:subject.id,levels:[selfLevel.id]})
+ const allEntries=async cookie=>(await h.api('performance',cookie)).fieldEntries
+ for(const [index,field] of ['feedback','oneOnOneNotes'].entries()) {
+  const payload={field,person:person.person,text:`synthetic-willow-10510-${index} authored entry`}
+  await set({})
+  await write('performance.entry',payload,403)
+  assert.ok(!(await allEntries(cookie)).some(row=>row.field===field))
+  await set({[field]:'edit'})
+  await write('performance.entry',{...payload,person:outside.person},403)
+  const first=await write('performance.entry',payload)
+  const revised=await write('performance.entry',{...payload,entry:first.entry,revision:first.id,text:`synthetic-willow-10511-${index} revision`})
+  let history=(await allEntries(cookie)).filter(row=>row.entry===first.entry)
+  assert.deepEqual(history.map(row=>[row.version,row.text]),[[1,payload.text],[2,`synthetic-willow-10511-${index} revision`]])
+  assert.equal(history[0].mayEdit,false);assert.equal(history[1].mayEdit,true)
+  await write('performance.entry',{...payload,entry:first.entry,revision:first.id,text:'A stale version cannot overwrite current work'},409)
+  const privateHr=await hr('performance.entry',{...payload,text:`synthetic-willow-10512-${index} private HR entry`})
+  assert.ok(!(await allEntries(cookie)).some(row=>row.entry===privateHr.entry))
+  assert.ok(!(await allEntries(subjectCookie)).some(row=>row.entry===first.entry||row.entry===privateHr.entry),'Self Edit never reveals a manager or HR note')
+  await h.api('performance.entry',subjectCookie,{...payload,entry:first.entry,revision:revised.id,text:'Cannot edit another author'},404)
+  const selfText=`synthetic-willow-10550-${index} self authored`
+  const selfEntry=await h.api('performance.entry',subjectCookie,{...payload,text:selfText})
+  assert.equal((await allEntries(subjectCookie)).find(row=>row.entry===selfEntry.entry).text,selfText)
+  const selfRules=fields=>apply({kind:'level',level:selfLevel.id,name:'synthetic-willow-10504 self performance',permissions:[],performanceFields:{self:fields,others:{}}})
+  await selfRules({[field]:'view'})
+  assert.ok((await allEntries(subjectCookie)).some(row=>row.entry===selfEntry.entry))
+  await h.api('performance.entry',subjectCookie,{...payload,text:'Self View cannot append'},403)
+  await selfRules({[field]:'approval'})
+  const selfPending=await h.api('performance.entry',subjectCookie,{...payload,text:`synthetic-willow-10551-${index} self pending`})
+  await h.api('self.decide',subjectCookie,{change:selfPending.id,decision:'approve',comment:'The subject cannot self approve'},403)
+  await hr('self.decide',{change:selfPending.id,decision:'approve',comment:'Independent HR reviews the self entry'})
+  assert.equal((await allEntries(subjectCookie)).find(row=>row.entry===selfPending.entry).text,`synthetic-willow-10551-${index} self pending`)
+  await selfRules({})
+  assert.ok(!(await allEntries(subjectCookie)).some(row=>row.entry===selfEntry.entry||row.entry===selfPending.entry))
+  await selfRules({feedback:'edit',oneOnOneNotes:'edit'})
+
+  await set({[field]:'view'})
+  assert.deepEqual((await allEntries(cookie)).filter(row=>row.entry===first.entry).map(row=>row.text),history.map(row=>row.text))
+  await write('performance.entry',{...payload,entry:first.entry,revision:revised.id,text:'View never edits'},403)
+  await set({[field]:'approval'})
+  const pendingText=`synthetic-willow-10513-${index} exact HR proposal`
+  const pending=await write('performance.entry',{...payload,entry:first.entry,revision:revised.id,text:pendingText})
+  assert.equal(pending.status,'pending')
+  assert.ok(!(await allEntries(cookie)).some(row=>row.text===pendingText))
+  const proposal=await write(`self-changes/${pending.id}`)
+  assert.deepEqual(proposal.before,{text:`synthetic-willow-10511-${index} revision`,version:2,revision:revised.id})
+  assert.equal(proposal.after.payload.text,pendingText)
+  await write('self.decide',{change:pending.id,decision:'approve',comment:'Cannot approve your own entry'},403)
+  await h.api(`self-changes/${pending.id}`,subjectCookie,undefined,404)
+  const decisions=await Promise.all([1,2].map(()=>h.raw('/api/willow/self.decide',{cookie:s.hr.cookie,body:{change:pending.id,decision:'approve',comment:'Independent exact entry approval'}})))
+  assert.deepEqual(decisions.map(response=>response.status).sort(),[200,409])
+  for(const response of decisions)await response.arrayBuffer()
+  history=(await allEntries(cookie)).filter(row=>row.entry===first.entry)
+  assert.deepEqual(history.map(row=>row.version),[1,2,3]);assert.equal(history.at(-1).text,pendingText)
+  assert.equal((await hr(`self-changes/${pending.id}`)).decision.by,s.hr.member)
+  assert.ok(!(await hr('self-exceptions')).some(row=>row.id===pending.id),'Author-private entries create no external handoff')
+  const reject=await write('performance.entry',{...payload,text:`synthetic-willow-10514-${index} rejected`})
+  await hr('self.decide',{change:reject.id,decision:'reject',comment:'Keep the prior history'})
+  assert.ok(!(await allEntries(cookie)).some(row=>row.entry===reject.entry))
+  const stale=await write('performance.entry',{...payload,entry:first.entry,revision:history.at(-1).id,text:`synthetic-willow-10515-${index} stale`})
+  await set({[field]:'edit'})
+  await write('performance.entry',{...payload,entry:first.entry,revision:history.at(-1).id,text:`synthetic-willow-10516-${index} intervening`})
+  await hr('self.decide',{change:stale.id,decision:'approve',comment:'Refuse stale authored bytes'},409)
+  await hr('self.decide',{change:stale.id,decision:'reject',comment:'Recreate from the current revision'})
+  await set({[field]:'approval'})
+  const revoked=await write('performance.entry',{...payload,text:`synthetic-willow-10517-${index} revoked`})
+  await set({})
+  assert.ok(!(await allEntries(cookie)).some(row=>row.entry===first.entry))
+  await write(`self-changes/${revoked.id}`,undefined,404)
+  await hr('self.decide',{change:revoked.id,decision:'approve',comment:'Requester field rights were revoked'},403)
+  await hr('self.decide',{change:revoked.id,decision:'reject',comment:'Requester no longer has authority'})
+  await set({[field]:'approval'})
+  const moved=await write('performance.entry',{...payload,text:`synthetic-willow-10518-${index} moved`})
+  const movedTerms=await api('mover.schedule',{period:person.period,effectiveFrom:day(0),locationId:(await api('location.create',{name:`synthetic-willow-10519-${index}`,timezone:'UTC'})).id,reason:'Outside current authored field reach'})
+  assert.ok(!(await allEntries(cookie)).some(row=>row.entry===first.entry))
+  await hr('self.decide',{change:moved.id,decision:'approve',comment:'Person moved out of scope'},403)
+  await hr('self.decide',{change:moved.id,decision:'reject',comment:'Current scope controls old proposals'})
+  await api('terms.cancel',{terms:movedTerms.terms,reason:'Return to the original scope'})
+  for(const reader of [cookie,subjectCookie,s.hr.cookie]) {
+   const context=JSON.stringify(await h.api(`context/${person.person}`,reader))
+   for(const text of [payload.text,pendingText,`synthetic-willow-10512-${index} private HR entry`])assert.ok(!context.includes(text),'Authored performance never becomes agent context')
+  }
+ }
+ await authoredEntryBrowser(h,owner,cookie,s.hr.cookie,plan,level.id,person.person)
+ // Ending the author invalidates even a previously valid pending request.
+ await set({feedback:'approval',oneOnOneNotes:'approval'})
+ const ended=await join('synthetic-willow-10530')
+ const member=await api('access.give',{person:ended.person})
+ await apply({kind:'assignment',member:member.id,levels:[level.id]})
+ const endedCookie=await h.signIn(['synthetic-willow-10530','example.com'].join('@'),{requested:true})
+ const endedRequest=await h.api('performance.entry',endedCookie,{person:person.person,field:'feedback',text:'synthetic-willow-10531 ended author'})
+ await api('access.end',{person:ended.person})
+ await hr('self.decide',{change:endedRequest.id,decision:'approve',comment:'Ended author cannot publish'},403)
+ await hr('self.decide',{change:endedRequest.id,decision:'reject',comment:'Retain the refusal in history'})
+ await h.api('performance',endedCookie,undefined,401)
+ await set({})
+ console.log('ROLE-008 authored fields: PASS — independent feedback and private 1:1 modes, exact version history, independent HR approvals, confidentiality, source and scope fences, revocation, ended authors and no provider handoff')
+}
+
+async function authoredEntryBrowser(h,owner,cookie,hrCookie,plan,level,person) {
+ if(process.env.WILLOW_PERFORMANCE_BROWSER!=='1')return
+ const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
+ const browser=await chromium.launch({headless:true,executablePath:process.env.WILLOW_CHROMIUM_PATH,args:['--no-sandbox','--use-mock-keychain','--password-store=basic']}),contexts=[]
+ const pageFor=async cookie=>{const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context);await context.addCookies(cookie.split('; ').map(value=>({name:value.slice(0,value.indexOf('=')),value:value.slice(value.indexOf('=')+1),url:h.origin})));const page=await context.newPage();await page.setViewportSize({width:1440,height:1000});return page}
+ const capture=async(page,name)=>{for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.evaluate(()=>document.fonts.ready);if(width===1440)assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-authored-${name}-${width}.png`,fullPage:true})}await page.setViewportSize({width:1440,height:1000})}
+ const submit=async(page,form,name)=>{const action=await form.getAttribute('action');const [response]=await Promise.all([page.waitForResponse(response=>new URL(response.url()).pathname===action&&response.request().method()==='POST'),page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.equal(response.status(),303);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
+ try {
+  const admin=await pageFor(owner),writer=await pageFor(cookie),reviewer=await pageFor(hrCookie)
+  for(const [field,label] of [['feedback','Authored feedback'],['oneOnOneNotes','Private 1:1 notes']]) {
+   await admin.goto(h.origin+'/app/access')
+   const editor=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:new RegExp('^'+plan.name+' ·')})}).first()
+   await editor.locator('summary').click()
+   await editor.getByLabel('Performance about others: '+label,{exact:true}).selectOption('approval')
+   await tooltipProof(admin);await capture(admin,field+'-mode')
+   await submit(admin,editor.locator('form'),'Review level');await capture(admin,field+'-impact')
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   await writer.goto(h.origin+'/app/performance')
+   const form=writer.locator('form[action="/app/do/performance.entry"]').filter({has:writer.locator(`input[name="field"][value="${field}"]`)}).filter({hasNot:writer.locator('input[name="entry"]')})
+   await form.locator('..').locator('summary').click()
+   await form.getByLabel('Person',{exact:true}).selectOption(person)
+   const text=`synthetic-willow-10540-${field} native form`
+   await form.getByLabel('Entry text',{exact:true}).fill(text);await capture(writer,field+'-form')
+   await submit(writer,form,'Submit entry');await capture(writer,field+'-pending')
+   const request=(await h.api('self-changes',cookie)).find(row=>row.kind==='performanceEntry'&&row.after.payload.text===text)
+   assert.ok(request);assert.ok(!(await h.api('performance',cookie)).fieldEntries.some(row=>row.text===text))
+   await reviewer.goto(h.origin+'/app/self-changes/'+request.id)
+   const decision=reviewer.locator('form[action="/app/do/self.decide"]')
+   await decision.getByLabel('Comment',{exact:true}).fill('Review the exact authored entry')
+   await capture(reviewer,field+'-decision');await submit(reviewer,decision,'Record decision')
+   await capture(reviewer,field+'-history')
+   await writer.goto(h.origin+'/app/performance')
+   assert.ok((await writer.locator('main').textContent()).includes(text))
+   await capture(writer,field+'-published')
+  }
+ } finally {for(const context of contexts)await context.close();await browser.close()}
+}

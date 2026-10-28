@@ -1,3 +1,4 @@
+import { readsEntryProposal } from '../performance/entries'
 import { readsTrainingProposal } from '../training'
 import { readsTable, writesTable, type RecordTable } from '../record-tables/schema'
 import { readsReviewProposal } from '../performance/corrections'
@@ -30,6 +31,7 @@ export function readsProposalField(actor: Actor,row: Row) {
  if(row.kind==='recordRow') {const table=recordPolicy(row);return !!table&&readsTable(actor,row.person_id,table)}
  if(row.kind==='document') return readsDocumentChange(actor,row)
  if(row.kind==='review') return readsReviewProposal(actor,row)
+ if(row.kind==='performanceEntry') return readsEntryProposal(actor,row)
  if(row.kind==='training') return readsTrainingProposal(actor,row)
  if(row.kind==='goal') return readsGoal(actor,row.person_id)
  if(row.kind==='customField') {const policy=customPolicy(actor,row);return !!policy && readsCustomField(actor,row.person_id,policy)}
@@ -41,7 +43,7 @@ export function reviewsChange(actor:Actor,row:Row):boolean {
  if(actor.id===row.requested_by || actor.personId===row.person_id) return false
  if(row.kind==='recordRow') {const table=recordPolicy(row);return !!table&&readsTable(actor,row.person_id,table)&&writesTable(actor,row.person_id,table)}
  if(row.kind==='document') return reviewsDocumentChange(actor,row)
- if(row.kind==='review'||row.kind==='training') return can(actor,'people.manage')
+ if(row.kind==='review'||row.kind==='training'||row.kind==='performanceEntry') return can(actor,'people.manage')
  if(!readsProposalField(actor,row)) return false
  const policy=row.kind==='customField'?customPolicy(actor,row):null
  const native=row.kind==='goal' ? canAbout(actor,'people.manage',row.person_id) : row.kind==='customField' ? !!policy&&writesCustomField(actor,policy) : reviewsSelfChanges(actor,row.person_id)
@@ -51,6 +53,7 @@ export function readsSelfChange(actor:Actor,row:Row):boolean {
  if(row.kind==='document') return readsDocumentChange(actor,row)
  if(row.kind==='review') return readsReviewProposal(actor,row)
  if(!readsProposalField(actor,row)) return false
+ if(row.kind==='performanceEntry') return readsEntryProposal(actor,row)
  if(row.kind==='training') return readsTrainingProposal(actor,row)
  if(row.kind==='goal') return actor.personId===row.person_id||actor.id===row.requested_by||reviewsChange(actor,row)
  if(row.kind==='customField'||row.kind==='recordRow') return actor.personId===row.person_id || actor.id===row.requested_by || reviewsChange(actor,row)
@@ -80,7 +83,7 @@ export async function currentSelfApprovalDeciders(env:Bindings,row:Row):Promise<
 }
 const project=(actor:Actor,r:Row)=>({id:r.id,personId:r.person_id,kind:r.kind,before:JSON.parse(r.before_json),after:JSON.parse(r.after_json),requestedBy:r.requested_by,requestedAt:r.requested_at,dueDate:r.due_date,owner:'Approver',status:r.outcome??'pending',
  decision:r.outcome?{by:r.decided_by,at:r.decided_at,comment:r.comment}:null,
- reconciliation:!['goal','review','training'].includes(r.kind)&&r.outcome==='approved'&&(actor.personId===r.person_id||actor.id===r.requested_by||(r.kind==='document'?nativeReviewsDocumentChange(actor,r):handlesSelfExceptions(actor,r.person_id)))?{status:r.reference?'resolved':'open',reference:r.reference,by:r.recorded_by,at:r.reconciled_at}:null})
+ reconciliation:!['goal','review','training','performanceEntry'].includes(r.kind)&&r.outcome==='approved'&&(actor.personId===r.person_id||actor.id===r.requested_by||(r.kind==='document'?nativeReviewsDocumentChange(actor,r):handlesSelfExceptions(actor,r.person_id)))?{status:r.reference?'resolved':'open',reference:r.reference,by:r.recorded_by,at:r.reconciled_at}:null})
 export async function selfChanges(env:Bindings,actor:Actor) {
  const rows=(await all(env,`${SELF_CHANGE_SELECT} ORDER BY c.requested_at DESC,c.id`)).filter(row=>readsSelfChange(actor,row))
  if(rows.some(row=>row.person_id!==actor.personId))await auditRead(env,actor.id,'selfChange.private.read','list')
@@ -95,5 +98,5 @@ export async function selfChange(env:Bindings,actor:Actor,id:string) {
 }
 export async function selfExceptions(env:Bindings,actor:Actor) {
  insist(can(actor,'payroll.handoff')&&can(actor,'pay.read')||hasScopedGrant(actor,'people.manage')||can(actor,'people.manage')||reviewsSelfChanges(actor,''),'forbidden',403)
- return (await all(env,`${SELF_CHANGE_SELECT} WHERE d.outcome='approved' ORDER BY c.requested_at,c.id`)).filter(r=>!['goal','review','training'].includes(r.kind)&&(r.kind==='document'?nativeReviewsDocumentChange(actor,r):handlesSelfExceptions(actor,r.person_id))).map(r=>({id:r.id,personId:r.person_id,kind:r.kind,dueDate:r.due_date,status:r.reference?'resolved':'open',reference:r.reference,owner:'Payroll / HR',next:'Review the approved revision in the authorized system; record a handoff reference. No provider confirmation is implied.'}))
+ return (await all(env,`${SELF_CHANGE_SELECT} WHERE d.outcome='approved' ORDER BY c.requested_at,c.id`)).filter(r=>!['goal','review','training','performanceEntry'].includes(r.kind)&&(r.kind==='document'?nativeReviewsDocumentChange(actor,r):handlesSelfExceptions(actor,r.person_id))).map(r=>({id:r.id,personId:r.person_id,kind:r.kind,dueDate:r.due_date,status:r.reference?'resolved':'open',reference:r.reference,owner:'Payroll / HR',next:'Review the approved revision in the authorized system; record a handoff reference. No provider confirmation is implied.'}))
 }

@@ -54,6 +54,7 @@ try {
   assert.equal((await webhookLog()).deliveries.length,1,'A real employee delivery exists before erasure')
   const quinnMemberId = (await api('access.give', { person: q })).id
   const quinnCookie = await h.signIn('quinn@example.com', { requested: true })
+  await api('performance.entry',{person:q,field:'oneOnOneNotes',text:'synthetic-willow-20515 retained private note'})
   const trainingCourse=await api('training.course',{title:'synthetic-willow-20510 native training',selfCompletion:true})
   const trainingAssignment=await api('training.assign',{person:q,course:trainingCourse.id,dueDate:day(30)})
   await api('training.complete',{assignment:trainingAssignment.id,evidence:'synthetic-willow-20511 retained completion',certificate:'synthetic-willow-20512 retained certificate'})
@@ -96,7 +97,7 @@ try {
   assert.equal(first.confirmable, false)
   assert.ok(first.items.some(item=>item.id==='ai_policy_followup'&&item.rows>0),'The real HR contact request is included in the erasure preview')
   const byId = Object.fromEntries(first.items.map(item => [item.id, item]))
-  for (const id of ['people', 'private', 'periods', 'terms', 'leave_accounts', 'eeo', 'members', 'sessions', 'audit', 'cases', `custom_field:${badge.id}`, `documents:${offers}`, `documents:${forms}`, 'document_proposals','training_assignments','training_events','training_changes','training_change_decisions']) assert.ok(byId[id]?.rows > 0, `${id} is classified`)
+  for (const id of ['people', 'private', 'periods', 'terms', 'leave_accounts', 'eeo', 'members', 'sessions', 'audit', 'cases', `custom_field:${badge.id}`, `documents:${offers}`, `documents:${forms}`, 'document_proposals','training_assignments','training_events','training_changes','training_change_decisions','performance_entries']) assert.ok(byId[id]?.rows > 0, `${id} is classified`)
   assert.equal(byId.eeo.class, 'eeo')
   assert.equal(byId.sessions.disposition, 'erased')
   for (const who of ['hr', 'managera', 'employee']) assert.equal((await preview(who, q, 403)).error, 'owner_required')
@@ -218,6 +219,10 @@ try {
   const retainedTraining=await api('retained')
   assert.ok(JSON.stringify(retainedTraining).includes('synthetic-willow-20512 retained certificate'),'Retained training evidence stays in restricted custody')
   assert.ok(JSON.stringify(retainedTraining).includes('synthetic-willow-20514 reviewed completion'),'Approved training proposal bytes retain personnel custody')
+  assert.ok(JSON.stringify(retainedTraining).includes('synthetic-willow-20515 retained private note'),'Private meeting notes retain personnel custody')
+  const erasedPerformance=await api('performance')
+  assert.ok(!erasedPerformance.fieldEntries.some(row=>row.person===q),'Erasure removes private notes from ordinary performance reads')
+  for(const choices of Object.values(erasedPerformance.entryPeople))assert.ok(!choices.some(row=>row.id===q),'Erased people cannot be selected for new performance records')
 
   await api(`self-changes/${trainingRequest.id}`,undefined,404)
   await api('self.decide',{change:trainingRequest.id,decision:'approve',comment:'Erasure cannot be undone by a recorded approval'},404)
