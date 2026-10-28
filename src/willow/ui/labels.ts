@@ -26,8 +26,8 @@ export function displayValue(value: unknown, today: string): string {
   if (value === null || value === undefined || value === '') return '—'
   const text = String(value)
   if (isDate(text)) return formatDay(text, today, { year: true })
-  if (TYPE_LABELS[text]) return TYPE_LABELS[text]
-  if (KIND_LABELS[text]) return KIND_LABELS[text]
+  if (Object.hasOwn(TYPE_LABELS, text)) return TYPE_LABELS[text]
+  if (Object.hasOwn(KIND_LABELS, text)) return KIND_LABELS[text]
   return text
 }
 
