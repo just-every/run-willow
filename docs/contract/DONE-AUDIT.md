@@ -1,4 +1,4 @@
-Old reference: `300ee5cb62aea3ab0211568e20f7feea63eea539`.
+Old reference: `bd266ebdb85886a3b609d13885a54b6fe9f139eb`.
 | Clause | Journey | Door | What it shows | Result |
 | --- | --- | --- | --- | --- |
 | `WIL-01` | `tests/willow/flows.mjs` — “WIL-01” | Worker HTTP forms, JSON, pages and checked downloads | Configure an employer and its locations, departments, schedules and categories, invite a member and assign explicit rights.; End access, then grant access again: a fresh sign-in is required and no removed permission returns. | covered |

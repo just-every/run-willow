@@ -1,3 +1,4 @@
+import { entryHome } from './entries'
 import { reviewCorrectionMode } from './corrections'
 import { readsPerformanceField } from '../levels/performance'
 import type { Bindings } from '../../auth.server'
@@ -17,7 +18,7 @@ export async function performanceHome(env:Bindings,actor:Actor) {
  await reconcileRecipients(env,actor.today)
  const released=await levelReleasedReviews(env,actor)
  const cycles=await all(env,`SELECT c.id,c.name,c.due_date,c.status FROM wl_review_cycles c ${hr(actor)?'':`WHERE (${visibleCycle}) OR c.id IN (SELECT value FROM json_each(?2))`} ORDER BY c.created_at DESC`,...hr(actor)?[]:[actor.id,JSON.stringify([...new Set(released.map(r=>r.cycle_id))])])
- return {cycles,...await goalHome(env,actor),mayManage:hr(actor)}
+ return {cycles,...await goalHome(env,actor),...await entryHome(env,actor),mayManage:hr(actor)}
 }
 export async function performanceDetail(env:Bindings,actor:Actor,id:string) {
  await reconcileRecipients(env,actor.today)

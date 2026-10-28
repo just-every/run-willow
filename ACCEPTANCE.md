@@ -561,7 +561,7 @@ Core · target · **missing** · Cites BASE-ACCESS-004, BASE-INPUT-001, BASE-ROL
 
 Core · target · **partial** · Cites BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
 
-**Requirement.** Levels separately select reviews, goals, feedback, 1:1 notes and engagement results. Released-review corrections preserve earlier delivered summaries; a level cannot expose raw inputs, private HR notes, anonymous authors or unreleased results. Goal proposals use SELF-001 and independent work ownership. Published themes require the whole fixed cohort within reach, including nonrespondents and former members, and the existing minimum cohort. Detailed mode and release rules are in [record rules](docs/contract/record-rules.md#role-008--performance-and-engagement).
+**Requirement.** Levels separately select reviews, goals, feedback, 1:1 notes and engagement results. Released-review corrections preserve earlier delivered summaries; a level cannot expose raw inputs, private HR notes, anonymous authors or unreleased results. Goal proposals use SELF-001 and independent work ownership. Authored feedback and private 1:1 notes remain visible only to their current field-authorized author and employer-wide HR, never to another author’s subject or manager through a level. Published themes require the whole fixed cohort within reach, including nonrespondents and former members, and the existing minimum cohort. Detailed mode and release rules are in [record rules](docs/contract/record-rules.md#role-008--performance-and-engagement).
 
 **Acceptance.**
 1. Crawl a performance View level over real confidential inputs, HR notes, anonymous comments and an unreleased cycle; none appear.
@@ -569,8 +569,8 @@ Core · target · **partial** · Cites BASE-ACCESS-004, BASE-INPUT-001, BASE-ROL
 3. Read published themes only for a qualifying whole cohort; move a nonrespondent outside scope and observe the change.
 4. Exercise all modes for feedback, 1:1 notes and raw engagement results without widening native result or participation grants.
 
-**Evidence.** `tests/willow/performance.mjs` — “performance public-door journey”; `tests/willow/levels-performance.mjs` — “levels-performance public-door journey”
-**Gap.** Released reviews support View, Edit and Edit with approval; goals retain all modes. Field modes for feedback and 1:1 notes, raw engagement-result modes and their full acceptance crawl remain unimplemented. Published-theme-only View is ct approved with the minimum cohort of five; raw result and anonymous-comment grants remain independent. Existing native PERFORM-001 and ENGAGE-001 boundaries remain in force; no new review mode grants raw feedback, HR-note access, anonymous comments, participation or agent context. Goal work requires independent named ownership and current write authority.
+**Evidence.** `tests/willow/performance.mjs` — “performanceLevelProof, reviewModeProof, authoredEntryProof and engagementThemeProof”; `tests/willow/levels-performance.mjs` — “authoredEntryProof”
+**Gap.** Released reviews, goals, authored feedback and private 1:1 notes have native modes. Raw engagement-result field modes remain unimplemented independently of anonymous-comment grants. Adopted conservative default: retain existing employer-wide HR-only raw named results, protected anonymous aggregates and HR-only released anonymous comments; published-theme levels gain none of those raw records. A compatible ct ruling is required before widening that disclosure or enabling raw-result editing and approval. The target and ENGAGE-001 suppression, consent and recipient-only participation boundaries remain unchanged.
 
 #### ROLE-009 — Training and learning
 
@@ -584,8 +584,8 @@ Core · target · **partial** · Cites BASE-ACCESS-004, BASE-INPUT-001, BASE-ROL
 3. Refuse self-decision, stale/concurrent source, revoked mode, moved scope and ended requester before a different eligible reviewer publishes.
 4. Read required-work opening/closure and retained evidence after departure; compare the disconnected and provider-verified TalentLMS states.
 
-**Evidence.** `tests/willow/performance.mjs` — “performance public-door journey”; `tests/willow/levels-performance.mjs` — “levels-performance public-door journey”; `tests/willow/retention.mjs` — “retention public-door journey”
-**Gap.** Training approval currently uses standalone native custody. Before ROLE-009 can be DONE, route these changes through SELF-001's immutable proposal, HR decision, stale-source fence, history and applicable downstream exception path, then repeat the four-mode public-door and 1440/390 proof. This is unfinished work in this seed.
+**Evidence.** `tests/willow/performance.mjs` — “trainingModeProof and trainingMigrationProof”; `tests/willow/levels-performance.mjs` — “trainingModeProof and trainingMigrationProof”
+**Gap.** DONE certification is deferred under the pending evidence rule.
 
 #### ROLE-010 — EEO, tax and identity, and medical sections
 

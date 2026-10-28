@@ -155,3 +155,7 @@ CONTRACT.md is the only acceptance and status source. Regenerate the documents b
 
 Lander-Regenerate: node src/base/contract-docs.mjs write
 Lander-Regenerate: node scripts/edition-authoring/cli.mjs lock
+
+## Contract document synchronization
+
+CONTRACT.md is the acceptance and status source. The compatibility command `node scripts/willow/contract-docs.mjs write CLAUSE...` (and `check CLAUSE...`) validates the touched ids and delegates to the shared Base generator. All generated documents are rebuilt together. Regenerate the edition lock last.

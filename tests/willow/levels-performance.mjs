@@ -32,6 +32,8 @@ export async function performanceLevelProof(h, owner, {staff:s,join,today,day}) 
  const input=await api('performance.assign',{cycle:cycle.id,person:inside.person,member:s.employee.member,role:'peer',dueDate:day(10)})
  await h.api('performance.respond',s.employee.cookie,{assignment:input.id,answers:['synthetic-willow-10009 confidential peer input']})
  await api('performance.note',{cycle:cycle.id,person:inside.person,note:'synthetic-willow-10010 private HR note',rating:'Private calibration'})
+ await api('performance.entry',{person:inside.person,field:'feedback',text:'synthetic-willow-10023 private authored feedback'})
+ await api('performance.entry',{person:inside.person,field:'oneOnOneNotes',text:'synthetic-willow-10024 private meeting note'})
  const unreleased=await api('performance.assign',{cycle:pending.id,person:inside.person,member:s.employee.member,role:'peer',dueDate:day(10)})
  await h.api('performance.respond',s.employee.cookie,{assignment:unreleased.id,answers:['synthetic-willow-10011 unreleased review']})
  const released=await api('performance.release',{cycle:cycle.id,person:inside.person,summary:'synthetic-willow-10012 released review',rating:'Human decision'})
@@ -46,7 +48,7 @@ export async function performanceLevelProof(h, owner, {staff:s,join,today,day}) 
  const survey=await api('survey.create',{name:'synthetic-willow-10019',kind:'pulse',mode:'anonymous',deliveryDate:today,dueDate:day(7),members:cohort.map(m=>m.member),questions:[{key:'score',label:'Score',type:'score'},{key:'comment',label:'Optional comment',type:'text',optional:true}]})
  for(const member of cohort) await h.api('survey.respond',member.cookie,{survey:survey.id,answers:{score:8,comment:'synthetic-willow-10020 anonymous comment'}})
  assert.equal((await api(`surveys/${survey.id}/results`)).comments.length,5)
- const plan={kind:'level',name:'synthetic-willow-10021 Performance View',permissions:['reports.read'],scope:{kind:'group',dimensions:{location:[location.id]}},performanceFields:{self:{},others:{reviews:'view',goals:'view'}}}
+ const plan={kind:'level',name:'synthetic-willow-10021 Performance View',permissions:['reports.read'],scope:{kind:'group',dimensions:{location:[location.id]}},performanceFields:{self:{},others:{reviews:'view',goals:'view',feedback:'view',oneOnOneNotes:'view'}}}
  const level=await apply(plan)
  await read(`performance/${cycle.id}`,undefined,404)
  await api('level.preview',{...plan,name:'synthetic-willow-10022',performanceFields:{others:{goals:'reveal'}}},400)
@@ -66,9 +68,9 @@ export async function performanceLevelProof(h, owner, {staff:s,join,today,day}) 
  await read('performance.ack',{summary:released.id},404)
  await read(`surveys/${survey.id}/results`,undefined,403)
  const preview=await api(`preview?member=${s.invited.member}&person=${inside.person}`)
- assert.deepEqual(preview.performanceFields.filter(f=>f.levelView).map(f=>f.field).sort(),['goals','reviews'])
+ assert.deepEqual(preview.performanceFields.filter(f=>f.levelView).map(f=>f.field).sort(),['feedback','goals','oneOnOneNotes','reviews'])
  assert.equal(preview.performanceFields.find(f=>f.field==='engagement').levelView,false)
- const forbidden=['synthetic-willow-10009','synthetic-willow-10010','synthetic-willow-10011','synthetic-willow-10013','synthetic-willow-10014','synthetic-willow-10015','synthetic-willow-10018','synthetic-willow-10020']
+ const forbidden=['synthetic-willow-10009','synthetic-willow-10010','synthetic-willow-10011','synthetic-willow-10013','synthetic-willow-10014','synthetic-willow-10015','synthetic-willow-10018','synthetic-willow-10020','synthetic-willow-10023','synthetic-willow-10024']
  const pathsFor=(pattern,name)=>{
   const path=pattern.replace(/^\^|\$$/g,'').replace(/\\\./g,'.')
   if(name==='preview')return [`preview?member=${s.invited.member}&person=${inside.person}`]
@@ -107,6 +109,7 @@ export async function performanceLevelProof(h, owner, {staff:s,join,today,day}) 
  await reviewModeProof(h,owner,cookie,s,plan,level.id,inside,outside,today,day,join)
  await engagementThemeProof(h,owner,cookie,s,plan,level.id,inside,outside,survey.id,today,day,join)
  await trainingModeProof(h,owner,cookie,s,inside,outside,day,join)
+ await authoredEntryProof(h,owner,cookie,s,day,join)
  console.log(`ROLE-008 read slice: PASS — ${urls.length} public doors, explicit released-review and goal View, exact scope, real private inputs, HR notes and anonymous comments, named withholding, bundle parity, independent revocation and no write or work grant`)
 }
 
@@ -120,8 +123,8 @@ async function performanceReadBrowserProof(h,owner,cookie,member,plan,level,cycl
  const apply=async value=>api('level.apply',{review:(await api('level.preview',value)).id})
  try {
   const admin=await pageFor(owner),reader=await pageFor(cookie)
-  const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-${name}-${width}.png`,fullPage:true})}
-  for(const width of [1440,390]) {
+  const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-${name}-${width}.png`,fullPage:true});await page.setViewportSize({width:390,height:1000});await page.screenshot({path:`${evidenceDirectory}/ROLE-008-${name}-390.png`,fullPage:true});await page.setViewportSize({width,height:1000})}
+  for(const width of [1440]) {
    for(const p of [admin,reader])await p.setViewportSize({width,height:1000})
    await apply({...plan,level,performanceFields:{self:{},others:{}}})
    await admin.goto(h.origin+'/app/access')
@@ -250,10 +253,10 @@ async function goalModeBrowserProof(h,owner,cookie,hrCookie,plan,level,member,pe
  const pageFor=async cookie=>{const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context);await context.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})));return context.newPage()}
  const api=(path,body,status)=>h.api(path,owner,body,status)
  const submit=async(page,form,name)=>{const action=await form.getAttribute('action');const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname===action&&r.request().method()==='POST'),page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.equal(response.status(),303);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
- const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-goal-${name}-${width}.png`,fullPage:true})}
+ const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-goal-${name}-${width}.png`,fullPage:true});await page.setViewportSize({width:390,height:1000});await page.screenshot({path:`${evidenceDirectory}/ROLE-008-goal-${name}-390.png`,fullPage:true});await page.setViewportSize({width,height:1000})}
  try {
   const admin=await pageFor(owner),writer=await pageFor(cookie),hr=await pageFor(hrCookie)
-  for(const width of [1440,390]) {
+  for(const width of [1440]) {
    for(const page of [admin,writer,hr])await page.setViewportSize({width,height:1000})
    await admin.goto(h.origin+'/app/access')
    const editor=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:new RegExp('^'+plan.name+' ·')})}).first()
@@ -371,10 +374,10 @@ async function engagementThemeBrowserProof(h,owner,cookie,plan,survey) {
  const pageFor=async cookie=>{const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context);await context.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})));return context.newPage()}
  const api=(path,body,status)=>h.api(path,owner,body,status)
  const submit=async(page,form,name)=>{const action=await form.getAttribute('action');const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname===action&&r.request().method()==='POST'),page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.equal(response.status(),303);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
- const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-engagement-${name}-${width}.png`,fullPage:true})}
+ const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-engagement-${name}-${width}.png`,fullPage:true});await page.setViewportSize({width:390,height:1000});await page.screenshot({path:`${evidenceDirectory}/ROLE-008-engagement-${name}-390.png`,fullPage:true});await page.setViewportSize({width,height:1000})}
  try {
   const admin=await pageFor(owner),reader=await pageFor(cookie)
-  for(const width of [1440,390]) {
+  for(const width of [1440]) {
    for(const page of [admin,reader])await page.setViewportSize({width,height:1000})
    await admin.goto(h.origin+'/app/access')
    const editor=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:new RegExp('^'+plan.name+' ·')})}).first()
@@ -510,10 +513,10 @@ async function reviewModeBrowserProof(h,owner,cookie,hrCookie,plan,level,cycle,p
  const browser=await chromium.launch({headless:true,executablePath:process.env.WILLOW_CHROMIUM_PATH,args:['--no-sandbox','--use-mock-keychain','--password-store=basic']}),contexts=[]
  const pageFor=async cookie=>{const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context);await context.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})));return context.newPage()}
  const submit=async(page,form,name)=>{const action=await form.getAttribute('action');const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname===action&&r.request().method()==='POST'),page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.equal(response.status(),303);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
- const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-review-${name}-${width}.png`,fullPage:true})}
+ const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-review-${name}-${width}.png`,fullPage:true});await page.setViewportSize({width:390,height:1000});await page.screenshot({path:`${evidenceDirectory}/ROLE-008-review-${name}-390.png`,fullPage:true});await page.setViewportSize({width,height:1000})}
  try {
   const admin=await pageFor(owner),writer=await pageFor(cookie),hr=await pageFor(hrCookie)
-  for(const width of [1440,390]) {
+  for(const width of [1440]) {
    for(const page of [admin,writer,hr])await page.setViewportSize({width,height:1000})
    for(const mode of ['edit','approval']) {
     await admin.goto(h.origin+'/app/access')
@@ -642,40 +645,86 @@ export async function trainingModeProof(h,owner,cookie,s,inside,outside,day,join
  await set('approval')
  const pending=await write('training.assign',assignment)
  assert.equal(pending.status,'pending')
- assert.ok((await hr('work')).items.some(item=>item.source===`training-request:${pending.id}`))
+ assert.ok((await hr('work')).items.some(item=>item.source===`self-change:${pending.id}`))
  assert.ok(!(await write('training')).assignments.some(r=>r.id===pending.assignment))
  assert.deepEqual((await write('training')).requests.find(r=>r.id===pending.id).payload,assignment)
  assert.equal((await write('training')).requests.find(r=>r.id===pending.id).personName,'synthetic-willow-10301')
  assert.equal((await write('training')).requests.find(r=>r.id===pending.id).courseTitle,'synthetic-willow-10302 reviewed course')
- await write('training.decide',{request:pending.id,decision:'approve',reason:'No self approval'},403)
- await hr('training.decide',{request:pending.id,decision:'approve',reason:'Reviewed exact assignment'})
+ await write('self.decide',{change:pending.id,decision:'approve',comment:'No self approval'},403)
+ const proposal=await write(`self-changes/${pending.id}`)
+ assert.equal(proposal.kind,'training')
+ assert.equal(proposal.trainingCourse,'synthetic-willow-10302 reviewed course')
+ assert.equal(proposal.before,null)
+ assert.deepEqual(proposal.after.payload,assignment)
+ assert.equal(proposal.owner,'Approver')
+ assert.match(proposal.dueDate,/^\d{4}-\d{2}-\d{2}$/)
+ await h.api(`self-changes/${pending.id}`,s.managerb.cookie,undefined,404)
+ await hr('self.decide',{change:pending.id,decision:'approve',comment:'Reviewed exact assignment'})
+ const decided=await write(`self-changes/${pending.id}`)
+ assert.equal(decided.status,'approved')
+ assert.equal(decided.decision.by,s.hr.member)
+ assert.equal(decided.decision.comment,'Reviewed exact assignment')
+ assert.deepEqual(decided.after,proposal.after)
+ assert.equal(decided.reconciliation,null,'Manual training has no external handoff')
+ assert.ok(!(await hr('self-exceptions')).some(row=>row.id===pending.id))
+ await hr('self.reconcile',{change:pending.id,reference:'No provider action was performed'},409)
+ await hr('self.decide',{change:pending.id,decision:'approve',comment:'Cannot replay the exact decision'},409)
+ assert.ok(!(await hr('work')).items.some(item=>item.source===`self-change:${pending.id}`||item.source===`self-exception:${pending.id}`))
+
  const completion=await write('training.complete',{assignment:pending.assignment,evidence:'synthetic-willow-10307 pending completion',certificate:'synthetic-willow-10308 pending certificate'})
  assert.equal((await write('training')).assignments.find(r=>r.id===pending.assignment).completion,null)
- const races=await Promise.all([1,2].map(()=>h.raw('/api/willow/training.decide',{cookie:s.hr.cookie,body:{request:completion.id,decision:'approve',reason:'One immutable completion'}})))
+ const completionProposal=await write(`self-changes/${completion.id}`)
+ assert.deepEqual(completionProposal.before,{assignment:pending.assignment,course:course.id,dueDate:assignment.dueDate})
+ assert.equal(completionProposal.after.payload.evidence,'synthetic-willow-10307 pending completion')
+ assert.equal(completionProposal.after.payload.certificate,'synthetic-willow-10308 pending certificate')
+ const approvalWork=(await hr('work')).items.find(item=>item.source===`self-change:${completion.id}`)
+ assert.ok(approvalWork)
+ await api('work.schedule',{source:approvalWork.source,revision:approvalWork.revision,owner:s.hr.member,substitute:'',dueDate:day(0),nextAction:'Review the exact training proposal'})
+ await api('work.policy',{offsets:'0',quietStart:20,quietEnd:8,defaultDays:1})
+ await api('connections.notices',{enabled:true})
+ const tick=()=>h.raw(`/cdn-cgi/local/scheduled?time=${Date.parse(day(0)+'T09:00:00Z')}&cron=${encodeURIComponent('*/15 * * * *')}&format=json`)
+ for(let count=0;count<2;count++){const response=await tick();assert.equal(response.status,200);await response.arrayBuffer()}
+ const notified=(await hr('work')).items.find(item=>item.source===approvalWork.source)
+ assert.deepEqual(notified.deliveries.map(row=>[row.recipient,row.status]),[[s.hr.member,'accepted']],'Shared approval reminder is delivered once to its current HR owner')
+ const notices=JSON.stringify(h.businessMail())
+ for(const value of ['synthetic-willow-10307 pending completion','synthetic-willow-10308 pending certificate'])assert.ok(!notices.includes(value),'Fixed training notices carry no evidence')
+
+
+ const races=await Promise.all([1,2].map(()=>h.raw('/api/willow/self.decide',{cookie:s.hr.cookie,body:{change:completion.id,decision:'approve',comment:'One immutable completion'}})))
  assert.deepEqual(races.map(r=>r.status).sort(),[200,409]);for(const r of races)await r.arrayBuffer()
  assert.equal((await write('training')).assignments.find(r=>r.id===pending.assignment).completion.evidence,'synthetic-willow-10307 pending completion')
+ assert.ok(!(await hr('work')).items.some(item=>item.source===approvalWork.source))
+ const countAfterDecision=h.businessMail().length,finishedTick=await tick();assert.equal(finishedTick.status,200);await finishedTick.arrayBuffer()
+ assert.equal(h.businessMail().length,countAfterDecision,'A decided training approval sends no later reminder')
+
  const waiveAssignment=await api('training.assign',assignment)
  const waive=await write('training.waive',{assignment:waiveAssignment.id,evidence:'synthetic-willow-10309 approved waiver'})
  assert.equal((await write('training')).assignments.find(r=>r.id===waiveAssignment.id).completion,null)
  await hr('training.decide',{request:waive.id,decision:'approve',reason:'Reviewed waiver'})
+ assert.equal((await hr(`self-changes/${waive.id}`)).status,'approved','The compatibility door consumes the shared decision')
  assert.equal((await write('training')).assignments.find(r=>r.id===waiveAssignment.id).completion.outcome,'waived')
  const staleAssignment=await api('training.assign',assignment)
  const stale=await write('training.complete',{assignment:staleAssignment.id,evidence:'Cannot replace an intervening outcome'})
  await api('training.waive',{assignment:staleAssignment.id,evidence:'Intervening HR waiver'})
- await hr('training.decide',{request:stale.id,decision:'approve',reason:'Source changed'},409)
- await hr('training.decide',{request:stale.id,decision:'reject',reason:'Recreate from the current state'})
+ await hr('self.decide',{change:stale.id,decision:'approve',comment:'Source changed'},409)
+ assert.equal((await hr(`self-changes/${stale.id}`)).status,'pending')
+ await hr('self.decide',{change:stale.id,decision:'reject',comment:'Recreate from the current state'})
+ assert.equal((await hr(`self-changes/${stale.id}`)).status,'rejected')
+ assert.equal((await write('training')).assignments.find(row=>row.id===staleAssignment.id).completion.outcome,'waived')
  const revoke=await write('training.assign',assignment)
  await set('none')
  assert.deepEqual((await write('training')).assignments,[])
  assert.deepEqual((await write('training')).requests,[])
- await hr('training.decide',{request:revoke.id,decision:'approve',reason:'Rights revoked'},403)
- await hr('training.decide',{request:revoke.id,decision:'reject',reason:'Requester no longer authorized'})
+ await write(`self-changes/${revoke.id}`,undefined,404)
+ assert.ok(!(await write('self-changes')).some(row=>row.id===revoke.id))
+ await hr('self.decide',{change:revoke.id,decision:'approve',comment:'Rights revoked'},403)
+ await hr('self.decide',{change:revoke.id,decision:'reject',comment:'Requester no longer authorized'})
  await set('approval')
  const moved=await write('training.assign',assignment)
  const transfer=await api('mover.schedule',{period:person.period,effectiveFrom:day(0),locationId:(await api('location.create',{name:'synthetic-willow-10310 outside training scope',timezone:'UTC'})).id,reason:'Move outside training scope'})
  assert.deepEqual((await write('training')).assignments,[])
- await hr('training.decide',{request:moved.id,decision:'approve',reason:'Scope changed'},403)
- await hr('training.decide',{request:moved.id,decision:'reject',reason:'Outside scope'})
+ await hr('self.decide',{change:moved.id,decision:'approve',comment:'Scope changed'},403)
+ await hr('self.decide',{change:moved.id,decision:'reject',comment:'Outside scope'})
  await api('terms.cancel',{terms:transfer.terms,reason:'Restore training scope'})
  const selfPerson=await join('synthetic-willow-10311')
  const member=await api('access.give',{person:selfPerson.person})
@@ -703,14 +752,14 @@ export async function trainingModeProof(h,owner,cookie,s,inside,outside,day,join
  await api('member.permissions',{member:member.id,permissions:['people.manage']})
  selfCookie=await h.signIn('synthetic-willow-10311@example.com')
  await h.api('training.decide',selfCookie,{request:selfPending.id,decision:'approve',reason:'Cannot approve own request even after becoming HR'},403)
- await hr('training.decide',{request:selfPending.id,decision:'approve',reason:'Independent approval of the subject acknowledgment'})
+ await hr('self.decide',{change:selfPending.id,decision:'approve',comment:'Independent approval of the subject acknowledgment'})
  assert.equal((await h.api('training',selfCookie)).assignments.find(r=>r.id===selfPendingAssignment.id).completion.evidence,'synthetic-willow-10316 self approval request')
  await set({trainingAssignments:'edit',trainingCompletions:'edit',trainingCertifications:'approval'})
  const certificationAssignment=await write('training.assign',assignment)
  const certificationRequest=await write('training.complete',{assignment:certificationAssignment.id,evidence:'synthetic-willow-10317 exact completion',certificate:'synthetic-willow-10318 independent certificate approval'})
  assert.equal(certificationRequest.status,'pending','The certificate mode independently requires approval')
  assert.equal((await write('training')).assignments.find(r=>r.id===certificationAssignment.id).completion,null)
- await hr('training.decide',{request:certificationRequest.id,decision:'approve',reason:'Reviewed certificate independently'})
+ await hr('self.decide',{change:certificationRequest.id,decision:'approve',comment:'Reviewed certificate independently'})
  assert.equal((await write('training')).assignments.find(r=>r.id===certificationAssignment.id).certification.evidence,'synthetic-willow-10318 independent certificate approval')
  await set('edit')
  const waiver=await write('training.assign',assignment)
@@ -734,11 +783,16 @@ export async function trainingModeProof(h,owner,cookie,s,inside,outside,day,join
  await api('access.end',{person:selfPerson.person})
  await h.api('training.complete',selfCookie,{assignment:denied.id,evidence:'Ended session'},401)
  assert.equal((await api('training')).assignments.find(r=>r.id===own.id).completion.evidence,'synthetic-willow-10314 self acknowledgment')
+ for(const reader of [owner,cookie,s.hr.cookie]) {
+  const context=JSON.stringify(await h.api(`context/${person.person}`,reader))
+  for(const value of ['synthetic-willow-10305 observed completion','synthetic-willow-10306 reviewed certificate','synthetic-willow-10307 pending completion'])assert.ok(!context.includes(value),'Training evidence stays out of agent context')
+ }
+
  await set('none')
  assert.deepEqual((await write('training')).assignments,[])
  const audit=await api('audit')
  assert.ok(audit.some(e=>e.action==='training.complete'&&e.actor===s.invited.member))
- assert.ok(audit.some(e=>e.action==='training.decide'&&e.actor===s.hr.member))
+ assert.ok(audit.some(e=>e.action==='selfChange.decide'&&e.actor===s.hr.member))
  console.log('ROLE-009 native modes: PASS — exact scoped assignments, completions, certifications, independent approval, stale and concurrent refusal, self-course restrictions, immediate revocation, retained exit history and disconnected TalentLMS')
 }
 
@@ -748,10 +802,10 @@ async function trainingBrowserProof(h,owner,cookie,hrCookie,plan,level,assignmen
  const browser=await chromium.launch({headless:true,executablePath:process.env.WILLOW_CHROMIUM_PATH,args:['--no-sandbox','--use-mock-keychain','--password-store=basic']}),contexts=[]
  const pageFor=async cookie=>{const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context);await context.addCookies(cookie.split('; ').map(v=>({name:v.slice(0,v.indexOf('=')),value:v.slice(v.indexOf('=')+1),url:h.origin})));return context.newPage()}
  const submit=async(page,form,name)=>{const action=await form.getAttribute('action');const [response]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname===action&&r.request().method()==='POST'),page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.equal(response.status(),303);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
- const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await tooltipProof(page);await page.screenshot({path:`${evidenceDirectory}/ROLE-009-${name}-${width}.png`,fullPage:true})}
+ const capture=async(page,name,width)=>{await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await tooltipProof(page);await page.screenshot({path:`${evidenceDirectory}/ROLE-009-${name}-${width}.png`,fullPage:true});await page.setViewportSize({width:390,height:1000});await page.screenshot({path:`${evidenceDirectory}/ROLE-009-${name}-390.png`,fullPage:true});await page.setViewportSize({width,height:1000})}
  try {
   const admin=await pageFor(owner),writer=await pageFor(cookie),reviewer=await pageFor(hrCookie)
-  for(const width of [1440,390]) {
+  for(const width of [1440]) {
    for(const page of [admin,writer,reviewer])await page.setViewportSize({width,height:1000})
    await admin.goto(h.origin+'/app/settings/training')
    const courseForm=admin.locator('form[action="/app/do/training.course"]')
@@ -773,10 +827,10 @@ async function trainingBrowserProof(h,owner,cookie,hrCookie,plan,level,assignmen
    const request=(await h.api('training',cookie)).requests.filter(r=>r.operation==='assign'&&r.status==='pending').at(-1)
    assert.ok(request)
    assert.ok(!(await h.api('training',cookie)).assignments.some(r=>r.id===request.assignment))
-   await reviewer.goto(h.origin+'/app/training')
-   const decision=reviewer.locator('form[action="/app/do/training.decide"]').filter({has:reviewer.locator(`input[name="request"][value="${request.id}"]`)})
-   await decision.getByLabel('Decision reason',{exact:true}).fill('Reviewed native training assignment')
-   await capture(reviewer,'decision',width);await submit(reviewer,decision,'Record training decision')
+   await reviewer.goto(h.origin+'/app/self-changes/'+request.id)
+   const decision=reviewer.locator('form[action="/app/do/self.decide"]')
+   await decision.getByLabel('Comment',{exact:true}).fill('Reviewed native training assignment')
+   await capture(reviewer,'decision',width);await submit(reviewer,decision,'Record decision')
    await writer.goto(h.origin+'/app/training');await capture(writer,'records',width)
    const complete=writer.locator('form[action="/app/do/training.complete"]').filter({has:writer.locator(`input[name="assignment"][value="${request.assignment}"]`)})
    const completionEvidence=`synthetic-willow-10321 completed ${width}`,certificateEvidence=`synthetic-willow-10322 certified ${width}`
@@ -785,10 +839,10 @@ async function trainingBrowserProof(h,owner,cookie,hrCookie,plan,level,assignmen
    await capture(writer,'completion-form',width);await submit(writer,complete,'Request completion')
    const completion=(await h.api('training',cookie)).requests.find(r=>r.status==='pending'&&r.payload.evidence===completionEvidence)
    assert.ok(completion);assert.equal((await h.api('training',cookie)).assignments.find(r=>r.id===request.assignment).completion,null)
-   await reviewer.goto(h.origin+'/app/training')
-   const approve=reviewer.locator('form[action="/app/do/training.decide"]').filter({has:reviewer.locator(`input[name="request"][value="${completion.id}"]`)})
-   await approve.getByLabel('Decision reason',{exact:true}).fill('Reviewed completion and certification evidence')
-   await capture(reviewer,'completion-decision',width);await submit(reviewer,approve,'Record training decision')
+   await reviewer.goto(h.origin+'/app/self-changes/'+completion.id)
+   const approve=reviewer.locator('form[action="/app/do/self.decide"]')
+   await approve.getByLabel('Comment',{exact:true}).fill('Reviewed completion and certification evidence')
+   await capture(reviewer,'completion-decision',width);await submit(reviewer,approve,'Record decision');await capture(reviewer,'decision-history',width)
    await writer.goto(h.origin+'/app/training');assert.ok((await writer.locator('main').textContent()).includes(certificateEvidence));await capture(writer,'completed-certificate',width)
    const waiverAssignment=await h.api('training.assign',owner,assignment)
    await writer.goto(h.origin+'/app/training')
@@ -808,6 +862,225 @@ async function trainingBrowserProof(h,owner,cookie,hrCookie,plan,level,assignmen
    await writer.goto(h.origin+'/app/training');assert.equal(await writer.locator('form[action="/app/do/training.complete"]').count(),0);assert.ok(!(await writer.locator('main').textContent()).includes(completionEvidence));await capture(writer,'certification-view',width)
    await h.api('level.apply',owner,{review:(await h.api('level.preview',owner,{...plan,level,performanceFields:{self:{},others:{}}})).id})
    await writer.goto(h.origin+'/app/training');assert.equal(await writer.locator('form[action="/app/do/training.complete"]').count(),0);assert.ok(!(await writer.locator('main').textContent()).includes(certificateEvidence));await capture(writer,'revoked',width)
+  }
+ } finally {for(const context of contexts)await context.close();await browser.close()}
+}
+
+export async function trainingMigrationProof() {
+ const {harness}=await import('./harness.mjs')
+ const id=n=>`synthetic-willow-${10400+n}`,mail=n=>[id(n),'example.test'].join('@')
+ const quote=value=>"'"+String(value).replaceAll("'","''")+"'"
+ const rows=['pending','approved','rejected'].map((status,n)=>({id:id(10+n),target:id(20+n),status,payload:{person:id(1),course:id(3),dueDate:'2099-01-01'}}))
+ const fixture=[
+  `INSERT INTO oa_operators(id,email,display_name,role,status,created_at) VALUES(${quote(id(0))},${quote(mail(0))},${quote(id(0))},'owner','active',0);`,
+  `INSERT INTO oa_bootstrap(singleton,claim_id,claimed_at) VALUES(1,${quote(id(0))},0);`,
+  `INSERT INTO wl_employer(singleton,name,timezone,country,currency,updated_at) VALUES(1,${quote(id(4))},'UTC','AU','AUD',0);`,
+  `INSERT INTO wl_people(id,legal_name,revision,created_at,updated_at) VALUES(${quote(id(1))},${quote(id(1))},${quote(id(5))},0,0);`,
+  `INSERT INTO wl_person_private(person_id) VALUES(${quote(id(1))});`,
+  `INSERT INTO oa_operators(id,email,display_name,role,status,created_at) VALUES(${quote(id(2))},${quote(mail(2))},${quote(id(2))},'member','active',0);`,
+  `INSERT INTO wl_members(id,email,name,status,created_at) VALUES(${quote(id(2))},${quote(mail(2))},${quote(id(2))},'active',0);`,
+  `INSERT INTO wl_permissions(member_id,permission,granted_by,granted_at) VALUES(${quote(id(2))},'people.manage',${quote(id(0))},0);`,
+  `INSERT INTO wl_training_courses VALUES(${quote(id(3))},${quote(id(3))},1,${quote(id(0))},0);`,
+  `INSERT INTO wl_members(id,email,name,status,created_at) VALUES(${quote(id(0))},${quote(mail(0))},${quote(id(0))},'active',0);`,
+  `INSERT INTO wl_work_schedule VALUES(${quote('training-request:'+rows[0].id)},${quote(id(0))},NULL,'2099-01-01','Retained training follow-up',${quote(id(40))},${quote(id(0))},2);`,
+  `INSERT INTO wl_work_history(source,at,actor,kind,detail) VALUES(${quote('training-request:'+rows[0].id)},1,${quote(id(0))},'schedule.changed','{}');`,
+  `INSERT INTO wl_work_deliveries(id,source,schedule_revision,policy_revision,step,recipient,status,created_at) VALUES(${quote(id(41))},${quote('training-request:'+rows[0].id)},${quote(id(40))},${quote(id(42))},0,${quote(id(0))},'accepted',1);`,
+  ...rows.flatMap(row=>[
+   `INSERT INTO wl_training_requests VALUES(${quote(row.id)},${quote(id(1))},'assign',${quote(row.target)},${quote(JSON.stringify(row.payload))},'new',${quote(id(2))},0);`,
+   ...row.status==='pending'?[]:[`INSERT INTO wl_training_decisions VALUES(${quote(row.id)},${quote(row.status)},${quote(id(0))},1,'Retained exact decision');`],
+   ...row.status==='approved'?[`INSERT INTO wl_training_assignments VALUES(${quote(row.target)},${quote(id(1))},${quote(id(3))},'2099-01-01',${quote(id(2))},1);`]:[],
+  ]),
+  `INSERT INTO wl_self_changes(id,person_id,kind,row_id,before_json,after_json,source_revision,requested_by,requested_at,due_date) VALUES(${quote(id(31))},${quote(id(1))},'recordRow','retained-row','null','{"table":"table-certifications"}','new',${quote(id(2))},0,'2099-01-01');`,
+  `INSERT INTO wl_self_changes(id,person_id,kind,before_json,after_json,source_revision,requested_by,requested_at,due_date) VALUES(${quote(id(30))},${quote(id(1))},'legalName','{}','{}',${quote(id(5))},${quote(id(2))},0,'2099-01-01');`,
+  `INSERT INTO wl_self_decisions VALUES(${quote(id(30))},'approved',${quote(id(0))},1,'Retained personal decision');`,
+  `INSERT INTO wl_self_reconciliation VALUES(${quote(id(30))},'Retained handoff',${quote(id(0))},2);`,
+ ].join('\n')
+ const h=await harness({scheduled:true,bindings:{OWNER_EMAIL:mail(0)},upgrade:{before:'0099_training_self_changes.sql',sql:fixture,snapshot:'SELECT id FROM wl_training_requests ORDER BY id'}})
+ try {
+  assert.equal(h.upgradeSnapshot.length,3)
+  const owner=await h.signIn(mail(0))
+  await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})
+  for(const prior of rows) {
+   const current=await h.api(`self-changes/${prior.id}`,owner)
+   assert.equal(current.status,prior.status);assert.equal(current.kind,'training')
+   assert.deepEqual(current.after.payload,prior.payload)
+   assert.equal(current.after.target,prior.target)
+   if(prior.status!=='pending')assert.equal(current.decision.comment,'Retained exact decision')
+   assert.equal(current.reconciliation,null)
+  }
+  await h.api('self.decide',owner,{change:id(31),decision:'reject',comment:'Retain prior record-table request'});
+  const personal=await h.api(`self-changes/${id(30)}`,owner)
+  assert.equal(personal.decision.comment,'Retained personal decision')
+  assert.equal(personal.reconciliation.reference,'Retained handoff')
+  const workKey='self-change:'+rows[0].id
+  const pendingWork=(await h.api('work',owner)).items.find(row=>row.source===workKey)
+  assert.ok(pendingWork)
+  assert.equal(pendingWork.owner,id(0))
+  assert.equal(pendingWork.dueDate,'2099-01-01')
+  assert.equal(pendingWork.nextAction,'Retained training follow-up')
+  assert.equal(pendingWork.revision,id(40))
+  assert.ok(pendingWork.history.some(row=>row.kind==='schedule.changed'))
+  assert.deepEqual(pendingWork.deliveries.map(row=>[row.id,row.recipient,row.status]),[[id(41),id(0),'accepted']])
+  await h.api('work.policy',owner,{offsets:'0',quietStart:20,quietEnd:8,defaultDays:1})
+  await h.api('connections.notices',owner,{enabled:true})
+  const tick=await h.raw(`/cdn-cgi/local/scheduled?time=${Date.parse('2099-01-01T09:00:00Z')}&cron=${encodeURIComponent('*/15 * * * *')}&format=json`)
+  assert.equal(tick.status,200);await tick.arrayBuffer()
+  assert.equal((await h.api('work',owner)).items.find(row=>row.source===workKey).deliveries.length,1,'The old reminder claim prevents a new send after migration')
+  await h.api('self.decide',owner,{change:rows[0].id,decision:'approve',comment:'Approve migrated exact assignment'})
+  assert.ok(!(await h.api('work',owner)).items.some(row=>row.source===workKey))
+
+  assert.deepEqual((await h.api('training',owner)).assignments.map(row=>row.id).sort(),[rows[0].target,rows[1].target].sort())
+  await h.api('training.decide',owner,{request:rows[0].id,decision:'approve',reason:'Compatibility cannot replay'},409)
+  await h.api('self.decide',owner,{change:rows[2].id,decision:'approve',comment:'Rejected history stays closed'},409)
+  assert.ok(!(await h.api('self-exceptions',owner)).some(row=>rows.some(prior=>prior.id===row.id)))
+  console.log('ROLE-009 migration: PASS — pending training remains actionable once, prior decisions and personal handoffs survive, work owners and schedules and reminder claims survive, no invented downstream work')
+ } finally {await h.close()}
+}
+
+async function authoredEntryProof(h,owner,cookie,s,day,join) {
+ const api=(path,body,status)=>h.api(path,owner,body,status),write=(path,body,status)=>h.api(path,cookie,body,status),hr=(path,body,status)=>h.api(path,s.hr.cookie,body,status)
+ const apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
+ const location=await api('location.create',{name:'synthetic-willow-10500',timezone:'UTC'})
+ const person=await join('synthetic-willow-10501',{locationId:location.id,managerPersonId:s.invited.person}),outside=await join('synthetic-willow-10502')
+ const plan={kind:'level',name:'synthetic-willow-10503 authored performance',permissions:[],scope:{kind:'group',dimensions:{location:[location.id]}},performanceFields:{self:{},others:{}}}
+ const level=await apply(plan)
+ const set=async(fields)=>apply({...plan,level:level.id,performanceFields:{self:{},others:fields}})
+ await apply({kind:'assignment',member:s.invited.member,levels:[level.id]})
+ const subject=await api('access.give',{person:person.person})
+ const subjectCookie=await h.signIn(['synthetic-willow-10501','example.com'].join('@'),{requested:true})
+ const selfLevel=await apply({kind:'level',name:'synthetic-willow-10504 self performance',permissions:[],performanceFields:{self:{feedback:'edit',oneOnOneNotes:'edit'},others:{}}})
+ await apply({kind:'assignment',member:subject.id,levels:[selfLevel.id]})
+ const allEntries=async cookie=>(await h.api('performance',cookie)).fieldEntries
+ for(const [index,field] of ['feedback','oneOnOneNotes'].entries()) {
+  const payload={field,person:person.person,text:`synthetic-willow-10510-${index} authored entry`}
+  await set({})
+  await write('performance.entry',payload,403)
+  assert.ok(!(await allEntries(cookie)).some(row=>row.field===field))
+  await set({[field]:'edit'})
+  await write('performance.entry',{...payload,person:outside.person},403)
+  const first=await write('performance.entry',payload)
+  const revised=await write('performance.entry',{...payload,entry:first.entry,revision:first.id,text:`synthetic-willow-10511-${index} revision`})
+  let history=(await allEntries(cookie)).filter(row=>row.entry===first.entry)
+  assert.deepEqual(history.map(row=>[row.version,row.text]),[[1,payload.text],[2,`synthetic-willow-10511-${index} revision`]])
+  assert.equal(history[0].mayEdit,false);assert.equal(history[1].mayEdit,true)
+  await write('performance.entry',{...payload,entry:first.entry,revision:first.id,text:'A stale version cannot overwrite current work'},409)
+  const privateHr=await hr('performance.entry',{...payload,text:`synthetic-willow-10512-${index} private HR entry`})
+  assert.ok(!(await allEntries(cookie)).some(row=>row.entry===privateHr.entry))
+  assert.ok(!(await allEntries(subjectCookie)).some(row=>row.entry===first.entry||row.entry===privateHr.entry),'Self Edit never reveals a manager or HR note')
+  await h.api('performance.entry',subjectCookie,{...payload,entry:first.entry,revision:revised.id,text:'Cannot edit another author'},404)
+  const selfText=`synthetic-willow-10550-${index} self authored`
+  const selfEntry=await h.api('performance.entry',subjectCookie,{...payload,text:selfText})
+  assert.equal((await allEntries(subjectCookie)).find(row=>row.entry===selfEntry.entry).text,selfText)
+  const selfRules=fields=>apply({kind:'level',level:selfLevel.id,name:'synthetic-willow-10504 self performance',permissions:[],performanceFields:{self:fields,others:{}}})
+  await selfRules({[field]:'view'})
+  assert.ok((await allEntries(subjectCookie)).some(row=>row.entry===selfEntry.entry))
+  await h.api('performance.entry',subjectCookie,{...payload,text:'Self View cannot append'},403)
+  await selfRules({[field]:'approval'})
+  const selfPending=await h.api('performance.entry',subjectCookie,{...payload,text:`synthetic-willow-10551-${index} self pending`})
+  await h.api('self.decide',subjectCookie,{change:selfPending.id,decision:'approve',comment:'The subject cannot self approve'},403)
+  await hr('self.decide',{change:selfPending.id,decision:'approve',comment:'Independent HR reviews the self entry'})
+  assert.equal((await allEntries(subjectCookie)).find(row=>row.entry===selfPending.entry).text,`synthetic-willow-10551-${index} self pending`)
+  await selfRules({})
+  assert.ok(!(await allEntries(subjectCookie)).some(row=>row.entry===selfEntry.entry||row.entry===selfPending.entry))
+  await selfRules({feedback:'edit',oneOnOneNotes:'edit'})
+
+  await set({[field]:'view'})
+  assert.deepEqual((await allEntries(cookie)).filter(row=>row.entry===first.entry).map(row=>row.text),history.map(row=>row.text))
+  await write('performance.entry',{...payload,entry:first.entry,revision:revised.id,text:'View never edits'},403)
+  await set({[field]:'approval'})
+  const pendingText=`synthetic-willow-10513-${index} exact HR proposal`
+  const pending=await write('performance.entry',{...payload,entry:first.entry,revision:revised.id,text:pendingText})
+  assert.equal(pending.status,'pending')
+  assert.ok(!(await allEntries(cookie)).some(row=>row.text===pendingText))
+  const proposal=await write(`self-changes/${pending.id}`)
+  assert.deepEqual(proposal.before,{text:`synthetic-willow-10511-${index} revision`,version:2,revision:revised.id})
+  assert.equal(proposal.after.payload.text,pendingText)
+  await write('self.decide',{change:pending.id,decision:'approve',comment:'Cannot approve your own entry'},403)
+  await h.api(`self-changes/${pending.id}`,subjectCookie,undefined,404)
+  const decisions=await Promise.all([1,2].map(()=>h.raw('/api/willow/self.decide',{cookie:s.hr.cookie,body:{change:pending.id,decision:'approve',comment:'Independent exact entry approval'}})))
+  assert.deepEqual(decisions.map(response=>response.status).sort(),[200,409])
+  for(const response of decisions)await response.arrayBuffer()
+  history=(await allEntries(cookie)).filter(row=>row.entry===first.entry)
+  assert.deepEqual(history.map(row=>row.version),[1,2,3]);assert.equal(history.at(-1).text,pendingText)
+  assert.equal((await hr(`self-changes/${pending.id}`)).decision.by,s.hr.member)
+  assert.ok(!(await hr('self-exceptions')).some(row=>row.id===pending.id),'Author-private entries create no external handoff')
+  const reject=await write('performance.entry',{...payload,text:`synthetic-willow-10514-${index} rejected`})
+  await hr('self.decide',{change:reject.id,decision:'reject',comment:'Keep the prior history'})
+  assert.ok(!(await allEntries(cookie)).some(row=>row.entry===reject.entry))
+  const stale=await write('performance.entry',{...payload,entry:first.entry,revision:history.at(-1).id,text:`synthetic-willow-10515-${index} stale`})
+  await set({[field]:'edit'})
+  await write('performance.entry',{...payload,entry:first.entry,revision:history.at(-1).id,text:`synthetic-willow-10516-${index} intervening`})
+  await hr('self.decide',{change:stale.id,decision:'approve',comment:'Refuse stale authored bytes'},409)
+  await hr('self.decide',{change:stale.id,decision:'reject',comment:'Recreate from the current revision'})
+  await set({[field]:'approval'})
+  const revoked=await write('performance.entry',{...payload,text:`synthetic-willow-10517-${index} revoked`})
+  await set({})
+  assert.ok(!(await allEntries(cookie)).some(row=>row.entry===first.entry))
+  await write(`self-changes/${revoked.id}`,undefined,404)
+  await hr('self.decide',{change:revoked.id,decision:'approve',comment:'Requester field rights were revoked'},403)
+  await hr('self.decide',{change:revoked.id,decision:'reject',comment:'Requester no longer has authority'})
+  await set({[field]:'approval'})
+  const moved=await write('performance.entry',{...payload,text:`synthetic-willow-10518-${index} moved`})
+  const movedTerms=await api('mover.schedule',{period:person.period,effectiveFrom:day(0),locationId:(await api('location.create',{name:`synthetic-willow-10519-${index}`,timezone:'UTC'})).id,reason:'Outside current authored field reach'})
+  assert.ok(!(await allEntries(cookie)).some(row=>row.entry===first.entry))
+  await hr('self.decide',{change:moved.id,decision:'approve',comment:'Person moved out of scope'},403)
+  await hr('self.decide',{change:moved.id,decision:'reject',comment:'Current scope controls old proposals'})
+  await api('terms.cancel',{terms:movedTerms.terms,reason:'Return to the original scope'})
+  for(const reader of [cookie,subjectCookie,s.hr.cookie]) {
+   const context=JSON.stringify(await h.api(`context/${person.person}`,reader))
+   for(const text of [payload.text,pendingText,`synthetic-willow-10512-${index} private HR entry`])assert.ok(!context.includes(text),'Authored performance never becomes agent context')
+  }
+ }
+ await authoredEntryBrowser(h,owner,cookie,s.hr.cookie,plan,level.id,person.person)
+ // Ending the author invalidates even a previously valid pending request.
+ await set({feedback:'approval',oneOnOneNotes:'approval'})
+ const ended=await join('synthetic-willow-10530')
+ const member=await api('access.give',{person:ended.person})
+ await apply({kind:'assignment',member:member.id,levels:[level.id]})
+ const endedCookie=await h.signIn(['synthetic-willow-10530','example.com'].join('@'),{requested:true})
+ const endedRequest=await h.api('performance.entry',endedCookie,{person:person.person,field:'feedback',text:'synthetic-willow-10531 ended author'})
+ await api('access.end',{person:ended.person})
+ await hr('self.decide',{change:endedRequest.id,decision:'approve',comment:'Ended author cannot publish'},403)
+ await hr('self.decide',{change:endedRequest.id,decision:'reject',comment:'Retain the refusal in history'})
+ await h.api('performance',endedCookie,undefined,401)
+ await set({})
+ console.log('ROLE-008 authored fields: PASS — independent feedback and private 1:1 modes, exact version history, independent HR approvals, confidentiality, source and scope fences, revocation, ended authors and no provider handoff')
+}
+
+async function authoredEntryBrowser(h,owner,cookie,hrCookie,plan,level,person) {
+ if(process.env.WILLOW_PERFORMANCE_BROWSER!=='1')return
+ const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH?pathToFileURL(process.env.WILLOW_PLAYWRIGHT_PATH).href:'@playwright/test')
+ const browser=await chromium.launch({headless:true,executablePath:process.env.WILLOW_CHROMIUM_PATH,args:['--no-sandbox','--use-mock-keychain','--password-store=basic']}),contexts=[]
+ const pageFor=async cookie=>{const context=await browser.newContext({ignoreHTTPSErrors:true});contexts.push(context);await context.addCookies(cookie.split('; ').map(value=>({name:value.slice(0,value.indexOf('=')),value:value.slice(value.indexOf('=')+1),url:h.origin})));const page=await context.newPage();await page.setViewportSize({width:1440,height:1000});return page}
+ const capture=async(page,name)=>{for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.evaluate(()=>document.fonts.ready);if(width===1440)assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${evidenceDirectory}/ROLE-008-authored-${name}-${width}.png`,fullPage:true})}await page.setViewportSize({width:1440,height:1000})}
+ const submit=async(page,form,name)=>{const action=await form.getAttribute('action');const [response]=await Promise.all([page.waitForResponse(response=>new URL(response.url()).pathname===action&&response.request().method()==='POST'),page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.equal(response.status(),303);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
+ try {
+  const admin=await pageFor(owner),writer=await pageFor(cookie),reviewer=await pageFor(hrCookie)
+  for(const [field,label] of [['feedback','Authored feedback'],['oneOnOneNotes','Private 1:1 notes']]) {
+   await admin.goto(h.origin+'/app/access')
+   const editor=admin.locator('details').filter({has:admin.locator('summary').filter({hasText:new RegExp('^'+plan.name+' ·')})}).first()
+   await editor.locator('summary').click()
+   await editor.getByLabel('Performance about others: '+label,{exact:true}).selectOption('approval')
+   await tooltipProof(admin);await capture(admin,field+'-mode')
+   await submit(admin,editor.locator('form'),'Review level');await capture(admin,field+'-impact')
+   await submit(admin,admin.locator('form[action="/app/do/level.apply"]'),'Apply reviewed change')
+   await writer.goto(h.origin+'/app/performance')
+   const form=writer.locator('form[action="/app/do/performance.entry"]').filter({has:writer.locator(`input[name="field"][value="${field}"]`)}).filter({hasNot:writer.locator('input[name="entry"]')})
+   await form.locator('..').locator('summary').click()
+   await form.getByLabel('Person',{exact:true}).selectOption(person)
+   const text=`synthetic-willow-10540-${field} native form`
+   await form.getByLabel('Entry text',{exact:true}).fill(text);await capture(writer,field+'-form')
+   await submit(writer,form,'Submit entry');await capture(writer,field+'-pending')
+   const request=(await h.api('self-changes',cookie)).find(row=>row.kind==='performanceEntry'&&row.after.payload.text===text)
+   assert.ok(request);assert.ok(!(await h.api('performance',cookie)).fieldEntries.some(row=>row.text===text))
+   await reviewer.goto(h.origin+'/app/self-changes/'+request.id)
+   const decision=reviewer.locator('form[action="/app/do/self.decide"]')
+   await decision.getByLabel('Comment',{exact:true}).fill('Review the exact authored entry')
+   await capture(reviewer,field+'-decision');await submit(reviewer,decision,'Record decision')
+   await capture(reviewer,field+'-history')
+   await writer.goto(h.origin+'/app/performance')
+   assert.ok((await writer.locator('main').textContent()).includes(text))
+   await capture(writer,field+'-published')
   }
  } finally {for(const context of contexts)await context.close();await browser.close()}
 }

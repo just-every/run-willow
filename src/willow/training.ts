@@ -1,7 +1,8 @@
 import type { Bindings } from '../auth.server'
 import { actorFor, can, type Actor } from './actor'
 import { all, auditRead, commit, guard, insist, newId, now, one } from './core'
-import { requireDate } from './dates'
+import { selfChanges } from './self-service/view'
+import { addDays, requireDate } from './dates'
 import { Input } from './input'
 import { performanceMode, type PerformanceField, type PerformanceMode } from './levels/performance'
 import { performanceAuthority } from './performance/authority'
@@ -30,15 +31,11 @@ export async function trainingHome(env:Bindings, actor:Actor) {
   certificateRequiresApproval:mode(actor,row.person_id,'trainingCertifications')==='approval',
   waiverRequiresApproval:mode(actor,row.person_id,'trainingAssignments')==='approval',
  }))
- const pending = await all(env,`SELECT r.*,d.outcome AS decision,d.reason FROM wl_training_requests r LEFT JOIN wl_training_decisions d ON d.request_id=r.id ORDER BY r.requested_at,r.id`)
- const requests=[]
- for(const row of pending) {
-  if(row.requested_by!==actor.id && !can(actor,'people.manage'))continue
-  const payload=JSON.parse(row.payload_json)
-  const field=row.operation==='complete'?'trainingCompletions':'trainingAssignments'
-  if(!reads(actor,row.person_id,field)||payload.certificate&&!reads(actor,row.person_id,'trainingCertifications'))continue
-  requests.push({id:row.id,assignment:row.target_id,person:row.person_id,personName:people.find(person=>person.id===row.person_id)?.name??'Person unavailable',courseTitle:courses.find(course=>course.id===(row.operation==='assign'?payload.course:rows.find(assignment=>assignment.id===row.target_id)?.course_id))?.title??'Course unavailable',operation:row.operation,payload:JSON.parse(row.payload_json),status:row.decision??'pending',reason:row.reason,mayDecide:!row.decision&&can(actor,'people.manage')&&row.requested_by!==actor.id&&row.person_id!==actor.personId})
- }
+ const requests=(await selfChanges(env,actor)).filter(row=>row.kind==='training').map(row=>{
+  const {operation,payload}=row.after
+  return {id:row.id,assignment:payload.assignment??row.after.target,person:row.personId,personName:people.find(p=>p.id===row.personId)?.name??'Person unavailable',courseTitle:courses.find(c=>c.id===(operation==='assign'?payload.course:rows.find(a=>a.id===payload.assignment)?.course_id))?.title??'Course unavailable',
+   operation,payload,status:row.status,reason:row.decision?.comment,mayDecide:row.status==='pending'&&can(actor,'people.manage')&&row.requestedBy!==actor.id&&row.personId!==actor.personId}
+ })
  await auditRead(env,actor.id,'training.read','training')
  return {connection:{provider:'TalentLMS',connected:false,state:'Not connected'},courses,people:people.map(p=>({id:String(p.id),name:String(p.name),mayAssign:p.id!==actor.personId&&writes(mode(actor,p.id,'trainingAssignments'))})),assignments,requests,mayManage:can(actor,'people.manage')}
 }
@@ -56,7 +53,7 @@ const stmtCourse=(env:Bindings,id:string,title:string,self:boolean,actor:string)
 async function prepare(env:Bindings, actor:Actor, input:Input, operation:Operation, target=newId(), requireSession=true) {
  const live=await performanceAuthority(env,actor,requireSession);actor=live.actor
  input.only(operation==='assign'?['returnTo','person','course','dueDate']:['returnTo','assignment','evidence','certificate'])
- let person:string, course:Record<string,any>,payload:Record<string,unknown>,source:string,assignment:string
+ let person:string, course:Record<string,any>,payload:Record<string,unknown>,source:string,assignment:string,before:Record<string,unknown>|null=null
  if(operation==='assign') {
   person=input.text('person');assignment=target
   insist(await one(env,'SELECT id FROM wl_people WHERE id=?',person),'not_found',404)
@@ -71,6 +68,7 @@ async function prepare(env:Bindings, actor:Actor, input:Input, operation:Operati
   course=(await one(env,'SELECT * FROM wl_training_courses WHERE id=?',row.course_id))!
   payload={assignment,evidence:input.text('evidence',{max:4000}),certificate:input.text('certificate',{max:2000,optional:true})}
   source=row.id
+  before={assignment:row.id,course:row.course_id,dueDate:row.due_date}
  }
  const field=operation==='complete'?'trainingCompletions':'trainingAssignments'
  const primary=mode(actor,person,field)
@@ -90,12 +88,12 @@ async function prepare(env:Bindings, actor:Actor, input:Input, operation:Operati
  const statement=operation==='assign'
   ? env.DB.prepare('INSERT INTO wl_training_assignments VALUES(?,?,?,?,?,?)').bind(assignment,person,course.id,payload.dueDate,actor.id,now())
   : env.DB.prepare('INSERT INTO wl_training_events VALUES(?,?,?,?,?,?)').bind(assignment,operation==='complete'?'completed':'waived',payload.evidence,certificate,actor.id,now())
- return {actor,person,assignment,payload,source,guards,statement,approval:primary==='approval'||!!certificate&&certMode==='approval'}
+ return {actor,person,assignment,payload,before,source,guards,statement,approval:primary==='approval'||!!certificate&&certMode==='approval'}
 }
 async function mutate(env:Bindings,actor:Actor,input:Input,operation:Operation) {
  const p=await prepare(env,actor,input,operation),id=newId()
  if(p.approval) {
-  await commit(env,[...p.guards,env.DB.prepare('INSERT INTO wl_training_requests VALUES(?,?,?,?,?,?,?,?)').bind(id,p.person,operation,p.assignment,JSON.stringify(p.payload),p.source,actor.id,now())],{actor:actor.id,action:'training.request',subject:id,detail:{operation,person:p.person}})
+  await commit(env,[...p.guards,env.DB.prepare('INSERT INTO wl_self_changes(id,person_id,kind,row_id,before_json,after_json,source_revision,requested_by,requested_at,due_date) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(id,p.person,'training',p.assignment,JSON.stringify(p.before),JSON.stringify({operation,payload:p.payload,target:p.assignment}),p.source,actor.id,now(),addDays(actor.today,7))],{actor:actor.id,action:'selfChange.request',subject:id,detail:{operation,person:p.person,kind:'training'}})
   return {id,assignment:p.assignment,status:'pending'}
  }
  await commit(env,[...p.guards,p.statement],{actor:actor.id,action:'training.'+operation,subject:p.assignment,detail:{person:p.person}})
@@ -104,28 +102,30 @@ async function mutate(env:Bindings,actor:Actor,input:Input,operation:Operation) 
 export const assignTraining=(env:Bindings,actor:Actor,input:Input)=>mutate(env,actor,input,'assign')
 export const completeTraining=(env:Bindings,actor:Actor,input:Input)=>mutate(env,actor,input,'complete')
 export const waiveTraining=(env:Bindings,actor:Actor,input:Input)=>mutate(env,actor,input,'waive')
+export function readsTrainingProposal(actor:Actor,row:Record<string,any>) {
+ const after=JSON.parse(row.after_json),field=after.operation==='complete'?'trainingCompletions':'trainingAssignments'
+ return (actor.id===row.requested_by||can(actor,'people.manage'))&&reads(actor,row.person_id,field)&&(!after.payload.certificate||reads(actor,row.person_id,'trainingCertifications'))
+}
+
+export async function approveTrainingStatements(env:Bindings,reviewer:Actor,row:Record<string,any>) {
+ insist(can(reviewer,'people.manage'),'forbidden',403)
+ const after=JSON.parse(row.after_json)
+ insist(['assign','complete','waive'].includes(after.operation),'invalid_training_proposal')
+ const member=await one(env,'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?',row.requested_by)
+ insist(member,'requester_unavailable',403)
+ const requester=await actorFor(env,{id:member.id,email:member.email,name:member.name,personId:member.person_id,owner:member.role==='owner',sessionId:''})
+ const prepared=await prepare(env,requester,Input.of(after.payload),after.operation,row.row_id,false)
+ insist(prepared.person===row.person_id&&prepared.assignment===row.row_id&&prepared.source===row.source_revision,'training_source_changed',409)
+ return [...prepared.guards,prepared.statement]
+}
+
+/** Compatibility door consumes the same SELF-001 decision, never a parallel queue. */
 export async function decideTraining(env:Bindings,actor:Actor,input:Input) {
- const live=await performanceAuthority(env,actor,true);actor=live.actor
- insist(can(actor,'people.manage'),'forbidden',403)
  input.only(['returnTo','request','decision','reason'])
- const id=input.text('request'),decision=input.text('decision'),reason=input.text('reason',{max:2000})
- insist(decision==='approve'||decision==='reject','invalid_decision')
- const row=await one(env,'SELECT * FROM wl_training_requests WHERE id=?',id)
- insist(row,'not_found',404)
- insist(row.requested_by!==actor.id&&row.person_id!==actor.personId,'self_approval_forbidden',403)
- insist(!await one(env,'SELECT 1 FROM wl_training_decisions WHERE request_id=?',id),'already_decided',409)
- const statements=[...live.guards,guard(env,'already_decided','NOT EXISTS(SELECT 1 FROM wl_training_decisions WHERE request_id=?)',id)]
- if(decision==='approve') {
-  const member=await one(env,'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?',row.requested_by)
-  insist(member,'requester_unavailable',403)
-  const requester=await actorFor(env,{id:member.id,email:member.email,name:member.name,personId:member.person_id,owner:member.role==='owner',sessionId:''})
-  const prepared=await prepare(env,requester,Input.of(JSON.parse(row.payload_json)),row.operation,row.target_id,false)
-  insist(prepared.person===row.person_id&&prepared.assignment===row.target_id&&prepared.source===row.source_revision,'training_source_changed',409)
-  statements.push(...prepared.guards,prepared.statement)
- }
- statements.push(env.DB.prepare('INSERT INTO wl_training_decisions VALUES(?,?,?,?,?)').bind(id,decision==='approve'?'approved':'rejected',actor.id,now(),reason))
- await commit(env,statements,{actor:actor.id,action:'training.decide',subject:id,detail:{decision}})
- return {id,status:decision==='approve'?'approved':'rejected'}
+ const id=input.text('request')
+ insist(await one(env,"SELECT 1 FROM wl_self_changes WHERE id=? AND kind='training'",id),'not_found',404)
+ const {decideSelfChange}=await import('./self-service/requests')
+ return decideSelfChange(env,actor,Input.of({change:id,decision:input.text('decision'),comment:input.text('reason',{max:1000})}))
 }
 
 /** Required work reuses native schedules and fixed notices, without training evidence in the projection. */
@@ -138,16 +138,6 @@ export async function trainingWork(env:Bindings):Promise<import('./work-sources'
   result.push({key:`training:${row.id}`,kind:'training',title:'Complete assigned training',path:'/app/training',due:row.due_date,preferred:row.member,
    next:'Complete the course and record permitted evidence or contact HR',progress:'Completion pending',personId:row.person_id,
    visible,responsible:visible})
- }
- for(const row of await all(env,`SELECT r.*,a.due_date FROM wl_training_requests r LEFT JOIN wl_training_assignments a ON a.id=r.target_id
-  WHERE NOT EXISTS(SELECT 1 FROM wl_training_decisions d WHERE d.request_id=r.id)`)) {
-  const reviewer=(actor:Actor)=>can(actor,'people.manage')&&actor.id!==row.requested_by&&actor.personId!==row.person_id
-  const field=row.operation==='complete'?'trainingCompletions':'trainingAssignments'
-  const payload=JSON.parse(row.payload_json)
-  result.push({key:`training-request:${row.id}`,kind:'training-request',title:'Review training change',path:'/app/training',due:row.due_date??payload.dueDate,
-   next:'Review the exact proposed training change',progress:'Independent review pending',personId:row.person_id,approval:true,
-   visible:actor=>reviewer(actor)||actor.id===row.requested_by&&reads(actor,row.person_id,field)&&(!payload.certificate||reads(actor,row.person_id,'trainingCertifications')),
-   responsible:reviewer})
  }
  return result
 }

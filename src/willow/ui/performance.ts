@@ -1,6 +1,7 @@
 // PERFORM-001 extends Willow's established server-rendered page components.
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
+import { ENTRY_FIELDS } from '../performance/entries'
 import { performanceHome, performanceDetail } from '../performance/views'
 import { goalHome } from '../performance/goals'
 import { h,page,form,field,hidden,area,select,table,tag } from './html'
@@ -8,6 +9,9 @@ const base='/app/performance'
 export async function performancePage(env:Bindings,actor:Actor,url:URL) {
  const data=await performanceHome(env,actor)
  return page('Performance',actor,h`<h1>Performance</h1><p>Human-written reviews and released results, with a retained history. Contributors see their own inputs; HR sees authors and private calibration. Managers see only summaries explicitly released to them.</p><p><a href="/app/goals">Goals and development →</a></p>
+ ${ENTRY_FIELDS.map(field=>h`<section class="card"><h2>${field==='feedback'?'Authored feedback':'Private 1:1 notes'}</h2><p>These records remain private to their author and HR. A field grant never opens another author's notes or confidential review input. Approval-required entries stay in <a href="/app/self-changes">Personal changes</a> until a different HR reviewer decides.</p>
+ ${data.entryPeople[field].length?h`<details><summary>${field==='feedback'?'Add feedback':'Add private 1:1 note'}</summary>${form('performance.entry',base,[hidden('field',field),select('Person','person',data.entryPeople[field].map(person=>({value:person.id,label:person.name}))),area('Entry text','text')],'Submit entry')}</details>`:''}
+ ${data.fieldEntries.filter(entry=>entry.field===field).map(entry=>h`<article><h3>${entry.personName} · Version ${entry.version}</h3><p>${entry.text}</p>${entry.mayEdit?h`<details><summary>Append a revision</summary>${form('performance.entry',base,[hidden('field',field),hidden('person',entry.person),hidden('entry',entry.entry),hidden('revision',entry.id),area('Revised entry text','text',entry.text)],entry.requiresApproval?'Request entry revision':'Append entry revision')}</details>`:''}</article>`)}</section>`)}
  ${table(['Cycle','Due','State'],data.cycles.map(c=>[h`<a href="${base}/${c.id}">${c.name}</a>`,c.due_date,tag(c.status)]))}
  ${data.mayManage?h`<details><summary>Launch a review cycle</summary>${form('performance.cycle',base+'/{id}',h`${field('Cycle name','name')}${field('Due date','dueDate',{type:'date',value:actor.today})}<div class="field"><label for="review-subjects">Review subjects</label><select id="review-subjects" name="people" multiple required>${data.people.map(p=>h`<option value="${p.id}">${p.name}</option>`)}</select></div>${area('Self questions (one per line)','selfQuestions','What did you achieve?')}${area('Peer questions (one per line)','peerQuestions','How did this colleague help?')}${area('Manager questions (one per line)','managerQuestions','What should develop next?')}`,'Launch cycle')}</details>`:''}`,{current:base,url})
 }
