@@ -157,15 +157,20 @@ export async function giveAccess(env: Bindings, actor: Actor, input: Input, requ
   const snapshot=(await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
   const policy=await defaultAccessGrant(env,actor)
   const email = person.work_email as string, name = person.preferred_name || person.legal_name
-  const member = await one(env, 'SELECT * FROM wl_members WHERE person_id = ?', person.id)
-  const contact = await one(env, 'SELECT person_id FROM wl_members WHERE email = ?', email)
-  insist(!contact || contact.person_id === person.id, 'email_linked_elsewhere', 409)
+  const personMember = await one(env, 'SELECT * FROM wl_members WHERE person_id = ?', person.id)
+  const auth = operatorAuth(env), contactOperator = await operatorByEmail(env, request, email)
+  const operatorMember = contactOperator ? await one(env, 'SELECT * FROM wl_members WHERE operator_id = ?', contactOperator.id) : null
+  insist(!personMember || !operatorMember || personMember.id === operatorMember.id, 'email_linked_elsewhere', 409)
+  insist(!operatorMember?.person_id || operatorMember.person_id === person.id, 'email_linked_elsewhere', 409)
+  const member = personMember ?? operatorMember
+  const contact = await one(env, 'SELECT id FROM wl_members WHERE email = ?', email)
+  insist(!contact || contact.id === member?.id, 'email_linked_elsewhere', 409)
   insist(!member || member.status !== 'active' || !member.person_id, 'already_has_access', 409)
   if(policy&&!actor.owner&&member) {
     const reason=member.id===actor.id?'delegation_target_fixed':await one(env,"SELECT 1 FROM wl_effective_permissions WHERE member_id=? AND permission='eeo.individual'",member.id)?'owner_only_delegation':null
     if(reason){await auditRead(env,actor.id,'access.denied',actor.id,{reason});insist(false,reason,403)}
   }
-  const auth = operatorAuth(env), operator = member?.operator_id ? await operatorById(env, request, member.operator_id) : await operatorByEmail(env, request, email)
+  const operator = member?.operator_id ? await operatorById(env, request, member.operator_id) : contactOperator
   insist(!policy||operator?.role!=='owner','owner_access_fixed',409)
   const administrator=policy && !!await one(env,"SELECT 1 FROM wl_level_permissions p JOIN wl_levels s ON s.id=p.level_id WHERE p.level_id=? AND p.permission='people.manage' AND s.scope_kind='everyone'",policy.level_id)
   const role=administrator?'admin':'member'
