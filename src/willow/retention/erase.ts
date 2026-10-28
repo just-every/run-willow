@@ -14,6 +14,7 @@ import type { Input } from '../input'
 import { confirmApplicant } from './applicant'
 import { redactPayroll } from './payroll'
 import { captureErasureSql, retireImportCustody } from './import-custody'
+import { baseCustodyFence } from './base-custody'
 import { AUTHORED, AUTHORED_STORES, STORES, type Store } from './inventory'
 import { COMPENSATION_AUTHORSHIP, compensationRedactions } from './compensation'
 import { BUSINESS_SEQUENCE, planErasure, type Item, type Plan } from './erasure'
@@ -138,6 +139,7 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
     for (const row of await all<{ table: string; from: string }>(env, `PRAGMA foreign_key_list(${name})`)) if (row.table === 'wl_members' || row.table === 'wl_people') fk.push({ tbl: name, col: row.from, parent: row.table })
   }
   const statements: D1PreparedStatement[] = [
+    baseCustodyFence(env),
     guard(env, 'preview_stale', `${BUSINESS_SEQUENCE} = ?`, plan.sequence),
     stmt(env, 'INSERT INTO wl_erasure_window (token) VALUES (?)', erasureId),
     stmt(env, 'PRAGMA defer_foreign_keys = on'),
