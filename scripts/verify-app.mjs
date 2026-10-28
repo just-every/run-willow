@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 const shard=process.env.WILLOW_VERIFY_SHARD
 if(shard&&!['core','records-people','records-work','records-policy'].includes(shard))throw new Error('Unknown Willow verification shard')
 const run=(command,args)=>execFileSync(command,args,{stdio:'inherit',env:process.env})
+run('node',['src/base/contract-docs.mjs','check'])
 for(const args of [['check'],['verify-base','--offline'],['verify-base','--record','migrations/base-copies.json','--offline']])run('node',['scripts/edition-authoring/cli.mjs',...args])
 run('pnpm',['run','build'])
 run('pnpm',['run','typecheck'])

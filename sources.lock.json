@@ -700,7 +700,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "cbbbe053b401691f7b1755665c47e7ad9bdda981a5e105e1b7433d8b477fdfcd",
+      "sha256": "adfc294167e305112fd402a3f90e8025f9a4e6d59c24cd39db010a17a3b57f7b",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -708,7 +708,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "e5bce70409665228f95723ca6853b214f00674381208d4276deef93d0f838f37",
+      "sha256": "9a2f871b39d12658715dafe49cd6cbddf6e08a717ba06a315b464048635eef0c",
       "executable": false
     },
     "API.md": {
@@ -717,6 +717,10 @@
     },
     "base-copies.json": {
       "sha256": "77a6255943a4f98392ae41008a835211eba2c012f3d2bf451bff88d1c893d096",
+      "executable": false
+    },
+    "CHANGELOG.md": {
+      "sha256": "24e638d91d5250a8c3e3e0e6e21cdcbaa5b61f1f59ddc33b800dee2da49d8bb1",
       "executable": false
     },
     "CLAUDE.md": {
@@ -728,7 +732,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "4d9c2a45adbbabeccd70209f34f8ac872b35860d7711d709bc69ec580a3f835e",
+      "sha256": "dbec4fd7207e9435b0170e434f818a90c260ff31e63d94abebbcac74a2c5eeab",
       "executable": false
     },
     "DEMO.md": {
@@ -753,6 +757,26 @@
     },
     "docs/backup.md": {
       "sha256": "4bdc25e0a3afa056db1a5cc856eddd4d1a17bf1202d981b21e9afaf07f74908a",
+      "executable": false
+    },
+    "docs/CLAIMS.md": {
+      "sha256": "833b499971bd1b4e107b888541f91a881afcab53dc3c987c514106235c75d551",
+      "executable": false
+    },
+    "docs/contract/COVERAGE.json": {
+      "sha256": "2714d33721b48a315b0226491cff1f7094007c29e96255ab71b3258edb8f6e80",
+      "executable": false
+    },
+    "docs/contract/DONE-AUDIT.md": {
+      "sha256": "978c9566d2cdea4a323828ca9cebb0686319c874ac4df1eec73de8397f682c59",
+      "executable": false
+    },
+    "docs/contract/ID-MAP.json": {
+      "sha256": "f7dbce4bff3aa6b3bd72a7d38bf24c587d8a942f83a5dce7b970c24a57818714",
+      "executable": false
+    },
+    "docs/contract/record-rules.md": {
+      "sha256": "a0b70c67d69b7d8705a25e9cbb4c14adc3eb59c24e626737acc02a0137e02954",
       "executable": false
     },
     "docs/first-day.md": {
@@ -781,6 +805,10 @@
     },
     "docs/site.json": {
       "sha256": "6b3d7e696185afce590a2ee3cf3c1bae41ce67cb2743a6c143e359af8f38f192",
+      "executable": false
+    },
+    "docs/verify.md": {
+      "sha256": "bde343f39e6ebfc7c46e54cb74c9cf490243da94de17eb61f3a72dec82ffca30",
       "executable": false
     },
     "edition.json": {
@@ -1555,6 +1583,10 @@
       "sha256": "1d94bc3e01d66fdd46859e8baf95a7196f74699028ca80390c42834b3b6043bb",
       "executable": false
     },
+    "RULINGS.md": {
+      "sha256": "62164e1a07ede75b5151377ca6f2880c6e8697e91734ee76b3bc087c321cb3e3",
+      "executable": false
+    },
     "RUN-LOCALLY.md": {
       "sha256": "a2e890c72fa00c1a2214e2acafd7e6e074546cf94b47cf3a08b51d85297c2950",
       "executable": false
@@ -1756,7 +1788,7 @@
       "executable": false
     },
     "scripts/verify-app.mjs": {
-      "sha256": "acb01ce31dcf54261c97265ba3d3764de4b3de8525e771e950aed2b0208749fc",
+      "sha256": "3f570827c0f08d9a73e6daddd07bee669b8b37185796ba64f18ed7f0a4536caf",
       "executable": false
     },
     "scripts/willow/import-kit-migration.mjs": {
@@ -1777,6 +1809,10 @@
     },
     "src/auth.server.ts": {
       "sha256": "1882df17b64fd844b8d74b4ff132cc7af2bce58fb6fbe98d4fd4c30c0117eb57",
+      "executable": false
+    },
+    "src/base/contract-docs.mjs": {
+      "sha256": "d98e14f489c57f60446c2cc68310db09f298f7974d77026dbaa2c62868cc4838",
       "executable": false
     },
     "src/base/contract-filter.ts": {
@@ -5284,11 +5320,11 @@
       "executable": false
     },
     "tests/willow/levels-bulk-browser.mjs": {
-      "sha256": "593be759e8c983109c4149aa0f9df3520f255c0d30c6d7951f22972b54467d02",
+      "sha256": "4c5228ff9df252c6d043ac025bf9c295cbdb5e43ed9152c484336fded0399d15",
       "executable": false
     },
     "tests/willow/levels-bulk.mjs": {
-      "sha256": "7245146a2ade532caf36ba13d47390c5921a00539ccfaddc0194a308a24c5147",
+      "sha256": "f5447e851d6503d5a6dafec633e59611a282bf99af983a0f5ba4466ef1d3869c",
       "executable": false
     },
     "tests/willow/levels-compensation-custody.mjs": {
@@ -5312,7 +5348,7 @@
       "executable": false
     },
     "tests/willow/levels-follow.mjs": {
-      "sha256": "28aa750e666278c9b0b9c3a232721b83f814d76fd96d0ffd7368079859dce29f",
+      "sha256": "4c399f5cf3de483b24e8fb71e71a88df49c9c289bdff0655760886209c71988f",
       "executable": false
     },
     "tests/willow/levels-job-browser.mjs": {
@@ -5344,11 +5380,11 @@
       "executable": false
     },
     "tests/willow/levels-personal-browser.mjs": {
-      "sha256": "5d57e355c5eca0f0402843b9724f39c0ddcbca866fc7efa275f0d8fea2dbf656",
+      "sha256": "33990d6f32b910d0ce9b26067535fd494171305afaf7f5e4762f5595287a4692",
       "executable": false
     },
     "tests/willow/levels-personal.mjs": {
-      "sha256": "61ce444b4709a689bdfec420b3442d71b448f90e59dc31a26937f1f9b0411c61",
+      "sha256": "7eedd5d03dfe7cadde313177aaf0a15587cdeaf60b1e0ba9ece98e44bfa204d1",
       "executable": false
     },
     "tests/willow/levels-scope-browser.mjs": {
@@ -5452,7 +5488,7 @@
       "executable": false
     },
     "tests/willow/record-tables.mjs": {
-      "sha256": "468e10dac006783da154c3f0ad14d2497d08b6d39252c7ddfaff393bbcb5303f",
+      "sha256": "687024f636e251a6dc5dab56e6b6cb1452b58fb44cf14f66e81d380a11392cdb",
       "executable": false
     },
     "tests/willow/regression-fixture.mjs": {
@@ -5476,7 +5512,7 @@
       "executable": false
     },
     "tests/willow/restore-erasure.mjs": {
-      "sha256": "487cbd78c575acc981220cf35dc56bc41069abae67c3c76c7702b65bf09b8e7f",
+      "sha256": "c9d884459fdd4cf1e4e8018cbbb7a4fc9de6ee0be083a40b743e2eba4b65b115",
       "executable": false
     },
     "tests/willow/restore.mjs": {

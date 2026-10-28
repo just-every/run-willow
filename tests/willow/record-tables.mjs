@@ -92,18 +92,18 @@ try {
   await write({ person: s.managerb.person, table: 'certifications', effectiveFrom: day(-400), values: { name: 'First aid', expires_on: day(-5) } })
   const renewals = async cookie => (await h.api('work', cookie)).items.filter(item => item.kind === 'renewal')
   const due = await renewals(hr)
-  assert.deepEqual(due.map(item => item.dueDate).sort(), [day(-5), day(20)], 'PEOPLE-003 renewal work for near-expiry and expired certifications')
+  assert.deepEqual(due.map(item => item.dueDate).sort(), [day(-5), day(20)], 'PEOPLE-007 renewal work for near-expiry and expired certifications')
   assert.ok(due.find(item => item.dueDate === day(-5)).overdue)
   assert.deepEqual((await renewals(s.employee.cookie)).map(item => item.dueDate), [day(20)])
   assert.deepEqual(await renewals(s.managera.cookie), [])
   await write({ person, table: 'certifications', row: certification.id, values: { name: 'Forklift license', issuer: 'State board', number: 'FL-778', issued_on: today, expires_on: day(700) } })
-  assert.deepEqual((await renewals(hr)).map(item => item.dueDate), [day(-5)], 'PEOPLE-003 renewal closes the work')
+  assert.deepEqual((await renewals(hr)).map(item => item.dueDate), [day(-5)], 'PEOPLE-007 renewal closes the work')
 
   // A leaver's held laptop becomes an IT return task that closes only with return evidence.
   const leaver = await api('leaver.start', { period: s.employee.period, endDate: day(5), reason: 'Relocating', template: templates.leaver })
   const tasks = (await api(`cases/${leaver.case}`)).tasks
   const returnTask = tasks.find(task => task.action === 'asset_return')
-  assert.ok(returnTask && returnTask.title.includes('SN-LAPTOP-42') && returnTask.assignee === 'it' && returnTask.evidenceRequired, 'PEOPLE-003 device-return task')
+  assert.ok(returnTask && returnTask.title.includes('SN-LAPTOP-42') && returnTask.assignee === 'it' && returnTask.evidenceRequired, 'PEOPLE-006 device-return task')
   await api('task.complete', { task: tasks.find(task => task.action !== 'asset_return').id, evidence: 'Checklist reviewed' })
   await api('case.complete', { case: leaver.case }, 409)
   await h.api('task.complete', s.employee.cookie, { task: returnTask.id, evidence: 'I dropped it off', returnedOn: today, condition: 'good' }, 403)

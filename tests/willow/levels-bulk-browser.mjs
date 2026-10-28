@@ -1,4 +1,4 @@
-// ROLE-002 uses the actual owner filter and revert forms at both viewport sizes.
+// ROLE-020 uses the actual owner filter and revert forms at both viewport sizes.
 import assert from 'node:assert/strict'
 import { evidenceDirectory } from './evidence.mjs'
 
@@ -9,8 +9,8 @@ export async function bulkBrowserProof(page,h,owner,{members,level,location,prio
   await page.setViewportSize({width,height:1000})
   const capture=async(target,name)=>{
    await page.evaluate(()=>document.fonts.ready)
-   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`ROLE-002 ${name} fits ${width}`)
-   await target.screenshot({path:`${evidenceDirectory}/ROLE-002-${name}-${width}.png`})
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`ROLE-020 ${name} fits ${width}`)
+   await target.screenshot({path:`${evidenceDirectory}/ROLE-020-${name}-${width}.png`})
   }
   const submit=async(target,name)=>{
    await target.getByRole('button',{name,exact:true}).click()

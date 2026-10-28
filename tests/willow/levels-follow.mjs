@@ -1,4 +1,4 @@
-// ROLE-001 additive subject-follow and FLOW-004 existing full-read precedence.
+// ROLE-019 additive subject-follow and FLOW-004 existing full-read precedence.
 import assert from 'node:assert/strict'
 import { file } from './harness.mjs'
 import { day } from './regression-fixture.mjs'
@@ -91,5 +91,5 @@ export async function followProof(h,owner,f,request) {
  await api('access.give',{person:s.ended.person})
  s.ended.cookie=await h.signIn('ended@example.com')
  await h.api(`change-requests/${endedRequest.id}`,s.ended.cookie,undefined,404)
- console.log('ROLE-001 subject-follow and FLOW-004 HR/owner subject precedence: PASS')
+ console.log('ROLE-019 subject-follow and FLOW-004 HR/owner subject precedence: PASS')
 }

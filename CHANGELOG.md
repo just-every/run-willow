@@ -1304,3 +1304,941 @@ released contract; push-further clauses are the agent section. Earlier judgments
 | `AGENT-002` | Policy simulation and expected-versus-observed outcomes | push-further | partial | `src/willow/leave.ts`, `src/willow/proposals.ts`; `tests/willow/flows.mjs` (WIL-08, WIL-15): versioned policies and exact change diffs | Cross-person policy simulation and outcome measurement. |
 | `AGENT-003` | Recover stalled onboarding with controlled outreach | push-further | partial | `src/willow/lifecycle.ts`, `src/willow/notices.ts`; `tests/willow/phase2.mjs` (WIL-18): progress and notices | Agent detection, chasing, substitutions and external verification. |
 | `BOUNDARY-001` | US-first HRIS with accountable external execution | target | partial | `src/willow/payroll.ts`, `src/willow/lifecycle.ts`; `tests/willow/flows.mjs` (WIL-11, WIL-12): current provider and manual-work boundaries | Connected execution and US entity/classification workflows. |
+
+## Pre-rewrite detailed acceptance record
+
+The following is the historical source wording. CONTRACT.md holds the current requirements and status; recorded implementation receipts do not promote a clause.
+
+### WIL-01
+
+From setup, configure an employer, invite a member, grant access, end it and sign in again; former sessions fail and a new sign-in restores no removed grant.
+
+### WIL-02
+
+As HR, preview an employee as a manager, employee and ended member; compare the actual member response and prove values withheld from the previewer never appear.
+
+### WIL-03
+
+As owner, HR, payroll, manager and employee, crawl every registered API/page/download, CSV, preview and agent-context door with planted private values; only entitled readers receive each facet and privileged reads are audited.
+
+### WIL-04
+
+Create a joiner through the form or JSON action, inspect their person and first period, then attempt duplicate identifiers and overlapping periods; refuse invalid writes without partial records.
+
+### WIL-05
+
+Start a case, publish a new template, complete tasks as the right and wrong assignees, and attempt closure with missing evidence; the original template version and incomplete gate remain.
+
+### WIL-06
+
+Upload two private document versions, download as permitted and forbidden members, verify checksums and audit, and acknowledge the latest version; an older receipt cannot stand in for the latest or a signature.
+
+### WIL-07
+
+Schedule past and future changes, read profiles/directory/reports as of each boundary, cancel a version and inspect history; immutable terms and consistent manager scope survive.
+
+### WIL-08
+
+Approve a policy, open an account, refuse requests before balance sign-off, then accrue twice for the same interval; the opening entry and accrual post once.
+
+### WIL-09
+
+Request leave over a schedule/manager change, inspect team coverage and the quote, then decide as the routed approver; self-approval and confidential-reason disclosure are refused.
+
+### WIL-10
+
+Submit competing requests and decisions, cancel approved leave and correct dates; one spend/decision and exactly one reversal remain in the public ledger.
+
+### WIL-11
+
+Preview and export a batch; change source data before export and prove refusal, race competing exports, cancel before and after handoff, then record acknowledgment; claims and frozen lines stay consistent.
+
+### WIL-12
+
+End a period, inspect the leaver case, try closure before IT evidence, and finish the end-access task; sign-in and permissions end while incomplete external work stays visible.
+
+### WIL-13
+
+Rehire a former person into a new period, inspect prior history and sign-in; the person is reused and prior grants remain ended.
+
+### WIL-14
+
+Open summaries and their CSV as HR, manager and employee, with and without pay.read; counts, filters, as-of rules and withheld compensation match.
+
+### WIL-15
+
+Propose a joiner/mover via JSON, inspect exact diff and missing fields, approve it as HR, and repeat after changing the source; execution has one bound receipt and stale approval is refused.
+
+### WIL-16
+
+Preview CSV/XLSX people, balance CSV and document ZIP, resolve conflicts, apply, repeat and undo; originals and categories survive, balances require sign-off, and edited imports cannot be undone.
+
+### WIL-17
+
+Export a populated installation, refuse corrupt/nonempty restores, import into an empty fresh clone and export again; compare all portable rows and document bytes, then use new ordinary email links for active and ended members and refuse source sessions/tokens.
+
+### WIL-18
+
+Enable notices, assign/complete a task, decide leave and prepare payroll; inspect permitted recipients and fixed-copy links, revoke a recipient before dispatch and inject mail failure; business work remains committed and failures visible.
+
+### WIL-19
+
+Link a Google OIDC identity with fresh local proof, sign in, unlink and exercise bad configuration/token exchange; member IDs and grants remain stable, provider roles grant nothing and ordinary email sign-in still works.
+
+### WIL-20
+
+With the owner-selected model enabled, request a structural checklist draft, inspect outbound payload, accept/decline valid output and refuse uncited, stale or failed output; no employee/private text leaves and acceptance changes no employment task.
+
+### WIL-21
+
+Map generic columns and ADP RUN company/frequency/earnings codes, preview, mutate source/layout and prove refusal, then export unchanged input and re-download after a mapping edit; exact reviewed bytes survive and unsupported ADP changes are refused.
+
+### PEOPLE-001
+
+As HR with the required grants, create general, HR/private and payroll fields, import values through the reviewed BambooHR door and reject invalid types, bounds, dates and missing required values without partial writes.
+
+Create dated definition/value revisions, a correction, a same-date version and a retirement; reconstruct their meaning before and after each boundary.
+
+Change general visibility, refuse a classification/sensitivity change, revoke a grant and inspect employee, manager, payroll, HR, preview, agent, report and CSV/XLSX/ZIP doors, including historical reads; only currently authorized values appear and no custom field enters the directory.
+
+Repeat and undo an untouched import; edit an imported custom value and prove strict undo refusal.
+
+Explicitly map a permitted general field into a generic payroll batch, prove preview/source fences and current-authority checks on the frozen download, and prove ADP's schema is unchanged.
+
+New connector/source acceptance must repeat these obligations before shipping.
+
+### PEOPLE-002
+
+Open directory and org chart at desktop and phone widths; navigate a realistic multi-level team, search a location, inspect a future manager change and try a cycle.
+
+Compare chart, directory and profile on the effective date.
+
+Record a manager change effective today and open the chart that day without any chart edit: it shows the new reporting line, and its people count equals the directory's active count for the same date.
+
+### PEOPLE-003
+
+Add two emergency contacts, a certification near expiry and a laptop asset to an employee and read them as the employee, manager and HR under their levels.
+
+Start a leaver case and confirm a laptop-return task that cannot close without evidence; let the certification expire and see renewal work; export the tables and import them into a fresh employer.
+
+### PEOPLE-004
+
+Configure 30- and 7-day alerts on a restricted visa-expiry custom field to HR and a probation-end alert to the manager and HR that opens a review task, then advance the scheduler across every lead time and restart it.
+
+HR receives each visa alert once; the manager receives only the probation alert and its task; a manager without access to the visa field receives nothing and no notice contains its value.
+
+Move the probation date and end another person's employment; their earlier alerts no longer fire.
+
+Record an I-9 reverification date (US-001) for a worker whose work authorization expires: HR receives its alert at each lead time, the upcoming-dates list shows it with its owner and due date, and a manager without access to the field sees neither.
+
+### PEOPLE-005
+
+Give a person a pay change and a manager change last year, a canceled title change and a transfer scheduled next month, file a document and take leave between them.
+
+As HR and as their manager, open the record through the page and `GET /api/willow/people/:id` as of a day before, between and after each boundary: each view shows exactly the period, terms, documents and balance in force that day, the canceled version is never in force, the scheduled transfer appears only on and after its date, the manager sees no pay on any date and HR's as-of pay read is in the audit.
+
+At an employer-time-zone day boundary, file documents and complete a case and task before and after the selected day; see only the documents filed by that day, linked full version history, and the case/task completion state on that day.
+
+Record a ledger entry later with an earlier effective date and see the as-of balance include it by effective date.
+
+Revoke a reader’s authority and verify every historical view immediately respects their current authority.
+
+### SELF-001
+
+As an employee, change an allowed contact field and submit an approval-required name/dependent change; HR accepts one and rejects another.
+
+As manager, clear permitted team work and inspect the employee view.
+
+The approved revision feeds the payroll/benefits exception queue; no self-granted privilege is possible.
+
+### SELF-002
+
+Publish one company-wide and one location-targeted announcement, upload a handbook to a shared folder and open home as employees inside and outside that location; each sees only their targeted content and files.
+
+Opt one person into birthday celebrations and another out; only the opted-in month and day appear and no birth year is exposed through any door.
+
+### MOBILE-001
+
+Use real employee/manager accounts for request, approval, task completion, document access and an hourly worker's clock-in, break and clock-out at 1440 and 390 pixels and on iOS/Android; interrupt a draft, revoke access, reconnect and prove no stale submission or private push content.
+
+Complete keyboard and screen-reader checks.
+
+A manager approves a pending PTO request from the push notice or the home list with one confirming action and no further form, while WIL-09's routed-approver and self-approval rules still hold.
+
+Before shipping, MOBILE-001 preserves ENGAGE-001 named/anonymous result grants, HR-only anonymous comments and recipient-only anonymous participation/reminder visibility in its new doors or channels.
+
+Before adding levels, app doors or channels, MOBILE-001 preserves PERFORM-001's own-input/HR-note boundaries, explicit immutable releases, named audited succession withholding and retained former-manager releases, including current-authority exports and reminders.
+
+### LOCALE-001
+
+As an hourly employee, switch to Spanish and complete a PTO request, a preboarding packet with a native signature and EEO self-ID, and a phone clock-in; every screen, validation message, consent text and notice appears in Spanish and the signed copy's certificate records Spanish.
+
+As HR, translate a custom field label and an announcement; Spanish readers see the translations, an untranslated custom field is marked untranslated, and the employee's stored values and report totals are identical in English and Spanish.
+
+### ROLE-001
+
+create a custom level with edit-with-approval personal fields, one document category at View, one selected saved report and no other grant; assign it and crawl every API/page/download/CSV/preview/agent-context door as that member; withheld fields, other categories, unselected reports and every other section never appear and an approval-required edit lands in HR's queue.
+
+Change the level and repeat the crawl in the same session; every door reflects the change and the audit names who changed it.
+
+A migrated member's before/after report shows zero widened rights.
+
+The original job-field and compensation legs move to ROLE-004 and ROLE-005.
+
+Before shipping, field-level immediate/edit-with-approval rules reuse SELF-001's immutable proposal, HR decision, stale-source fence, history and downstream exception path.
+
+Current document-category modes (22 October 2026): an owner or bounded access administrator reviews No additional access / View / Edit / Edit with HR approval independently about themselves and about others for each category.
+
+No additional access contributes nothing and never denies an independent source.
+
+Self modes are independent of the level's ROLE-002 scope; other-person modes follow it. Existing employer-wide people.manage remains an independent immediate-upload source. Modes union as Edit over Edit with approval over View. Each mode grants only that category, never another private facet, pay, settings or reports. The shared predicate governs page/JSON metadata, preview intersections, agent context, inline/download bytes and ZIP files, rechecking current rights before each streamed file. A current self reader may explicitly acknowledge a requested receipt; this is never a signature or an acknowledgement for somebody else. Immediate category edits upload or append one native version under fresh authority, session, document revision and version-sequence fences. Demo initialization uses the active owner's existing unexpired, unrevoked Base session under the same fence. Approval-required uploads and revisions use SELF-001's immutable before/after queue and verified native file custody. Pending/rejected versions do not enter ordinary profiles, context, previews or employee bundles, and public version numbers count only published versions. Only the subject, requester or HR who currently reads that category may inspect the private proposal and file; an ordinary category reader sees only published versions. A different HR member must also hold current people.manage and category read authority to decide. Approval rechecks the requester's active access, current approval mode, scope and native document revision; current-mode loss, ended access, a moved-out subject or changed source refuses publication. Approved bytes become visible atomically with the immutable decision, at that decision's publication time, and feed an HR-only metadata follow-up. A rejected file remains private category custody; it never becomes a published version. Pending decisions block erasure until explicitly decided, and their native versions remain in the existing category hold/retention/blob census. Erasure also removes private access-review previews naming the erased member; audit history retains its existing protected anonymization. SIGN-001/002 and MOBILE-001 inherit these current category boundaries before adding document doors. Current saved-report selections (22 October 2026): an owner or bounded access administrator may add specific saved report IDs to a level. No selection is seeded or migrated. This grants read of those definitions' latest immutable versions within that level's current ROLE-002 reach; independent report and manager sources keep their own reach. It grants no summary/general export, profile, private field, report editing or scheduling authority. Pages, JSON and CSV/XLSX share the same definition and current-person admission; fields and work remain under the real reader's existing authority. A selected former report row never opens that person's profile or context. The access review shows before/after report selections and scopes; WIL-02 shows their combined current reach for the chosen person, withholding definition names the previewing member cannot read and adding no report values to the profile preview. Revocation applies on the next request. A delegate may select a report only under a held general reporting source or a structurally covering selected-report source. Report-only readers see only their selected definitions and their own delivery outcomes; other recipients and delivery configuration stay private. An owner/creator may explicitly schedule the existing fixed authenticated link to a selected-report reader; current selection, person/field rights and schedule version are rechecked at dispatch, with the existing one-attempt and uncertain-outcome custody. API-001/002 and MOBILE-001 inherit these current report boundaries before adding reporting doors. Built-in report selection is ROLE-012 and approval and settings selection are ROLE-011 and ROLE-013. Current compensation-owner authority: the explicit employer-wide `compensation.approve` right, together with `people.manage` and `pay.read`, permits COMP-001 budget approval and reviewed cycle publication. It is absent from every built-in level and existing grant migration. The owner retains their existing authority. A scoped level cannot carry it; it grants no pay or people reads by itself. The current member, rights, business snapshot and live session are rechecked inside the native write. Nobody publishes their own proposal or a cycle changing their own compensation; another eligible approver is required. A reviewed named grant/revocation changes the controls and API authority in the same session and the audit names the actual approver. ROLE-004 to ROLE-013 carry the ENGAGE-001 and PERFORM-001 preservation sentences.
+
+### ROLE-002
+
+Scope a custom level to one location, assign it to ten members in one step after reviewing the preview, and verify they read only that location's employees through every door.
+
+Schedule a transfer out of that location and check access on each side of the effective date; revert the bulk assignment and confirm the prior levels return.
+
+### ROLE-003
+
+Set Employee as the default, import 50 employees and hire one candidate; every new active person has the default level and exactly one invitation at the configured time, and former rows get none.
+
+As a delegated HR administrator assign a custom level to a group, then try to raise your own rights, edit the owner and grant pay access alone; each escalation is refused and audited.
+
+The original joint target of ROLE-001 and ROLE-004 to ROLE-013 is preserved verbatim: "Each level sets, per field and section (personal, job, compensation, documents by category, time off, benefits, performance, EEO, training), No access / View / Edit / Edit with approval, separately for "about themselves" and "about others", and which approvals, reports and settings it may use."
+
+### ROLE-004
+
+Verbatim original: the shared sentence, restricted to "job".
+
+Target: title, department, location, manager, working schedule, employment status, FTE, start and end dates and the people.manage-equivalent job write, each No access / View / Edit / Edit with approval for "about themselves" and "about others" within the level's ROLE-002 scope.
+
+Riders: (1) self modes for job fields are No access or View only; a person never edits their own job record. (2) "Edit with approval" about others starts FLOW-004's typed job chain, not SELF-001's single HR step; the chain, mover workflow and stale-source fence are reused as built. (3) A manager change is refused if it creates a reporting cycle; dated direct-manager authority (WIL-01 boundary) is unchanged. (4) Same projection rule as the personal slice: pages, JSON, preview, agent context, directory, org chart, CSV/XLSX/ZIP, webhooks select only readable fields; PEOPLE-002 directory reads are unchanged and grant no edit.
+
+Acceptance (the original first leg): a custom level with View on job fields and no compensation access; crawl every door as that member; edit-with-approval job change lands in the FLOW-004 queue; level change reflected in the same session.
+
+Current evidence: No public-door proof for this split target.
+
+Remaining: Verbatim original: the shared sentence, restricted to "job".
+
+Target: title, department, location, manager, working schedule, employment status, FTE, start and end dates and the people.manage-equivalent job write, each No access / View / Edit / Edit with approval for "about themselves" and "about others" within the level's ROLE-002 scope.
+
+Riders: (1) self modes for job fields are No access or View only; a person never edits their own job record. (2) "Edit with approval" about others starts FLOW-004's typed job chain, not SELF-001's single HR step; the chain, mover workflow and stale-source fence are reused as built. (3) A manager change is refused if it creates a reporting cycle; dated direct-manager authority (WIL-01 boundary) is unchanged. (4) Same projection rule as the personal slice: pages, JSON, preview, agent context, directory, org chart, CSV/XLSX/ZIP, webhooks select only readable fields; PEOPLE-002 directory reads are unchanged and grant no edit. Acceptance pending: a custom level with View on job fields and no compensation access; crawl every door as that member; edit-with-approval job change lands in the FLOW-004 queue; level change reflected in the same session. Evidence: `tests/willow/levels-job-write.mjs` (jobWriteProof) proves all native fields and typed FLOW-004 publication, mover and current-authority/source/cycle/self fences; `tests/willow/levels-job-read.mjs` (jobReadProof, jobLevelProof) proves exact historical/current field reads, scope, all export formats, report withholding, no compensation and same-session revoke; `tests/willow/levels-job-doors.mjs` (jobDoorProof in WIL-03) crawls every registered door; `tests/willow/levels-job-browser.mjs` (jobBrowserProof) uses level review, View/edit/approval and revoked screens at 1440/390.
+
+### ROLE-005
+
+Target: pay in force, pay history, bands, bonus and equity records, cycle data (COMP-001 reads) under the four modes.
+
+Riders: No access is the default on every built-in and migrated level; never granted to Manager; self-compensation View is an explicit level right (the right the subject-follow text already names) and ordinary self-profile access never implies it; self Edit does not exist; Edit with approval about others starts FLOW-004's typed compensation chain; `compensation.approve` stays the separate employer-wide right and no level or mode grants it; PAYROLL-001 and PAYROLL-006 reads need a held compensation read.
+
+Acceptance (the original second leg): a level with no compensation access shows no pay on any door and a "Withheld" label, and the same level at View shows pay only inside its scope.
+
+Current evidence: `tests/willow/levels-compensation-pay.mjs` (compensationPayProof): no implicit self or manager pay, scoped No access/View with Withheld pages, independent dated pay/history, exact Edit and typed compensation Approval with current-scope/revocation/stale/self fences; JSON/context/preview/CSV/XLSX/ZIP/payroll boundaries; `tests/willow/levels-compensation-records.mjs` (compensationRecordProof): bonus/equity modes, immutable corrections, exact units and live typed resubmission; `tests/willow/levels-compensation-definitions.mjs` (compensationDefinitionProof): scoped and employer-wide bands/cycles, native Edit/Approval, live revoke and separate cycle approval/publication; `tests/willow/levels-section-doors.mjs` (sectionDoorProof, flows.mjs WIL-03): every registered and native target door before/after same-session revoke; `tests/willow/levels-sections-browser.mjs` (sectionBrowserProof): actual matrices/reviews, Withheld/scoped values, exact Edit, pending/resubmitted/declined and revoked forms at 1440/390; `tests/willow/levels-compensation-custody.mjs` (compensationCustodyProof) and `tests/willow/restore-erasure.mjs`: bundles, held award versions, erasure, owner-only custody and actual CLI archive/restore.
+
+### ROLE-006
+
+Target: balances, ledger entries, requests, calendars and policies (LEAVE-001, LEAVE-002) under the four modes; Edit about others is balance adjustment and request entry on behalf; self Edit is request and cancel; Edit with approval routes through the existing leave approval, not a new queue.
+
+Shared calendars keep LEAVE-002's coverage-only projection for people outside a reader's scope.
+
+Acceptance: view-only balance level cannot adjust; edit-with-approval adjustment leaves the ledger unchanged until decided; out-of-scope people appear as coverage only.
+
+Current evidence: `tests/willow/levels-leave.mjs` (leaveLevelProof): balance View refuses adjustment; Approval leaves balances/ledger unchanged until the existing owner decision; approved ledger delta, scope/identity/revocation/stale fences, native self/request-on-behalf and outside-scope coverage only, selective JSON/context/preview/CSV/XLSX/ZIP; `tests/willow/levels-section-doors.mjs` (sectionDoorProof, flows.mjs WIL-03): every registered/native target door, selective balance/calendar and same-session revoke; `tests/willow/levels-sections-browser.mjs` (sectionBrowserProof): native matrix/review, View with no writes, pending owner decision, posted ledger, on-behalf request and coverage-only states at 1440/390.
+
+### ROLE-007
+
+Target: enrollment, life events, dependents, beneficiaries and deduction records (BENEFITS-001..003, PEOPLE-003 dependents table) under the four modes.
+
+Riders: dependents and beneficiaries keep SELF-001 approval for self edits (current rule); medical, disability and leave-of-absence reasons stay in the never-granted-to-Manager set; broker and carrier feeds use only fields the acting level reads.
+
+Acceptance: a benefits View level sees elections but not dependent medical detail without its own right; a dependent change stays pending until HR decides.
+
+Current evidence: No public-door proof for this split target.
+
+Remaining: Target: enrollment, life events, dependents, beneficiaries and deduction records (BENEFITS-001..003, PEOPLE-003 dependents table) under the four modes.
+
+Riders: dependents and beneficiaries keep SELF-001 approval for self edits (current rule); medical, disability and leave-of-absence reasons stay in the never-granted-to-Manager set; broker and carrier feeds use only fields the acting level reads.
+
+Acceptance pending: a benefits View level sees elections but not dependent medical detail without its own right; a dependent change stays pending until HR decides.
+
+### ROLE-008
+
+Target: reviews, goals, feedback, 1:1 notes and engagement results (PERFORM-001, ENGAGE-001) under the four modes.
+
+Before shipping, ROLE-001 preserves ENGAGE-001 named and anonymous result grants, HR-only anonymous comments and recipient-only anonymous participation and reminder visibility in its new doors or channels.
+
+Before adding levels, app doors or channels, ROLE-001 preserves PERFORM-001's own-input and HR-note boundaries, explicit immutable releases, named audited succession withholding and retained former-manager releases, including current-authority exports and reminders.
+
+Rider: a level can never reveal an anonymous author, a manager's private notes to the subject, or an unreleased review.
+
+Acceptance: crawl a performance View level over a cycle with HR notes, anonymous comments and an unreleased review; none appear.
+
+Current evidence: `tests/willow/performance.mjs` → performanceLevelProof in `tests/willow/levels-performance.mjs`: scoped released-review and goal View; real confidential input, HR-note, anonymous-comment and unreleased-cycle exclusions; named withholding, current-authority history bundle, every registered door and same-session independent revocation. goalModeProof in the same file proves scoped native Edit and exact HR-approved goal creation, check-ins and completion; stale-source, scope, mode and ended-access refusal; selected reviewer routing and no self approval or provider handoff.
+
+Native forms, downloads and tooltip behavior at 1440/390 run in the same journey.
+
+`tests/willow/levels-performance.mjs` (reviewModeProof, called by performance.mjs) proves immutable immediate and independently HR-approved corrections, exact pending bytes, independent self modes, stale and concurrent sources, closed-cycle refusal, scope moves, withholding, revocation, ended access, private-input exclusions, permitted review bundles and no provider handoff. reviewModeBrowserProof in the same file exercises the native level selection, impact, correction, pending and HR decision forms with tooltips at 1440 and 390. reviewMigrationProof upgrades a populated pre-correction database and proves pending requests remain actionable, decision and reconciliation history survives, and existing readers gain no correction authority. Remaining: Released reviews support View, Edit and Edit with approval; goals retain all modes. Field modes for feedback and 1:1 notes, raw engagement-result modes and their full acceptance crawl remain unimplemented. CT approved published-theme View with riders on 23 October 2026 at 11:50Z: an additional level source requires at least five people in the fixed cohort and grants only HR-published themes and plans for the entire cohort, never raw results. Raw result grants and anonymous-comment grants remain independent. `tests/willow/performance.mjs` → engagementThemeProof and engagementThemeBrowserProof in `tests/willow/levels-performance.mjs` prove scoped native level forms, page, JSON and CSV parity, real named-answer and anonymous-comment exclusion, minimum-five cohort refusal, fixed nonrespondent scope moves, recipient-only participation and same-session revocation at 1440/390. API-001–003, MOBILE-001, COMMS-001 and ROLE-015 inherit these exclusions. Existing native PERFORM-001 and ENGAGE-001 boundaries remain in force; no new review mode grants raw feedback, HR-note access, anonymous comments, participation or agent context. Goal work requires independent named ownership and current write authority.
+
+### ROLE-009
+
+Target: assignments, completions, certifications and the TalentLMS link state (LEARN-001) under the four modes; Edit is assign/waive/record completion; self Edit is completion where the course allows.
+
+Acceptance: a training level assigns and records a completion for in-scope people only; out-of-scope assignment refused; certifications visible per View.
+
+Current evidence: `tests/willow/performance.mjs` → trainingModeProof in `tests/willow/levels-performance.mjs`: exact in-scope course assignment and due date; out-of-scope assignment and completion refusal; immutable manual completion and waiver evidence; independent certification View with assignment and completion fields withheld; all four modes; exact pending changes, independent HR decisions, stale sources, concurrent decisions, revoked rights and moved scopes; course-controlled self completion with no self assignment, waiver, certification or approval; retained records after access ends; required-work opening and closure; explicit disconnected TalentLMS state. trainingBrowserProof in the same file operates course settings, level selection and impact, assignment, pending request, HR decision, completion and certification, waiver, independent certification View and revocation forms at 1440 and 390, including keyboard and hover tooltips.
+
+`tests/willow/retention.mjs` classifies all four training stores, removes native records from ordinary projections and preserves retained certificate evidence in owner-restricted custody.
+
+Remaining: Training approval currently uses standalone native custody.
+
+Before ROLE-009 can be DONE, route these changes through SELF-001's immutable proposal, HR decision, stale-source fence, history and applicable downstream exception path, then repeat the four-mode public-door and 1440/390 proof.
+
+This is unfinished work in this seed.
+
+Native training modes (26 October 2026): assignments, completions and certification evidence have independent self and scoped other-person modes, carried by the existing reviewed level matrix. No additional access contributes nothing; View reads only its selected fields, Edit applies native assignment, waiver or manual completion, and Edit with HR approval retains the exact immutable proposal without publishing a training record. A certificate field requiring approval independently holds the entire completion. Only a different currently authorized employer-wide HR reviewer may decide; neither the requester nor the subject may approve. Applying a proposal rechecks the active requester, current field modes, current scope, course policy and unchanged source inside the audited transaction. Completed or waived assignments cannot receive a second outcome. Existing owner and employer-wide HR authority remains an independent source. Self Edit permits only completion of an existing assignment when the immutable course explicitly allows self completion; it grants no self assignment, waiver or certificate issuance. Required training and approval work uses FLOW-002 schedules and fixed notices. Training evidence stays outside agent context and uses DATA-002 personnel custody and current-authority projections. TalentLMS is displayed as not connected; these native manual records claim no provider verification. LEARN-001 retains provider rosters, enrollments, completion callbacks, provider certificates, renewal and departed-learner suspension as its unimplemented target. Training approval currently uses standalone native custody. Before ROLE-009 can be DONE, route these changes through SELF-001's immutable proposal, HR decision, stale-source fence, history and applicable downstream exception path, then repeat the four-mode public-door and 1440/390 proof. This is unfinished work in this seed.
+
+### ROLE-010
+
+Target: the sections "EEO" and the tax/identity and medical records (US-001 I-9/W-4 data, identity documents, medical/accommodation records) under the four modes.
+
+Riders: `eeo.individual` stays a separate, explicit, never-built-in, never-migrated permission (current ruling) and an EEO mode here grants only the subject's own self-identification (self View/Edit) and never another person's answers; I-9/W-4/identity values need their own read and are never in any built-in level except an explicit HR/Payroll bundle that the owner reviews; medical stays never-granted-to-Manager.
+
+Acceptance: with all built-in levels, no non-subject reads an individual EEO answer; a custom level with tax View shows only masked values unless its own reveal right applies (the audited US-001 reveal path).
+
+Current evidence: No public-door proof for this split target.
+
+Remaining: Target: the sections "EEO" and the tax/identity and medical records (US-001 I-9/W-4 data, identity documents, medical/accommodation records) under the four modes.
+
+Riders: `eeo.individual` stays a separate, explicit, never-built-in, never-migrated permission (current ruling) and an EEO mode here grants only the subject's own self-identification (self View/Edit) and never another person's answers; I-9/W-4/identity values need their own read and are never in any built-in level except an explicit HR/Payroll bundle that the owner reviews; medical stays never-granted-to-Manager.
+
+Acceptance pending: with all built-in levels, no non-subject reads an individual EEO answer; a custom level with tax View shows only masked values unless its own reveal right applies (the audited US-001 reveal path).
+
+### ROLE-011
+
+Target: which approvals a level may decide: the SELF-001 queue by change type, FLOW-004 chains by request type and step role, leave, document-category approvals, custom-field approvals.
+
+Riders: a level may decide only inside its scope; nobody decides a request about themselves (current rule); deciding never grants read of fields beyond the proposal projection plus current field authority; a step-role label bound to a level tracks membership live; the preview names each added/removed approval and every pending item the change would reassign or orphan.
+
+Acceptance: grant and revoke a level's leave and personal-change approval; pending items route per the new level on the next request; self-approval refused through every door.
+
+Current evidence: `tests/willow/levels-approvals-personal.mjs` (personalApprovalProof): selected personal/legal-name/dependent/document/custom-field decisions, exact current reads and bytes, no ordinary edits, requester/subject refusal through JSON and native forms, next-request selection/scope revocation and personal pending-work preview/routing; `tests/willow/levels-approvals-routing.mjs` (approvalRoutingProof): grant/revoke leave, pending reassignment/orphans and reviewed impact, six FLOW-004 type/role bindings with retained labels and live membership, scoped proposal projection and native decisions without private/pay grants; `tests/willow/levels-approvals-browser.mjs` (approvalBrowserProof): real level editor/review/apply, named pending items, grant/revoke/reassign/orphan/restore work states, native leave/typed compensation decisions and self-refusal at 1440/390; `tests/willow/work-followup.mjs` (FLOW-002): current-authority dispatch and durable scheduling.
+
+### ROLE-012
+
+Target: add built-in reports (the REPORT-001 library, payroll, headcount, turnover, I-9, compliance reports) to a level, on the same reach rules as saved-report selections (read of the current definition within the level's scope; no export beyond what the real reader's field authority permits; no editing or scheduling).
+
+Acceptance: select two built-in reports on a custom level; only those appear for the member, values filtered by field authority and scope; revoke applies on the next request; the combined WIL-02 reach lists them.
+
+Current evidence: `tests/willow/levels-builtins.mjs` (builtinSelectionProof): two exact built-in selections, current scoped fields, payroll withholding, JSON/page/CSV/XLSX, no edit or scheduling, next-request revocation and WIL-02 combined reach; `tests/willow/levels-builtins-custody.mjs` (builtinCustodyProof): every current built-in, isolated measures, mapped published I-9 custody, exact-category current receipts, protected native diversity suppression and independent rights; `tests/willow/levels-builtins-browser.mjs` (builtinBrowserProof): actual selection/review/assignment, library, downloads, field grant and revocation at 1440/390; `tests/willow/flows.mjs` (WIL-03 combined acceptance): registered library doors before and after revocation.
+
+Remaining: none for the current native library.
+
+US-001 inherits statutory completion/verification measures; EEO-002 retains explicit frozen-run selection.
+
+### ROLE-013
+
+Target: which settings areas a level may use (company, locations/departments, schedules, custom fields, document categories, integrations and connections, payroll connections, sign-in/security, API credentials, retention).
+
+Riders: employer-wide settings need scope everyone (current rule); owner-only items stay owner-only and are never selectable (DATA-002 adoption, holds, approvals and retained reads; MFA owner policy; access administration beyond the ROLE-003 bounded grant; erasure); a delegate selects only settings they hold; a settings right never grants the data the setting governs.
+
+Acceptance: select the integration and custom-field settings for a level; the member opens exactly those pages, API credentials issued are bound to ROLE-001 levels and never exceed them, owner-only pages refuse; revoke applies on the next request.
+
+Current evidence: `tests/willow/levels-settings.mjs` (settingsSelectionProof): exact integration/custom-field settings, native metadata and schema changes without employee values, employer-wide scope, delegation ceilings, every settings area, owner-only refusal and next-request definition/assignment revocation; (apiKeyProof): real owner key issue, exact level scope/field withholding, no owner/self/EEO/write authority, secret-free metadata/audit, rotation/revoke, permanent revision invalidation and ended issuer; `tests/willow/levels-settings-browser.mjs` (settingsBrowserProof): actual selection/review/assignment, native settings, field creation/edit, revocation and one-time key custody at 1440/390; `tests/willow/restore-access.mjs`: actual CLI archive excludes credential material and restore rejects the source key; `tests/willow/flows.mjs` (WIL-03 combined acceptance): registered settings doors before and after revocation.
+
+Remaining: none for settings selection.
+
+API-001 and API-002 retain their distinct transport obligations.
+
+### ROLE-014
+
+Target: the written field-level definitions for built-in Employee, Manager, HR administrator, Payroll administrator and IT across every section, shown in the level editor, with migrations preserving every current effective right and a per-built-in before/after report.
+
+Depends on ROLE-004..ROLE-013.
+
+Acceptance: each built-in's matrix renders from the compiled facets, and a crawl as each built-in agrees with its matrix and with today's effective rights before any custom change.
+
+Current evidence: No public-door proof for this split target.
+
+Remaining: Target: the written field-level definitions for built-in Employee, Manager, HR administrator, Payroll administrator and IT across every section, shown in the level editor, with migrations preserving every current effective right and a per-built-in before/after report.
+
+Depends on ROLE-004..ROLE-013.
+
+Acceptance pending: each built-in's matrix renders from the compiled facets, and a crawl as each built-in agrees with its matrix and with today's effective rights before any custom change.
+
+### ROLE-015
+
+Target: the WIL-03 crawl extended over every level, every section and every door (API, page, download, CSV/XLSX/ZIP, preview, agent context, webhooks, mobile, notifications), generated from the compiled facets, failing on any value outside the member's modes.
+
+Depends on ROLE-004..ROLE-013; each earlier clause adds its own section to the crawl in the same round, so ROLE-015 stays the final conformance gate.
+
+Acceptance: a generated matrix over every built-in and a two-level custom set shows zero out-of-mode values and zero denied reads that a mode grants.
+
+Current evidence: No public-door proof for this split target.
+
+Remaining: Target: the WIL-03 crawl extended over every level, every section and every door (API, page, download, CSV/XLSX/ZIP, preview, agent context, webhooks, mobile, notifications), generated from the compiled facets, failing on any value outside the member's modes.
+
+Depends on ROLE-004..ROLE-013; each earlier clause adds its own section to the crawl in the same round, so ROLE-015 stays the final conformance gate.
+
+Acceptance pending: a generated matrix over every built-in and a two-level custom set shows zero out-of-mode values and zero denied reads that a mode grants.
+
+### API-001
+
+Issue a key bound to a custom level and confirm the API returns only that level's data; try to issue a key wider than your own rights and be refused.
+
+Rotate the key, revoke it and receive 401 on the next call; end the issuer's access and prove their remaining keys stop; inspect the audit and confirm no secret appears in logs, exports or archives.
+
+### API-002
+
+Read the roster with a key whose level withholds compensation and private contact fields, page through it and fetch changes since a cursor after a hire and a transfer; restricted fields never appear and each change appears once.
+
+Submit an edit-with-approval change through the API and see it wait in HR's queue; every response validates against the published OpenAPI description.
+
+Current version 1 transport (23 October 2026): employee and native collection reads use current non-person level projections.
+
+Encrypted query-bound cursors compare permitted projections, refuse stale pagination and signal a full cache reset on population loss without disclosing removed identities.
+
+Personal, job, compensation and time-off request writes require explicit scopes and native human approval.
+
+The `leave.approval` scope permits only native pending requests at `/api/willow/v1/requests`, using the current level population, dated working schedule, policy, overlap checks and guarded balance reservation.
+
+Human approval rechecks the credential and current scope; revocation prevents execution while HR can still decline to release the reservation.
+
+No credential decides or directly edits. Delegated issuance remains bounded by the current carried rights and independent sensitive approval. Custom-field value writes use explicit `custom-fields.approval` scope and the native immutable HR queue, with current credential, scope, sensitivity, definition and history rechecked at human approval. Record-table changes require explicit `tables.approval` scope, native typed validation and immutable HR approval with current requester, population, table definition and row history rechecked before dated creation, edits or removal. Document writes require explicit `documents.approval` scope and native category and population rights. Pending bytes remain unpublished until a distinct authorized human approves; publication uses the decision timestamp, revisions retain prior bytes, and current credential, category, scope and document revision are rechecked at approval. The new door inherits delegated document and OAuth independent approval, including pending resource refusal and immediate withdrawal. See `API.md`.
+
+### API-003
+
+Register a permissioned webhook from a key scoped to one location, hire and terminate a person there and verify two signed events whose signatures check and whose payloads omit restricted fields; a hire elsewhere sends nothing.
+
+Re-send a captured event after the tolerance window and confirm the documented verification rejects it; fail the endpoint and observe retries, pause and manual replay; revoke the key and confirm the webhook stops.
+
+Current permissioned webhook slice (23 October 2026): an explicitly scoped key registers an inactive subscription; only audited owner consent enables its exact destination and field selection.
+
+Settings exposes owner review, delivery status, failure alerts, explicit replay and a stop action that cancels pending deliveries.
+
+Live level rights govern each attempt; uncertain outcomes pause for owner replay.
+
+Custody is non-portable and employee delivery records and outside copies join DATA-002.
+
+The owner-only default awaits ct review, so this clause remains partial.
+
+Owner-created global subscriptions now use the same explicit consent and current-owner authority, with registration through the documented JSON action and administration in Settings. Native directory audits identify changed fields; future hire and termination sources have distinct recorded and effective delivery identities. Exhaustive field and source coverage, future rehire proof and inherited delegated outbound proof remain Gaps. SIGN-001 and SIGN-002 inherit a signature-completion event source before connected signing ships. See `API.md`.
+
+### HIRING-001
+
+For each of Greenhouse, Lever, Workable and JazzHR, accept an offer, preview the hire in Willow, resolve a former-worker match, approve and inspect the packet plus returned status.
+
+Replay the event and withdraw the offer; neither duplicates the person nor retains unauthorized preboarding access.
+
+### HIRING-002
+
+Request and approve an opening in a pay-transparency state, publish it and read it back on the careers page and from Indeed, ZipRecruiter and LinkedIn posting status (provider-edge tests plus a consented employer-account trial).
+
+Apply once from the careers page and once from a board, then close the opening; both candidates appear once with their source and every posting reports withdrawn.
+
+Before shipping, extend REPORT-001 saved reports with this capability’s dated metrics and source drill-down, current row/field restrictions, unknown/freshness labels, safe scheduled links and CSV/XLSX parity; no metric may imply an unobserved provider outcome.
+
+### HIRING-003
+
+Move two applicants through stages as a hiring manager, record two interviewer scorecards, schedule an interview against a connected calendar and send templated acknowledgment and rejection emails.
+
+Prove an employee outside the hiring team and the manager of a different opening cannot read the candidates, a repeat application merges into the earlier record, and no automated ranking or rejection exists.
+
+Before shipping, extend REPORT-001 saved reports with this capability’s dated metrics and source drill-down, current row/field restrictions, unknown/freshness labels, safe scheduled links and CSV/XLSX parity; no metric may imply an unobserved provider outcome.
+
+### HIRING-004
+
+Send an offer from the pipeline, approve and sign it on a phone, and inspect the joiner proposal, preboarding invitation and filed signed offer; every carried field equals the candidate record and nothing is re-entered.
+
+Decline a second offer and confirm no person or packet exists; hire a former worker and confirm the existing person is reused.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+### HIRING-005
+
+Order a Checkr check for an offer-stage candidate (provider-edge tests plus a consented employer-account trial) and receive invited, pending, consider and clear statuses by webhook, including a replayed one; one status timeline results.
+
+Verify the hiring manager, the later employee record, agent context and a standard export hold no report content and only HR with screening rights opens the agency link.
+
+A "consider" result leaves the candidate in the pipeline until HR starts the agency's pre-adverse action, and a start gated on the check waits until it completes.
+
+### FLOW-001
+
+Build and preview a multi-state joiner workflow, publish it, start two cases and change the template.
+
+Approve a pay step as payroll and an access step as IT, fail one provider step and verify dependent work remains blocked and existing cases retain their version.
+
+### FLOW-002
+
+Create a due case, advance the scheduler across quiet hours and restart it, then make the assignee unavailable.
+
+Observe one permitted reminder/escalation, assign cover, complete the task and prove later ticks send nothing.
+
+Refuse an unauthorized recipient and expose failed delivery.
+
+### FLOW-003
+
+Send two role-specific packets to personal mailboxes, complete one on a phone, let the other expire/withdraw, then start employment.
+
+Inspect packet progress and prove only approved data becomes the employment record and expired links cannot read it.
+
+### FLOW-004
+
+As a manager, request a promotion with a 10% raise for a direct report effective next month; it routes to the manager's manager, then HR, then payroll.
+
+The manager's manager approves, HR sends it back, the manager edits the amount and the chain restarts; after all three approve, exactly one effective-dated terms version with the approved title and pay exists, the mover case has started and the payroll queue shows the change.
+
+A skip-level approver without pay rights sees the request with pay withheld, the requester cannot approve their own request, and a declined request writes nothing.
+
+### SIGN-001
+
+With no DocuSign connection configured, approve an offer from a template, sign as the employee on a phone and countersign as HR; retrieve the sealed copy and certificate from the chosen category through permitted doors and verify the digest.
+
+Void and reissue a changed offer, replay an older signing link and prove it cannot complete the new version; exercise decline, expiry and consent withdrawal.
+
+Repeat the send through a connected DocuSign account and replay an older callback.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+**Historical adopted default, superseded by the ct ruling below.** Only the owner or a member with current employer-wide people.manage authority may prepare, approve or cancel native signature requests.
+
+Category access is independently required.
+
+Only the authenticated employee and the explicitly named current HR countersigner may sign, in that order.
+
+Each signing action requires explicit audited electronic-record consent bound to the exact document digest and live session. No outbound message is sent automatically. This default does not assert legal compliance or approve production use; ct approval remains required before DONE. Native sessions are the supported authentication alternative; no emailed signing credential is issued. **Supported native slice.** Approved shared PDF versions support controlled employee_name, job_title and compensation placements; compensation is obtained only through the current authorized person projection. An actor-bound, one-use, 30-minute review freezes each recipient and rendered PDF digest and offers a download of the exact bytes. Changed source versions, changed merge values, ended recipients and lost authority refuse creation. Typed signature, initial, date and text placements are rendered on the pinned PDF, with employee-first signing and a distinct named HR countersigner. Each action fences the live session, current authority, request revision, expiry and business snapshot. Completion files immutable PDF bytes in the chosen subject-readable category and retains an audit certificate with consent, signer, active-session authentication, timestamps, supplied network metadata and final SHA-256 digest. Withdrawal, decline, void and cohort cancellation close unsigned work; signed copies remain. Reissue creates a separate request; an old request cannot complete its replacement. No third-party signing provider is configured by this path. CT policy ruling, 26 October 2026, 17:30 UTC: APPROVE WITH RIDERS. This resolves the pending policy decision only. SIGN-001 remains PARTIAL. Every original target and acceptance sentence remains required. This is approval of supported product defaults, not acceptance of implementation, production operation, provider behavior or legal effect. Native signing denies unauthorized actions by default. The owner or a member with current employer-wide people.manage may prepare, review, issue or cancel a request, with independently sufficient current category and source-field authority. HR rank, managerial rank, category access alone, access administration, an agent and an API credential confer no signer authority. The employee signs first, followed by the distinct named HR countersigner authorized to represent the employer and holding current employer-wide HR authority and category access. Request review records that designation; it does not prove legal agency. The initiator may also be that countersigner when eligible. No extra owner confirmation is required for authorized HR initiation. The review is actor-bound and consumed once against the exact current snapshot; another eligible HR member makes their own review. Each signer personally authenticates using their own active session and explicitly consents to electronic records and the signing action. Before consent, show the exact recipient-specific approved document, the signer's entered fields, the applicable consent wording and language, the filing category, access and retention position, and withdrawal behavior. Bind consent to the request and revision, approved rendered-byte digest, current signable-byte digest, exact signing-field values and that signer's live session. Preserve the connection between each signing event and the final sealed-byte digest. A template digest or a checked consent boolean alone is insufficient. Later countersignature adds only the reviewed countersigner fields; changing approved content requires void and reissue with fresh review and consent. Authentication and authority are rechecked atomically at each transition; no session token or reusable signing capability enters the certificate, audit or archive. Active-session authentication is the supported contractual alternative; this ruling does not require both authentication alternatives. The sealed document, certificate, exact consent wording or immutable wording version, actual signing language, template and request lineage, signer identities and order, authentication method, event times, permitted supplied network metadata and relevant digests form protected employee-record custody. Retain the document bytes and signing values in that custody, rather than duplicating them into general audit. The certificate is execution evidence, not a private signing key, a qualified certificate or proof of legal validity. Its metadata and downloads follow the same current category boundaries as the signed record; status-only manager access includes neither certificate nor document bytes. Retention, holds, erasure, restricted retained reads, exports and restore follow the existing DATA-001, DATA-002 and AUDIT-001 duties without a separate indefinite signing-retention rule. Preserve durable verifiable records while their applicable retention or hold requires them. Historical signing evidence restores without source sessions, usable signing credentials, automatic sends or resumed signing authority. Audit records actor and subject references, request and template versions, action and outcome, state and revision changes, authority and consent references, timestamps and document digests. It excludes document bytes, rendered merge content, signing-field values, credential material and raw session identifiers. Withdrawal or refusal closes the affected request's unsigned work and prevents further signing or completion under that consent. A partly signed request remains visibly incomplete; preserve its existing evidence under applicable custody rules. Completed signed records remain subject to retention and holds. Decline, expiry, void and cohort cancellation retain their distinct states. Reissue creates a separate request and needs fresh applicable consent. Creating or approving a template, enabling a capability and restoring an archive send nothing automatically. An authorized explicit issue action creates the assigned portal request. The supported default enables no automatic outbound notification or reminder; it does not remove delivery or reminder obligations. ESIGN and UETA name consent and record-rule requirements whose legal suitability still needs evidence; neither their names, the certificate, a digest nor this ruling proves compliance or enforceability. Before connected signing ships, SIGN-001 and SIGN-002 retain API-003's inherited signature-completion event source. Events describe observed completion under the existing scoped webhook authority and consent; an event neither grants document access nor proves recipient delivery. Additional acceptance, SIGN-001: Exercise deny-by-default initiation and exact recipient-byte review, authorized HR initiation without an extra owner gate, distinct employee then named HR countersignature, explicit consent with retained exact wording and actual language, binding to each signer's current session and exact signing payload, and final sealed-byte verification. Refuse lost category or source-field authority, ended or changed sessions, changed sources, stale reviews and out-of-order or replayed actions. Show withdrawal closing unsigned work while valid completed records remain. Through permitted and forbidden employee, HR and manager doors, check document and certificate custody, metadata-only audit without document bytes or signing values, applicable holds and erasure and safe archive restore without usable signing authority or outbound work. Preserve the original expiry, old-link, connected DocuSign and FLOW-001 acceptance unchanged; this addition does not substitute native request replay for an unexercised public signing link.
+
+### SIGN-002
+
+Without DocuSign, send a policy to one location of five people, sign as two of them (one on a phone) and confirm each signed copy is filed in the chosen category.
+
+Open the signed-documents report as HR and as a manager, advance the scheduler and see one reminder to each pending signer only, add a new joiner at that location and see their request, then cancel the remainder; signed copies remain and later ticks send nothing.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+Before shipping, extend REPORT-001 saved reports with this capability’s dated metrics and source drill-down, current row/field restrictions, unknown/freshness labels, safe scheduled links and CSV/XLSX parity; no metric may imply an unobserved provider outcome.
+
+**Historical adopted default, superseded by the ct ruling below.** Request preparation and cancellation require current owner or employer-wide HR authority, explicit exact-version review and current category access.
+
+No automatic outbound message or reminder is enabled.
+
+The supported slice creates a reviewed cohort resolved from named people, everyone, a location, department, employment type or access level with one independent portal request per person using SIGN-001's native state machine.
+
+The status list and CSV apply current category rights; managers receive only their reports' permitted status, without rendered bytes, signing values or certificates. Canceling a cohort closes only unsigned requests and preserves sealed copies. Future joiners, notifications and FLOW-002 reminders remain target obligations and named Gaps. CT policy ruling, 26 October 2026, 17:30 UTC: APPROVE WITH RIDERS. This resolves the pending policy decision only. SIGN-002 remains PARTIAL. SIGN-001's supported authority, exact-byte consent, signing order, withdrawal and certificate-custody defaults apply independently to each cohort recipient. Every original target and acceptance sentence remains required. The current owner or employer-wide HR initiator explicitly reviews the exact template and rendered versions, filing category, cohort definition, resolved named recipients and named countersigner before issuing the one-use reviewed cohort. Each recipient receives an independent actionable portal request. Category rights and authority remain current at every read and transition. No cohort review grants category access, personal consent or signing authority. The full target still includes every named selector, future matching joiners, portal and email and mobile delivery, pending-signature reminders and escalation, scoped signed-document reporting and cancellation of unsigned recipients. Future enrollment requires an explicitly reviewed inclusion policy and current eligibility and category checks; it never carries another person's consent. The disabled outbound default is a supported-slice boundary, not a permanent exemption from those requirements. Later authorized notification policies must follow WIL-18, FLOW-002 and MOBILE-001 as applicable, recheck recipients at dispatch and stop after completion, withdrawal or cancellation. Failed or uncertain delivery never means the employee received or signed the document. HR uses the existing authorized signing-report source with current category rights; a report selection alone grants no document or signing authority. Managers receive only their current reports' permitted status and dates, never rendered bytes, signing values or certificates from that status grant. SIGN-002 retains its specific SELF-002 shared-file version and targeting duties, FLOW-001 graph duties and inherited REPORT-001 saved-definition, dated-metric, drill-down, freshness, schedule and export duties. It also retains the signature-completion event-source duty named in SIGN-001. This ruling completes none of them. Additional acceptance, SIGN-002: Run the original five-person location journey through actual issue and signing, not recipient preview alone, and finish two independent signed records including the phone signer. Exercise every named selector, an explicitly included future matching joiner, current shared-file version and targeting, authorized portal and email and mobile delivery, and one permitted pending-only reminder with escalation and restart custody. Verify HR and manager status restrictions across pages and exports, saved REPORT-001 definitions and dated source reconciliation, safe scheduled links, cancellation and no later outreach. Completion, withdrawal, category revocation and ended access must remove the corresponding future authority without destroying records that retention or a hold requires. Preserve and exercise the original FLOW-001 acceptance.
+
+### US-001
+
+From a US hire packet, complete employee and representative I-9 steps with Mitratech, exercise a pending E-Verify referral and a correction, and return the signed records/status to HR.
+
+Submit and replace W-4, observe payroll receipt and deny manager access to tax/identity documents.
+
+Missing provider action prevents completion.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+### US-002
+
+Under two legal entities with different FEINs, onboard and rehire workers in California and Texas, preview the applicable forms/report destination and deadlines, approve and submit, reject/correct one report and inspect the acceptance receipt.
+
+Attempt to complete an unsubmitted report and to expose FEIN/SSN to a manager; both fail, and each worker's records and reports carry their own entity.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+### EEO-001
+
+Two employees open self-identification in self-service; one completes it and the other declines.
+
+Verify HR with EEO access sees each answer and its source while the manager, hiring team, directory, agent context and a standard CSV export receive nothing, and HR's read appears in the audit.
+
+Change an answer through self-service and inspect its history.
+
+### EEO-003
+
+Send preboarding packets to two hires; one completes self-ID and the other declines.
+
+Verify HR with EEO access sees each answer and its source while the manager, hiring team, directory, agent context and a standard CSV export receive nothing, and HR's read appears in the audit.
+
+### EEO-002
+
+Map titles for a two-location employer, choose a snapshot pay period containing a hire and a leaver, and run the report; counts by category reconcile to the roster for that period and the declined hire is flagged.
+
+Map one missing title and rerun; a manager cannot open the report or its drill-down.
+
+### EEO-004
+
+Choose a snapshot pay period containing a contractor and run the report; the contractor is excluded.
+
+Validate the download against the EEOC's published data-file specification and record a confirmation; a manager cannot open the report or its drill-down.
+
+### LEAVE-001
+
+Publish policies for salaried and hourly workers in two states, accrue across a tier/carryover boundary, restart the scheduler and compare employee balances and ledger.
+
+Transfer a worker and correct a schedule; show the calculation and require approval for an override.
+
+Open a protected-leave case (such as FMLA) with a restricted medical certification, record intermittent absences against the case's entitlement and see the remaining entitlement; the manager sees only absence dates while HR with leave rights sees the case and certification, and nothing labels the case legally approved.
+
+### LEAVE-002
+
+Request a partial-day absence over a company holiday, inspect the quote and shared calendar as employee/manager, deliver the manager request notice, delegate approval and cancel it.
+
+Read Google Calendar and Outlook updates and revoke access; confidential reasons never appear and stale requests cannot be approved.
+
+Request Dec 22 to Jan 2 over company holidays on Dec 25 and Jan 1: the quote, the approved request and the ledger deduct only the scheduled hours of the other working days and show both holidays as not deducted.
+
+### TIME-001
+
+Publish a week of shifts, clock in and out from a phone (one punch made offline and synced later) and correct a missed break, approve a swap/timesheet and send hours to payroll.
+
+Compare Deputy and Willow roster/leave/time, create an overtime mismatch and resolve it; denied/late edits cannot silently change approved payroll.
+
+### PAYROLL-001
+
+Approve a hire, salary change, leave reversal and termination through a connected payroll account.
+
+Change a provider-owned field remotely, create a conflicting salary edit, duplicate callbacks and interrupt submission.
+
+The HR/payroll queue resolves conflicts by authority and closes only after provider acknowledgment and matching read-back; money and tax execution remain with payroll.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+Before shipping, PAYROLL-001 reconciles COMP-001 approved dated compensation and one-time bonuses through its connected roster/results and fresh read-back.
+
+Payroll destinations include Envelope (ENV-, the sibling payroll seed) when available, alongside the named external providers; a frozen file or human-recorded receipt is never live provider verification.
+
+### PAYROLL-002
+
+Connect an employer Gusto tenant, match an existing roster, create a hire and scheduled pay change, receive a provider-side correction and terminate access to the connection.
+
+Compare acknowledged and read-back records, refusal/expiry states and permission boundaries using provider-edge tests plus a consented production-account trial.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+Before shipping, PAYROLL-002 reconciles COMP-001 approved dated compensation and one-time bonuses through its connected roster/results and fresh read-back.
+
+Payroll destinations include Envelope (ENV-, the sibling payroll seed) when available, alongside the named external providers; a frozen file or human-recorded receipt is never live provider verification.
+
+### PAYROLL-003
+
+Run the hire/pay/leave/termination reconciliation journey separately in ADP RUN and ADP Workforce Now employer accounts.
+
+Reject a wrong company/code and ambiguous identity, recover an expired authorization and confirm provider read-back.
+
+Exercise live provider-edge tests and a consented account trial for each product.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+Before shipping, PAYROLL-003 reconciles COMP-001 approved dated compensation and one-time bonuses through its connected roster/results and fresh read-back.
+
+Payroll destinations include Envelope (ENV-, the sibling payroll seed) when available, alongside the named external providers; a frozen file or human-recorded receipt is never live provider verification.
+
+### PAYROLL-004
+
+Connect a QuickBooks Payroll employer, match existing workers and reconcile a hire, pay update, leave change and exit.
+
+Return a provider correction, revoke access mid-sync and restore it; no duplicate employee or false completion results.
+
+Prove payroll-specific acknowledgment/read-back in edge tests and a consented account trial.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+Before shipping, PAYROLL-004 reconciles COMP-001 approved dated compensation and one-time bonuses through its connected roster/results and fresh read-back.
+
+Payroll destinations include Envelope (ENV-, the sibling payroll seed) when available, alongside the named external providers; a frozen file or human-recorded receipt is never live provider verification.
+
+### PAYROLL-005
+
+Connect a Paychex Flex employer (provider-edge tests plus a consented employer-account trial) and match an existing roster in which payroll resolves one ambiguous name.
+
+Then run the PAYROLL-001 journey: a hire whose Paychex worker reads back with matching fields, a pay change, a leave reversal, a termination, a correction made in Paychex Flex, and authorization revoked mid-sync and restored.
+
+Each case closes only on Paychex acknowledgment plus matching read-back, with no duplicate worker, duplicate pay change or false completion.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+Before shipping, PAYROLL-005 reconciles COMP-001 approved dated compensation and one-time bonuses through its connected roster/results and fresh read-back.
+
+Payroll destinations include Envelope (ENV-, the sibling payroll seed) when available, alongside the named external providers; a frozen file or human-recorded receipt is never live provider verification.
+
+### PAYROLL-006
+
+With a connected payroll provider (provider-edge tests plus a consented employer-account trial) and a 48-person pay group, run the check before cutoff with every system in agreement and see the period marked as agreeing with its read-back time.
+
+Then let the provider keep an old salary for one employee, deduct 4% against a 5% retirement election for another and leave a third without a provider identifier: the report lists all three with field, both values, authoritative system and owner, the period does not show agreement, and each item closes only after correction and a matching read-back.
+
+Record a pay change after a passing check and confirm the period reopens until checked again.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+Before shipping, PAYROLL-006 reconciles COMP-001 approved dated compensation and one-time bonuses through its connected roster/results and fresh read-back.
+
+Payroll destinations include Envelope (ENV-, the sibling payroll seed) when available, alongside the named external providers; a frozen file or human-recorded receipt is never live provider verification.
+
+### BENEFITS-001
+
+Enroll a new hire, waive a plan, add a dependent after a life event and terminate coverage.
+
+Send through Employee Navigator/broker to the selected carrier, ingest acknowledgment and compare active coverage/dates; reject a dependent mismatch and resolve it.
+
+Employees read their own elections, HR sees permitted status and managers cannot see health evidence.
+
+Without any connection, record a plan and an election, export the census and confirm the status stays recorded, not active, until a carrier confirmation is attached.
+
+Leave one new hire's elections incomplete as the new-hire enrollment deadline approaches: HR's enrollment view lists the hire as missing enrollment, the hire and HR receive one FLOW-002 reminder per cadence step, and reminders stop once an election or waiver is recorded.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+Refuse payroll-only and IT-only approval of the benefits step.
+
+Before shipping, approved SELF-001 legal-name/dependent revisions feed the benefits exception and reconciliation queue under the same current private-contact authority. Before shipping, extend REPORT-001 saved reports with this capability’s dated metrics and source drill-down, current row/field restrictions, unknown/freshness labels, safe scheduled links and CSV/XLSX parity; no metric may imply an unobserved provider outcome.
+
+### BENEFITS-002
+
+Change a benefit mid-period, preview deduction impact in USD, approve it, ingest payroll and carrier results and inspect a deliberately mismatched deduction.
+
+Resolve and re-read both systems; the mismatch remains open until evidence agrees and a duplicate event creates no duplicate adjustment.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+Refuse payroll-only and IT-only approval of the benefits step.
+
+Before shipping, extend REPORT-001 saved reports with this capability’s dated metrics and source drill-down, current row/field restrictions, unknown/freshness labels, safe scheduled links and CSV/XLSX parity; no metric may imply an unobserved provider outcome.
+
+### BENEFITS-003
+
+For an invented employer with full-time, part-time and variable-hour staff over 12 months, compute monthly ALE counts, complete a look-back that makes one variable-hour worker full-time for the stability period, record offers and a waiver, and generate 1095-C lines that reconcile to the inputs.
+
+Hand the file to the filer and record their acknowledgment; a missing month of hours is flagged, not assumed.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+Refuse payroll-only and IT-only approval of the benefits step.
+
+Before shipping, extend REPORT-001 saved reports with this capability’s dated metrics and source drill-down, current row/field restrictions, unknown/freshness labels, safe scheduled links and CSV/XLSX parity; no metric may imply an unobserved provider outcome.
+
+### RETIRE-001
+
+For each of Human Interest and Guideline, send a hire/eligibility change, update a deferral, reconcile contribution results and process an exit.
+
+Fail one census row and correct it without resending accepted rows; inspect the employee-scoped record and payroll reconciliation report.
+
+Record a 5% deferral while payroll deducts 4%: the mismatch is flagged before the payroll cutoff with employee, period and amount, routed to its owner, and closes only after the corrected deduction reads back from payroll and the plan provider.
+
+### IDENTITY-001
+
+For each named service, approve a joiner, transfer departments and offboard while holding an active external session.
+
+Inspect account/group/license read-back and session revocation, inject an API failure and show the open IT exception.
+
+Rehire and prove prior grants are not silently restored.
+
+The joiner's Google Workspace, Microsoft 365 and Okta accounts become usable on the start date, not before, and the leaver's are disabled by the end of their last day in the employer's time zone; the leaver case lists each connected system with its verified removal state and cannot report access removed while any read-back is pending or still shows the account active.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+### IDENTITY-002
+
+Exercise Google, Entra ID and Okta sign-in separately, then enforce MFA/session policy, change groups, relink and revoke a member.
+
+Verify unchanged member/person IDs, no unapproved grants, refusal of wrong issuer/tenant and owner recovery without ended-member access.
+
+### COMMS-001
+
+Connect each service, request PTO and deliver a manager reminder, follow an approval link as the right/wrong actor and revoke the connection.
+
+Replay an interaction and inject delivery failure; only one authorized decision occurs, failures remain visible and private fields never appear in channel content.
+
+Before shipping, COMMS-001 preserves ENGAGE-001 named/anonymous result grants, HR-only anonymous comments and recipient-only anonymous participation/reminder visibility in its new doors or channels.
+
+### PERFORM-001
+
+Launch a review cycle for two teams, request self/peer/manager inputs, complete a goal check-in, escalate a late review, calibrate and release results.
+
+Change a manager midway, test confidential peer visibility, export the completed cycle and retain its locked history after an employee exit.
+
+### ENGAGE-001
+
+Run named onboarding and anonymous engagement surveys, collect responses, try small/overlapping cohort filters and inspect manager/HR exports.
+
+Publish a theme/action plan, assign an owner and measure the next pulse; suppression holds and no individual inference appears in AI context.
+
+### COMP-001
+
+Create bands and a merit budget, have two managers submit proposals, inspect out-of-band/over-budget exceptions, approve a cycle and reconcile the scheduled changes with payroll.
+
+An employee or manager without pay authority cannot read another team’s amounts.
+
+Run a pay-equity report for one job level by sex and race/ethnicity: it shows its cohort, controls and calculation, suppresses small cells, reads EEO values only for EEO-access levels and proposes no pay change.
+
+### LEARN-001
+
+Assign a hire to role-specific TalentLMS courses, ingest completion and a certificate, expire one certification and observe the renewal task.
+
+Suspend a departed learner and export the retained training record; a lost/duplicate callback cannot fabricate or duplicate completion.
+
+### CONNECT-001
+
+Connect a provider, change an attribute/access rule after preview, rotate credentials, lose a scope and replay a webhook.
+
+Restart during a change and inspect fresh/stale/error state and one durable outcome; no private payload/credential appears in logs, exports or unauthorized agent context.
+
+Exercise this clause’s steps in a reviewed FLOW-001 workflow: compare the named preview and actual external action, approve only with its separately authorized role, fail a provider step and assert dependent work and closure remain blocked, then change the template and prove pinning and retained evidence on a deliberate upgrade.
+
+Verify the inherited PEOPLE-001 field validation, effective-date/history, current visibility and permission rules, immutable sensitivity, retirement and guarded import or mapped-data behavior through this capability's public doors before shipping.
+
+### REPORT-001
+
+Build and schedule a report joining custom fields, headcount, leave and open exceptions; reconcile totals and drill-down to source records at a past date.
+
+Remove a recipient’s rights before dispatch and prove pay/private rows remain withheld in page, file and delivery.
+
+Open a diversity breakdown as HR with EEO access and as a manager without it; the manager is refused and HR sees suppressed small cells, never individual values.
+
+### MIGRATE-001
+
+For each named source, preview a representative export with current/former/rehired workers, a signed document, balance, historical change, a custom table and an open opening with candidates; resolve conflicts, apply, compare row/document/balance totals and repeat.
+
+Edit an imported record and prove undo refusal; close cutover only after HR signs a variance report and all retained originals can be exported.
+
+Match a Paychex Flex roster with one unmatched and one ambiguous worker at cutover; no live sync runs and no Paychex worker is created until payroll resolves both.
+
+Each source's export includes an open onboarding checklist with completed and outstanding tasks; it arrives as one open case whose completed tasks keep their completion and whose outstanding tasks keep assignee and due date, without sending any notice.
+
+Verify the inherited PEOPLE-001 field validation, effective-date/history, current visibility and permission rules, immutable sensitivity, retirement and guarded import or mapped-data behavior through this capability's public doors before shipping.
+
+### MIGRATE-002
+
+From a BambooHR-shaped API fixture and export set with job history, a custom table, two assets, signed documents, open openings with candidates and three access levels, preview, map and apply; reconcile every table, document byte and balance, confirm the proposed level mapping assigns nothing until approved and that no invitation, webhook or posting fires.
+
+From a BambooHR Payroll-shaped export, import pay history and year-to-date totals as restricted history, hand them to a newly connected provider and reconcile its first roster and totals; a manager cannot read the history.
+
+Repeat and undo as in WIL-16.
+
+Verify the inherited PEOPLE-001 field validation, effective-date/history, current visibility and permission rules, immutable sensitivity, retirement and guarded import or mapped-data behavior through this capability's public doors before shipping.
+
+### DATA-001
+
+Export selected employee fields as HR and manager and compare with their permitted records.
+
+Archive a populated target HRIS, restore into an empty installation, compare all portable records/files and re-sign in.
+
+Confirm old sessions/credentials fail and scheduled provider work stays paused until explicitly reauthorized.
+
+### DATA-002
+
+Place one document class on hold, erase an otherwise eligible former worker, inspect all public reads/downloads/import custody and export again.
+
+Attempt to restore an older archive with the later journal; the erased person cannot return.
+
+Verify held material is restricted, receipt counts are complete and a failed provider deletion remains open.
+
+### AUDIT-001
+
+Follow one approved employee change from its profile request through approvals, document signing and all provider acknowledgments using the audit door.
+
+Deny an unauthorized read, interrupt a provider action and perform erasure; the exported chronology is complete without secrets or the erased identity.
+
+### SECURITY-001
+
+Exercise all registered doors with an access-level matrix (built-in and custom levels and API keys) including restricted benefits/review/EEO fields, hostile text/uploads and cross-origin writes; revoke access mid-session and inspect downloads, logs and connector/model payloads.
+
+Prove the core HRIS works without optional providers and document each explicit Base replacement with its public-door proof.
+
+### SECURITY-002
+
+With no SSO configured, require a second factor for the HR administrator and Payroll administrator levels.
+
+An HR administrator holding only a valid email link is refused by every page, API and download door until a TOTP or passkey challenge passes, while an employee-only member signs in with the link alone.
+
+Trust a device, advance the clock past the period and receive a fresh challenge.
+
+A delegated administrator resets the HR administrator's lost factor (audited, sessions ended); the member's own reset attempt and the delegate's reset of their own factor are refused.
+
+Remove the requirement from HR administrator for a member who also holds Payroll administrator; they are still challenged.
+
+The enrollment report matches the member list, an API key keeps working without a challenge, and an owner archive contains no factor secret or recovery code.
+
+### OPS-001
+
+Use the supported commands to set up, run, stop, upgrade and recover a populated employer, compare records/grants/files and inspect missing-dependency diagnostics.
+
+Restart with pending work and verify no false completion/replay; run desktop/phone and keyboard journeys, and pass the OPS-002 reference-employer run before claiming production capacity.
+
+### OPS-002
+
+Generate the invented reference employer and its BambooHR-shaped export (including a 25 GB documents archive), run move-in, directory, search, standard and custom reports, payroll batch preview, export and restore on a hosted deployment, and record each timing against its bound with complete row/byte reconciliation.
+
+Interrupt the move-in and resume it without duplicates; exceed one stated limit and receive the named refusal with no partial write.
+
+### OPEN-001
+
+Verify the repository's `LICENSE` is the MIT license and `package.json` declares MIT; start it from the public source with the one line `npx -y @runeditrun/rer dev just-every/run-willow`, with no account or key from Willow's authors, and reach every product area as a 48-person employer without a payment, upgrade or license prompt; begin enabling a paid provider connection and verify the screen names that provider as the party that bills for it before activation.
+
+Compare available capabilities with the contract statuses: none has a commercial gate, and a missing target clause is still shown as missing rather than claimed to exist by OPEN-001.
+
+### BOUNDARY-001
+
+Walk a US hire/change/exit through the employee, HR, payroll, benefits and IT doors; inspect the system of record, external owner, USD amounts, required approval, receipt and final observed outcome for each step.
+
+An unconnected or unacknowledged dependency remains open, and the UI never claims payroll payment, insurance coverage or legal compliance from a checked task.
+
+### AI-001
+
+As employee and manager, ask about PTO eligibility and a policy conflict using restricted records, then change the approved policy version.
+
+Verify cited sources and calculation, withheld facets and HR escalation; planted prompt instructions cannot reveal confidential reasons or execute an action.
+
+**CT supported defaults — policy ruling only; status remains partial.** Only the installation owner may separately enable policy-assistant provider calls, select the provider and model and consent to the supported egress and provider-stated retention position.
+
+HR controls source inclusion and publication within current explicit authority; for approved leave policies, leave.manage explicitly includes managing inclusion of owner-approved policy versions.
+
+Inclusion does not approve a policy version, enable calls or grant reading authority.
+
+The supported assistant reduces the raw question locally to a validated supported topic.
+
+No raw question or arbitrary user text is sent to the provider.
+
+Provider input is limited to the included, currently approved policy clauses the requesting reader may read and, only when separately permitted, the minimum currently authorized numeric leave inputs needed for that supported topic. Leave balances and other numeric inputs are sensitive data even without a name. No person identifiers, other employee records, compensation, protected-class information, medical information, confidential absence reasons, private documents or other sensitive HR data may leave through this capability. Included policy text must itself satisfy this egress scope. Local reduction must prove a closed typed payload, rejection of unsupported topics and free-text fields, current reader and session authority, approved source-version identity, and absence of prohibited data from the complete outbound request. Sanitizing or redacting an otherwise unrestricted prompt is insufficient. Native leave calculations remain authoritative. Answers cite the exact approved policy version, clause and applicable date and identify calculation inputs without disclosing withheld values. Missing, conflicting or withdrawn sources, unsupported topics, failed calls and invalid or unsupported output produce an explicit limitation and HR escalation rather than an invented entitlement, legal advice or an action. Policy text and model output are untrusted and cannot grant authority or execute work. Willow retains no raw question, rendered provider prompt, provider answer or conversation content in local storage, logs, audit or archives. Audit contains only the actor reference under existing audit protections, time, capability, provider and model, consent version, source identifiers and revisions, permitted input-field categories, provider request identifier where available, and a controlled outcome or error code; it contains no question, answer, numeric input value, secret or content-bearing error text. Before activation, the owner must explicitly attest: “I authorize this installation to send the described included policy clauses and any separately selected permitted numeric leave inputs to the selected provider. For the standard OpenAI configuration, Willow requests store=false. OpenAI states that standard abuse-monitoring retention may retain API content for up to 30 days. store=false does not establish zero retention. I have reviewed the provider terms applicable to this account and accept that stated retention position.” This records owner consent and the provider-stated position; Willow does not certify provider terms, deletion, legal, privacy or employment-law compliance. A provider or account configuration outside this consented position is unsupported until its actual scope and retention are explicitly reviewed and consented. After restore, policy-assistant calls and consent are off, including for older enabled archives. Source authority, sessions, credentials and consent confer no transferred authority; restored records remain subject to current grants and the owner must enable calls again. The source installation is unchanged. **Required additional proof; not supplied by this ruling:** Exercise the original employee and manager journeys, including policy-version changes, restricted records, conflict, withheld information, calculation and HR escalation. Capture complete outbound requests using invented sensitive canaries to prove local reduction and the permitted egress boundary. Prove refusal before egress for unsupported questions, unauthorized inputs, revoked sessions or grants, stale or withdrawn sources and injected instructions; prove invalid provider output cannot disclose data or execute work. Verify content-free audit, logs and archives, store=false, consent and restore-off behaviour. Capture 1440- and 390-pixel evidence for every changed activation, consent, inclusion, question, answer and refusal screen. Provider-edge tests do not prove provider retention; authorized account evidence remains required before production-readiness claims. **Gaps:** Interactive policy answers and provider controls remain unproved in this review. General handbook ingestion and unrestricted questions remain explicit target Gaps, not exclusions. Implementation, local-reduction, egress, retention-control, restore and 1440- and 390-pixel evidence from the existing writer are unavailable. Current incumbent shipment verification and applicable provider or account retention verification are also Gaps. This policy ruling changes no clause status.
+
+### AI-002
+
+Ask for a two-state onboarding workflow, inspect its typed graph, missing mappings and per-person impact, then approve.
+
+Change the source template or connector scope before publication and prove refusal; an injected document instruction cannot bypass HR or grant access.
+
+**CT supported defaults — policy ruling only; status remains partial.** Only the installation owner may separately enable workflow-model provider calls, select the provider and model and consent to the supported egress and provider-stated retention position.
+
+Only a member with current explicit employer-wide HR workflow authority may request a draft.
+
+Owner enablement, model output and draft acceptance grant no publication or privileged-step authority.
+
+Willow reduces the natural-language request locally to validated normalized structural changes.
+
+Provider input contains only authorized source template identifiers and revisions and controlled typed structure needed to draft conditions, roles, deadlines and approval gates.
+
+No raw request, free-form prompt, task or template title, system name, employee identifier, employee record, leave balance, compensation, protected-class or medical information, document, absence reason or evidence is sent. Provider capability information, where supported, must be controlled structural data rather than raw connected-system content. Local reduction must prove the complete outbound request satisfies this closed schema; redaction of an unrestricted prompt is insufficient. Willow validates the returned graph, requires exact source citations and source-task coverage, and rejects invalid or uncited output. Current reader authority and the live session are checked at request, review and publication. Native per-person impact is calculated locally from currently authorized records and is not sent to the provider. Draft acceptance changes no employment, leave, task, access or connected system. Publication uses the existing native immutable review and exact-version publication path under current HR authority. Changed source templates, connector scope, relevant capability or reviewed inputs invalidate approval. Ambiguous mappings, missing scopes, unsafe cycles and privileged or connected steps remain visible and unresolved. In the supported slice, their presence blocks publication; they are neither silently dropped nor represented as completed. The full target retains payroll and IT approval of privileged steps and simulation of affected employees and external writes. Injected instructions cannot bypass HR, grant access or authorize publication. Willow retains no raw request, rendered provider prompt, raw provider response or conversation content in local storage, logs, audit or archives. A validated typed draft and native review and publication records may be retained as product records under existing access and retention rules; they must contain no copied prompt or answer text. Audit contains only the actor reference under existing audit protections, time, capability, provider and model, consent version, source identifiers and revisions, draft and review identifiers, provider request identifier where available, and a controlled outcome or error code; it contains no prompt, answer, employee value, secret or content-bearing error text. Before activation, the owner must explicitly attest: “I authorize this installation to send the described normalized structural workflow data to the selected provider. Raw requests and employee data are excluded. For the standard OpenAI configuration, Willow requests store=false. OpenAI states that standard abuse-monitoring retention may retain API content for up to 30 days. store=false does not establish zero retention. I have reviewed the provider terms applicable to this account and accept that stated retention position.” This records owner consent and the provider-stated position; Willow does not certify provider terms, deletion, legal, privacy or employment-law compliance. A provider or account configuration outside this consented position is unsupported until its actual scope and retention are explicitly reviewed and consented. After restore, workflow-model calls and consent are off, including for older enabled archives. Sessions, credentials, consent and prior approvals transfer no authority to invoke a provider or publish work. Current authority and a fresh valid native review are required; the source installation is unchanged. **Required additional proof; not supplied by this ruling:** Preserve the original two-state onboarding, typed graph, missing-mapping, per-person-impact and approval journey. Prove complete outbound requests contain only permitted normalized structure, with no raw request or employee-data canaries. Prove current-session and authority checks, source-template and connector-scope stale refusals, graph validation, source coverage and citation, failed-output handling, injected-instruction refusal and native exact-version publication. Prove privileged or connected steps block publication, content-free audit, logs and archives, store=false, consent and restore-off behaviour. Capture 1440- and 390-pixel evidence for every changed activation, consent, request, draft, impact, unresolved-step, review and publication or refusal screen. Provider-edge tests do not prove provider retention; authorized account evidence remains required before production-readiness claims. **Gaps:** Natural-language conditions, cross-system simulation and publication remain unproved in this review. Connected-system simulation, connector mappings and privileged-step approvals remain explicit target obligations; the restricted native path does not complete them. Implementation, local-reduction, egress, authority, publication, retention-control, restore and 1440- and 390-pixel evidence from the existing writer are unavailable. Current incumbent shipment verification and applicable provider or account retention verification are also Gaps. This policy ruling changes no clause status. **CT supersession — 25 October 2026 at 23:46 UTC.** The later approval with riders supersedes the earlier blanket ban on publication containing privileged or connected steps, including the blanket-block proof wording above. The implemented distinct signoff path remains: a privileged or connected step may publish only after every required signoff exists. Each signoff must come from a currently authorized human with authority matching that step, distinct from the drafter. Owner enablement, HR authority, model output and draft acceptance cannot satisfy a required privileged signoff. Each signoff binds the exact reviewed version, source templates and their revisions, connector scope and capability, and the complete privileged step set. Changes to any bound input or loss of the signer's authority invalidate the signoff; current authority is rechecked at publication. Missing, stale or revoked signoffs keep the step visibly unresolved and block publication with a named next action. Signoff records and audit contain only content-free references, authority and revision metadata and controlled outcomes, with no prompt, answer, employee values or secrets. Required proof must demonstrate refusal without every valid signoff and publication only through this distinct, exact-version signoff path. Connected-system simulation, connector mappings and live provider evidence remain named Gaps; this supersession changes neither clause's partial status and certifies no implementation or test result.
+
+### AGENT-001
+
+Approve a location/pay change affecting PTO, payroll, benefits and access.
+
+Let the agent discover a missing code, obtain the responsible owner’s input, execute approved steps, encounter one rejection and reopen it.
+
+Compare the original expected state with fresh provider read-back and ledger; the case closes only when all required outcomes agree, or remains owned/blocked.
+
+Revoke authority mid-run and prove execution stops.
+
+### AGENT-002
+
+Preview a carryover/eligibility policy over an hourly worker, a future transfer and a rehire with missing provider data.
+
+Confirm no live balance or task changes before approval, publish the reviewed version and compare predictions with accrual/payroll/benefits results.
+
+A changed input invalidates the prior preview; deviations remain visible to HR.
+
+### AGENT-003
+
+Stall one signature, one IT account and one benefits handoff.
+
+Enable an approved chase policy, inspect each message/recipient and proposed substitute, resolve the items and verify provider/document evidence before completion.
+
+Restart and replay events; there is no duplicate outreach, autonomous access grant or continued reminder after closure.

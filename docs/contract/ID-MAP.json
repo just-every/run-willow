@@ -129,9 +129,10 @@
       ]
     },
     "PEOPLE-001": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "PEOPLE-001"
+        "PEOPLE-001",
+        "PEOPLE-008"
       ]
     },
     "PEOPLE-002": {
@@ -141,9 +142,11 @@
       ]
     },
     "PEOPLE-003": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "PEOPLE-003"
+        "PEOPLE-003",
+        "PEOPLE-006",
+        "PEOPLE-007"
       ]
     },
     "PEOPLE-004": {
@@ -183,21 +186,27 @@
       ]
     },
     "ROLE-001": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "ROLE-001"
+        "ROLE-001",
+        "ROLE-016",
+        "ROLE-017",
+        "ROLE-018",
+        "ROLE-019"
       ]
     },
     "ROLE-002": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "ROLE-002"
+        "ROLE-002",
+        "ROLE-020"
       ]
     },
     "ROLE-003": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "ROLE-003"
+        "ROLE-003",
+        "ROLE-021"
       ]
     },
     "ROLE-004": {
@@ -345,15 +354,18 @@
       ]
     },
     "SIGN-001": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "SIGN-001"
+        "SIGN-001",
+        "SIGN-003",
+        "SIGN-004"
       ]
     },
     "SIGN-002": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "SIGN-002"
+        "SIGN-002",
+        "SIGN-005"
       ]
     },
     "US-001": {
@@ -489,9 +501,10 @@
       ]
     },
     "PERFORM-001": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "PERFORM-001"
+        "PERFORM-001",
+        "PERFORM-002"
       ]
     },
     "ENGAGE-001": {
@@ -501,9 +514,10 @@
       ]
     },
     "COMP-001": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "COMP-001"
+        "COMP-001",
+        "COMP-002"
       ]
     },
     "LEARN-001": {
@@ -519,9 +533,11 @@
       ]
     },
     "REPORT-001": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "REPORT-001"
+        "REPORT-001",
+        "REPORT-002",
+        "REPORT-003"
       ]
     },
     "MIGRATE-001": {
@@ -543,9 +559,11 @@
       ]
     },
     "DATA-002": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "DATA-002"
+        "DATA-002",
+        "DATA-003",
+        "DATA-004"
       ]
     },
     "AUDIT-001": {
@@ -585,15 +603,18 @@
       ]
     },
     "AI-001": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "AI-001"
+        "AI-001",
+        "AI-003"
       ]
     },
     "AI-002": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "AI-002"
+        "AI-002",
+        "AI-004",
+        "AI-005"
       ]
     },
     "AGENT-001": {

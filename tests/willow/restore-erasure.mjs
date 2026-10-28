@@ -1,4 +1,4 @@
-// DATA-002's restore fence on actual CLI export/import: an archive made before an erasure is refused,
+// DATA-004's restore fence on actual CLI export/import: an archive made before an erasure is refused,
 // whole, when the later archive is supplied as the journal; the later archive restores without the person.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
@@ -94,7 +94,7 @@ try {
   assert.ok(heldAwards.every(row => row.class === 'payroll'))
   const restoredHr = await destination.signIn('hr@example.com')
   await destination.api('retained', restoredHr, undefined, 403)
-  console.log('DATA-002 restore fence: passed')
+  console.log('DATA-004 restore fence: passed')
 } finally {
   if (destination) await destination.close()
   if (server) await server.close()

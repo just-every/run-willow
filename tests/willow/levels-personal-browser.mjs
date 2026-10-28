@@ -13,7 +13,7 @@ export async function personalBrowserProof(browser,h,owner,staff) {
   const capture=async(page,name,width)=>{
    await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`ROLE-001 ${name} fits ${width}`)
-   await page.screenshot({path:`${evidenceDirectory}/ROLE-001-personal-${name}-${width}.png`,fullPage:true})
+   await page.screenshot({path:`${evidenceDirectory}/ROLE-016-personal-${name}-${width}.png`,fullPage:true})
   }
   const submit=async(page,form,name)=>{
    await Promise.all([page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()])
@@ -128,7 +128,7 @@ export async function otherPersonalBrowserProof(browser,h,owner,staff) {
   const capture=async(page,name,width)=>{
    await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name} fits ${width}`)
-   await page.screenshot({path:`${evidenceDirectory}/ROLE-001-other-personal-${name}-${width}.png`,fullPage:true})
+   await page.screenshot({path:`${evidenceDirectory}/ROLE-016-other-personal-${name}-${width}.png`,fullPage:true})
   }
   const submit=async(page,form,name)=>{
    await Promise.all([page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()])
@@ -231,7 +231,7 @@ export async function documentCategoryBrowserProof(browser,h,owner,staff,ids) {
   const capture=async(page,name,width)=>{
    await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`document category ${name} fits ${width}`)
-   await page.screenshot({path:`${evidenceDirectory}/ROLE-001-document-categories-${name}-${width}.png`,fullPage:true})
+   await page.screenshot({path:`${evidenceDirectory}/ROLE-017-document-categories-${name}-${width}.png`,fullPage:true})
   }
   const submit=async(page,form,name)=>{
    await Promise.all([page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()])
@@ -303,7 +303,7 @@ export async function documentWriteBrowserProof(browser,h,owner,staff,ids) {
   const capture=async(page,name,width)=>{
    await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`document write ${name} fits ${width}`)
-   await page.screenshot({path:`${evidenceDirectory}/ROLE-001-document-writes-${name}-${width}.png`,fullPage:true})
+   await page.screenshot({path:`${evidenceDirectory}/ROLE-017-document-writes-${name}-${width}.png`,fullPage:true})
   }
   const submit=async(page,form,name)=>{
    await Promise.all([page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()])
@@ -395,7 +395,7 @@ export async function selectedReportBrowserProof(browser,h,owner,staff,ids) {
  const api=(path,body,status)=>h.api(path,owner,body,status),apply=async plan=>api('level.apply',{review:(await api('level.preview',plan)).id})
  try {
   const admin=await pageFor(owner),reader=await pageFor(staff.managerb.cookie)
-  const capture=async(page,name,width)=>{await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`selected report ${name} fits ${width}`);await page.screenshot({path:`${evidenceDirectory}/ROLE-001-selected-report-${name}-${width}.png`,fullPage:true})}
+  const capture=async(page,name,width)=>{await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`selected report ${name} fits ${width}`);await page.screenshot({path:`${evidenceDirectory}/ROLE-018-selected-report-${name}-${width}.png`,fullPage:true})}
   const submit=async(page,form,name)=>{await Promise.all([page.waitForNavigation({waitUntil:'load'}),form.getByRole('button',{name,exact:true}).click()]);assert.ok(!new URL(page.url()).searchParams.has('error'),page.url())}
   for(const width of [1440,390]) {
    for(const page of [admin,reader])await page.setViewportSize({width,height:1000})

@@ -1,4 +1,4 @@
-// ROLE-001 personal-field slice, exercised through signed-in production HTTP doors.
+// ROLE-016 personal-field slice, exercised through signed-in production HTTP doors.
 import assert from 'node:assert/strict'
 import { readZip } from './export-reader.mjs'
 export async function personalFieldProof(h,owner,s) {
@@ -254,10 +254,10 @@ export async function otherPersonalProof(h,owner,s) {
  await api('member.permissions',{member:s.managerb.member,permissions:[]})
  assert.equal((await read()).private,undefined)
  for(const mover of [outgoing,incoming]) await api('terms.cancel',{terms:mover.terms,reason:'End personal field fixture scope'})
- console.log('ROLE-001 personal fields about others: PASS — selective scoped reads, every mode, native edits, immutable HR routing, source/mode/scope fences, exact union and same-session revocation')
+ console.log('ROLE-016 personal fields about others: PASS — selective scoped reads, every mode, native edits, immutable HR routing, source/mode/scope fences, exact union and same-session revocation')
 }
 
-// ROLE-001 category reads: every actual document door uses the same current rule.
+// ROLE-017 category reads: every actual document door uses the same current rule.
 export async function documentCategoryProof(h,owner,s) {
  const api=(path,body,status)=>h.api(path,owner,body,status)
  const reader=(path,body,status)=>h.api(path,s.managerb.cookie,body,status)
@@ -325,7 +325,7 @@ export async function documentCategoryProof(h,owner,s) {
  await reader('document.acknowledge',{version:own.version},404)
  assert.ok(!(await reader(`people/${s.managerb.person}`)).documents.some(d=>d.id===own.id))
  await assign([])
- console.log('ROLE-001 document categories: PASS — separate self/others union, scoped metadata and bytes, page/context/preview/bundle parity, explicit subject receipt, no upload grant and same-session revocation')
+ console.log('ROLE-017 document categories: PASS — separate self/others union, scoped metadata and bytes, page/context/preview/bundle parity, explicit subject receipt, no upload grant and same-session revocation')
  return {category:category.id,hiddenCategory:hiddenCategory.id,location:loc.id,level:level.id,inside,other,outside,own,scope}
 }
 
@@ -423,12 +423,12 @@ export async function documentWriteProof(h,owner,s,ids) {
  await assign(s.employee.member,prior(s.employee.member))
  await assign(s.managerb.member,prior(s.managerb.member))
  await api('terms.cancel',{terms:incoming.terms,reason:'End document-write fixture scope'})
- console.log('ROLE-001 document writes: PASS — exact category/scope native edits, private immutable HR proposals, withheld pending bytes, no self approval, original bytes, downstream HR follow-up, source/mode/scope/access fences and same-session revocation')
+ console.log('ROLE-017 document writes: PASS — exact category/scope native edits, private immutable HR proposals, withheld pending bytes, no self approval, original bytes, downstream HR follow-up, source/mode/scope/access fences and same-session revocation')
  return {level:level.id,document:pending.document}
 }
 
 
-// ROLE-001 selected saved reports: read one definition within this level's reach only.
+// ROLE-018 selected saved reports: read one definition within this level's reach only.
 export async function selectedReportProof(h,owner,fx) {
  const {staff:s,join,templates}=fx
  const api=(path,body,status)=>h.api(path,owner,body,status),read=(path,body,status)=>h.api(path,s.managerb.cookie,body,status)
@@ -513,6 +513,6 @@ export async function selectedReportProof(h,owner,fx) {
  await read(`custom-reports/${report.id}`,undefined,403)
  assert.equal((await h.raw(`/app/reports/custom/${report.id}.csv`,{cookie:s.managerb.cookie})).status,403)
  await assignment([])
- console.log('ROLE-001 selected saved reports: PASS — exact definition and current group, withheld fields, JSON/page/CSV/XLSX isolation, no editing/scheduling/general exports, bounded delegation, scope union and same-session revocation')
+ console.log('ROLE-018 selected saved reports: PASS — exact definition and current group, withheld fields, JSON/page/CSV/XLSX isolation, no editing/scheduling/general exports, bounded delegation, scope union and same-session revocation')
  return {report:report.id,hidden:hidden.id,location:location.id,level:level.id,scope}
 }

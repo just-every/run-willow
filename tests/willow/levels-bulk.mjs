@@ -149,7 +149,7 @@ export async function bulkLevelProof(h, owner, staff, join) {
  // Restore the varied baseline for both browser journeys through reviewed actions.
  for(const member of members) await apply(await preview({kind:'assignment',member:member.id,levels:priorAssignments[member.id]}))
  assert.deepEqual(assigned(await api('levels')),priorAssignments)
- console.log('ROLE-002: PASS — ten-member frozen directory selection, atomic audit/replay/race fences, exact restoration with direct grants, unrelated-write allowance and business/level dependencies')
+ console.log('ROLE-020: PASS — ten-member frozen directory selection, atomic audit/replay/race fences, exact restoration with direct grants, unrelated-write allowance and business/level dependencies')
  return {members,level:level.id,location,priorAssignments}
 }
 
