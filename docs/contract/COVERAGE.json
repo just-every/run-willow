@@ -515,11 +515,7 @@
       "file": "CONTRACT.md",
       "line": 114,
       "text": "A change of terms is a new complete version effective from a date: past, current and future versions all remain, the version in force is chosen by date, and a future or past version can be canceled (kept as canceled) but never edited. The active employment period wins on the as-of date (inclusive boundaries), otherwise the first upcoming period, otherwise former; directory, profile, manager scope and reports use that same selection. Setting pay needs pay.read.",
-      "to": "rulings",
-      "ids": [
-        "RL-1",
-        "RL-2"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -527,17 +523,14 @@
             "WIL-07"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
       "line": 116,
       "text": "**Acceptance evidence:** Schedule past and future changes, read profiles/directory/reports as of each boundary, cancel a version and inspect history; immutable terms and consistent manager scope survive.",
-      "to": "rulings",
-      "ids": [
-        "RL-1",
-        "RL-2"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -545,7 +538,8 @@
             "WIL-07"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -587,10 +581,7 @@
       "file": "CONTRACT.md",
       "line": 132,
       "text": "The leave ledger is append-only. A request reserves its hours in the same atomic step that checks the balance, so concurrent requests cannot spend the same hours; concurrent decisions produce exactly one. Canceling approved leave writes one reversal of its use; correcting it reverses the old use and uses the corrected dates in one step, against the balance.",
-      "to": "rulings",
-      "ids": [
-        "RL-3"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -598,7 +589,8 @@
             "WIL-10"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -1009,11 +1001,7 @@
       "file": "CONTRACT.md",
       "line": 236,
       "text": "HR sets alerts on any standard or custom date field (PEOPLE-001/003): visa or work-authorization expiry, probation or introductory-period end, certification/license expiry, contract end, work anniversary, I-9 reverification (US-001) and benefits eligibility dates. Each alert names the field, its lead times (such as 60, 30 and 7 days before), recipients by role (HR, the manager in force on the date, the employee, a named member) and channels (in-app, email under WIL-18, Slack/Teams under COMMS-001). Recipients are rechecked against the field's visibility each time an alert fires, so a member who cannot read a field never receives its alert and notice content never carries the restricted value. Alerts appear in a scoped upcoming-dates list, can open a FLOW-002 task with an owner and deadline (such as a probation review), fire once per lead time across scheduler restarts and stop when the date changes, the alert is retired or the person leaves.",
-      "to": "rulings",
-      "ids": [
-        "RL-6",
-        "RL-7"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -1021,7 +1009,8 @@
             "PEOPLE-004"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -1029,7 +1018,6 @@
       "text": "Current semantics (19 October 2026, ct ruling 15:31Z): HR (`people.manage`) defines alerts on the work anniversary (the next anniversary of the employment start; Feb 29 falls on Feb 28 in other years), the employment end date (contract end), any custom date field (PEOPLE-001) and any date column of a record table (PEOPLE-003, such as certification expiry), with whole-day lead times, recipients by role (HR = every `people.manage` holder, the person's manager in force on the day the alert fires, the employee, or a named member) and channels (in Willow, and email under WIL-18 when notices are on). On each scheduler tick, in the employer's time zone and in any hour, an alert fires for a date once the day reaches the date minus a lead time and the date is today or later; only the smallest lead time already reached fires, once per alert, person, item, date value and lead time, so restarts never repeat one, a moved date starts afresh and the old date's later leads never fire. Each recipient is rechecked against the field's current visibility when it fires and again when reading an earlier alert; email has fixed text and a sign-in link and never carries the field, its value, the person or the date. An alert may open one review task per date for HR or the manager, due on the date; it is FLOW-002 work for its role holder who may read the date, and it is cancelled when the date moves, the alert is retired or the person leaves. Retired alerts, and people with no current or upcoming employment period, fire nothing. The upcoming-dates list (`/app/dates`, `GET /api/willow/upcoming-dates`) shows each alerted date from today through the alert's longest lead time, for people and fields the reader may read, with its owner (the first recipient) and due date. Until US-001 ships, I-9 reverification is a restricted HR custom date field; US-001 must expose its statutory reverification date as a PEOPLE-004 alertable field before it ships, BENEFITS-001 its eligibility dates, and COMMS-001 must add Slack/Teams as a channel with the same recheck and content rules.",
       "to": "rulings",
       "ids": [
-        "RL-6",
         "RL-7"
       ],
       "also": [
@@ -1399,14 +1387,7 @@
       "file": "CONTRACT.md",
       "line": 304,
       "text": "Current other-person personal-field semantics (22 October 2026): the owner reviews No additional access, View, Edit, or Edit with HR approval independently for legal name, preferred name, personal email, phone, home address, date of birth and the legacy emergency contact, within that level's ROLE-002 scope. Legal name stays directory-readable under PEOPLE-002; its explicit modes grant bounded edits and approval routing without narrowing directory reads. These are additive about-others rights: No additional access contributes nothing, never a denial of another source; an owner-set direct grant, self-service, dated manager authority and other reaching levels keep their existing rights. Explicit rights union as Edit over Edit with approval over View. They grant no full private facet, pay, private record tables, documents, reports, settings or access administration. The same person projection selects only readable fields for pages, JSON, preview, agent context and selected CSV/XLSX/ZIP values; private reads are audited without their values. A separate report grant still needs current field authority, and withheld fields remain labelled even beside a readable empty field. The preview shows each affected member's before/after field rules, scope and reach; assignment and edits take effect on the next request in the same session.",
-      "to": "rulings",
-      "ids": [
-        "RL-11",
-        "RL-12",
-        "RL-13",
-        "RL-14",
-        "RL-15"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -1418,20 +1399,14 @@
             "ROLE-019"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
       "line": 306,
       "text": "An immediate other-person personal-field edit changes exactly its named field against the native revision and a fresh authority fence. An approval-required edit enters SELF-001's immutable private before/after queue and leaves the native value unchanged. Only the subject, existing authorized HR readers, and the requester while they still read that field may read the proposal; holding one field never opens another request. A different authorized HR member decides it, with no self-approval. Approval rechecks the requester's active access, current field mode, current scope and native revision atomically, and creates the existing metadata-only downstream exception. Revoked modes, ended access, moved-out subjects and stale revisions cannot publish pending values; HR may still reject them. Other sections are ROLE-004 to ROLE-010; delegated administration is ROLE-003.",
-      "to": "rulings",
-      "ids": [
-        "RL-11",
-        "RL-12",
-        "RL-13",
-        "RL-14",
-        "RL-15"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -1443,7 +1418,8 @@
             "ROLE-019"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -1451,11 +1427,8 @@
       "text": "Current subject-follow semantics (21 October 2026, ct scope-review-58): the requester, HR (`people.manage`) and owner retain their full reads, including about themselves; step holders who are not the subject retain full reads too. Pay in those full reads stays under `pay.read`. Only when none of those reads applies, an active member linked to the subject may use an assigned level's \u201cFollow change requests about themselves (status)\u201d setting. This is a level setting, not a directly grantable permission; it defaults off on every built-in and migrated level. The owner grants/removes it through the same preview/apply flow; a ROLE-003 delegate must also hold the setting themselves before granting it. The preview names each member's before/after setting, the audit names its actor, and the change applies on the next request in the same session; ending access clears assignments.",
       "to": "rulings",
       "ids": [
-        "RL-11",
-        "RL-12",
         "RL-13",
-        "RL-14",
-        "RL-15"
+        "RL-14"
       ],
       "also": [
         {
@@ -1495,11 +1468,8 @@
       "text": "ROLE-002 scope (21 October 2026, ct): an employer-wide settings right needs scope everyone; a scoped level never grants one.",
       "to": "rulings",
       "ids": [
-        "RL-11",
-        "RL-12",
         "RL-13",
-        "RL-14",
-        "RL-15"
+        "RL-14"
       ],
       "also": [
         {
@@ -1576,14 +1546,7 @@
       "file": "CONTRACT.md",
       "line": 323,
       "text": "Immediate category edits upload or append one native version under fresh authority, session, document revision and version-sequence fences. Demo initialization uses the active owner's existing unexpired, unrevoked Base session under the same fence. Approval-required uploads and revisions use SELF-001's immutable before/after queue and verified native file custody. Pending/rejected versions do not enter ordinary profiles, context, previews or employee bundles, and public version numbers count only published versions. Only the subject, requester or HR who currently reads that category may inspect the private proposal and file; an ordinary category reader sees only published versions. A different HR member must also hold current people.manage and category read authority to decide. Approval rechecks the requester's active access, current approval mode, scope and native document revision; current-mode loss, ended access, a moved-out subject or changed source refuses publication. Approved bytes become visible atomically with the immutable decision, at that decision's publication time, and feed an HR-only metadata follow-up. A rejected file remains private category custody; it never becomes a published version. Pending decisions block erasure until explicitly decided, and their native versions remain in the existing category hold/retention/blob census. Erasure also removes private access-review previews naming the erased member; audit history retains its existing protected anonymization. SIGN-001/002 and MOBILE-001 inherit these current category boundaries before adding document doors.",
-      "to": "rulings",
-      "ids": [
-        "RL-11",
-        "RL-12",
-        "RL-13",
-        "RL-14",
-        "RL-15"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -1595,20 +1558,14 @@
             "ROLE-019"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
       "line": 325,
       "text": "Current saved-report selections (22 October 2026): an owner or bounded access administrator may add specific saved report IDs to a level. No selection is seeded or migrated. This grants read of those definitions' latest immutable versions within that level's current ROLE-002 reach; independent report and manager sources keep their own reach. It grants no summary/general export, profile, private field, report editing or scheduling authority. Pages, JSON and CSV/XLSX share the same definition and current-person admission; fields and work remain under the real reader's existing authority. A selected former report row never opens that person's profile or context. The access review shows before/after report selections and scopes; WIL-02 shows their combined current reach for the chosen person, withholding definition names the previewing member cannot read and adding no report values to the profile preview. Revocation applies on the next request. A delegate may select a report only under a held general reporting source or a structurally covering selected-report source. Report-only readers see only their selected definitions and their own delivery outcomes; other recipients and delivery configuration stay private. An owner/creator may explicitly schedule the existing fixed authenticated link to a selected-report reader; current selection, person/field rights and schedule version are rechecked at dispatch, with the existing one-attempt and uncertain-outcome custody. API-001/002 and MOBILE-001 inherit these current report boundaries before adding reporting doors. Built-in report selection is ROLE-012 and approval and settings selection are ROLE-011 and ROLE-013.",
-      "to": "rulings",
-      "ids": [
-        "RL-11",
-        "RL-12",
-        "RL-13",
-        "RL-14",
-        "RL-15"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -1620,7 +1577,8 @@
             "ROLE-019"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -1658,12 +1616,7 @@
       "file": "CONTRACT.md",
       "line": 333,
       "text": "The \"about others\" part of a level is scoped to everyone, direct reports, direct and indirect reports, or a group defined by location, department, division, employment type, legal entity or custom field. Group membership follows effective-dated terms (WIL-07): when someone transfers, the scope changes on the effective date without manual edits. HR assigns or changes a level for many people at once by selection or filter, previews each member whose rights change, and applies it in one audited step that can be reverted as a batch while no later change depends on it.",
-      "to": "rulings",
-      "ids": [
-        "RL-16",
-        "RL-17",
-        "RL-18"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -1672,7 +1625,8 @@
             "ROLE-020"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -1712,9 +1666,7 @@
       "text": "Scope precedence (ct, 21 October 2026): a level's scope limits only the about-others authority that level contributes; it never cuts or widens any other source. Effective access is the union of: owner status; owner-set direct grants (employer-wide, unscoped, WIL-01); each assigned level's about-others rights for the people inside that level's scope; the member's own about-themselves rights; dated direct-manager rights over their reports (WIL-03, WIL-07); the stored routed approver's read and decision of that leave request only (WIL-09); change-request step-holder reads (FLOW-004); performance summaries released to them (PERFORM-001); and the PEOPLE-002 directory projection. Rights never combine across scopes: one level's compensation view for location A plus another level's job view for location B gives neither view of the other location. Membership uses the WIL-07 terms selection on the employer-local current date (active period, else first upcoming, else former), effective dates inclusive. A transfer therefore changes access on its effective date, on the next request, with no edit or fresh sign-in, and viewing a past or future as-of date restores no access. Scope kinds: everyone; direct reports; direct and indirect reports (the in-force manager chain, self excluded); or a group over one or more of location, department, division, employment type, legal entity and a general custom-field option, OR within a dimension and AND across dimensions. An empty group is refused, and HR/private or payroll custom fields cannot define a scope. Every existing level migrates to scope everyone, and built-in Manager keeps its direct-report boundary, so migration changes no effective right. People who are out of scope and reachable only through a scoped level are absent from lists, search, counts, reports and exports. Their record doors return 404 unless another source grants a read, and then exactly that source's facets appear. Scoped edit, approval and decision authority applies only to in-scope people and is rechecked inside the write: FLOW-004 HR steps, SELF-001 HR decisions, leave-manager routing and the WIL-11 queues. Employer-wide settings and definitions need scope everyone. Before they ship, ROLE-001 (settings selection), ROLE-003 (a delegate assigns only within their own scope and never widens a scope beyond it), API-001\u2013003 and MOBILE-001 apply these scopes. Division and legal-entity scopes need those person attributes first.",
       "to": "rulings",
       "ids": [
-        "RL-16",
-        "RL-17",
-        "RL-18"
+        "RL-17"
       ],
       "also": [
         {
@@ -1730,12 +1682,7 @@
       "file": "CONTRACT.md",
       "line": 340,
       "text": "Current scope slice (22 October 2026): a level has one scope: everyone (the scope every existing level migrated to), direct reports, direct and indirect reports, or a group. A group chooses values of location, department, employment type or one general custom field (HR and payroll fields are refused), matches any chosen value within a kind and every chosen kind, and is refused when empty. Division and legal entity are person attributes of this slice: a division groups departments (`division.create`, `department.division`), so a person's division is that of the department in their terms in force and a restructuring applies on the next request; a legal entity (`entity.create`, `period.entity`) belongs to one employment period and applies to the whole period. US-002 extends this legal-entity registry with FEINs and filings and keeps one entity per employment period. Membership is resolved on each request on the employer-local date from the WIL-07 selection, with a former person judged by the terms in force on their last day; reports exclude the member, and a group includes the member when they match. A level whose scope is not everyone may hold only people.manage, people.private, pay.read, documents.private, leave.manage and reports.read, which every door checks per person; the preview refuses any other permission, which stays employer-wide. A scoped level's rights are never in the member's employer-wide permission set, so Base administrator roles, member and approver pickers, settings, templates, employer configuration, payroll, audit and every other employer-wide door stay closed to them. The record door of an out-of-scope active person is exactly the PEOPLE-002 directory projection, which every member holds; every door for data beyond it (cases, leave requests, documents, former people, private values) is 404 or withholds it. The person projection (page, JSON, agent context and visibility preview), leave requests and balances, documents and downloads, record tables, custom fields, summaries, custom reports and CSV/XLSX/ZIP exports follow the scope, and the review names each member's scoped rights and today's reach. The per-person writes that follow a scope are directory and private profile updates and leave request, withdrawal, decision, cancellation and correction: each is rechecked against fresh terms inside the write, and fails if any audited change lands before it commits. The scoped decision doors are FLOW-004 requests and HR steps (and the HR step an unavailable manager hands over), SELF-001 HR decisions and the WIL-11 exception reconciliation, HR lifecycle tasks and case completion, and the work items they feed (FLOW-002 sources show a scoped holder only in-scope items); each is rechecked against fresh terms inside the write. Every other write door (joiner, mover and leaver start, document uploads, access changes, templates, policies, payroll) still needs the employer-wide right. Editing a level's scope is a reviewed, versioned level change that applies on the next request.",
-      "to": "rulings",
-      "ids": [
-        "RL-16",
-        "RL-17",
-        "RL-18"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -1744,7 +1691,8 @@
             "ROLE-020"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -1778,8 +1726,7 @@
       "text": "ROLE-002 scope (21 October 2026, ct): a delegate assigns only within their own scope and never widens a scope beyond it.",
       "to": "rulings",
       "ids": [
-        "RL-19",
-        "RL-20"
+        "RL-19"
       ],
       "also": [
         {
@@ -1795,11 +1742,7 @@
       "file": "CONTRACT.md",
       "line": 350,
       "text": "Current delegated-level semantics (22 October 2026): the owner explicitly grants the employer-wide `access.admin` right to a member who also holds employer-wide `people.manage`. No built-in or migrated level carries it. An employer-wide access.admin grant retains administrative scope everyone. The owner may instead assign access.admin through a group-scoped level, still requiring employer-wide people.manage. Administrative groups are independent of carried business rights: each proposed level must fit structurally inside one administrative group, and every assignment target must currently belong to that group union. Separate groups cannot be combined to authorize a wider definition. Relative-manager administrative scopes are refused. A shared definition cannot be edited when any assignee is outside current administrative reach. Native level lists and pickers omit out-of-scope members and shared definitions; direct single, bulk, filtered and revert actions recheck the same ceilings. Dated transfers and revocation take effect in the same session. Existing employer-wide HR member reads are unchanged; an explicitly group-scoped delegate cannot give or end access outside their administrative population. API credential administration retains its existing employer-wide access.admin requirement. They use the same immutable level definition, assignment, bulk and filtered and revert reviews as the owner. They cannot change their own assigned level (including editing its definition), change the owner, re-delegate access administration, or grant EEO compliance. Each permission, personal write mode, other-person field mode and subject-follow setting must stay within the delegate's own current authority. A group-scoped source covers only a proposed group whose allowed values are a structural subset, so combining scopes never widens a right; relative-manager sources do not authorize granting that right to another member's relative scope. Ending or changing the delegate's authority invalidates an unpublished review. Refused escalation attempts are audited by actor and reason code, without submitted values.",
-      "to": "rulings",
-      "ids": [
-        "RL-19",
-        "RL-20"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -1808,7 +1751,8 @@
             "ROLE-021"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -1910,11 +1854,7 @@
       "file": "CONTRACT.md",
       "line": 373,
       "text": "Target: balances, ledger entries, requests, calendars and policies (LEAVE-001, LEAVE-002) under the four modes; Edit about others is balance adjustment and request entry on behalf; self Edit is request and cancel; Edit with approval routes through the existing leave approval, not a new queue. Shared calendars keep LEAVE-002's coverage-only projection for people outside a reader's scope. Acceptance: view-only balance level cannot adjust; edit-with-approval adjustment leaves the ledger unchanged until decided; out-of-scope people appear as coverage only.",
-      "to": "rulings",
-      "ids": [
-        "RL-23",
-        "RL-24"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -1922,7 +1862,8 @@
             "ROLE-006"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -1982,14 +1923,7 @@
       "file": "CONTRACT.md",
       "line": 387,
       "text": "Goal modes (23 October 2026): Edit adds native goal entry and check-ins within the level\u2019s current scope. Only the named active development owner or HR completes development work. Edit with approval stores an exact immutable SELF-001 goal proposal and changes no goal, check-in or completion until a different authorized reviewer decides. Approval rechecks current requester admission, goal mode, scope, owner eligibility and source state atomically; revoked, moved-out, ended or stale requests cannot publish. Goal approvals can be selected under ROLE-011 only with current goal reads; the selection grants no editing. Approved goals create no payroll or provider-reconciliation exception. Goal history and authorized requests share current-authority bundle projections, and owner work follows current field authority. Existing self/manager/HR sources remain in force.",
-      "to": "rulings",
-      "ids": [
-        "RL-25",
-        "RL-26",
-        "RL-27",
-        "RL-28",
-        "RL-29"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -1997,20 +1931,14 @@
             "ROLE-008"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
       "line": 389,
       "text": "Released-review corrections (23 October 2026): explicit self or scoped other-person Edit appends a correction to the latest already released summary in an open cycle. Edit with approval records the exact before and proposed summary and rating in SELF-001, visible only to its currently authorized requester and employer-wide HR until a different HR reviewer decides it; the subject cannot decide their own correction. No mode creates an initial release or reads raw inputs, private notes or an unreleased cycle. Applying a correction rechecks live requester access, field mode, current scope, named withholding, source version and the open cycle in the same transaction. Earlier releases retain their bytes and recipients. Approved corrections create no provider handoff. Native pages, JSON, history downloads and selected review bundles retain current-authority projections. API-001\u2013003, MOBILE-001, COMMS-001 and ROLE-015 inherit these correction boundaries.",
-      "to": "rulings",
-      "ids": [
-        "RL-25",
-        "RL-26",
-        "RL-27",
-        "RL-28",
-        "RL-29"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2018,7 +1946,8 @@
             "ROLE-008"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -2026,10 +1955,7 @@
       "text": "Published engagement themes (23 October 2026): an explicit View adds only HR-published themes and action plans, when every member of the fixed survey cohort is within the reader\u2019s current field reach. Former members and nonrespondents stay in that scope check. Self participation remains recipient-only, raw named answers and suppressed aggregates retain existing result grants, and anonymous comments remain HR-only. Theme View grants no survey publication, comment moderation, plan completion or reminder authority. Page, JSON and CSV use the same projection, and scope moves and revocation apply on the next request. CT approved published-theme View with riders on 23 October 2026 at 11:50Z: an additional level source requires at least five people in the fixed cohort and grants published themes only. Raw result grants and anonymous-comment grants remain independent. ROLE-008 stays partial for its remaining modes and fields. API-001\u2013003, MOBILE-001, COMMS-001 and ROLE-015 inherit the fixed-cohort and participation exclusions.",
       "to": "rulings",
       "ids": [
-        "RL-25",
-        "RL-26",
         "RL-27",
-        "RL-28",
         "RL-29"
       ],
       "also": [
@@ -2084,11 +2010,7 @@
       "file": "CONTRACT.md",
       "line": 409,
       "text": "Current semantics (22 October 2026): explicit level selections add scoped decision sources to the existing native HR, payroll and routed-manager sources; no selection is seeded or migrated. Every decision rechecks active identity, session, current level membership, scope and proposal/source revision. The requester and subject never decide. Personal, dependent, document-category and custom-field proposals also require current authority for their exact projected field or category; selection supplies no ordinary edit or private-field grant. Custom-field requests use immutable SELF-001 proposals and the native dated validator. FLOW-004 retains the reviewed level label per revision while resolving its membership live. The access review names each added/removed selection and every pending item whose eligible deciders or owner/substitute would change. On the next request, work retains an eligible owner, chooses an eligible replacement or remains visibly unassigned; reminder dispatch rechecks the same decision authority.",
-      "to": "rulings",
-      "ids": [
-        "RL-32",
-        "RL-33"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2096,7 +2018,8 @@
             "ROLE-011"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -2111,11 +2034,7 @@
       "file": "CONTRACT.md",
       "line": 415,
       "text": "Current semantics (22 October 2026): the selectable library runs the current native headcount, FTE, turnover, tenure, leave, payroll and work reports. I-9 custody and document-receipt reports use owner-classified, currently published native document versions and the reader's exact category rights; they do not infer statutory completion or verification. Protected diversity aggregates retain independent employer-wide reporting and EEO authority and native suppression; selection never supplies those rights. EEO-002 retains its explicit frozen-run door. US-001 inherits adding its statutory I-9 completion and verification measures to this library when those records exist. Selections expose only their current definitions, compiled scope and real field authority, through native page, JSON, CSV and XLSX doors, with no edit or scheduling authority. No selection is seeded or migrated.",
-      "to": "rulings",
-      "ids": [
-        "RL-34",
-        "RL-35"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2123,7 +2042,8 @@
             "ROLE-012"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -2194,8 +2114,7 @@
       "text": "ROLE-002 scope (21 October 2026, ct): a credential bound to a level carries that level's scope.",
       "to": "rulings",
       "ids": [
-        "RL-37",
-        "RL-38"
+        "RL-37"
       ],
       "also": [
         {
@@ -2219,11 +2138,7 @@
       "file": "CONTRACT.md",
       "line": 439,
       "text": "Current semantics: an employer-wide access administrator issues native keys within their current carried facets and structural scope. Delegated pay and private-contact reads require independent owner or eligible administrator approval before use; the same conservative approval applies to document reads. The one-time secret can be copied while pending but grants no access until approval. A delegate rotates or revokes only their own keys; rotation requires a new sensitive-rights approval. Any change to issuer permissions, assignments or an assigned level permanently ends their keys. OAuth client-credentials issuance uses these same ceilings and approval obligations. Client secrets are exchanged through HTTP Basic authentication at `/api/willow/oauth/token` for opaque hashed access tokens lasting at most one hour, bounded by client expiry. Resource calls accept only access tokens, never client secrets. Tokens share their client\u2019s rate budget and current non-person principal; rotation, revocation and issuer authority changes stop every child token immediately. The fixed granted scope is level.read plus explicit issuance write scopes; exchange accepts that exact set or no scope parameter. Partner authorization-code issuance uses the same independent approval. An administrator explicitly consents through `oauth.authorize` with an audited reason, the exact registered HTTPS redirect and S256 proof key. The one-use code lasts at most five minutes. Code and rotating refresh grants may produce tokens while approval is pending; every resource door refuses them until approval, and the same token works after approval. Refresh custody lasts at most 30 days and never past client expiry. Approval receipts name the exact carried rights, level revision and structural scope. An approver may withdraw approval immediately. Any approver access change permanently ends the approval and every child token; changing a level or widening rights or scope requires new issuance and fresh independent approval. These approved delegated document-read and OAuth rules also bind future API-002 and API-003 transports before they ship.",
-      "to": "rulings",
-      "ids": [
-        "RL-37",
-        "RL-38"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2231,7 +2146,8 @@
             "API-001"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -2326,11 +2242,7 @@
       "file": "CONTRACT.md",
       "line": 459,
       "text": "Administrators create global webhooks (any field they may read) and permissioned webhooks limited to the creating credential's level, choosing events (employee created; updated, with monitored fields; terminated; rehired; terms change effective; time off approved/canceled; signature completed) and posted fields. Each delivery carries a unique event ID, a timestamp and an HMAC-SHA256 signature over both and the body with a per-webhook secret, so receivers following the documented verification reject stale or repeated events. Deliveries retry with backoff, appear in a delivery log with response codes, pause after repeated failure with a visible alert and can be replayed by an administrator. Future-dated changes fire when recorded and again when effective. Payloads never contain fields outside the webhook's level.",
-      "to": "rulings",
-      "ids": [
-        "RL-40",
-        "RL-41"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2338,7 +2250,8 @@
             "API-003"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -2371,11 +2284,7 @@
       "file": "CONTRACT.md",
       "line": 467,
       "text": "Current permissioned webhook slice (23 October 2026): an explicitly scoped key registers an inactive subscription; only audited owner consent enables its exact destination and field selection. Settings exposes owner review, delivery status, failure alerts, explicit replay and a stop action that cancels pending deliveries. Live level rights govern each attempt; uncertain outcomes pause for owner replay. Custody is non-portable and employee delivery records and outside copies join DATA-002. The owner-only default awaits ct review, so this clause remains partial. Owner-created global subscriptions now use the same explicit consent and current-owner authority, with registration through the documented JSON action and administration in Settings. Native directory audits identify changed fields; future hire and termination sources have distinct recorded and effective delivery identities. Exhaustive field and source coverage, future rehire proof and inherited delegated outbound proof remain Gaps. SIGN-001 and SIGN-002 inherit a signature-completion event source before connected signing ships. See `API.md`.",
-      "to": "rulings",
-      "ids": [
-        "RL-40",
-        "RL-41"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2383,7 +2292,8 @@
             "API-003"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -2449,11 +2359,7 @@
       "file": "CONTRACT.md",
       "line": 489,
       "text": "Current manual API foundation: HR (`people.manage`, including the owner) creates an internal review opening with its initial stages and explicit active-member team, and changes that team with a revision fence. This is not an approved or published HIRING-002 job posting. HR and the currently assigned team alone read its candidate records; current team/HR removal applies on the next request. Ending access clears explicit hiring-team assignments, so later sign-in reactivation restores none. Team members capture a named application with its contact email and source, move it by a human action with a source-revision fence, and append their own versioned interviewer evidence. Stage changes retain actor/time/from/to history; scorecard correction preserves earlier versions, and scorecards never rank, advance or reject an applicant. No identity matching or merging occurs in this foundation, including on an equal unverified contact email; applications remain separate and another opening's team receives no earlier record. Native pages at `/app/hiring`, `/app/hiring/openings/:id` and `/app/hiring/applications/:id` use those same actions and projections for internal opening/team setup, candidate capture, human stage changes, interviewer evidence and immutable timeline/history. These pages retain current HR/team checks on every request. Configurable private notes/pay visibility, connected-calendar scheduling, candidate email/templates/bulk rejection, the approved merge/release flow, retention, required-work sources and saved reporting remain unimplemented.",
-      "to": "rulings",
-      "ids": [
-        "RL-42",
-        "RL-43"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2461,7 +2367,8 @@
             "HIRING-003"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -2484,7 +2391,6 @@
       "text": "Identity policy (ct ruling, 20 October 2026 18:52Z): HR reviews every proposed repeat-applicant match. A merge requires an applicant link-confirmed email or the applicant's own sign-in plus another matching field with evidence; unverified email never authorizes automatic merging. Merges must be reversible and audited. A hiring manager sees a prior application only after HR releases it, never an earlier rejection reason. DATA-002 erasure must cover all linked applications.",
       "to": "rulings",
       "ids": [
-        "RL-42",
         "RL-43"
       ],
       "also": [
@@ -2665,10 +2571,7 @@
       "file": "CONTRACT.md",
       "line": 535,
       "text": "Every required task, approval, missing form, signature and provider exception has an accountable owner, deadline, progress and next action. Scheduled reminders follow an HR-approved cadence and quiet hours; overdue work escalates to a substitute owner when the assignee is absent or leaves. Completion cancels future reminders, rescheduling preserves history, and restart catches missed deadlines without duplicate sends. Failed/uncertain delivery is visible separately from work completion.",
-      "to": "rulings",
-      "ids": [
-        "RL-44"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2676,7 +2579,8 @@
             "FLOW-002"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -2733,10 +2637,7 @@
       "file": "CONTRACT.md",
       "line": 549,
       "text": "**Acceptance evidence:** Send two role-specific packets to personal mailboxes, complete one on a phone, let the other expire/withdraw, then start employment. Inspect packet progress and prove only approved data becomes the employment record and expired links cannot read it.",
-      "to": "rulings",
-      "ids": [
-        "RL-45"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2744,18 +2645,14 @@
             "FLOW-003"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
       "line": 553,
       "text": "A manager, or any member whose access level allows it, requests a promotion, compensation change, title, department, location, manager, employment status or FTE change for a person in their scope outside a COMP-001 cycle, with an effective date, reason and attachments. HR configures approval chains per request type (for example manager's manager, then HR, then payroll for pay changes), with conditions on amount, band position, legal entity or location, and FLOW-002 substitutes for absent approvers. Each approver sees only the fields their level permits (ROLE-001, WIL-02), so pay is withheld from an approver without pay rights; nobody approves a request they made or that changes their own terms. Approvers approve, decline or send back with comments, and editing a request after any approval restarts its chain. Final approval writes exactly one effective-dated terms version (WIL-07) bound to the approved values, starts the matching mover workflow (FLOW-001) and enters payroll reconciliation (PAYROLL-001). The requester, and the employee once their level allows, follow its status; every step is audited.",
-      "to": "rulings",
-      "ids": [
-        "RL-46",
-        "RL-47",
-        "RL-48"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2763,7 +2660,8 @@
             "FLOW-004"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -2771,9 +2669,7 @@
       "text": "Current semantics (19 October 2026, ct rulings 15:31Z): a request is typed **compensation** when it changes pay and **job** otherwise, and HR (`people.manage`) records one chain per type, appended as a new version, naming the mover workflow the approved change starts. Chain steps are roles: the subject's manager's manager in force today (a named member), any HR member, or any payroll member (`payroll.handoff` + `pay.read`). A step may apply only when the pay change is at or above a percentage (inclusive; a basis change always meets it) or only when the person's location after the change is one of a list; a request always has at least one step, and a skip-level step with no manager's manager holding active access goes to HR and says so. The requester is the person's current direct manager or an HR member, never the person themselves. A requester without `pay.read` asks for a percentage, applied to the pay in force on the effective date and rounded half up to the cent; with `pay.read` an exact amount may be given. A request sets the fields it names and never clears one. FTE is the working schedule in the dated terms; an employment-type change applies through WIL-04's mechanics in the same commit: the current period ends the day before the effective date and a new period with the new type starts on it, carrying the approved terms and payroll identifier (leave accounts stay with the ended period), and the request page says so before approval. Without `pay.read`, approvers see that pay changes with both values withheld; the requester sees only the percentage they entered. Sending back needs a comment; any edit by the requester appends a revision and restarts the chain at its first step with the chain re-resolved for the edited values. Final approval executes only while the employment period is unchanged since the revision was made. While a named manager's manager has no active access, is not employed or is on approved leave today (FLOW-002 availability), HR approves that step in their place; each open step is FLOW-002 work for its eligible approvers, and a returned request is the requester's. Attachments (up to 10 MB each, checksummed) are readable by everyone who may read the request. A subject with people.manage or the owner retains the full read but never decides or edits. A subject who holds only a chain step gets no full read. ROLE-001 adds its default-off, level-granted status-only read when no existing full read applies. COMP-001 adds dated band-position conditions with per-revision resolution, unchanged pay withholding and stale-band refusal. US-002 must add legal-entity chain conditions before it ships.",
       "to": "rulings",
       "ids": [
-        "RL-46",
-        "RL-47",
-        "RL-48"
+        "RL-47"
       ],
       "also": [
         {
@@ -2788,12 +2684,7 @@
       "file": "CONTRACT.md",
       "line": 557,
       "text": "**Acceptance evidence:** As a manager, request a promotion with a 10% raise for a direct report effective next month; it routes to the manager's manager, then HR, then payroll. The manager's manager approves, HR sends it back, the manager edits the amount and the chain restarts; after all three approve, exactly one effective-dated terms version with the approved title and pay exists, the mover case has started and the payroll queue shows the change. A skip-level approver without pay rights sees the request with pay withheld, the requester cannot approve their own request, and a declined request writes nothing.",
-      "to": "rulings",
-      "ids": [
-        "RL-46",
-        "RL-47",
-        "RL-48"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2801,18 +2692,14 @@
             "FLOW-004"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
       "line": 561,
       "text": "HR maintains versioned offer-letter, employment-agreement and policy signature templates with controlled employee/compensation merge fields, placed signature/initial/date/text fields, signer order (such as employee then HR countersignature), approval routing, a recipient preview and the document category (folder) the signed copy files into. Willow signs natively and needs no third-party account: each signer gives withdrawable ESIGN Act/UETA electronic-record consent, authenticates by an active session or an emailed one-time link plus code, and signs the exact approved version on desktop or phone. The completed document is sealed as a new immutable version with a SHA-256 digest and an audit certificate (signers, authentication method, consent, timestamps, IP/device, document digest), filed to the chosen category on the employee record and shown in the employee portal as that category allows. Sent/viewed/signed/declined/expired/voided states are tracked and a changed document voids and reissues. DocuSign is an optional signing provider for employers that require it, returning the signed copy, certificate and envelope ID under the same states; duplicate/out-of-order callbacks or old links cannot sign a different version. Plain receipt acknowledgments in WIL-06 remain distinct.",
-      "to": "rulings",
-      "ids": [
-        "RL-49",
-        "RL-50",
-        "RL-51"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2822,7 +2709,8 @@
             "SIGN-004"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -2850,8 +2738,6 @@
       "text": "**Historical adopted default, superseded by the ct ruling below.** Only the owner or a member with current employer-wide people.manage authority may prepare, approve or cancel native signature requests. Category access is independently required. Only the authenticated employee and the explicitly named current HR countersigner may sign, in that order. Each signing action requires explicit audited electronic-record consent bound to the exact document digest and live session. No outbound message is sent automatically. This default does not assert legal compliance or approve production use; ct approval remains required before DONE. Native sessions are the supported authentication alternative; no emailed signing credential is issued.",
       "to": "rulings",
       "ids": [
-        "RL-49",
-        "RL-50",
         "RL-51"
       ],
       "also": [
@@ -2888,8 +2774,6 @@
       "text": "CT policy ruling, 26 October 2026, 17:30 UTC: APPROVE WITH RIDERS. This resolves the pending policy decision only. SIGN-001 remains PARTIAL. Every original target and acceptance sentence remains required. This is approval of supported product defaults, not acceptance of implementation, production operation, provider behavior or legal effect.",
       "to": "rulings",
       "ids": [
-        "RL-49",
-        "RL-50",
         "RL-51"
       ],
       "also": [
@@ -2924,12 +2808,7 @@
       "file": "CONTRACT.md",
       "line": 575,
       "text": "Each signer personally authenticates using their own active session and explicitly consents to electronic records and the signing action. Before consent, show the exact recipient-specific approved document, the signer's entered fields, the applicable consent wording and language, the filing category, access and retention position, and withdrawal behavior. Bind consent to the request and revision, approved rendered-byte digest, current signable-byte digest, exact signing-field values and that signer's live session. Preserve the connection between each signing event and the final sealed-byte digest. A template digest or a checked consent boolean alone is insufficient. Later countersignature adds only the reviewed countersigner fields; changing approved content requires void and reissue with fresh review and consent. Authentication and authority are rechecked atomically at each transition; no session token or reusable signing capability enters the certificate, audit or archive. Active-session authentication is the supported contractual alternative; this ruling does not require both authentication alternatives.",
-      "to": "rulings",
-      "ids": [
-        "RL-49",
-        "RL-50",
-        "RL-51"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -2939,7 +2818,8 @@
             "SIGN-004"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -3069,7 +2949,6 @@
       "text": "**Historical adopted default, superseded by the ct ruling below.** Request preparation and cancellation require current owner or employer-wide HR authority, explicit exact-version review and current category access. No automatic outbound message or reminder is enabled. The supported slice creates a reviewed cohort resolved from named people, everyone, a location, department, employment type or access level with one independent portal request per person using SIGN-001's native state machine. The status list and CSV apply current category rights; managers receive only their reports' permitted status, without rendered bytes, signing values or certificates. Canceling a cohort closes only unsigned requests and preserves sealed copies. Future joiners, notifications and FLOW-002 reminders remain target obligations and named Gaps.",
       "to": "rulings",
       "ids": [
-        "RL-52",
         "RL-53"
       ],
       "also": [
@@ -3088,7 +2967,6 @@
       "text": "CT policy ruling, 26 October 2026, 17:30 UTC: APPROVE WITH RIDERS. This resolves the pending policy decision only. SIGN-002 remains PARTIAL. SIGN-001's supported authority, exact-byte consent, signing order, withdrawal and certificate-custody defaults apply independently to each cohort recipient. Every original target and acceptance sentence remains required.",
       "to": "rulings",
       "ids": [
-        "RL-52",
         "RL-53"
       ],
       "also": [
@@ -3307,11 +3185,7 @@
       "file": "CONTRACT.md",
       "line": 643,
       "text": "The owner records whether the employer is a federal contractor or subcontractor (dated, audited, default no; per legal entity once US-002 ships). When yes, self-service also offers CC-305 reproduced exactly from the pinned OMB-approved version, whose own decline choice counts as \"I do not wish to self-identify\", and a protected-veteran invitation using the pinned 41 CFR 60-300 Appendix B classifications and confidentiality statement with \"I do not wish to self-identify\"; both answers live in the restricted EEO section under the same read rules. REPORT-001's diversity aggregate derives its race/ethnicity cell from either form version.",
-      "to": "rulings",
-      "ids": [
-        "RL-54",
-        "RL-55"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -3319,7 +3193,8 @@
             "EEO-001"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -3601,10 +3476,7 @@
       "file": "CONTRACT.md",
       "line": 703,
       "text": "Hourly workers clock in and out and record breaks from the web, the companion apps (MOBILE-001) or a shared kiosk, with any employer location rule shown before use; punches made offline queue on the device and revalidate on reconnect. Workers submit corrections and approved timesheets; managers publish shifts, manage availability/swaps and compare planned versus worked hours. US work-state overtime/break rules are employer-reviewed and versioned; edits preserve originals and require approval before payroll handoff. Deputy connections reconcile roster, shifts, approved hours and absences using explicit source authority; schedule changes feed PTO quotes without overwriting an approved payroll period.",
-      "to": "rulings",
-      "ids": [
-        "RL-59"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -3612,7 +3484,8 @@
             "TIME-001"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -3669,10 +3542,7 @@
       "file": "CONTRACT.md",
       "line": 721,
       "text": "An authorized employer connects Gusto through its approved app authorization and maps existing employees without duplicates. Two-way roster, employment/pay, applicable PTO, withholding-form status and benefit deduction synchronization follow PAYROLL-001 field authority. Supported operations and provider restrictions are explicit; unsupported required operations create accountable work with returned provider evidence, not false success. Production app approval, scopes, tenant activation and provider conformance are delivery requirements.",
-      "to": "rulings",
-      "ids": [
-        "RL-60"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -3680,7 +3550,8 @@
             "PAYROLL-002"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -3785,10 +3656,7 @@
       "file": "CONTRACT.md",
       "line": 751,
       "text": "An employer whose payroll runs on Paychex Flex connects it through Paychex's approved Flex API and integration-partner access, which Paychex's integrations team activates for that employer's company on the employer's authorization; the partner listing, production access and conformance are delivery work, as for Gusto and Intuit. The connection maps the Paychex company, worker identifiers, pay frequencies, earning, deduction and PTO codes under PAYROLL-001 field authority and matches the existing Paychex roster to Willow people without duplicates: exact provider identifier first, then reviewed matches on name and date of birth shown only to payroll levels; ambiguous matches stop for payroll review (MIGRATE-001). From then on a hire in Willow creates the Paychex worker in real time; name, contact, address, job, department, pay rate or salary and status changes, terminations and rehires reach Paychex on their effective date; approved PTO hours and benefit deductions (BENEFITS-002) go to their mapped codes where Paychex accepts them. Each change records its intended values, idempotency key, Paychex acknowledgment and a fresh read-back. Edits made in Paychex Flex to Paychex-owned fields come back to Willow and never silently overwrite Willow-owned terms; operations Paychex does not accept become accountable payroll work with Paychex's response, never false success. Revoked or expired authorization pauses the connection with a visible CONNECT-001 health state; restoring it resumes without resending acknowledged changes. The WIL-21 mapped file remains available and cannot stand in for this connection.",
-      "to": "rulings",
-      "ids": [
-        "RL-61"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -3796,7 +3664,8 @@
             "PAYROLL-005"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -4012,10 +3881,7 @@
       "file": "CONTRACT.md",
       "line": 807,
       "text": "**Acceptance evidence:** For each of Human Interest and Guideline, send a hire/eligibility change, update a deferral, reconcile contribution results and process an exit. Fail one census row and correct it without resending accepted rows; inspect the employee-scoped record and payroll reconciliation report. Record a 5% deferral while payroll deducts 4%: the mismatch is flagged before the payroll cutoff with employee, period and amount, routed to its owner, and closes only after the corrected deduction reads back from payroll and the plan provider.",
-      "to": "rulings",
-      "ids": [
-        "RL-62"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -4023,7 +3889,8 @@
             "RETIRE-001"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -4074,10 +3941,7 @@
       "file": "CONTRACT.md",
       "line": 827,
       "text": "Employees connect Slack or Microsoft Teams for scoped request/task/signature notifications, reminders and secure approval entry points. Membership and approver rights are checked again at action time. Messages use minimal fixed content and authenticated links; channels, bot storage and previews receive no pay, tax, medical or document content. Delivery/interaction outcomes and revocation are recorded independently of business completion.",
-      "to": "rulings",
-      "ids": [
-        "RL-63"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -4085,7 +3949,8 @@
             "COMMS-001"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -4150,10 +4015,7 @@
       "file": "CONTRACT.md",
       "line": 845,
       "text": "On a manager change the new manager receives that person's previously released summaries, except any named summary HR withholds for that recipient with a recorded reason. The former manager retains their authored inputs and summaries released to them before the change, and receives nothing new. Transfers and withholdings are audited; an already delivered summary remains part of that recipient's history. Native employment changes, performance doors and dated scheduler reconciliation enforce succession; current sign-in admission and HR grants still apply on every read and export. Goals, milestones and append-only percentage check-ins carry across cycles; the subject, current direct manager and HR maintain them. ROLE-008 adds explicit scoped goal fields and routes approval-mode goal changes through SELF-001 without widening review-input, private-note or survey authority. A development action names an active owner within that scope and requires completion evidence from that owner or HR. Review collection, HR cycle completion and development actions use FLOW-002's persistent ownership, inclusive employer-local due dates, approved reminder cadence and permission-checked escalation; substitutes can follow up but cannot submit another contributor's input. All current performance pages, JSON and history downloads share these boundaries. ROLE-001, MOBILE-001 and COMMS-001 inherit them before adding levels, apps or channels.",
-      "to": "rulings",
-      "ids": [
-        "RL-64"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -4162,7 +4024,8 @@
             "PERFORM-002"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -4243,12 +4106,7 @@
       "file": "CONTRACT.md",
       "line": 863,
       "text": "HR/payroll maintain USD salary/hourly bands by job/level/location and effective date, review range position and prepare promotion/merit/bonus cycles against approved budgets. Managers propose within their scope; compensation owners approve exact amounts and effective dates, detect budget/field conflicts and publish effective-dated terms only after approval. Approved changes enter payroll reconciliation; pay equity reports use permitted cohorts and explicit calculations, never autonomous pay decisions.",
-      "to": "rulings",
-      "ids": [
-        "RL-66",
-        "RL-67",
-        "RL-68"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -4257,7 +4115,8 @@
             "COMP-002"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -4265,9 +4124,7 @@
       "text": "Current semantics (20 October 2026, ct COMP-001 ruling): `people.manage` plus `pay.read` maintains bands and prepares cycles; the owner or a holder of ROLE-001\u2019s employer-wide `compensation.approve` together with `people.manage` and `pay.read` approves their budgets and publication. Managers propose only for current direct reports; a percentage proposal reveals no hidden amount, and exact amounts, budgets and bands require `pay.read`. Nobody approves their own proposal or their own compensation. Each immutable band version matches exact job title, the general PEOPLE-001 text field `job_level`, location (empty means no location) and salary/hourly basis. The latest effective date, then latest append sequence, wins; minimum and maximum are inclusive. Corrections append, never rewrite history.",
       "to": "rulings",
       "ids": [
-        "RL-66",
-        "RL-67",
-        "RL-68"
+        "RL-67"
       ],
       "also": [
         {
@@ -4283,12 +4140,7 @@
       "file": "CONTRACT.md",
       "line": 867,
       "text": "A cycle has one exact effective date and a USD budget. Cost is the positive annual salary increase, or each hourly amount \u00d7 scheduled weekly minutes / 60 \u00d7 52 rounded half up to cents before taking the positive difference; bonus cost is its one-time USD amount. No proration or automatic pay recommendation occurs. Latest immutable proposal per person wins. The review binds its reader, the exact proposals, period/source/band versions and budget; any intervening business write requires review again. Publication checks every source before any write and commits every approved term together. Source conflicts and over-budget cycles refuse publication; below/above/unbanded proposals require an explicit owner exception reason. Bonuses remain separate from recurring terms and enter a separately labelled one-time payroll handoff. Current payroll reconciliation uses WIL-11\u2019s frozen mapped file and human-recorded provider receipt, explicitly not live verification. PAYROLL-001\u2013006 inherit connected read-back for approved compensation and bonus changes before their providers ship, including Envelope (ENV-, the sibling payroll seed) alongside Gusto, ADP, QuickBooks Payroll and Paychex.",
-      "to": "rulings",
-      "ids": [
-        "RL-66",
-        "RL-67",
-        "RL-68"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -4297,7 +4149,8 @@
             "COMP-002"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -4357,10 +4210,7 @@
       "file": "CONTRACT.md",
       "line": 885,
       "text": "Owners authorize each named connector with least scopes, per-field mapping/authority and explicit outbound-data previews. Health shows last successful sync/read-back, freshness, scope loss, rate limits, stale/error/uncertain state and a per-person mismatch queue with owner/next action. Signed/replay-protected webhooks, durable execution IDs, reviewed safe retries and reconciliation after disconnect prevent duplicate effects.",
-      "to": "rulings",
-      "ids": [
-        "RL-69"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -4368,7 +4218,8 @@
             "CONNECT-001"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -4383,10 +4234,7 @@
       "file": "CONTRACT.md",
       "line": 885,
       "text": "rotation/revocation and provider-data deletion are explicit. Required production app review, contracts, scopes and health-data agreements are tracked to completion for every supported integration. The employer's own and partner tools read and subscribe through API-001\u2013003 under the same health and audit.",
-      "to": "rulings",
-      "ids": [
-        "RL-69"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -4394,7 +4242,8 @@
             "CONNECT-001"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -4562,10 +4411,7 @@
       "file": "CONTRACT.md",
       "line": 915,
       "text": "Named move-in paths cover BambooHR (WIL-16), Rippling, HiBob, Gusto HR, Factorial and Deel HR using approved source APIs/exports. HR maps identities/custom fields and custom/multi-row tables including assets (PEOPLE-003), org/manager history, employment/pay versions, documents, signature templates and certificates, access levels (proposed, assigning nothing until approved), leave policies/balances/requests, benefits elections, goals/reviews/training, open lifecycle work, and open job openings with candidates and application history (from the incumbent, or from Greenhouse, Lever, Workable or JazzHR for employers leaving a separate ATS). Per-source preview lists unsupported fields and originals, reconciles counts and balances, and never substitutes empty data. Source IDs/provenance survive; repeated imports are idempotent, overlap cutover freezes agreed authority and guarded undo cannot destroy subsequent work. Imported history never grants sessions or triggers external actions. At cutover each connected payroll provider's existing roster (Gusto, ADP RUN, ADP Workforce Now, QuickBooks Payroll, Paychex Flex) is matched to the migrated people by provider identifier, then by reviewed name and date-of-birth matches, before any live sync starts; unmatched or ambiguous workers wait in a payroll-owned queue and nothing is created in the provider until they are resolved.",
-      "to": "rulings",
-      "ids": [
-        "RL-72"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -4573,7 +4419,8 @@
             "MIGRATE-001"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -4859,10 +4706,7 @@
       "file": "CONTRACT.md",
       "line": 968,
       "text": "Authorized HR/security owners inspect and export who read or changed sensitive records, before/after revisions, approval authority, imports/undo, document/signature access, connector attempts/results and agent execution. Business changes and their audit commit atomically; denied actions and uncertain external effects remain distinguishable. Audit content avoids credentials and unnecessary private payloads, has protected retention and is anonymized consistently with approved erasure.",
-      "to": "rulings",
-      "ids": [
-        "RL-74"
-      ],
+      "to": "docs",
       "also": [
         {
           "to": "clause",
@@ -4870,7 +4714,8 @@
             "AUDIT-001"
           ]
         }
-      ]
+      ],
+      "path": "docs/contract/record-rules.md"
     },
     {
       "file": "CONTRACT.md",
@@ -5091,9 +4936,7 @@
       "text": "An opted-in policy assistant answers from employer-approved handbook and policy versions and the requesting member\u2019s permitted record context. It cites exact clauses, dates and calculation inputs, identifies withheld, missing and conflicting information and routes uncertainty to HR. Answers never invent entitlement or legal advice, disclose another worker\u2019s records or make employment decisions. HR controls document inclusion, provider selection and data retention and publication; WIL-20 checklist calls remain structural-only until a separate scoped capability is enabled.",
       "to": "rulings",
       "ids": [
-        "RL-75",
         "RL-76",
-        "RL-77",
         "RL-78",
         "RL-79"
       ],
@@ -5113,9 +4956,7 @@
       "text": "Current conservative semantics (26 October 2026; supported defaults approved with riders by ct on 25 October 2026 at 23:46 UTC): the owner separately enables policy answers and workflow drafting in Connections. The supported provider is OpenAI, with an owner-selected supported model, a bounded single call and a per-run USD cap. HR with employer-wide leave.manage explicitly includes each owner-approved leave-policy version. Current employer-wide HR source administrators draft and publish immutable numbered general handbook clauses, attest their general-policy egress scope and separately include each exact published version. Withdrawal stops ordinary reading and assistant inclusion. Questions are reduced locally to a supported leave, conflict, attendance, remote-work, conduct or general handbook topic, including local matches against approved clauses; raw questions, names, pay, private fields, confidential reasons and action instructions never reach the provider. Answers use only included versions available on the current reader's policy screens and, when separately enabled, permitted numeric leave inputs. Every returned claim is a verbatim source quotation and must cite an exact version; dates, calculation inputs, withheld facets and an HR escalation are shown. Authorized native ledger arithmetic and recorded structured eligibility calculations are explained locally and never enter the model request; missing calculation evidence remains an explicit HR limitation. Unsupported questions or absent in-scope sources refuse without a model call. The assistant makes no entitlement or employment decision. A member can explicitly request content-free HR contact, independently of provider activation. Current HR completes that request through native work; the request never copies the question or answer. Willow stores no prompt or answer content, requests store=false, and requires explicit owner consent to standard provider abuse-monitoring retention; call metadata and any minimized subject custody join DATA-002 erasure and tracked provider deletion requests. Restores disable this consent. WIL-20 remains structural-only and independently controlled.",
       "to": "rulings",
       "ids": [
-        "RL-75",
         "RL-76",
-        "RL-77",
         "RL-78",
         "RL-79"
       ],
@@ -5135,9 +4976,7 @@
       "text": "**Acceptance evidence:** As employee and manager, ask about PTO eligibility and a policy conflict using restricted records, then change the approved policy version. Verify cited sources and calculation, withheld facets and HR escalation; planted prompt instructions cannot reveal confidential reasons or execute an action.",
       "to": "rulings",
       "ids": [
-        "RL-75",
         "RL-76",
-        "RL-77",
         "RL-78",
         "RL-79"
       ],
@@ -5157,9 +4996,7 @@
       "text": "**CT supported defaults \u2014 policy ruling only; status remains partial.** Only the installation owner may separately enable policy-assistant provider calls, select the provider and model and consent to the supported egress and provider-stated retention position. HR controls source inclusion and publication within current explicit authority; for approved leave policies, leave.manage explicitly includes managing inclusion of owner-approved policy versions. Inclusion does not approve a policy version, enable calls or grant reading authority.",
       "to": "rulings",
       "ids": [
-        "RL-75",
         "RL-76",
-        "RL-77",
         "RL-78",
         "RL-79"
       ],
@@ -5195,9 +5032,7 @@
       "text": "Local reduction must prove a closed typed payload, rejection of unsupported topics and free-text fields, current reader and session authority, approved source-version identity, and absence of prohibited data from the complete outbound request. Sanitizing or redacting an otherwise unrestricted prompt is insufficient. Native leave calculations remain authoritative. Answers cite the exact approved policy version, clause and applicable date and identify calculation inputs without disclosing withheld values. Missing, conflicting or withdrawn sources, unsupported topics, failed calls and invalid or unsupported output produce an explicit limitation and HR escalation rather than an invented entitlement, legal advice or an action. Policy text and model output are untrusted and cannot grant authority or execute work.",
       "to": "rulings",
       "ids": [
-        "RL-75",
         "RL-76",
-        "RL-77",
         "RL-78",
         "RL-79"
       ],
@@ -5227,9 +5062,7 @@
       "text": "Before activation, the owner must explicitly attest: \u201cI authorize this installation to send the described included policy clauses and any separately selected permitted numeric leave inputs to the selected provider. For the standard OpenAI configuration, Willow requests store=false. OpenAI states that standard abuse-monitoring retention may retain API content for up to 30 days. store=false does not establish zero retention. I have reviewed the provider terms applicable to this account and accept that stated retention position.\u201d This records owner consent and the provider-stated position; Willow does not certify provider terms, deletion, legal, privacy or employment-law compliance. A provider or account configuration outside this consented position is unsupported until its actual scope and retention are explicitly reviewed and consented.",
       "to": "rulings",
       "ids": [
-        "RL-75",
         "RL-76",
-        "RL-77",
         "RL-78",
         "RL-79"
       ],
@@ -5301,7 +5134,6 @@
       "to": "rulings",
       "ids": [
         "RL-80",
-        "RL-81",
         "RL-82",
         "RL-83"
       ],
@@ -5323,7 +5155,6 @@
       "to": "rulings",
       "ids": [
         "RL-80",
-        "RL-81",
         "RL-82",
         "RL-83"
       ],
@@ -5345,7 +5176,6 @@
       "to": "rulings",
       "ids": [
         "RL-80",
-        "RL-81",
         "RL-82",
         "RL-83"
       ],
@@ -5395,7 +5225,6 @@
       "to": "rulings",
       "ids": [
         "RL-80",
-        "RL-81",
         "RL-82",
         "RL-83"
       ],
@@ -5434,7 +5263,6 @@
       "to": "rulings",
       "ids": [
         "RL-80",
-        "RL-81",
         "RL-82",
         "RL-83"
       ],
@@ -5467,7 +5295,6 @@
       "to": "rulings",
       "ids": [
         "RL-80",
-        "RL-81",
         "RL-82",
         "RL-83"
       ],
@@ -5505,7 +5332,6 @@
       "to": "rulings",
       "ids": [
         "RL-80",
-        "RL-81",
         "RL-82",
         "RL-83"
       ],
