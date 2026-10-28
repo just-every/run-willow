@@ -8,10 +8,10 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 | Tier | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Core | 46 | 56 | 22 | 124 |
+| Core | 46 | 55 | 23 | 124 |
 | Agent surface | 0 | 0 | 5 | 5 |
 | Later | 0 | 0 | 0 | 0 |
-| Full target | 46 | 56 | 27 | 129 |
+| Full target | 46 | 55 | 28 | 129 |
 
 Judged from the code and tests at commit `0497caac7cd702abb9b61e66729853e39f304a6a` (26 October 2026). Field proof register: 24 rows; 0 passed, 0 failed, 24 not run.
 
@@ -1070,7 +1070,7 @@ Core · target · **partial** · From SIGN-001 · Cites BASE-INPUT-001, BASE-ROL
 
 #### SIGN-004 — Optional DocuSign handoff
 
-Core · target · **partial** · From SIGN-001 · Cites BASE-INPUT-001, BASE-ROLE-001 · Rules D-3, D-5 · Register R-4
+Core · target · **missing** · From SIGN-001 · Cites BASE-INPUT-001, BASE-ROLE-001 · Rules D-3, D-5 · Register R-4
 
 **Requirement.** Employers may use DocuSign for the same exact-version signing request and states. Willow retains the returned sealed copy, certificate and envelope identity and reconciles observed signing state. Duplicate or out-of-order callbacks and old signing credentials cannot complete another version.
 
@@ -1080,7 +1080,7 @@ Core · target · **partial** · From SIGN-001 · Cites BASE-INPUT-001, BASE-ROL
 3. Fail provider execution in a pinned workflow; dependent work and closure stay open until verified recovery.
 
 **Evidence.** `tests/willow/sign-templates.mjs` — “sign-templates public-door journey”; `tests/willow/sign-native.mjs` — “sign-native public-door journey”; `tests/willow/sign-custody.mjs` — “sign-custody public-door journey”; `tests/willow/retention-signatures.mjs` — “retention-signatures public-door journey”; `tests/willow/sign-restore.mjs` — “sign-restore public-door journey”; `tests/willow/workflow-signing.mjs` — “workflow-signing public-door journey”; `tests/willow/sign-webhooks.mjs` — “sign-webhooks public-door journey”
-**Gap.** Missing the complete optional docusign handoff journey. SIGN-001 remains PARTIAL. Unproved SIGN-001 obligations are: materially changed rendered-offer void and reissue with fresh review and consent, and refusal of changed sources or merge values between review and issue; signing-transition refusal after source-field, employer-wide authority or session revocation, and category revocation beyond the sequential prepared-HR-payload case now proved, including concurrent changes and forbidden access-administrator, agent and API-credential attempts, and direct same-person countersigner refusal; current category refusal for existing execution evidence; complete configured field-placement reconciliation; equality of presented and retained consent wording and actual language, supplied network metadata, exclusion of raw signing credentials from certificates and archives, and the complete protected audit schema including uncertain outcomes; distinct decline and deliberate void states; signing-specific notification custody, erased or held execution-evidence restore and erasure fences; and actual external-operation failure through the inherited reviewed workflow. Connected DocuSign sending, envelope ID, returned signed copy and certificate, duplicate and out-of-order callback refusal, old-callback refusal and an authorized employer-account trial remain unbuilt or unproved. Wider rendering support and ESIGN and UETA legal suitability remain unestablished; neither boundary supplies acceptance evidence. Active-session authentication is the supported alternative and does not additionally require an emailed signing credential.
+**Gap.** No delivered DocuSign signing journey. The cited native-template, native-signing and custody journeys do not exercise DocuSign submission, returned certificate or callback replay.
 
 #### SIGN-005 — Signed-documents reporting
 

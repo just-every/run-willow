@@ -25,10 +25,10 @@ A claim is done when every clause behind it is done, missing when every one is m
 | 17 | September | "Records, pay history, documents, balances and open checklists come across from BambooHR" (import card: 47 people, 312 history entries, 1,146 documents, 47 balances, 2 checklists) | `WIL-16` done; `MIGRATE-002` partial | partial |
 | 18 | September | Import card: manager 'T. Kim' not found, matched to Taylor Kim | `WIL-16` done | done |
 | 19 | September | "Gusto reconnects to the same people" (Gusto 47 of 47 people linked) | `MIGRATE-001` partial; `PAYROLL-002` missing | partial |
-| 20 | October | "Offers come from your templates" | `SIGN-001` partial; `SIGN-003` partial; `SIGN-004` partial | partial |
-| 21 | October | "go out for e-signature" (both signers sign the same day) | `SIGN-001` partial; `SIGN-003` partial; `SIGN-004` partial | partial |
-| 22 | October | "and file themselves to the new hire's record" ("Filed to Devon Brooks › Offer letters") | `WIL-06` done; `SIGN-001` partial; `SIGN-003` partial; `SIGN-004` partial | partial |
-| 23 | October | Signing certificate: signers, sign-in method, times, ESIGN consent, SHA-256 digest, sealed | `SIGN-001` partial; `SIGN-003` partial; `SIGN-004` partial | partial |
+| 20 | October | "Offers come from your templates" | `SIGN-001` partial; `SIGN-003` partial; `SIGN-004` missing | partial |
+| 21 | October | "go out for e-signature" (both signers sign the same day) | `SIGN-001` partial; `SIGN-003` partial; `SIGN-004` missing | partial |
+| 22 | October | "and file themselves to the new hire's record" ("Filed to Devon Brooks › Offer letters") | `WIL-06` done; `SIGN-001` partial; `SIGN-003` partial; `SIGN-004` missing | partial |
+| 23 | October | Signing certificate: signers, sign-in method, times, ESIGN consent, SHA-256 digest, sealed | `SIGN-001` partial; `SIGN-003` partial; `SIGN-004` missing | partial |
 | 24 | November | "Every task has an owner and a deadline" | `WIL-05` done; `FLOW-001` done | done |
 | 25 | November | "Willow chases each one until it is done" (direct deposit form a day late, reminder sent, done Friday) | `FLOW-002` done; `AGENT-003` partial | partial |
 | 26 | November | Board: W-4, I-9 Sections 1 and 2, Texas new-hire report | `US-001` missing; `US-002` missing | missing |
