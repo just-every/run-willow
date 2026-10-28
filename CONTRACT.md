@@ -87,27 +87,27 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 ## Published clauses
 
-- `WIL-01`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
+- `WIL-01`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 - `WIL-02`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
 - `WIL-03`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
-- `WIL-04`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
-- `WIL-05`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
+- `WIL-04`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1, D-5
+- `WIL-05`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 - `WIL-06`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
-- `WIL-07`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
-- `WIL-08`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
-- `WIL-09`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
+- `WIL-07`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
+- `WIL-08`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
+- `WIL-09`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 - `WIL-10`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
-- `WIL-11`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
-- `WIL-12`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
-- `WIL-13`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
-- `WIL-14`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
+- `WIL-11`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1, D-5
+- `WIL-12`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
+- `WIL-13`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
+- `WIL-14`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 - `WIL-15`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2
 - `WIL-16`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001
 - `WIL-17`: *Tier:* Core · *Cites:* BASE-ACCESS-002, BASE-ACCESS-004, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001, BASE-SIGNIN-001
 - `WIL-18`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-MAIL-001, BASE-OPS-004, BASE-ROLE-001
-- `WIL-19`: *Tier:* Core · *Cites:* BASE-ACCESS-002, BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001, BASE-SECRET-001, BASE-SIGNIN-001
-- `WIL-20`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2
-- `WIL-21`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
+- `WIL-19`: *Tier:* Core · *Cites:* BASE-ACCESS-002, BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001, BASE-SECRET-001, BASE-SIGNIN-001 · *Rules:* D-5
+- `WIL-20`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2, D-5
+- `WIL-21`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-5
 
 ### Retained foundation
 
@@ -269,7 +269,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PEOPLE-001 — Typed custom employee fields
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** HR defines typed general, HR/private and payroll fields with requiredness, immutable classification, effective-dated definitions and values. General self/manager visibility never exposes restricted values, and custom fields stay out of the directory. Historical reads retain definition meaning and use current field authority. Detailed type and version rules are in [record rules](docs/contract/record-rules.md#people-001--typed-custom-employee-fields).
 
@@ -280,7 +280,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PEOPLE-002 — Directory and navigable organizational chart
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Employees browse and search a scoped directory by name, location, department and role and navigate a manager/report org chart. Current, future and former relationships use the same effective-date rules as the profile. HR previews reorganizations, handles vacant managers and rejects cycles without exposing pay or private contact details.
 
@@ -291,7 +291,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PEOPLE-003 — Multi-row record tables and company assets
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Employee records hold dated emergency contacts with one primary contact, education, certifications and assets, plus HR-defined typed custom tables. Private contacts and restricted tables keep their distinct field rights; general tables use HR-selected self/manager visibility. Immutable dated correction and removal preserve history. Table imports, reports and exports share these definitions and current projections.
 
@@ -302,7 +302,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PEOPLE-004 — Date alerts on employee dates
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** HR configures alerts on standard, custom and table dates, including visa/work authorization, probation, certification, contract end, anniversaries, statutory I-9 reverification and benefits eligibility. Alerts choose lead times, current recipients and in-app, email, Slack or Teams channels. They show a permitted upcoming date with owner and due date and may create dated review work. Date changes, retirement and employment end stop obsolete alerts.
 
@@ -315,20 +315,20 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PEOPLE-005 — Any person's record as of a chosen date
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** A member opens a person's record and picks any past or future date to see that person as they were, or are scheduled to be, on that day: the employment period, job title, department, location, manager, working schedule and pay in force, the document versions filed by then, leave balances from the ledger up to that date and the lifecycle work open on it, each linked to the version history behind it. “Documents filed by then” and “lifecycle work open on it” use recorded timestamps in the employer’s time zone: only documents filed by the end of the selected day appear, with full version history still linked, and case/task completion is reconstructed as it stood on that day. Leave balances filter the ledger by effective date, rather than the timestamp when an entry was recorded. Record visibility always uses the reader’s current authority. The view uses the WIL-07 selection rules (inclusive boundaries, canceled versions never in force, scheduled versions shown as scheduled) and the reader's current access (WIL-03, ROLE-001): choosing a date never reveals pay, private contact details, reasons or documents the reader cannot read today, and a privileged as-of read is audited like a current one. The page, the JSON door and the agent context accept the same as-of date and return the same values.
 
 **Acceptance.**
 1. Give a person a pay change and a manager change last year, a canceled title change and a transfer scheduled next month, file a document and take leave between them.
-2. As HR and as their manager, open the record through the page and `GET /api/willow/people/:id` as of a day before, between and after each boundary: each view shows exactly the period, terms, documents and balance in force that day, the canceled version is never in force, the scheduled transfer appears only on and after its date, the manager sees no pay on any date and HR's as-of pay read is in the audit.
+2. As HR and as their manager, open the record through the page and the record JSON door as of a day before, between and after each boundary: each view shows exactly the period, terms, documents and balance in force that day, the canceled version is never in force, the scheduled transfer appears only on and after its date, the manager sees no pay on any date and HR's as-of pay read is in the audit.
 3. At an employer-time-zone day boundary, file documents and complete a case and task before and after the selected day; see only the documents filed by that day, linked full version history, and the case/task completion state on that day.
 4. Record a ledger entry later with an earlier effective date and see the as-of balance include it by effective date.
 5. Revoke a reader’s authority and verify every historical view immediately respects their current authority.
 
 #### SELF-001 — Employee and manager self-service portal
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Employees use one portal for profile, documents, balances, PTO, assigned tasks and pending changes; managers use permitted team work and coverage. Personal changes follow the field mode and immutable before/after queue, never self-grant employment or pay authority. A distinct authorized reviewer decides a proposal; source changes require resubmission. Name/dependent changes retain history and metadata-only downstream payroll and benefits reconciliation.
 
@@ -375,7 +375,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PEOPLE-006 — Asset return evidence
 
-*Tier:* Core · *From:* PEOPLE-003 · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *From:* PEOPLE-003 · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Assets retain serial, assignment and return dates and condition. A leaver case creates one IT return task per unreturned asset, due on the last day. Closing that task requires return evidence, date and condition and appends the asset version atomically; workflow upgrades preserve the task.
 
@@ -386,7 +386,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PEOPLE-007 — Certification renewal work
 
-*Tier:* Core · *From:* PEOPLE-003 · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *From:* PEOPLE-003 · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1, D-5
 
 **Requirement.** Certifications retain expiry and version history. For current or upcoming employment, a certification nearing expiry or already expired creates HR-owned renewal work due on expiry; renewal or removal closes that work. TalentLMS completions reuse these records and renewal work.
 
@@ -397,7 +397,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PEOPLE-008 — Custom-field import and payroll mappings
 
-*Tier:* Core · *From:* PEOPLE-001 · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-4
+*Tier:* Core · *From:* PEOPLE-001 · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-4, D-1, D-5
 
 **Requirement.** BambooHR move-in and generic payroll mappings use the shared custom-field definitions and dated values. The period-end values and definitions freeze with the reviewed payroll batch; ADP RUN keeps its fixed schema. Every additional connector or source repeats these field rules at its own door.
 
@@ -421,7 +421,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### ROLE-002 — Group-scoped levels and bulk assignment
 
-*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Each level’s about-others rights apply to everyone, direct reports, direct/indirect reports or a structural group using location, department, division, employment type, legal entity or a general custom field. Scope limits only that source. Membership follows current dated terms, so a transfer changes reach without editing the level and historical viewing restores no access. Scope combinations never widen another field source. Group and division/entity rules are in [record rules](docs/contract/record-rules.md#role-002--group-scoped-levels-and-bulk-assignment).
 
@@ -443,7 +443,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### ROLE-004 — Job and employment fields
 
-*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Levels independently select job fields: title, department, location, manager, schedule, employment status, FTE, start and end dates. Self modes permit reads only. Other-person Edit appends one dated native change; Edit with approval follows FLOW-004. Directory access does not grant historical employment fields or editing. Date changes preserve period boundaries and reject overlap or reporting cycles.
 
@@ -455,7 +455,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### ROLE-005 — Compensation
 
-*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Levels independently select pay in force, salary history, bands, bonuses, equity and cycle data. Self View requires an explicit source and self Edit does not exist; Manager and migrated matrices gain none implicitly. Other-person Edit preserves dated award history; approval uses FLOW-004. A field mode grants neither cycle approval/publication nor payroll handoff. Exact calculations and custody are in [record rules](docs/contract/record-rules.md#role-005--compensation).
 
@@ -503,7 +503,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### ROLE-009 — Training and learning
 
-*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1, D-5
 
 **Requirement.** Training assignments, completions, certificates and TalentLMS connection state have independent self and scoped other-person modes. Edit assigns, waives or records completion; self completion requires an existing assignment and a course that permits it. Certificate approval holds the whole completion. Approval uses SELF-001’s immutable proposal, distinct reviewer, source fence, history and applicable downstream exception. Native manual records never imply provider verification.
 
@@ -562,7 +562,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### ROLE-014 — Built-in level definitions
 
-*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** the written field-level definitions for built-in Employee, Manager, HR administrator, Payroll administrator and IT across every section, shown in the level editor, with migrations preserving every current effective right and a per-built-in before/after report. Depends on ROLE-004..ROLE-013. Acceptance: each built-in's matrix renders from the compiled facets, and a crawl as each built-in agrees with its matrix and with today's effective rights before any custom change.
 
@@ -588,7 +588,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### API-001 — Employer-issued API credentials bound to an access level
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-1
 
 **Requirement.** Employer-issued API keys and OAuth clients bind an explicit level, population, expiry and write scopes within their issuer’s current authority. Credentials are non-person principals. Delegated private-contact, compensation and document reads require an independent eligible administrator’s exact-rights decision; withdrawal or either actor’s authority change ends access. Partner installation shows destination, rights, population and expiry before a reasoned consent or denial. Protocol and custody details are in [API documentation](API.md).
 
@@ -612,7 +612,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### API-003 — Signed, replay-protected outbound webhooks
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-1, D-5
 
 **Requirement.** Administrators and permissioned clients choose employee, terms, time-off and signing events, destination and readable fields. Deliveries retain unique identities, signature verification, recorded/effective-date identities and current level scope. Failure, uncertain sends, pause, replay and stop have visible states. The non-person subscription consent rule and delegated-right inheritance are documented in [API documentation](API.md); agent calls carry external and security under the company policy.
 
@@ -624,7 +624,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### ROLE-016 — Personal-field edits and approvals
 
-*Tier:* Core · *From:* ROLE-001 · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *From:* ROLE-001 · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Legal name, preferred name, personal email, phone, address, date of birth and emergency contact have independent self and scoped other-person modes. Field edits change only their named field. Approval modes reuse SELF-001 with a distinct reviewer, immutable history, live mode/scope/source checks and downstream metadata-only follow-up; pending values never enter ordinary records.
 
@@ -658,7 +658,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### ROLE-019 — Subject change-request status
 
-*Tier:* Core · *From:* ROLE-001 · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *From:* ROLE-001 · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** A default-off level setting adds a minimal view of changes about the subject when no existing full read applies. It shows request type/status, effective date, times, step number and waiting role, and only values the subject may already read. Reasons, attachments, comments, other actors, chain internals and decision/edit controls stay outside that view; full reads retain their existing scope.
 
@@ -693,7 +693,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### HIRING-001 — Accepted-hire handoffs from Greenhouse, Lever, Workable and JazzHR
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Register:* R-1
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-1, D-5 · *Register:* R-1
 
 **Requirement.** Employers that keep a separate ATS connect Greenhouse, Lever, Workable or JazzHR through each provider's approved API/webhook authorization. An accepted-hire event produces a reviewed joiner proposal with candidate identity, approved offer, role, start date, manager and permitted documents. HR resolves duplicate/rehire matches and missing fields before creating one employee/packet; the resulting employee ID and onboarding status return to the ATS where it accepts them, and interview evaluations are never copied into broad employee records. Employers without a separate ATS use Willow's own pipeline (HIRING-002–004).
 
@@ -703,7 +703,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### HIRING-002 — Job openings, careers page and job-board posting
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Register:* R-2
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-1, D-5 · *Register:* R-2
 
 **Requirement.** Hiring managers request openings with title, department, location, employment type, USD pay range (published where state pay-transparency laws such as California's, Colorado's, New York's and Washington's require it), hiring team and approval chain; HR approves before posting. Approved openings publish to an employer-branded, accessible careers page with structured job data for search engines, and post to Indeed, ZipRecruiter and LinkedIn through their approved posting/partner interfaces, each showing posted/live/rejected/expired state and the board's reference; partner program access is delivery work. Closing, filling or editing an opening updates or withdraws every posting. Application forms are configurable per opening (resume, cover letter, questions, knockout questions) and applications from the careers page and each board arrive once as candidates with their source.
 
@@ -714,7 +714,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### HIRING-003 — Candidate pipeline, hiring-team review and candidate email
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-1, D-5
 
 **Requirement.** Each opening has configurable stages, candidate cards, immutable resumes/scorecards and stage history. Only HR and the current opening team read its candidates; HR controls pay and private notes. Interviews use Google Calendar or Microsoft Outlook availability and invitations. Editable acknowledgment/interview/rejection templates and bulk rejection log one message per candidate. Repeat applicants merge only after HR reviews verified identity under the recorded ruling; merges are reversible, prior applications require explicit release and earlier rejection reasons stay private. Candidate retention and separate self-ID follow DATA-002 and EEO-003. Candidate advancement is an interactive hiring decision; automated ranking and employment scoring are outside the product.
 
@@ -725,7 +725,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### HIRING-004 — Offer approval and hire into preboarding without re-keying
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-1
 
 **Requirement.** From an offer-stage candidate, HR generates an offer letter from a SIGN-001 template filled from the opening and candidate (title, USD pay, start date, manager, location), routes it for approval and sends it for native signature. A signed acceptance creates one reviewed joiner proposal (WIL-15) carrying the candidate's name, personal email, phone, address, role and terms, starts the matching preboarding packet (FLOW-003) at the personal mailbox and files the signed offer to the restricted employee record. No field is typed twice; a declined, withdrawn or expired offer reopens the candidate without creating a person, and a former worker is matched for rehire (WIL-13).
 
@@ -736,7 +736,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### HIRING-005 — Background checks on the offer stage through Checkr
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Register:* R-3
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-1, D-5 · *Register:* R-3
 
 **Requirement.** From an offer-stage candidate, HR orders a background check through Checkr (and other FCRA consumer reporting agencies with an approved partner integration) using the package the opening requires. The candidate completes the agency's standalone FCRA disclosure and authorization, with applicable state notices, in the agency's own flow; Willow records only the order ID, package, status (invited, pending, clear, consider, suspended, canceled, complete), expected completion and a link to the report at the agency. The report and consent forms stay with the agency or in a restricted screening category readable only by access levels granted screening rights; they never enter the employee record, manager or hiring-team views, agent context or ordinary exports, and are not copied when the candidate becomes an employee. Status webhooks are signature-checked and idempotent. Decisions stay human: Willow never rejects on a result, and HR starts any pre-adverse and adverse action through the agency's notice workflow with the waiting period it enforces. An opening can require a completed check before the joiner proposal (HIRING-004) can start employment. Retention follows DATA-002.
 
@@ -749,7 +749,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### FLOW-001 — Conditional workflows with reviewed publication
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1, D-5
 
 **Requirement.** HR publishes conditional joiner/mover/leaver graphs after inspecting every affected person, role assignment, dependency, relative deadline and external action. Publication pins the exact version; existing cases retain theirs until a deliberate reviewed upgrade preserves completed work and evidence. A failed or unresolved step blocks dependent work and whole-case completion. Connector authority and actual observed outcomes remain obligations at each connector’s own door.
 
@@ -760,7 +760,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### FLOW-002 — Persistent reminders, escalation and coverage
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-MAIL-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-MAIL-001, BASE-ROLE-001 · *Rules:* D-1, D-5
 
 **Requirement.** Every required task, approval, missing form, signature and provider exception has an accountable owner, deadline, progress and next action. Scheduled reminders follow an HR-approved cadence and quiet hours; overdue work escalates to a substitute owner when the assignee is absent or leaves. Completion cancels future reminders, rescheduling preserves history, and restart catches missed deadlines without duplicate sends. Failed/uncertain delivery is visible separately from work completion.
 
@@ -781,7 +781,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### FLOW-004 — Manager-initiated change requests through approval chains
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Managers or permitted members request dated promotion, pay, title, department, location, manager, status or FTE changes with reason and attachments. Versioned role chains condition on amount, band, legal entity or location, and use permitted substitutes. Revisions restart the chain; final decision binds exact values, appends one terms version, starts mover work and enters payroll reconciliation. The requester and subject cannot decide; pay remains withheld without its field right. Calculations, type and routing details are in [record rules](docs/contract/record-rules.md#flow-004--manager-initiated-change-requests-through-approval-chains).
 
@@ -794,7 +794,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### SIGN-001 — Offer and policy templates with native e-signature
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-3
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-3, D-1
 
 **Requirement.** HR maintains versioned offer, agreement and policy templates with controlled employee/compensation merge fields, placed signature/initial/date/text fields, ordered signers, approval routing and filing category. Each recipient preview binds the exact rendered bytes and readable source values. A changed template, merge value, recipient or authority invalidates that review. Native signing and optional DocuSign use the same version and category boundaries.
 
@@ -819,7 +819,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### US-001 — I-9, E-Verify and W-4 through completion
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-3 · *Register:* R-5
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-3, D-1, D-5 · *Register:* R-5
 
 **Requirement.** Worksite-aware onboarding collects current I-9 and federal/state withholding forms through restricted employee and employer/authorized-representative steps. Mitratech Tracker I-9/E-Verify integration launches the correct workflow, tracks examination/attestation, corrections, rehire/reverification, provider case IDs, notices and unresolved results through closure. W-4 captures the authenticated employee signature and final declaration, keeps a printable copy and records payroll receipt/effective date. Reviewed rule versions set deadlines and retention; an E-Verify mismatch never becomes an automatic adverse employment decision.
 
@@ -831,7 +831,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### US-002 — State new-hire reporting and employer administration
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-3 · *Register:* R-6
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-3, D-1, D-5 · *Register:* R-6
 
 **Requirement.** The employer maintains one or more US legal entities under one account, each with its FEIN, registered work states, locations and payroll/benefits connections; every employment period belongs to one entity and reports, EEO-1 (EEO-004) and filings group by entity. It keeps W-2 employee versus 1099 contractor records without treating classification as an agent decision. New-hire/rehire reporting and state onboarding forms use current state-specific fields and reviewed deadlines, with configured multistate election, restricted review, submission through the state portal or authorized payroll partner, acknowledgment/rejection and correction. Owner-assigned manual portal steps retain submission receipts when a state has no machine interface; an export alone never completes reporting.
 
@@ -865,7 +865,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### EEO-002 — EEO job categories, establishments and the EEO-1 snapshot
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** HR maps each job title to one of the ten EEO-1 job categories, effective-dated, and maps locations to EEO-1 establishments. For an employer-chosen workforce snapshot pay period, Willow produces EEO-1 Component 1 data by establishment and company: full- and part-time employees on payroll in that period by job category, sex and race/ethnicity. A pre-filing check flags unmapped titles, missing or declined self-ID, missing establishment addresses or NAICS codes and people outside the period. Individual values stay with EEO-access levels and aggregate views suppress small cells. Detailed collection, calculation and custody rules are in [record rules](docs/contract/record-rules.md#eeo-002--eeo-job-categories-establishments-and-the-eeo-1-snapshot).
 
@@ -875,7 +875,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### EEO-004 — EEO-1 by legal entity, contractor exclusion and filing
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Register:* R-7
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1 · *Register:* R-7
 
 **Requirement.** Establishments sit under their legal entity (US-002), and EEO-002's data is produced as headquarters, establishment and consolidated reports where required, excluding 1099 contractors. HR downloads the data in the EEOC filing system's upload format, then records the submission confirmation as an owner-assigned manual step; the report never claims filing without it.
 
@@ -885,7 +885,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### SIGN-003 — Native signing and sealed records
 
-*Tier:* Core · *From:* SIGN-001 · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *From:* SIGN-001 · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Without a third-party account, signers consent to electronic records, authenticate by a session or one-time emailed link plus code, and sign the exact approved document on desktop or phone. Ordered employee/HR signatures create an immutable sealed copy and certificate in the selected category. Consent withdrawal, decline, expiry and voiding end only unfinished requests; changed documents reissue. Receipt acknowledgments remain distinct. Certificate fields and byte custody are in [record rules](docs/contract/record-rules.md#sign-001--offer-and-policy-templates-with-native-e-signature).
 
@@ -897,7 +897,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### SIGN-004 — Optional DocuSign handoff
 
-*Tier:* Core · *From:* SIGN-001 · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-3 · *Register:* R-4
+*Tier:* Core · *From:* SIGN-001 · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-3, D-5 · *Register:* R-4
 
 **Requirement.** Employers may use DocuSign for the same exact-version signing request and states. Willow retains the returned sealed copy, certificate and envelope identity and reconciles observed signing state. Duplicate or out-of-order callbacks and old signing credentials cannot complete another version.
 
@@ -908,7 +908,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### SIGN-005 — Signed-documents reporting
 
-*Tier:* Core · *From:* SIGN-002 · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *From:* SIGN-002 · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** The signature report shows permitted sent, viewed, signed, declined, expired and voided requests, pending owners and exact source versions. Managers receive only scoped status, without signing values, rendered bytes or certificates. Saved reports and dated source drill-down share row/field restrictions, unknown/freshness labels, safe schedules and CSV/XLSX parity.
 
@@ -921,7 +921,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### LEAVE-001 — US PTO policies and scheduled accrual
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** HR configures vacation, sick and unpaid leave policies with eligibility, service tiers, hours/days conversion, proration, accrual cadence, caps, carryover/expiry, negative-balance rules and reviewed state/location variants. Scheduled accruals are idempotent and explain each calculation, including hire, rehire, transfer, schedule and termination effects. Policy changes require owner approval; overrides are dated, reasoned ledger adjustments. HR configures reviewed protected-leave cases and restricted supporting documents without exposing medical reasons to managers or claiming legal adjudication. Detailed collection, calculation and custody rules are in [record rules](docs/contract/record-rules.md#leave-001--us-pto-policies-and-scheduled-accrual).
 
@@ -932,7 +932,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### LEAVE-002 — Shared absence calendars and approval follow-up
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Employees and managers have scoped absence/holiday calendars with employer-defined US federal/state/company holidays, partial days and working schedules. Requesting leave shows balance/coverage impact, notifies the effective approver in-app and by the configured channel, and follows substitute approval/reminder rules. Calendar subscriptions and Google Calendar/Microsoft Outlook connections expose only authorized absence labels/dates; cancellation or access loss removes or redacts updates without leaking reasons.
 
@@ -943,7 +943,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### TIME-001 — Time, shifts and Deputy reconciliation
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Hourly workers clock in and out and record breaks from the web, the companion apps (MOBILE-001) or a shared kiosk, with any employer location rule shown before use; punches made offline queue on the device and revalidate on reconnect. Workers submit corrections and approved timesheets; managers publish shifts, manage availability/swaps and compare planned versus worked hours. US work-state overtime/break rules are employer-reviewed and versioned; edits preserve originals and require approval before payroll handoff. Deputy connections reconcile roster, shifts, approved hours and absences using explicit source authority; schedule changes feed PTO quotes without overwriting an approved payroll period.
 
@@ -955,7 +955,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PAYROLL-001 — Two-way payroll authority and reconciliation
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-1, D-5
 
 **Requirement.** Payroll and HR agree per-field authority, employee/provider identity, effective dates, pay calendars, earning/leave/deduction codes and cutover. Authorized changes flow both ways; provider-owned facts never silently overwrite Willow-owned employment terms, and conflicting pay or identity matches stop for review. Each change keeps intended values, approved version, submission/idempotency key, provider acknowledgment and a fresh read-back comparison. Submitted, accepted, observed, rejected, stale and uncertain remain distinct. Disconnects, rate limits and webhooks reconcile safely after recovery; retries never duplicate an uncertain pay action. File handoff remains supported alongside live sync. The named live connections are Gusto (PAYROLL-002), ADP RUN and ADP Workforce Now (PAYROLL-003), QuickBooks Payroll (PAYROLL-004) and Paychex Flex (PAYROLL-005).
 
@@ -969,7 +969,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PAYROLL-002 — Live Gusto connection
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3 · *Register:* R-8
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-1, D-5 · *Register:* R-8
 
 **Requirement.** An authorized employer connects Gusto through its approved app authorization and maps existing employees without duplicates. Two-way roster, employment/pay, applicable PTO, withholding-form status and benefit deduction synchronization follow PAYROLL-001 field authority. Supported operations and provider restrictions are explicit; unsupported required operations create accountable work with returned provider evidence, not false success. Production app approval, scopes, tenant activation and provider conformance are delivery requirements.
 
@@ -982,7 +982,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PAYROLL-003 — Live ADP RUN and Workforce Now connections
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3 · *Register:* R-9
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-1, D-5 · *Register:* R-9
 
 **Requirement.** Willow separately supports ADP RUN and ADP Workforce Now with the appropriate approved application/partner access, employer authorization, company/pay-group mappings and versioned field capability maps. Each connects employee roster, starts/ends, pay, applicable leave and deductions under PAYROLL-001, returns provider acknowledgment and checks observed state. WIL-21 ADP RUN Time Sheet Import remains compatibility support and cannot stand in for either live connection.
 
@@ -996,7 +996,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PAYROLL-004 — Live QuickBooks Payroll connection
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3 · *Register:* R-10
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-1, D-5 · *Register:* R-10
 
 **Requirement.** Authorized employers connect QuickBooks Payroll using the required Intuit application/partner interfaces and employer scopes. Employee identities, job/pay changes, applicable time/PTO and deduction mappings reconcile two ways under PAYROLL-001. QuickBooks Online accounting access alone is not proof of payroll access; required production partnership and unsupported-field workflows are visible engineering deliverables with provider receipts.
 
@@ -1010,7 +1010,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PAYROLL-005 — Live Paychex Flex connection
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3 · *Register:* R-11
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-1, D-5 · *Register:* R-11
 
 **Requirement.** An employer whose payroll runs on Paychex Flex connects it through Paychex's approved Flex API and integration-partner access, which Paychex's integrations team activates for that employer's company on the employer's authorization; the partner listing, production access and conformance are delivery work, as for Gusto and Intuit. The connection maps the Paychex company, worker identifiers, pay frequencies, earning, deduction and PTO codes under PAYROLL-001 field authority and matches the existing Paychex roster to Willow people without duplicates: exact provider identifier first, then reviewed matches on name and date of birth shown only to payroll levels; ambiguous matches stop for payroll review (MIGRATE-001). From then on a hire in Willow creates the Paychex worker in real time; name, contact, address, job, department, pay rate or salary and status changes, terminations and rehires reach Paychex on their effective date; approved PTO hours and benefit deductions (BENEFITS-002) go to their mapped codes where Paychex accepts them. Each change records its intended values, idempotency key, Paychex acknowledgment and a fresh read-back. Edits made in Paychex Flex to Paychex-owned fields come back to Willow and never silently overwrite Willow-owned terms; operations Paychex does not accept become accountable payroll work with Paychex's response, never false success. Revoked or expired authorization pauses the connection with a visible CONNECT-001 health state; restoring it resumes without resending acknowledged changes. The WIL-21 mapped file remains available and cannot stand in for this connection.
 
@@ -1024,7 +1024,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PAYROLL-006 — Pre-payday agreement check for every employee
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3 · *Register:* R-12
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-1, D-5 · *Register:* R-12
 
 **Requirement.** For each pay period, before the connected provider's processing cutoff, Willow checks every employee in the pay group, not only those with changes, across the systems that feed the paycheck: Willow-owned employment status, pay rate or salary, approved leave hours and the period's handed-off changes (WIL-11) against a fresh payroll read-back (PAYROLL-001–005), and benefit and retirement elections (BENEFITS-002, RETIRE-001) against the deductions payroll will take. The result is one per-period agreement report in which each employee agrees, differs (naming the field, both values, the authoritative system under PAYROLL-001 and the owner who must act) or cannot be checked (stale read-back, missing provider identifier, uncertain submission). The period shows that every system agrees only when every employee agrees on read-backs taken after the last change and before the cutoff; a difference or unchecked employee keeps the period open with its owner under FLOW-002 escalation, and closes only when a new read-back matches. A change or provider-side edit after a passing check reopens it. Willow never alters pay to force agreement; payroll calculation and payment stay with the provider.
 
@@ -1038,7 +1038,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### BENEFITS-001 — Enrollment and life events through brokers and carriers
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3 · *Register:* R-13
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-1, D-5 · *Register:* R-13
 
 **Requirement.** HR and employees manage eligibility, dependents, plan comparison/costs, open enrollment, new-hire elections, waivers, qualifying life events and termination with effective dates and required documents. Employee Navigator and employer-authorized broker/carrier connections exchange census and elections with contracted US plans, including Aetna, UnitedHealthcare and Anthem where selected. Show per-carrier submitted/accepted/active/rejected coverage evidence, enrollment deadlines and unresolved handoffs. Carrier/API/834 agreements, broker licensing partners and protected-data agreements are delivery work; no unchecked task declares coverage active. Employers whose broker or carrier is not connected still record plans, rates, eligibility rules, waivers and elections in Willow, run open enrollment and export census/election files; each such election stays "recorded, not confirmed" until HR attaches the carrier's confirmation and never shows as active coverage before then.
 
@@ -1053,7 +1053,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### BENEFITS-002 — Benefit deductions and payroll mismatch resolution
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3 · *Register:* R-13
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-1, D-5 · *Register:* R-13
 
 **Requirement.** Benefits/employee elections map to provider plans and employee/employer contribution codes, coverage effective dates, pay frequencies, pre/post-tax treatment and arrears rules approved by payroll. Reconcile carrier/broker elections, payroll deductions and observed payroll results per employee/pay period. Exceptions name the owner, amount/date discrepancy and corrective action; retroactive changes require reviewed adjustments and a returned acknowledgment.
 
@@ -1066,7 +1066,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### BENEFITS-003 — ACA full-time measurement and 1095-C data
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3 · *Register:* R-13
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-1, D-5 · *Register:* R-13
 
 **Requirement.** For employers at or near 50 full-time and full-time-equivalent employees, Willow calculates monthly full-time and FTE counts for applicable-large-employer status, tracks look-back measurement, administrative and stability periods for variable-hour and seasonal employees from TIME-001 and payroll hours, records offers of coverage, affordability inputs and waivers from BENEFITS-001, and produces per-employee monthly Form 1095-C codes and 1094-C totals for the payroll provider or broker that files. Calculations show their inputs; filing and IRS correspondence stay with that filer, and Willow records the filer's acknowledgment.
 
@@ -1079,7 +1079,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### RETIRE-001 — Retirement census and contribution handoff
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Register:* R-14
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-1, D-5 · *Register:* R-14
 
 **Requirement.** Human Interest and Guideline connections maintain eligible census, employment dates, employee elections/deferrals, employer contribution mappings and payroll-period contribution status. Restricted HR/payroll owners review differences, submission receipts, provider acknowledgments and corrected census/contribution results. Custody, investment advice and plan administration stay with the plan provider while Willow follows the handoff to a verified outcome.
 
@@ -1092,7 +1092,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### IDENTITY-001 — Provisioning and verified deprovisioning
 
-*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-2, D-6 · *Register:* R-15
+*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-2, D-6, D-1, D-5 · *Register:* R-15
 
 **Requirement.** Google Workspace, Microsoft 365/Entra ID and Okta connect through the reviewed identity-mapping door (D-6, RL-101). Join/move/leave dates drive account, group, license and role changes; privileged access remains separately authorized. Exits suspend accounts, revoke sessions/tokens and verify actual provider state. Data/shared-mailbox ownership and asset returns have named owners. Failed or uncertain removal keeps departure open; rehire grants are newly reviewed. Agent executions carry access, adding accounts for creation, security for credentials, sensitive for regulated attributes and external for provider disclosure; company policy decides each call.
 
@@ -1105,7 +1105,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### IDENTITY-002 — Google, Microsoft and Okta sign-in controls
 
-*Tier:* Core · *Cites:* BASE-ACCESS-002, BASE-ACCESS-004, BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001, BASE-SIGNIN-001 · *Register:* R-15
+*Tier:* Core · *Cites:* BASE-ACCESS-002, BASE-ACCESS-004, BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001, BASE-SIGNIN-001 · *Rules:* D-5 · *Register:* R-15
 
 **Requirement.** Employers use Google SSO, Microsoft Entra ID or Okta through OIDC/SAML with explicit member linking, verified domain/issuer configuration, fresh proof for relinking and employer-enforced MFA/session policies. Employers without SSO, and members who sign in by email link, meet the owner's MFA policy with Willow's native second factor (SECURITY-002). Provider attributes/groups map only through owner-reviewed rules; no token silently grants HR/payroll access. Sign-in, recovery, offboarding and role changes preserve identity, revoke active sessions as required and leave a protected owner recovery path.
 
@@ -1151,7 +1151,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### COMP-001 — Compensation bands and planning
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2, D-1, D-5
 
 **Requirement.** HR/payroll maintain dated USD salary/hourly bands and promotion, merit and bonus cycles. Managers propose only within scope; a distinct eligible compensation authority decides exact budgets, amounts and dates. Publication binds every source/band/proposal revision, commits all terms together and refuses conflicts or budget overrun. Out-of-band exceptions carry a recorded reason. Payroll reconciliation includes one-time bonuses and observed provider results. Agent pay writes carry money and commitment under company policy; no score generates a pay recommendation.
 
@@ -1162,7 +1162,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### LEARN-001 — Training assignments and TalentLMS connection
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Register:* R-17
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-5 · *Register:* R-17
 
 **Requirement.** HR assigns mandatory and development training by role/location with due dates, recurring certifications, evidence and reminder/escalation. TalentLMS exchanges rosters, enrollment and completion/certificate results; provider completion is distinguished from a manual acknowledgment and expiring certifications reopen required work. The employee record and authorized reports retain completion history when a learner leaves.
 
@@ -1172,7 +1172,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### COMP-002 — Protected pay-equity measurement
 
-*Tier:* Core · *From:* COMP-001 · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *From:* COMP-001 · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Authorized pay-equity readers compare annualized USD pay by sex and race/ethnicity in a complete job-level partition with fixed title/location/basis strata. Voluntary self-ID is the only protected-class source; unknown/declined and excluded non-USD or missing-schedule data remain explicit. Small included or excluded cells suppress counts, means, percentages and totals across dimensions. The report makes no individual recommendation. Exact calculations are in [record rules](docs/contract/record-rules.md#comp-001--compensation-bands-and-planning).
 
@@ -1183,7 +1183,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### PERFORM-002 — Goals and development work
 
-*Tier:* Core · *From:* PERFORM-001 · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *From:* PERFORM-001 · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Goals, milestones and dated check-ins carry across review cycles. The subject, current manager and HR maintain them; an active named owner or HR completes development work with evidence. Explicit level modes add only scoped goal rights through SELF-001 and do not widen review or survey access. Work follows FLOW-002 without allowing a substitute to submit another contributor’s input.
 
@@ -1196,7 +1196,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### CONNECT-001 — Operable connections and attribute rules
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-4 · *Register:* R-18
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-INPUT-001, BASE-OPS-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-3, D-4, D-1, D-5 · *Register:* R-18
 
 **Requirement.** Owners authorize each named connector with least scopes, per-field mapping/authority and explicit outbound-data previews. Health shows last successful sync/read-back, freshness, scope loss, rate limits, stale/error/uncertain state and a per-person mismatch queue with owner/next action. Signed/replay-protected webhooks, durable execution IDs, reviewed safe retries and reconciliation after disconnect prevent duplicate effects. Secrets stay in protected runtime custody; rotation/revocation and provider-data deletion are explicit. Required production app review, contracts, scopes and health-data agreements are tracked to completion for every supported integration. The employer's own and partner tools read and subscribe through API-001–003 under the same health and audit.
 
@@ -1208,7 +1208,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### REPORT-001 — Custom workforce reporting and operational dashboards
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** HR saves scoped reports over standard/custom workforce fields, dated headcount/FTE, turnover, tenure, leave liability, pay, diversity, benefits mismatches, signatures, hiring and overdue work. Definitions expose filters, dates, denominators, exclusions, unknowns, freshness and authorized source drill-down. Page and CSV/XLSX use the same calculations; mixed-source revisions refuse rather than return mixed results. Missing module metrics remain that module’s delivery obligation. Calculations are in [record rules](docs/contract/record-rules.md#report-001--custom-workforce-reporting-and-operational-dashboards).
 
@@ -1219,7 +1219,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### MIGRATE-001 — Switch from each incumbent without losing history
 
-*Tier:* Core · *Cites:* BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-4
+*Tier:* Core · *Cites:* BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-4, D-1, D-5
 
 **Requirement.** Named move-in paths cover BambooHR (WIL-16), Rippling, HiBob, Gusto HR, Factorial and Deel HR using approved source APIs/exports. HR maps identities/custom fields and custom/multi-row tables including assets (PEOPLE-003), org/manager history, employment/pay versions, documents, signature templates and certificates, access levels (proposed, assigning nothing until approved), leave policies/balances/requests, benefits elections, goals/reviews/training, open lifecycle work, and open job openings with candidates and application history (from the incumbent, or from Greenhouse, Lever, Workable or JazzHR for employers leaving a separate ATS). Per-source preview lists unsupported fields and originals, reconciles counts and balances, and never substitutes empty data. Source IDs/provenance survive; repeated imports are idempotent, overlap cutover freezes agreed authority and guarded undo cannot destroy subsequent work. Imported history never grants sessions or triggers external actions. At cutover each connected payroll provider's existing roster (Gusto, ADP RUN, ADP Workforce Now, QuickBooks Payroll, Paychex Flex) is matched to the migrated people by provider identifier, then by reviewed name and date-of-birth matches, before any live sync starts; unmatched or ambiguous workers wait in a payroll-owned queue and nothing is created in the provider until they are resolved.
 
@@ -1232,7 +1232,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### MIGRATE-002 — Complete BambooHR move-in beyond the current kit
 
-*Tier:* Core · *Cites:* BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-4
+*Tier:* Core · *Cites:* BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-4, D-1, D-5
 
 **Requirement.** Extending WIL-16, the BambooHR path reads BambooHR's API with an employer-issued key, or its exports, and also carries job and compensation history tables with effective dates, custom fields and custom/multi-row tables (emergency contacts, education, certifications, assets), the full files/documents export at the OPS-002 reference size with folder-to-category mapping, signature templates and completed signed documents with their audit trail, time-off policies, history and requested/approved leave, access levels proposed as ROLE-001 levels for HR review, and open job openings, candidates and application history into HIRING-002/003. The preview lists every unmapped field or table and reconciles counts; WIL-16's guarded undo, idempotency and retained originals apply; and no imported record sends an invitation, signature request, webhook or job posting until HR enables it. Employers leaving BambooHR's payroll add-on also bring its pay history, year-to-date wages, taxes and deductions and employee tax setup from BambooHR Payroll's exports: Willow keeps them as restricted, read-only payroll history, hands the year-to-date and tax-setup files to the provider they move to, connects that provider under PAYROLL-001–005 and reconciles the provider's first live roster and year-to-date totals against the imported history.
 
@@ -1244,7 +1244,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### DATA-001 — Usable employee exports and complete target-product portability
 
-*Tier:* Core · *Cites:* BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1, D-5
 
 **Requirement.** Selected employee CSV/XLSX and document/module-history bundles use current field rights and dated native projections. Module histories include immutable proposals, decisions, handoffs, goals, development and review-release custody without other subjects or pickers. Owner archives extend Base portability to every HR, signing, benefits, connector and automation record, preserving schema, provenance and erasure fences. External consent is non-portable and pending sends stay paused; old enabled archives normalize settings without altering the source backup. EEO values remain outside ordinary employee exports.
 
@@ -1255,7 +1255,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### DATA-002 — Retention, legal holds and complete erasure
 
-*Tier:* Core · *Cites:* BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2
+*Tier:* Core · *Cites:* BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2, D-1
 
 **Requirement.** The employer adopts sourced US retention classes, confirms state rules and classifies every document/custom field/table. Longer applicable rules win and cannot be shortened below the federal table. A hold names scope, reason, owner and review date; held evidence moves to restricted custody and its review is owned work. Expired retained custody purges after warning when no hold applies; other expired records require digest-bound review. Class tables and calculations are in [record rules](docs/contract/record-rules.md#data-002--retention-legal-holds-and-complete-erasure). Agent retention/hold actions carry sensitive and security, adding destructive for purge, under company policy.
 
@@ -1266,7 +1266,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### AUDIT-001 — Traceable HR and automation history
 
-*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-DATA-003, BASE-INPUT-001, BASE-OPS-005, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-DATA-003, BASE-INPUT-001, BASE-OPS-005, BASE-ROLE-001 · *Rules:* D-5
 
 **Requirement.** The HR chronology joins profile changes, sensitive reads, decision revisions, imports/undo, document/signature access, connector attempts and agent execution. Business changes and audit commit together. Erasure substitutes the receipt’s random label consistently in actor/subject references and named history text while preserving sequence, action, time and counts. Hold, purge, receipt and individual EEO events carry no values.
 
@@ -1276,7 +1276,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### SECURITY-001 — Private-by-default HR operation and Base guarantees
 
-*Tier:* Core · *Cites:* BASE-ACCESS-002, BASE-ACCESS-004, BASE-DATA-004, BASE-INPUT-001, BASE-INPUT-002, BASE-INPUT-003, BASE-ROLE-001, BASE-SECRET-001
+*Tier:* Core · *Cites:* BASE-ACCESS-002, BASE-ACCESS-004, BASE-DATA-004, BASE-INPUT-001, BASE-INPUT-002, BASE-INPUT-003, BASE-ROLE-001, BASE-SECRET-001 · *Rules:* D-5
 
 **Requirement.** The all-door matrix uses Willow’s distinct HR facets, named levels, API identities, erasure custody and EEO rights. Managerial rank grants no sensitive facet. Before enabling a service, its data, purpose and retention are visible; model training on HR data is not authorized by activation. Category evidence does not replace external account revocation.
 
@@ -1286,7 +1286,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### SECURITY-002 — Native second-factor sign-in and an owner MFA policy
 
-*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001, BASE-SECRET-001, BASE-SIGNIN-002
+*Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001, BASE-SECRET-001, BASE-SIGNIN-002 · *Rules:* D-1
 
 **Requirement.** The employer requires native factors for everyone or chosen levels, always including sensitive pay, tax, EEO, health and access administrators. Multiple levels take the strictest requirement. Enrollment/challenge gates every HR record door; delegated reset forbids self-reset and ends sessions. Trusted-device state ends on relevant authority/policy changes. The report lists required/enrolled state and last challenge without secrets. SSO MFA counts only where the employer accepts its assertion; non-person keys remain separately scoped. Restore requires fresh enrollment.
 
@@ -1300,7 +1300,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### OPS-001 — Runnable, recoverable employer-owned product
 
-*Tier:* Core · *Cites:* BASE-ACCESSIBILITY-001, BASE-BACKUP-001, BASE-INPUT-001, BASE-INSTALL-001, BASE-OPS-001, BASE-OPS-002, BASE-ROLE-001 · *Register:* R-22, R-23
+*Tier:* Core · *Cites:* BASE-ACCESSIBILITY-001, BASE-BACKUP-001, BASE-INPUT-001, BASE-INSTALL-001, BASE-OPS-001, BASE-OPS-002, BASE-ROLE-001 · *Rules:* D-5 · *Register:* R-22, R-23
 
 **Requirement.** The provider-free installation runs the complete supported Willow command journey on a populated employer. Durable pending work recovers to its actual state without silently replaying an external effect. OPS-002 capacity is measured before it is claimed.
 
@@ -1310,7 +1310,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### OPS-002 — Reference employer capacity with stated bounds
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Register:* R-21
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1 · *Register:* R-21
 
 **Requirement.** A reference employer works on declared CI hardware with the deployment limits published: 250 active and 150 former employees, seven years of effective-dated history (at least ten terms versions per person), 40,000 documents totaling 25 GB, the leave ledgers and lifecycle cases that history implies, and 60 concurrent signed-in members. Single documents up to 50 MB upload; migration source files and document archives up to 25 GB upload by resumable multipart transfer and are processed streaming, without holding a whole file in memory. On that data the hosted product meets: directory, profile and self-service pages p95 ≤ 1 s server time; directory search p95 ≤ 500 ms; standard reports and their CSV ≤ 5 s; custom reports ≤ 15 s or a background job with progress; a payroll change-batch preview for every employee ≤ 30 s; a full BambooHR move-in (WIL-16, MIGRATE-002) preview ≤ 30 minutes and apply ≤ 2 hours, resumable after interruption; owner archive export and restore ≤ 4 hours each. Work beyond the reference employer either completes within these bounds or is refused before any write with a named limit (such as `documents.total_bytes`); nothing is silently truncated.
 
@@ -1320,7 +1320,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### OPEN-001 — Free and open source under the MIT license
 
-*Tier:* Core · *Cites:* BASE-DATA-005, BASE-INPUT-001, BASE-INSTALL-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-DATA-005, BASE-INPUT-001, BASE-INSTALL-001, BASE-ROLE-001 · *Rules:* D-5
 
 **Requirement.** Willow’s source and package are MIT licensed, allowing running, modification and redistribution. Every delivered capability is available without a product license, commercial gate, seat or employee plan, upgrade prompt or author account. Capacity bounds are technical limits; missing clauses remain missing. Connected third-party providers are named as the billing party before activation. Willow is independent of the incumbents it replaces.
 
@@ -1343,7 +1343,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### DATA-004 — Erasure outside copies and restore fences
 
-*Tier:* Core · *From:* DATA-002 · *Cites:* BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *From:* DATA-002 · *Cites:* BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1, D-5
 
 **Requirement.** Erasure receipts declare exported offline copies and each provider destination. Deletion requests stay owner-assigned work until observed deleted, retained with stated reason/expiry, or failed; unanswered requests remain open. Archives preserve the journal, holds, receipts and restricted remainder. A known pre-erasure restore is refused; a fresh destination without later evidence requires the explicit unverified-history acknowledgment and never claims old archive bytes were erased.
 
@@ -1354,7 +1354,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### REPORT-002 — Safe scheduled report links
 
-*Tier:* Core · *From:* REPORT-001 · *Cites:* BASE-INPUT-001, BASE-MAIL-001, BASE-ROLE-001
+*Tier:* Core · *From:* REPORT-001 · *Cites:* BASE-INPUT-001, BASE-MAIL-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** A report creator or owner schedules an exact reviewed definition for named active reporting members on employer-local dates. A new definition requires renewed schedule review; due occurrences are claimed durably without backfilling duplicate messages. Fixed text contains an authenticated link, not report values. Refused, disabled and uncertain sends stay distinct; uncertain sends are not blindly retried.
 
@@ -1365,7 +1365,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### REPORT-003 — Aggregate workforce diversity
 
-*Tier:* Core · *From:* REPORT-001 · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *From:* REPORT-001 · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
 **Requirement.** Diversity reporting requires both aggregate EEO and report rights and uses dated voluntary self-ID, never HR-recorded categories. It is an unfiltered employer-wide aggregate without individual identity or drill-down. A positive small cell in either fixed dimension suppresses every count and total in both dimensions; erased people and retained remainders stay excluded.
 
@@ -1378,7 +1378,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### BOUNDARY-001 — US-first HRIS with accountable external execution
 
-*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-5
 
 **Requirement.** Willow owns US-first core HR, hiring, self-service in English and Spanish, access, API/webhooks, native signing, PTO, lifecycle, EEO-1 preparation, ACA data, performance and engagement. Payroll calculation/payment/filing, insurance/COBRA, retirement custody, official agency filing, screening, LMS delivery and device enforcement remain with their named providers. Every connected handoff still requires its observed outcome. Provider ownership details remain in [record rules](docs/contract/record-rules.md#boundary-001--us-first-hris-with-accountable-external-execution).
 
@@ -1420,229 +1420,229 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | --- | --- | --- | --- | --- |
 
-| `willow.wil.operate_1` | Employer setup and explicit membership | WIL-01 | standard or access | not exposed through MCP |
+| `willow.employer.configure` | Employer setup and explicit membership | WIL-01 | standard or access | not exposed through MCP |
 
-| `willow.wil.operate_3` | Private records through every public door | WIL-03 | standard or sensitive | not exposed through MCP |
+| `willow.people.read` | Private records through every public door | WIL-03 | standard or sensitive | not exposed through MCP |
 
-| `willow.wil.operate_4` | People and separate employment periods | WIL-04 | standard or sensitive | not exposed through MCP |
+| `willow.people.hire` | People and separate employment periods | WIL-04 | standard or sensitive | not exposed through MCP |
 
-| `willow.wil.operate_5` | Versioned joiner, mover and leaver cases | WIL-05 | standard or sensitive | not exposed through MCP |
+| `willow.cases.start` | Versioned joiner, mover and leaver cases | WIL-05 | standard or sensitive or access or external | not exposed through MCP |
 
-| `willow.wil.operate_6` | Private immutable documents and receipt acknowledgments | WIL-06 | standard or sensitive | not exposed through MCP |
+| `willow.documents.manage` | Private immutable documents and receipt acknowledgments | WIL-06 | standard or sensitive | not exposed through MCP |
 
-| `willow.wil.operate_7` | Effective-dated terms and compensation | WIL-07 | standard or sensitive | not exposed through MCP |
+| `willow.terms.schedule` | Effective-dated terms and compensation | WIL-07 | standard or sensitive or money | not exposed through MCP |
 
-| `willow.wil.operate_8` | Approved leave policies and opening balances | WIL-08 | standard or sensitive | not exposed through MCP |
+| `willow.leave.configure` | Approved leave policies and opening balances | WIL-08 | standard or sensitive or commitment | not exposed through MCP |
 
-| `willow.wil.operate_9` | Schedule-based requests and routed approval | WIL-09 | standard or sensitive | not exposed through MCP |
+| `willow.leave.request` | Schedule-based requests and routed approval | WIL-09 | standard or sensitive | not exposed through MCP |
 
-| `willow.wil.operate_10` | Atomic append-only leave ledger | WIL-10 | standard or sensitive | not exposed through MCP |
+| `willow.ledger.correct` | Atomic append-only leave ledger | WIL-10 | standard or sensitive | not exposed through MCP |
 
-| `willow.wil.operate_11` | Reviewed payroll change batches | WIL-11 | standard or sensitive | not exposed through MCP |
+| `willow.payroll.handoff` | Reviewed payroll change batches | WIL-11 | standard or sensitive or money or external | not exposed through MCP |
 
-| `willow.wil.operate_12` | Evidence-gated departure and native access termination | WIL-12 | standard or sensitive | not exposed through MCP |
+| `willow.people.offboard` | Evidence-gated departure and native access termination | WIL-12 | standard or sensitive or access | not exposed through MCP |
 
-| `willow.wil.operate_13` | Rehire without restored authority | WIL-13 | standard or sensitive | not exposed through MCP |
+| `willow.people.rehire` | Rehire without restored authority | WIL-13 | standard or sensitive | not exposed through MCP |
 
-| `willow.wil.operate_14` | Scoped workforce summaries | WIL-14 | standard or sensitive | not exposed through MCP |
+| `willow.reports.summarize` | Scoped workforce summaries | WIL-14 | standard or sensitive | not exposed through MCP |
 
-| `willow.wil.operate_15` | Version-bound agent plans and cited context | WIL-15 | standard or money or access or sensitive | not exposed through MCP |
+| `willow.plans.prepare` | Version-bound agent plans and cited context | WIL-15 | standard or money or access or sensitive | not exposed through MCP |
 
-| `willow.wil.operate_18` | Optional safe business-event email | WIL-18 | external or live | not exposed through MCP |
+| `willow.notices.configure` | Optional safe business-event email | WIL-18 | external or live | not exposed through MCP |
 
-| `willow.wil.operate_19` | Optional OIDC with explicit identity linking | WIL-19 | security or access or gated | not exposed through MCP |
+| `willow.identity.link` | Optional OIDC with explicit identity linking | WIL-19 | security or access or gated | not exposed through MCP |
 
-| `willow.wil.operate_20` | Structural model checklist drafts | WIL-20 | standard or external or commitment | not exposed through MCP |
+| `willow.checklists.draft` | Structural model checklist drafts | WIL-20 | standard or external or commitment | not exposed through MCP |
 
-| `willow.wil.operate_21` | Frozen mapped payroll files and ADP RUN compatibility | WIL-21 | standard or sensitive | not exposed through MCP |
+| `willow.payroll.export` | Frozen mapped payroll files and ADP RUN compatibility | WIL-21 | standard or sensitive or money or external | not exposed through MCP |
 
-| `willow.people.operate_1` | Typed custom employee fields | PEOPLE-001 | standard or sensitive | not exposed through MCP |
+| `willow.fields.define` | Typed custom employee fields | PEOPLE-001 | standard or sensitive | not exposed through MCP |
 
-| `willow.people.operate_8` | Custom-field import and payroll mappings | PEOPLE-008 | standard or sensitive | not exposed through MCP |
+| `willow.fields.map` | Custom-field import and payroll mappings | PEOPLE-008 | standard or sensitive | not exposed through MCP |
 
-| `willow.people.operate_2` | Directory and navigable organizational chart | PEOPLE-002 | standard or sensitive | not exposed through MCP |
+| `willow.directory.browse` | Directory and navigable organizational chart | PEOPLE-002 | standard or sensitive | not exposed through MCP |
 
-| `willow.people.operate_3` | Multi-row record tables and company assets | PEOPLE-003 | standard or sensitive | not exposed through MCP |
+| `willow.tables.manage` | Multi-row record tables and company assets | PEOPLE-003 | standard or sensitive | not exposed through MCP |
 
-| `willow.people.operate_7` | Certification renewal work | PEOPLE-007 | standard or sensitive | not exposed through MCP |
+| `willow.certifications.renew` | Certification renewal work | PEOPLE-007 | standard or sensitive | not exposed through MCP |
 
-| `willow.people.operate_6` | Asset return evidence | PEOPLE-006 | standard or sensitive | not exposed through MCP |
+| `willow.assets.return` | Asset return evidence | PEOPLE-006 | standard or sensitive | not exposed through MCP |
 
-| `willow.people.operate_4` | Date alerts on employee dates | PEOPLE-004 | standard or sensitive | not exposed through MCP |
+| `willow.dates.alert` | Date alerts on employee dates | PEOPLE-004 | standard or sensitive | not exposed through MCP |
 
-| `willow.people.operate_5` | Any person's record as of a chosen date | PEOPLE-005 | standard or sensitive | not exposed through MCP |
+| `willow.people.asof` | Any person's record as of a chosen date | PEOPLE-005 | standard or sensitive | not exposed through MCP |
 
-| `willow.self.operate_1` | Employee and manager self-service portal | SELF-001 | standard or sensitive | not exposed through MCP |
+| `willow.selfservice.change` | Employee and manager self-service portal | SELF-001 | standard or sensitive | not exposed through MCP |
 
-| `willow.self.operate_2` | Company home: announcements, celebrations and shared files | SELF-002 | standard or sensitive | not exposed through MCP |
+| `willow.company.publish` | Company home: announcements, celebrations and shared files | SELF-002 | standard or sensitive | not exposed through MCP |
 
-| `willow.role.operate_1` | Named access levels with field-level rights | ROLE-001 | access or sensitive | not exposed through MCP |
+| `willow.levels.define` | Named access levels with field-level rights | ROLE-001 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_19` | Subject change-request status | ROLE-019 | access or sensitive | not exposed through MCP |
+| `willow.requests.follow` | Subject change-request status | ROLE-019 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_18` | Selected saved reports | ROLE-018 | access or sensitive | not exposed through MCP |
+| `willow.reports.admit` | Selected saved reports | ROLE-018 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_17` | Document-category field modes | ROLE-017 | access or sensitive | not exposed through MCP |
+| `willow.categories.manage` | Document-category field modes | ROLE-017 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_16` | Personal-field edits and approvals | ROLE-016 | access or sensitive | not exposed through MCP |
+| `willow.fields.change` | Personal-field edits and approvals | ROLE-016 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_2` | Group-scoped levels and bulk assignment | ROLE-002 | access or sensitive | not exposed through MCP |
+| `willow.levels.scope` | Group-scoped levels and bulk assignment | ROLE-002 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_20` | Bulk assignment and guarded revert | ROLE-020 | access or sensitive | not exposed through MCP |
+| `willow.levels.assign` | Bulk assignment and guarded revert | ROLE-020 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_3` | Default self-service access and delegated access administration | ROLE-003 | access or sensitive | not exposed through MCP |
+| `willow.invitations.configure` | Default self-service access and delegated access administration | ROLE-003 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_21` | Bounded delegated access administration | ROLE-021 | access or sensitive | not exposed through MCP |
+| `willow.levels.delegate` | Bounded delegated access administration | ROLE-021 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_4` | Job and employment fields | ROLE-004 | access or sensitive | not exposed through MCP |
+| `willow.levels.job` | Job and employment fields | ROLE-004 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_5` | Compensation | ROLE-005 | access or sensitive | not exposed through MCP |
+| `willow.levels.compensation` | Compensation | ROLE-005 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_6` | Time off and absence | ROLE-006 | access or sensitive | not exposed through MCP |
+| `willow.levels.absence` | Time off and absence | ROLE-006 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_7` | Benefits, dependents and beneficiaries | ROLE-007 | access or sensitive | not exposed through MCP |
+| `willow.levels.benefits` | Benefits, dependents and beneficiaries | ROLE-007 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_8` | Performance and engagement | ROLE-008 | access or sensitive | not exposed through MCP |
+| `willow.levels.performance` | Performance and engagement | ROLE-008 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_9` | Training and learning | ROLE-009 | access or sensitive | not exposed through MCP |
+| `willow.levels.training` | Training and learning | ROLE-009 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_10` | EEO, tax and identity, and medical sections | ROLE-010 | access or sensitive | not exposed through MCP |
+| `willow.levels.compliance` | EEO, tax and identity, and medical sections | ROLE-010 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_11` | Approval selection | ROLE-011 | access or sensitive | not exposed through MCP |
+| `willow.approvals.select` | Approval selection | ROLE-011 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_12` | Built-in report selection | ROLE-012 | access or sensitive | not exposed through MCP |
+| `willow.reports.select` | Built-in report selection | ROLE-012 | access or sensitive | not exposed through MCP |
 
-| `willow.role.operate_13` | Settings selection | ROLE-013 | access or sensitive | not exposed through MCP |
+| `willow.settings.select` | Settings selection | ROLE-013 | access or sensitive or security | not exposed through MCP |
 
-| `willow.role.operate_14` | Built-in level definitions | ROLE-014 | access or sensitive | not exposed through MCP |
+| `willow.levels.builtins` | Built-in level definitions | ROLE-014 | access or sensitive | not exposed through MCP |
 
-| `willow.api.operate_1` | Employer-issued API credentials bound to an access level | API-001 | security or access or sensitive | not exposed through MCP |
+| `willow.credentials.issue` | Employer-issued API credentials bound to an access level | API-001 | security or access or sensitive | not exposed through MCP |
 
-| `willow.api.operate_2` | Documented employee and roster API | API-002 | security or access or sensitive | not exposed through MCP |
+| `willow.api.sync` | Documented employee and roster API | API-002 | security or access or sensitive | not exposed through MCP |
 
-| `willow.api.operate_3` | Signed, replay-protected outbound webhooks | API-003 | security or access or sensitive | not exposed through MCP |
+| `willow.webhooks.configure` | Signed, replay-protected outbound webhooks | API-003 | security or access or sensitive | not exposed through MCP |
 
-| `willow.hiring.operate_1` | Accepted-hire handoffs from Greenhouse, Lever, Workable and JazzHR | HIRING-001 | standard or external or commitment or sensitive | not exposed through MCP |
+| `willow.ats.accept` | Accepted-hire handoffs from Greenhouse, Lever, Workable and JazzHR | HIRING-001 | standard or external or commitment or sensitive | not exposed through MCP |
 
-| `willow.hiring.operate_2` | Job openings, careers page and job-board posting | HIRING-002 | standard or external or commitment or sensitive | not exposed through MCP |
+| `willow.openings.publish` | Job openings, careers page and job-board posting | HIRING-002 | standard or external or commitment or sensitive | not exposed through MCP |
 
-| `willow.hiring.operate_3` | Candidate pipeline, hiring-team review and candidate email | HIRING-003 | standard or external or commitment or sensitive | not exposed through MCP |
+| `willow.candidates.manage` | Candidate pipeline, hiring-team review and candidate email | HIRING-003 | standard or external or commitment or sensitive | not exposed through MCP |
 
-| `willow.hiring.operate_4` | Offer approval and hire into preboarding without re-keying | HIRING-004 | standard or external or commitment or sensitive | not exposed through MCP |
+| `willow.offers.send` | Offer approval and hire into preboarding without re-keying | HIRING-004 | standard or external or commitment or sensitive | not exposed through MCP |
 
-| `willow.hiring.operate_5` | Background checks on the offer stage through Checkr | HIRING-005 | standard or external or commitment or sensitive | not exposed through MCP |
+| `willow.screening.order` | Background checks on the offer stage through Checkr | HIRING-005 | standard or external or commitment or sensitive | not exposed through MCP |
 
-| `willow.flow.operate_1` | Conditional workflows with reviewed publication | FLOW-001 | standard or commitment or external | not exposed through MCP |
+| `willow.workflows.publish` | Conditional workflows with reviewed publication | FLOW-001 | standard or commitment or external | not exposed through MCP |
 
-| `willow.flow.operate_2` | Persistent reminders, escalation and coverage | FLOW-002 | standard or commitment or external | not exposed through MCP |
+| `willow.work.follow` | Persistent reminders, escalation and coverage | FLOW-002 | standard or commitment or external | not exposed through MCP |
 
-| `willow.flow.operate_3` | Role-specific preboarding packets | FLOW-003 | standard or commitment or external | not exposed through MCP |
+| `willow.preboarding.invite` | Role-specific preboarding packets | FLOW-003 | standard or commitment or external or sensitive | not exposed through MCP |
 
-| `willow.flow.operate_4` | Manager-initiated change requests through approval chains | FLOW-004 | standard or commitment or external | not exposed through MCP |
+| `willow.changes.request` | Manager-initiated change requests through approval chains | FLOW-004 | standard or commitment or external or money or sensitive | not exposed through MCP |
 
-| `willow.sign.operate_1` | Offer and policy templates with native e-signature | SIGN-001 | commitment or external or sensitive | not exposed through MCP |
+| `willow.templates.prepare` | Offer and policy templates with native e-signature | SIGN-001 | commitment or external or sensitive | not exposed through MCP |
 
-| `willow.sign.operate_4` | Optional DocuSign handoff | SIGN-004 | commitment or external or sensitive | not exposed through MCP |
+| `willow.docusign.send` | Optional DocuSign handoff | SIGN-004 | commitment or external or sensitive | not exposed through MCP |
 
-| `willow.sign.operate_3` | Native signing and sealed records | SIGN-003 | commitment or external or sensitive | not exposed through MCP |
+| `willow.signatures.record` | Native signing and sealed records | SIGN-003 | commitment or external or sensitive | not exposed through MCP |
 
-| `willow.sign.operate_2` | Cohort signature requests and the signed-documents report | SIGN-002 | commitment or external or sensitive | not exposed through MCP |
+| `willow.signatures.request` | Cohort signature requests and the signed-documents report | SIGN-002 | commitment or external or sensitive | not exposed through MCP |
 
-| `willow.sign.operate_5` | Signed-documents reporting | SIGN-005 | commitment or external or sensitive | not exposed through MCP |
+| `willow.signatures.report` | Signed-documents reporting | SIGN-005 | commitment or external or sensitive | not exposed through MCP |
 
-| `willow.us.operate_1` | I-9, E-Verify and W-4 through completion | US-001 | sensitive or external or commitment or gated | not exposed through MCP |
+| `willow.onboarding.forms` | I-9, E-Verify and W-4 through completion | US-001 | sensitive or external or commitment or gated | not exposed through MCP |
 
-| `willow.us.operate_2` | State new-hire reporting and employer administration | US-002 | sensitive or external or commitment or gated | not exposed through MCP |
+| `willow.entities.file` | State new-hire reporting and employer administration | US-002 | sensitive or external or commitment or gated | not exposed through MCP |
 
-| `willow.eeo.operate_1` | Voluntary EEO self-identification in self-service | EEO-001 | sensitive | not exposed through MCP |
+| `willow.eeo.selfidentify` | Voluntary EEO self-identification in self-service | EEO-001 | sensitive | not exposed through MCP |
 
-| `willow.eeo.operate_3` | EEO self-identification in preboarding and for applicants | EEO-003 | sensitive | not exposed through MCP |
+| `willow.eeo.invite` | EEO self-identification in preboarding and for applicants | EEO-003 | sensitive | not exposed through MCP |
 
-| `willow.eeo.operate_2` | EEO job categories, establishments and the EEO-1 snapshot | EEO-002 | sensitive | not exposed through MCP |
+| `willow.eeo.snapshot` | EEO job categories, establishments and the EEO-1 snapshot | EEO-002 | sensitive | not exposed through MCP |
 
-| `willow.eeo.operate_4` | EEO-1 by legal entity, contractor exclusion and filing | EEO-004 | sensitive | not exposed through MCP |
+| `willow.eeo.file` | EEO-1 by legal entity, contractor exclusion and filing | EEO-004 | sensitive | not exposed through MCP |
 
-| `willow.leave.operate_1` | US PTO policies and scheduled accrual | LEAVE-001 | standard or sensitive | not exposed through MCP |
+| `willow.policies.configure` | US PTO policies and scheduled accrual | LEAVE-001 | standard or sensitive | not exposed through MCP |
 
-| `willow.leave.operate_2` | Shared absence calendars and approval follow-up | LEAVE-002 | standard or sensitive | not exposed through MCP |
+| `willow.calendar.share` | Shared absence calendars and approval follow-up | LEAVE-002 | standard or sensitive | not exposed through MCP |
 
-| `willow.time.operate_1` | Time, shifts and Deputy reconciliation | TIME-001 | standard or sensitive | not exposed through MCP |
+| `willow.time.reconcile` | Time, shifts and Deputy reconciliation | TIME-001 | standard or sensitive | not exposed through MCP |
 
-| `willow.payroll.operate_1` | Two-way payroll authority and reconciliation | PAYROLL-001 | money or external or sensitive | not exposed through MCP |
+| `willow.payroll.reconcile` | Two-way payroll authority and reconciliation | PAYROLL-001 | money or external or sensitive | not exposed through MCP |
 
-| `willow.payroll.operate_2` | Live Gusto connection | PAYROLL-002 | money or external or sensitive | not exposed through MCP |
+| `willow.gusto.sync` | Live Gusto connection | PAYROLL-002 | money or external or sensitive | not exposed through MCP |
 
-| `willow.payroll.operate_3` | Live ADP RUN and Workforce Now connections | PAYROLL-003 | money or external or sensitive | not exposed through MCP |
+| `willow.adp.sync` | Live ADP RUN and Workforce Now connections | PAYROLL-003 | money or external or sensitive | not exposed through MCP |
 
-| `willow.payroll.operate_4` | Live QuickBooks Payroll connection | PAYROLL-004 | money or external or sensitive | not exposed through MCP |
+| `willow.quickbooks.sync` | Live QuickBooks Payroll connection | PAYROLL-004 | money or external or sensitive | not exposed through MCP |
 
-| `willow.payroll.operate_5` | Live Paychex Flex connection | PAYROLL-005 | money or external or sensitive | not exposed through MCP |
+| `willow.paychex.sync` | Live Paychex Flex connection | PAYROLL-005 | money or external or sensitive | not exposed through MCP |
 
-| `willow.payroll.operate_6` | Pre-payday agreement check for every employee | PAYROLL-006 | money or external or sensitive | not exposed through MCP |
+| `willow.payday.check` | Pre-payday agreement check for every employee | PAYROLL-006 | money or external or sensitive | not exposed through MCP |
 
-| `willow.benefits.operate_1` | Enrollment and life events through brokers and carriers | BENEFITS-001 | sensitive or external or money | not exposed through MCP |
+| `willow.benefits.enroll` | Enrollment and life events through brokers and carriers | BENEFITS-001 | sensitive or external or money | not exposed through MCP |
 
-| `willow.benefits.operate_2` | Benefit deductions and payroll mismatch resolution | BENEFITS-002 | sensitive or external or money | not exposed through MCP |
+| `willow.deductions.reconcile` | Benefit deductions and payroll mismatch resolution | BENEFITS-002 | sensitive or external or money | not exposed through MCP |
 
-| `willow.benefits.operate_3` | ACA full-time measurement and 1095-C data | BENEFITS-003 | sensitive or external or money | not exposed through MCP |
+| `willow.aca.measure` | ACA full-time measurement and 1095-C data | BENEFITS-003 | sensitive or external or money | not exposed through MCP |
 
-| `willow.retire.operate_1` | Retirement census and contribution handoff | RETIRE-001 | money or sensitive or external | not exposed through MCP |
+| `willow.retirement.reconcile` | Retirement census and contribution handoff | RETIRE-001 | money or sensitive or external | not exposed through MCP |
 
-| `willow.identity.operate_1` | Provisioning and verified deprovisioning | IDENTITY-001 | access or accounts or security or sensitive or external or gated | not exposed through MCP |
+| `willow.identity.provision` | Provisioning and verified deprovisioning | IDENTITY-001 | access or accounts or security or sensitive or external or gated | not exposed through MCP |
 
-| `willow.identity.operate_2` | Google, Microsoft and Okta sign-in controls | IDENTITY-002 | access or accounts or security or sensitive or external or gated | not exposed through MCP |
+| `willow.signin.configure` | Google, Microsoft and Okta sign-in controls | IDENTITY-002 | access or accounts or security or sensitive or external or gated | not exposed through MCP |
 
-| `willow.comms.operate_1` | Slack and Microsoft Teams work notifications | COMMS-001 | external or live | not exposed through MCP |
+| `willow.channels.deliver` | Slack and Microsoft Teams work notifications | COMMS-001 | external or live | not exposed through MCP |
 
-| `willow.perform.operate_1` | Performance reviews, goals and feedback | PERFORM-001 | standard or sensitive | not exposed through MCP |
+| `willow.reviews.run` | Performance reviews, goals and feedback | PERFORM-001 | standard or sensitive | not exposed through MCP |
 
-| `willow.perform.operate_2` | Goals and development work | PERFORM-002 | standard or sensitive | not exposed through MCP |
+| `willow.goals.manage` | Goals and development work | PERFORM-002 | standard or sensitive | not exposed through MCP |
 
-| `willow.engage.operate_1` | Engagement surveys and accountable action | ENGAGE-001 | standard or sensitive | not exposed through MCP |
+| `willow.surveys.run` | Engagement surveys and accountable action | ENGAGE-001 | standard or sensitive | not exposed through MCP |
 
-| `willow.comp.operate_1` | Compensation bands and planning | COMP-001 | money or sensitive or commitment | not exposed through MCP |
+| `willow.compensation.publish` | Compensation bands and planning | COMP-001 | money or sensitive or commitment | not exposed through MCP |
 
-| `willow.comp.operate_2` | Protected pay-equity measurement | COMP-002 | money or sensitive or commitment | not exposed through MCP |
+| `willow.equity.measure` | Protected pay-equity measurement | COMP-002 | money or sensitive or commitment | not exposed through MCP |
 
-| `willow.learn.operate_1` | Training assignments and TalentLMS connection | LEARN-001 | standard or external | not exposed through MCP |
+| `willow.training.sync` | Training assignments and TalentLMS connection | LEARN-001 | standard or external | not exposed through MCP |
 
-| `willow.connect.operate_1` | Operable connections and attribute rules | CONNECT-001 | accounts or gated or security or external or live | not exposed through MCP |
+| `willow.connections.configure` | Operable connections and attribute rules | CONNECT-001 | accounts or gated or security or external or live | not exposed through MCP |
 
-| `willow.report.operate_1` | Custom workforce reporting and operational dashboards | REPORT-001 | standard or sensitive | not exposed through MCP |
+| `willow.reports.build` | Custom workforce reporting and operational dashboards | REPORT-001 | standard or sensitive | not exposed through MCP |
 
-| `willow.report.operate_3` | Aggregate workforce diversity | REPORT-003 | standard or sensitive | not exposed through MCP |
+| `willow.diversity.measure` | Aggregate workforce diversity | REPORT-003 | standard or sensitive | not exposed through MCP |
 
-| `willow.report.operate_2` | Safe scheduled report links | REPORT-002 | standard or sensitive | not exposed through MCP |
+| `willow.reports.schedule` | Safe scheduled report links | REPORT-002 | standard or sensitive | not exposed through MCP |
 
-| `willow.data.operate_1` | Usable employee exports and complete target-product portability | DATA-001 | sensitive or destructive or security | not exposed through MCP |
+| `willow.exports.prepare` | Usable employee exports and complete target-product portability | DATA-001 | sensitive or destructive or security | not exposed through MCP |
 
-| `willow.data.operate_2` | Retention, legal holds and complete erasure | DATA-002 | sensitive or destructive or security | not exposed through MCP |
+| `willow.retention.manage` | Retention, legal holds and complete erasure | DATA-002 | sensitive or destructive or security | not exposed through MCP |
 
-| `willow.data.operate_4` | Erasure outside copies and restore fences | DATA-004 | sensitive or destructive or security | not exposed through MCP |
+| `willow.erasure.reconcile` | Erasure outside copies and restore fences | DATA-004 | sensitive or destructive or security | not exposed through MCP |
 
-| `willow.data.operate_3` | Complete employee and applicant erasure | DATA-003 | sensitive or destructive or security | not exposed through MCP |
+| `willow.erasure.run` | Complete employee and applicant erasure | DATA-003 | sensitive or destructive or security | not exposed through MCP |
 
-| `willow.audit.operate_1` | Traceable HR and automation history | AUDIT-001 | sensitive | not exposed through MCP |
+| `willow.audit.inspect` | Traceable HR and automation history | AUDIT-001 | sensitive | not exposed through MCP |
 
-| `willow.security.operate_1` | Private-by-default HR operation and Base guarantees | SECURITY-001 | security or access | not exposed through MCP |
+| `willow.security.inspect` | Private-by-default HR operation and Base guarantees | SECURITY-001 | security or access | not exposed through MCP |
 
-| `willow.security.operate_2` | Native second-factor sign-in and an owner MFA policy | SECURITY-002 | security or access | not exposed through MCP |
+| `willow.mfa.configure` | Native second-factor sign-in and an owner MFA policy | SECURITY-002 | security or access | not exposed through MCP |
 
-| `willow.ai.operate_1` | Cited HR policy answers under the reader’s authority | AI-001 | standard or external or sensitive or commitment | not exposed through MCP |
+| `willow.policy.answer` | Cited HR policy answers under the reader’s authority | AI-001 | standard or external or sensitive or commitment | not exposed through MCP |
 
-| `willow.ai.operate_3` | Policy-assistant provider boundary | AI-003 | standard or external or sensitive or commitment | not exposed through MCP |
+| `willow.policy.disclose` | Policy-assistant provider boundary | AI-003 | standard or external or sensitive or commitment | not exposed through MCP |
 
-| `willow.ai.operate_2` | Natural-language workflow building with impact preview | AI-002 | standard or external or sensitive or commitment | not exposed through MCP |
+| `willow.workflows.draft` | Natural-language workflow building with impact preview | AI-002 | standard or external or sensitive or commitment | not exposed through MCP |
 
-| `willow.ai.operate_5` | Exact-version privileged workflow decisions | AI-005 | standard or external or sensitive or commitment | not exposed through MCP |
+| `willow.workflows.decide` | Exact-version privileged workflow decisions | AI-005 | standard or external or sensitive or commitment | not exposed through MCP |
 
-| `willow.ai.operate_4` | Workflow-model structural boundary | AI-004 | standard or external or sensitive or commitment | not exposed through MCP |
+| `willow.workflows.disclose` | Workflow-model structural boundary | AI-004 | standard or external or sensitive or commitment | not exposed through MCP |
 
-| `willow.agent.operate_1` | Reconcile an approved employee change until systems agree | AGENT-001 | standard or money or access or security or accounts or sensitive or external or commitment or live | not exposed through MCP |
+| `willow.employee.reconcile` | Reconcile an approved employee change until systems agree | AGENT-001 | standard or money or access or security or accounts or sensitive or external or commitment or live | not exposed through MCP |
 
-| `willow.agent.operate_2` | Policy simulation and expected-versus-observed outcomes | AGENT-002 | standard or money or access or security or accounts or sensitive or external or commitment or live | not exposed through MCP |
+| `willow.policy.simulate` | Policy simulation and expected-versus-observed outcomes | AGENT-002 | standard or money or access or security or accounts or sensitive or external or commitment or live | not exposed through MCP |
 
-| `willow.agent.operate_3` | Recover stalled onboarding with controlled outreach | AGENT-003 | standard or money or access or security or accounts or sensitive or external or commitment or live | not exposed through MCP |
+| `willow.onboarding.recover` | Recover stalled onboarding with controlled outreach | AGENT-003 | standard or money or access or security or accounts or sensitive or external or commitment or live | not exposed through MCP |
 
 **Resources.** `willow://people/{id}`, `willow://periods/{id}`, `willow://cases/{id}`, `willow://requests/{id}`, `willow://documents/{id}`, `willow://payroll/{id}`, `willow://candidates/{id}`, `willow://levels/{id}`, `willow://policies/{id}`, `willow://reports/{id}`, `willow://surveys/{id}`, `willow://reviews/{id}`, `willow://connections/{id}` and `willow://erasures/{id}` describe the native records and their dated versions.
 
@@ -1668,7 +1668,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 #### SURFACE-002 — Record exposure and binding facts
 
-*Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-013
+*Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-013 · *Rules:* D-1
 
 **Requirement.** Willow computes record, recipient, financial and binding-decision facts from its native dated records and actual destinations.
 
@@ -1695,7 +1695,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 #### SURFACE-004 — Dated reconciliation across systems
 
-*Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-013
+*Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-013 · *Rules:* D-1
 
 **Requirement.** The people-operations coordinator compares the exact intended employee change with fresh HR, payroll, benefits and identity state; incomplete provider evidence remains an owned mismatch.
 
@@ -1723,7 +1723,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 #### AI-001 — Cited HR policy answers under the reader’s authority
 
-*Tier:* Core · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2
+*Tier:* Core · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2, D-5
 
 **Requirement.** The optional policy assistant answers from employer-included, approved handbook/policy versions and currently permitted context. It cites exact clauses, dates and local calculation inputs, identifies withheld/missing/conflicting information and routes uncertainty to HR. No answer invents entitlement, legal advice or an employment decision. Model steps carry standard, adding sensitive for permitted regulated numeric inputs and external for provider disclosure; company policy decides each call. WIL-20 remains a separate structural-only capability.
 
@@ -1734,7 +1734,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 #### AI-002 — Natural-language workflow building with impact preview
 
-*Tier:* Core · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2
+*Tier:* Core · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2, D-5
 
 **Requirement.** A workflow drafting specialist turns authorized intent into typed conditions, roles, deadlines, gates and connector mappings, cites its source structure and simulates affected people and external writes locally. Drafting changes no live employment, task, access or provider state. Publication carries commitment, adding access, money, sensitive, external or live when its steps meet those tests; the company policy decides the call and each separately scoped step. Missing mappings, scopes, unsafe cycles and changed sources remain visible unresolved work.
 
@@ -1745,7 +1745,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 #### AGENT-001 — Reconcile an approved employee change until systems agree
 
-*Tier:* Core · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2
+*Tier:* Core · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2, D-5
 
 **Requirement.** A reconciliation specialist plans the exact permitted employment/pay, PTO, benefits, payroll and identity diff with source authority, dates and expected state. Each step carries its computed standard, money, access, sensitive, external, accounts, security or commitment class under company policy. It asks named owners for missing facts, follows observed acknowledgment/read-back and keeps mismatches owned. A changed plan is reclassified and decided again; uncertain financial effects are not blindly retried. People may pause, cancel or resolve exceptions.
 
@@ -1757,7 +1757,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 #### AGENT-002 — Policy simulation and expected-versus-observed outcomes
 
-*Tier:* Core · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2
+*Tier:* Core · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2, D-5
 
 **Requirement.** The specialist simulates a proposed PTO, eligibility or lifecycle policy against permitted schedules, balances, terms, cases and provider capabilities. It compares current/proposed people, costs, dates, assumptions and missing data without changing live records. Policy publication carries commitment, adding money, access or live according to its effects; company policy decides the call. It compares predictions with actual ledger/provider outcomes and assigns deviations.
 
@@ -1768,7 +1768,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 #### AGENT-003 — Recover stalled onboarding with controlled outreach
 
-*Tier:* Core · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2
+*Tier:* Core · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2, D-5
 
 **Requirement.** The specialist compares deadlines, signatures, statutory forms, benefits and observed provisioning to explain stalled onboarding/offboarding. Outreach uses the employer’s cadence, templates, channels and visibility and carries external for outside recipients; access changes carry access, changed terms money/commitment as applicable, and policy exceptions commitment. The company policy decides all such calls. Completion ends outreach and HR can take over without losing history.
 
@@ -1779,7 +1779,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 #### AI-003 — Policy-assistant provider boundary
 
-*Tier:* Core · *From:* AI-001 · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2 · *Register:* R-20
+*Tier:* Core · *From:* AI-001 · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2, D-5 · *Register:* R-20
 
 **Requirement.** Employer-enabled policy calls use locally reduced typed topics, included approved clauses and only separately permitted minimal numeric leave inputs. Raw questions, identifiers, arbitrary text, other employee records, pay, protected-class/medical data, reasons and documents stay local. Provider retention is explicitly disclosed and consented; content is not retained in local audit/logs/archives and restored consent is off. Detailed source-inclusion, metadata and provider-retention rules are in [record rules](docs/contract/record-rules.md#ai-001--cited-hr-policy-answers-under-the-readers-authority).
 
@@ -1791,7 +1791,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 #### AI-004 — Workflow-model structural boundary
 
-*Tier:* Core · *From:* AI-002 · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2 · *Register:* R-20
+*Tier:* Core · *From:* AI-002 · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2, D-5 · *Register:* R-20
 
 **Requirement.** Workflow-model calls use local reduction to normalized conditions, roles, deadlines, dependencies, gates and authorized template identifiers/revisions. Raw requests, free-form task/template/system names and all employee/private content stay local; controlled capability data is structural. Validated typed drafts may be retained, raw model conversations may not. Activation and actual provider retention are explicitly disclosed, and restore disables consent. Full payload and metadata rules are in [record rules](docs/contract/record-rules.md#ai-002--natural-language-workflow-building-with-impact-preview).
 
@@ -1802,7 +1802,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 #### AI-005 — Exact-version privileged workflow decisions
 
-*Tier:* Core · *From:* AI-002 · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2
+*Tier:* Core · *From:* AI-002 · *Cites:* BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-DATA-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2, D-5
 
 **Requirement.** Each privileged workflow step retains its payroll, IT or other separately scoped authority. Decisions bind the exact graph, source versions, connector scope/capability and whole privileged-step set. When the company policy holds the relevant money, access, security, commitment, external or live class, a distinct currently eligible person decides the exact step; model output, enablement and HR draft selection supply no such decision. Changed inputs or lost authority invalidate it.
 
