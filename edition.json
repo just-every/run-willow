@@ -232,7 +232,13 @@
           "src/modules/dependencies/schema/approval-attempt.sql",
           "src/modules/dependencies/schema/dependencies.sql",
           "src/modules/dependencies/schema/keys-sealed.sql",
-          "src/modules/owner-claim"
+          "src/modules/owner-claim",
+          "src/modules/agent-door",
+          "src/modules/business-settings",
+          "src/foundation/runtime",
+          "migrations/core/0102_business_settings.sql",
+          "migrations/core/0103_business_people.sql",
+          "migrations/core/0104_agent_door.sql"
         ],
         "origin": {
           "repository": "https://github.com/runeditrun/base.git",

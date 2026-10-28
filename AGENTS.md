@@ -94,6 +94,17 @@ Rules that hold everywhere:
   Worker), `journey.mjs` and `restore.mjs` (browser and recovery from a fresh
   clone), `fixtures.mjs` (documented-shape BambooHR fixtures, invented people).
 
+## Company agent runtime source
+
+`src/modules/agent-door` and `src/modules/business-settings` retain the shared
+Base runtime source; `src/foundation/runtime` supplies its theme dependencies.
+Migrations 0102–0104 add their storage without changing applied migrations.
+These dependencies do not expose an MCP tool or replace a native Willow door.
+The delivered agent interface remains the session-bound JSON interface below.
+A company-agent integration must preserve the native live-authority fences,
+private-read attribution and the originating consent through deferred effects.
+Do not substitute a person's session or infer consent from an agent id.
+
 ## Agents operating Willow
 
 Every page action has a JSON twin, so an agent can run Willow with a
