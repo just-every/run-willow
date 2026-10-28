@@ -11,6 +11,7 @@ import { CATEGORY_SIGNATURE_STORES, signingCategories, signingCategoryStores } f
 import { unclaimedFiles } from './blob-custody'
 import { selectImportErasure } from './import-custody'
 import { AUTHORED_STORES, DYNAMIC, OUT_OF_SCOPE, STORES, type Store } from './inventory'
+import { EMPTY_BASE_CUSTODY } from './base-custody'
 import { CLASSES, TABLE_VERSION, classExpiry, type ClassKey, type Contractor } from './rules'
 import { adoption, contractorStatus, mappings, stateRules } from './settings'
 
@@ -60,7 +61,12 @@ export interface Blocker { kind: string; ref: string; reason: string }
 async function inventoryCoverage(env: Bindings) {
   const known = new Set([...STORES, ...AUTHORED_STORES].map(store => store.table).concat(DYNAMIC))
   const tables = (await all<{ name: string }>(env, "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name NOT LIKE 'd1_%'")).map(row => row.name)
-  const missing = tables.filter(name => !known.has(name) && !OUT_OF_SCOPE.has(name))
+  const missing: string[] = []
+  for (const name of tables) {
+    if (known.has(name) || OUT_OF_SCOPE.has(name)) continue
+    if (EMPTY_BASE_CUSTODY.has(name) && !await one(env, `SELECT 1 FROM ${name} LIMIT 1`)) continue
+    missing.push(name)
+  }
   insist(!missing.length, 'inventory_incomplete', 409, { tables: missing })
   return tables.length
 }

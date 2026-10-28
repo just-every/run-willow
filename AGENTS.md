@@ -104,6 +104,9 @@ The delivered agent interface remains the session-bound JSON interface below.
 A company-agent integration must preserve the native live-authority fences,
 private-read attribution and the originating consent through deferred effects.
 Do not substitute a person's session or infer consent from an agent id.
+Erasure admits the new custody tables only while they are empty and rechecks
+that condition in the confirmation transaction. Any records in these stores
+require native retention mappings and keep erasure blocked.
 
 ## Agents operating Willow
 

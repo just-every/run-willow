@@ -714,7 +714,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "91f917a745ea9209ef3bc28c51e55d69dce37b4aac430ae53cadeebe0a6e45a3",
+      "sha256": "20b955fdfc7fe6a01cd3435335b200ee756702be81e310f7ff2e84292cc55b69",
       "executable": false
     },
     "API.md": {
@@ -4865,6 +4865,10 @@
       "sha256": "6ce2c442731cca173c27157911a9d25a057386061c69bb8ace1bad4d1a44b4fb",
       "executable": false
     },
+    "src/willow/retention/base-custody.ts": {
+      "sha256": "666bb30f9dfab58ae1a6e42b45578264a8ee6f0fbc2fe72063541aff733c4578",
+      "executable": false
+    },
     "src/willow/retention/blob-custody.ts": {
       "sha256": "61e74c8fa2c67c31e1df5a3c964db7d8018745a6d75a6722633cce24a9356020",
       "executable": false
@@ -4874,11 +4878,11 @@
       "executable": false
     },
     "src/willow/retention/erase.ts": {
-      "sha256": "eadf49d75e9e1c21dab5ca3650f22d3dd14981da86824a3cf3f3f9ad74a3c8f7",
+      "sha256": "5675abb24f7c9d867c370cb99334e3f5b36d2281b082f036e31b69d7b4546cc5",
       "executable": false
     },
     "src/willow/retention/erasure.ts": {
-      "sha256": "af5d33add1d12072011c20bf9fb1f3edc38529d1a8765774aeb5cce2df6067cb",
+      "sha256": "717f5746e9561babdf0e609c14a80ecca02b886107e0b64d1b7d5cab21467d06",
       "executable": false
     },
     "src/willow/retention/excluded.ts": {
