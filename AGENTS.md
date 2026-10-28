@@ -148,3 +148,12 @@ ROLE-001 subject-follow is the default-off `followOwnChanges` level setting, rev
 HIRING-003 resumes use `hiring.resume` with application, prior version and file. The candidate page lists immutable versions; its `?resume=<id>` download checks the current opening team/HR and application/version pair, then serves a checked attachment. Resume bytes share FILES custody; they never become employee documents. Include this table/blob custody in future DATA-002 erasure.
 
 EEO-003 uses HR `preboarding.send` / `preboarding.withdraw` and `/app/preboarding`; scoped bearer mail links reach only `/preboarding/:token`. `joiner.start` accepts `preboardingPacket` and copies immutable EEO answers atomically without exposing them to HR's response. HR `hiring.selfId.invite` / `hiring.selfId.withdraw` send/revoke `/applicant-self-id/:token`; `hiring.close` records explicit closure with application/opening revisions. Only unscoped `eeo.individual` opens `eeo/preboarding/:id` or closed `eeo/applicants/:id`, and an opening-team member cannot read that opening's applicant answers. The invitation HTTP door accepts JSON with the same scoped authority; it creates no employee session. DATA-002 request/preview/confirm also accept `preboarding` for expired or withdrawn packets. Keep future HIRING-003 merges per application and keep HIRING-004 proposals free of applicant EEO.
+
+
+## Contract document synchronization
+
+CONTRACT.md is the acceptance and status source. After changing a clause, run
+`node scripts/willow/contract-docs.mjs write CLAUSE...` and the same command with
+`check`; include each changed clause ID. This synchronizes its existing acceptance
+entry and the generated delivery register in docs/CLAIMS.md. Regenerate the
+edition lock last with `node scripts/edition-authoring/cli.mjs lock`.

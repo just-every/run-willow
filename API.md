@@ -445,3 +445,13 @@ observed sealing and never grants document access or proves delivery.
 Connected DocuSign operation, returned records and old callbacks remain
 unproved. SIGN-001 and SIGN-002 remain PARTIAL; these native capabilities do not
 establish ESIGN or UETA legal suitability.
+
+### Native training approvals
+
+
+Training approval requests share the immutable Personal changes queue. Read
+`GET /api/willow/self-changes/:id` for the exact proposal and decision history;
+`POST /api/willow/self.decide` records the independent current HR decision.
+The existing `training.decide` action consumes that same decision. Replaying
+either door cannot apply the training change again. Native manual training
+creates no payroll or provider handoff.

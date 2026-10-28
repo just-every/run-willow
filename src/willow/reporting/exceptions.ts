@@ -14,8 +14,8 @@ export async function datedExceptions(env:Bindings,actor:Actor,asOf:string,zone:
   const e=entry(r.person_id);e.tasks.push({id:r.id,caseId:r.case_id,dueDate:r.due_date});if(r.due_date<asOf)e.overdue++
  }
  for(const r of await all(env,`SELECT c.*,d.outcome,d.decided_at,x.recorded_at AS resolved_at FROM wl_self_changes c LEFT JOIN wl_self_decisions d ON d.change_id=c.id LEFT JOIN wl_self_reconciliation x ON x.change_id=c.id`)) {
-  if(r.kind==='goal') {
-   if(readsSelfChange(actor,r)&&before(r.requested_at)&&!before(r.decided_at)){const e=entry(r.person_id);e.exceptions++;e.sources.push({kind:'Goal decision',path:`/app/self-changes/${r.id}`,dueDate:r.due_date});if(r.due_date<asOf)e.overdue++}
+  if(r.kind==='goal'||r.kind==='training') {
+   if(readsSelfChange(actor,r)&&before(r.requested_at)&&!before(r.decided_at)){const e=entry(r.person_id);e.exceptions++;e.sources.push({kind:r.kind==='training'?'Training decision':'Goal decision',path:`/app/self-changes/${r.id}`,dueDate:r.due_date});if(r.due_date<asOf)e.overdue++}
    continue
   }
   if(!sees(actor,r.person_id,'private')||!before(r.requested_at))continue
