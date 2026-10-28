@@ -881,6 +881,10 @@ export async function trainingMigrationProof() {
   `INSERT INTO wl_members(id,email,name,status,created_at) VALUES(${quote(id(2))},${quote(mail(2))},${quote(id(2))},'active',0);`,
   `INSERT INTO wl_permissions(member_id,permission,granted_by,granted_at) VALUES(${quote(id(2))},'people.manage',${quote(id(0))},0);`,
   `INSERT INTO wl_training_courses VALUES(${quote(id(3))},${quote(id(3))},1,${quote(id(0))},0);`,
+  `INSERT INTO wl_members(id,email,name,status,created_at) VALUES(${quote(id(0))},${quote(mail(0))},${quote(id(0))},'active',0);`,
+  `INSERT INTO wl_work_schedule VALUES(${quote('training-request:'+rows[0].id)},${quote(id(0))},NULL,'2099-01-01','Retained training follow-up',${quote(id(40))},${quote(id(0))},2);`,
+  `INSERT INTO wl_work_history(source,at,actor,kind,detail) VALUES(${quote('training-request:'+rows[0].id)},1,${quote(id(0))},'schedule.changed','{}');`,
+  `INSERT INTO wl_work_deliveries(id,source,schedule_revision,policy_revision,step,recipient,status,created_at) VALUES(${quote(id(41))},${quote('training-request:'+rows[0].id)},${quote(id(40))},${quote(id(42))},0,${quote(id(0))},'accepted',1);`,
   ...rows.flatMap(row=>[
    `INSERT INTO wl_training_requests VALUES(${quote(row.id)},${quote(id(1))},'assign',${quote(row.target)},${quote(JSON.stringify(row.payload))},'new',${quote(id(2))},0);`,
    ...row.status==='pending'?[]:[`INSERT INTO wl_training_decisions VALUES(${quote(row.id)},${quote(row.status)},${quote(id(0))},1,'Retained exact decision');`],
@@ -890,7 +894,7 @@ export async function trainingMigrationProof() {
   `INSERT INTO wl_self_decisions VALUES(${quote(id(30))},'approved',${quote(id(0))},1,'Retained personal decision');`,
   `INSERT INTO wl_self_reconciliation VALUES(${quote(id(30))},'Retained handoff',${quote(id(0))},2);`,
  ].join('\n')
- const h=await harness({bindings:{OWNER_EMAIL:mail(0)},upgrade:{before:'0099_training_self_changes.sql',sql:fixture,snapshot:'SELECT id FROM wl_training_requests ORDER BY id'}})
+ const h=await harness({scheduled:true,bindings:{OWNER_EMAIL:mail(0)},upgrade:{before:'0099_training_self_changes.sql',sql:fixture,snapshot:'SELECT id FROM wl_training_requests ORDER BY id'}})
  try {
   assert.equal(h.upgradeSnapshot.length,3)
   const owner=await h.signIn(mail(0))
@@ -906,12 +910,28 @@ export async function trainingMigrationProof() {
   const personal=await h.api(`self-changes/${id(30)}`,owner)
   assert.equal(personal.decision.comment,'Retained personal decision')
   assert.equal(personal.reconciliation.reference,'Retained handoff')
+  const workKey='self-change:'+rows[0].id
+  const pendingWork=(await h.api('work',owner)).items.find(row=>row.source===workKey)
+  assert.ok(pendingWork)
+  assert.equal(pendingWork.owner,id(0))
+  assert.equal(pendingWork.dueDate,'2099-01-01')
+  assert.equal(pendingWork.nextAction,'Retained training follow-up')
+  assert.equal(pendingWork.revision,id(40))
+  assert.ok(pendingWork.history.some(row=>row.kind==='schedule.changed'))
+  assert.deepEqual(pendingWork.deliveries.map(row=>[row.id,row.recipient,row.status]),[[id(41),id(0),'accepted']])
+  await h.api('work.policy',owner,{offsets:'0',quietStart:20,quietEnd:8,defaultDays:1})
+  await h.api('connections.notices',owner,{enabled:true})
+  const tick=await h.raw(`/cdn-cgi/local/scheduled?time=${Date.parse('2099-01-01T09:00:00Z')}&cron=${encodeURIComponent('*/15 * * * *')}&format=json`)
+  assert.equal(tick.status,200);await tick.arrayBuffer()
+  assert.equal((await h.api('work',owner)).items.find(row=>row.source===workKey).deliveries.length,1,'The old reminder claim prevents a new send after migration')
   await h.api('self.decide',owner,{change:rows[0].id,decision:'approve',comment:'Approve migrated exact assignment'})
+  assert.ok(!(await h.api('work',owner)).items.some(row=>row.source===workKey))
+
   assert.deepEqual((await h.api('training',owner)).assignments.map(row=>row.id).sort(),[rows[0].target,rows[1].target].sort())
   await h.api('training.decide',owner,{request:rows[0].id,decision:'approve',reason:'Compatibility cannot replay'},409)
   await h.api('self.decide',owner,{change:rows[2].id,decision:'approve',comment:'Rejected history stays closed'},409)
   assert.ok(!(await h.api('self-exceptions',owner)).some(row=>rows.some(prior=>prior.id===row.id)))
-  console.log('ROLE-009 migration: PASS — pending training remains actionable once, prior decisions and personal handoffs survive, no invented downstream work')
+  console.log('ROLE-009 migration: PASS — pending training remains actionable once, prior decisions and personal handoffs survive, work owners and schedules and reminder claims survive, no invented downstream work')
  } finally {await h.close()}
 }
 

@@ -700,7 +700,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "630f0af2108543aeea4d042e9908670e65642a8e3e32b7ad0891ef09ce7324d9",
+      "sha256": "daa0564c35b85e102736afe1c2353518b7f5e1cc1f42260786c97247189d5a8f",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -728,7 +728,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "921e4fcbf1b65bc0280d0530f5c681c5a35080ac3fdb1d37184cd069acfac0a1",
+      "sha256": "46229740b4727064bdc92ae61a366c5f1851f28f6635fc6f3e8aab94fbc334f2",
       "executable": false
     },
     "DEMO.md": {
@@ -1221,6 +1221,10 @@
     },
     "migrations/core/0100_performance_entries.sql": {
       "sha256": "ffe5ecee28d726cad95b1ab1a7ed77cd26027ac5f2cc80059aa16d964564cc0f",
+      "executable": false
+    },
+    "migrations/core/0101_training_work_custody.sql": {
+      "sha256": "1304c8543b21a30f1c3c005414f069c4770cdb0bf7c939b53bad2cd6a32955ad",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -5360,7 +5364,7 @@
       "executable": false
     },
     "tests/willow/levels-performance.mjs": {
-      "sha256": "b59a5c460cc3a3060b0b6ebad0633422394975a0640d6d2cd9c58b2cfd5ad53a",
+      "sha256": "fee1331339a5815c9e138a797653277cb01e4f46abe3f20b183d25c0cfcb5fb2",
       "executable": false
     },
     "tests/willow/levels-personal-browser.mjs": {
