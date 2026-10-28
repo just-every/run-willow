@@ -1,6 +1,6 @@
 import { CATEGORY_SIGNATURE_STORES, signingCategoryStores, redactSigningReviews } from './signatures'
 import { confirmPreboarding } from './preboarding'
-// DATA-002 execution: the owner confirms a preview's digest and one journaled D1 batch removes the
+// DATA-003 execution: the owner confirms a preview's digest and one journaled D1 batch removes the
 // person. Retained and held records move to restricted custody, erasable rows are deleted, the person's
 // identity in other people's records and in audit and history becomes one random "Former person"
 // label, and portability's restore fence is advanced in the same transaction. Blob bytes are deleted

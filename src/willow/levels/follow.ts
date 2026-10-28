@@ -1,4 +1,4 @@
-// ROLE-001: this is a level setting, never a directly grantable permission.
+// ROLE-019: this is a level setting, never a directly grantable permission.
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
 import { one } from '../core'

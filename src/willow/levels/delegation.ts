@@ -4,7 +4,7 @@ import { LEAVE_FIELDS, LEAVE_RANK, type LeaveRules } from './leave'
 import { COMPENSATION_FIELDS, COMPENSATION_RANK, type CompensationRules } from './compensation'
 import { JOB_FIELDS, JOB_RANK, type JobRules } from './job'
 import { builtinReport } from '../reporting/builtin-catalog'
-// ROLE-003: explicit HR delegation, optionally bounded to owner-selected administrative groups.
+// ROLE-021: explicit HR delegation, optionally bounded to owner-selected administrative groups.
 import type { Bindings } from '../../auth.server'
 import { actorFor, requireLevelAdmin, type Actor, type Permission } from '../actor'
 import { all, guard, insist, one } from '../core'

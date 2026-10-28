@@ -206,7 +206,8 @@
       "how": "split",
       "to": [
         "ROLE-003",
-        "ROLE-021"
+        "ROLE-021",
+        "ROLE-022"
       ]
     },
     "ROLE-004": {

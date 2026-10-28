@@ -1,4 +1,4 @@
-// ROLE-001: additive category reads, independently about self and others.
+// ROLE-017: additive category reads, independently about self and others.
 import { isCredentialActor } from '../api-credentials/principal'
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'

@@ -1,4 +1,4 @@
-// ROLE-001: explicit personal write modes. No rows means the existing self-service right.
+// ROLE-016: explicit personal write modes. No rows means the existing self-service right.
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
 import { all, insist } from '../core'

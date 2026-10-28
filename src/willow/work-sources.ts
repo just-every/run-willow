@@ -115,15 +115,15 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  for (const r of notices) add('notice-failure',r,'Investigate email delivery failure','/app/connections',deadline(r.created_at),a=>a.owner,a=>a.owner,null,'Delivery failed; business work remains independent')
  for (const r of await all(env,'SELECT provider_id AS id,failing_since FROM oa_identity_provider_health WHERE failing_since IS NOT NULL')) add('identity-failure',r,'Restore identity connection','/app/connections',deadline(r.failing_since),a=>a.owner,a=>a.owner,null,'Provider unavailable; ordinary email sign-in remains available')
  for (const r of await all(env,'SELECT provider_id AS id,observed_at FROM wl_identity_token_health WHERE failed=1')) add('identity-token-failure',r,'Investigate refused token exchange','/app/connections',deadline(r.observed_at),a=>a.owner,a=>a.owner,null,'Token exchange unavailable')
- // PEOPLE-003: certifications expiring within the renewal lead are HR work until a renewed (or removed) row replaces them.
+ // PEOPLE-007: certifications expiring within the renewal lead are HR work until a renewed (or removed) row replaces them.
  const certifications = (await recordTables(env)).find(t => t.id === CERTIFICATIONS)!
  for (const r of await renewalsDue(env, today(zone, Date.now()))) add('renewal',r,'Renew certification',`/app/people/${r.person_id}`,r.due,a=>readsTable(a,r.person_id,certifications) && (hr(a) || a.personId===r.person_id),a=>hr(a) && readsTable(a,r.person_id,certifications),null,'Certification expiring; record the renewal on the person’s record')
- // DATA-002: a hold's review is its owner's work, moving to the owner when they lose access; an open erasure request awaits the owner.
+ // DATA-002 / DATA-003: a hold's review is its owner's work, moving to the owner when they lose access; an open erasure request awaits the owner.
  for (const hold of await holds(env,{active:true})) {
   const active = !!await one(env,"SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active'",hold.owner_member)
   add('hold-review',hold,'Review legal hold','/app/retention',hold.review_date,a=>a.owner||a.id===hold.owner_member,a=>active?a.id===hold.owner_member||a.owner:a.owner,active?hold.owner_member:null,active?'Awaiting the hold owner':'Hold owner lost access; the owner reviews')
  }
- // DATA-002: each provider deletion request is its assignee's work (the owner's if they lose access) until the provider's outcome is recorded with evidence.
+ // DATA-004: each provider deletion request is its assignee's work (the owner's if they lose access) until the provider's outcome is recorded with evidence.
  for (const req of (await providerRequests(env)).filter(r => r.open)) {
   const active = !!await one(env,"SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active'",req.assignee)
   add('provider-deletion',req,`Record ${req.provider} deletion outcome`,'/app/retention',req.dueDate,a=>a.owner||a.id===req.assignee,a=>active?a.id===req.assignee||a.owner:a.owner,active?req.assignee:null,req.status==='failed'?'Deletion failed; the request stays open':'Awaiting the provider\'s answer')

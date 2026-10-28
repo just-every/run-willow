@@ -1,5 +1,5 @@
 import { previewPreboarding } from '../retention/preboarding'
-// DATA-002 pages: the owner's retention census (table adoption, state rules, class mappings, holds,
+// DATA-002 / DATA-003 / DATA-004 pages: the owner's retention census (table adoption, state rules, class mappings, holds,
 // erasure requests) and the read-only erasure preview. HR sees only the request form and list.
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'

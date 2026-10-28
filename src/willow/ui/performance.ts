@@ -1,4 +1,4 @@
-// PERFORM-001 extends Willow's established server-rendered page components.
+// PERFORM-001 / PERFORM-002 extend Willow's established server-rendered page components.
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
 import { ENTRY_FIELDS } from '../performance/entries'

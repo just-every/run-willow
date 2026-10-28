@@ -1,4 +1,4 @@
-// ROLE-001 compensation-owner authority is explicit and employer-wide.
+// COMP-001 compensation-owner authority is explicit and employer-wide.
 import type { Bindings } from '../../auth.server'
 import { actorFor, can, requirePermission, type Actor } from '../actor'
 import { guard, insist, one } from '../core'

@@ -1,7 +1,7 @@
 import { signatureRequests } from '../sign/requests'
 import { excludesText } from '../retention/excluded'
 import { readsCustomField } from '../custom-fields/read'
-// REPORT-001: saved definitions, authorized results and versioned delivery schedules.
+// REPORT-001 / REPORT-002: saved definitions, authorized results and versioned delivery schedules.
 import { isReporter, selectedReport } from '../levels/reports'
 import type { Bindings } from '../../auth.server'
 import { can, employerZone, type Actor } from '../actor'

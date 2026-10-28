@@ -1,6 +1,6 @@
 import { readsCompensation } from '../levels/compensation'
 import { readsJobField, type JobField } from '../levels/job'
-// ROLE-001: one deliberately small projection shared by detail and list doors.
+// ROLE-019: one deliberately small projection shared by detail and list doors.
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
 import { sees } from '../access'

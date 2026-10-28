@@ -42,8 +42,8 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 | BASE-ACCESS-001 | Sign-in | none | not run |
 | BASE-ACCESS-002 | Sessions | WIL-17, WIL-19, IDENTITY-002, SECURITY-001 | not run |
 | BASE-ACCESS-003 | Public endpoints | none | not run |
-| BASE-ACCESS-004 | Server-side authorisation | WIL-01, WIL-02, WIL-03, WIL-04, WIL-05, WIL-06, WIL-07, WIL-08, WIL-09, WIL-10, WIL-11, WIL-12, WIL-13, WIL-14, WIL-15, WIL-16, WIL-17, WIL-18, WIL-19, WIL-20, WIL-21, ROLE-001, ROLE-002, ROLE-003, ROLE-004, ROLE-005, ROLE-006, ROLE-007, ROLE-008, ROLE-009, ROLE-010, ROLE-011, ROLE-012, ROLE-013, ROLE-014, ROLE-015, ROLE-016, ROLE-017, ROLE-018, ROLE-019, ROLE-020, ROLE-021, IDENTITY-001, IDENTITY-002, SECURITY-001, SECURITY-002 | not run |
-| BASE-INPUT-001 | Validation | WIL-01, WIL-02, WIL-03, WIL-04, WIL-05, WIL-06, WIL-07, WIL-08, WIL-09, WIL-10, WIL-11, WIL-12, WIL-13, WIL-14, WIL-15, WIL-16, WIL-17, WIL-18, WIL-19, WIL-20, WIL-21, PEOPLE-001, PEOPLE-002, PEOPLE-003, PEOPLE-004, PEOPLE-005, SELF-001, SELF-002, MOBILE-001, LOCALE-001, PEOPLE-006, PEOPLE-007, PEOPLE-008, ROLE-001, ROLE-002, ROLE-003, ROLE-004, ROLE-005, ROLE-006, ROLE-007, ROLE-008, ROLE-009, ROLE-010, ROLE-011, ROLE-012, ROLE-013, ROLE-014, ROLE-015, API-001, API-002, API-003, ROLE-016, ROLE-017, ROLE-018, ROLE-019, ROLE-020, ROLE-021, HIRING-001, HIRING-002, HIRING-003, HIRING-004, HIRING-005, FLOW-001, FLOW-002, FLOW-003, FLOW-004, SIGN-001, SIGN-002, US-001, US-002, EEO-001, EEO-003, EEO-002, EEO-004, SIGN-003, SIGN-004, SIGN-005, LEAVE-001, LEAVE-002, TIME-001, PAYROLL-001, PAYROLL-002, PAYROLL-003, PAYROLL-004, PAYROLL-005, PAYROLL-006, BENEFITS-001, BENEFITS-002, BENEFITS-003, RETIRE-001, IDENTITY-001, IDENTITY-002, COMMS-001, PERFORM-001, ENGAGE-001, COMP-001, LEARN-001, COMP-002, PERFORM-002, CONNECT-001, REPORT-001, MIGRATE-001, MIGRATE-002, DATA-001, DATA-002, AUDIT-001, SECURITY-001, SECURITY-002, OPS-001, OPS-002, OPEN-001, DATA-003, DATA-004, REPORT-002, REPORT-003, BOUNDARY-001, AI-001, AI-002, AGENT-001, AGENT-002, AGENT-003, AI-003, AI-004, AI-005 | not run |
+| BASE-ACCESS-004 | Server-side authorisation | WIL-01, WIL-02, WIL-03, WIL-04, WIL-05, WIL-06, WIL-07, WIL-08, WIL-09, WIL-10, WIL-11, WIL-12, WIL-13, WIL-14, WIL-15, WIL-16, WIL-17, WIL-18, WIL-19, WIL-20, WIL-21, ROLE-001, ROLE-002, ROLE-003, ROLE-004, ROLE-005, ROLE-006, ROLE-007, ROLE-008, ROLE-009, ROLE-010, ROLE-011, ROLE-012, ROLE-013, ROLE-014, ROLE-015, ROLE-016, ROLE-017, ROLE-018, ROLE-019, ROLE-020, ROLE-021, IDENTITY-001, IDENTITY-002, SECURITY-001, SECURITY-002, ROLE-022 | not run |
+| BASE-INPUT-001 | Validation | WIL-01, WIL-02, WIL-03, WIL-04, WIL-05, WIL-06, WIL-07, WIL-08, WIL-09, WIL-10, WIL-11, WIL-12, WIL-13, WIL-14, WIL-15, WIL-16, WIL-17, WIL-18, WIL-19, WIL-20, WIL-21, PEOPLE-001, PEOPLE-002, PEOPLE-003, PEOPLE-004, PEOPLE-005, SELF-001, SELF-002, MOBILE-001, LOCALE-001, PEOPLE-006, PEOPLE-007, PEOPLE-008, ROLE-001, ROLE-002, ROLE-003, ROLE-004, ROLE-005, ROLE-006, ROLE-007, ROLE-008, ROLE-009, ROLE-010, ROLE-011, ROLE-012, ROLE-013, ROLE-014, ROLE-015, API-001, API-002, API-003, ROLE-016, ROLE-017, ROLE-018, ROLE-019, ROLE-020, ROLE-021, HIRING-001, HIRING-002, HIRING-003, HIRING-004, HIRING-005, FLOW-001, FLOW-002, FLOW-003, FLOW-004, SIGN-001, SIGN-002, US-001, US-002, EEO-001, EEO-003, EEO-002, EEO-004, SIGN-003, SIGN-004, SIGN-005, LEAVE-001, LEAVE-002, TIME-001, PAYROLL-001, PAYROLL-002, PAYROLL-003, PAYROLL-004, PAYROLL-005, PAYROLL-006, BENEFITS-001, BENEFITS-002, BENEFITS-003, RETIRE-001, IDENTITY-001, IDENTITY-002, COMMS-001, PERFORM-001, ENGAGE-001, COMP-001, LEARN-001, COMP-002, PERFORM-002, CONNECT-001, REPORT-001, MIGRATE-001, MIGRATE-002, DATA-001, DATA-002, AUDIT-001, SECURITY-001, SECURITY-002, OPS-001, OPS-002, OPEN-001, DATA-003, DATA-004, REPORT-002, REPORT-003, BOUNDARY-001, AI-001, AI-002, AGENT-001, AGENT-002, AGENT-003, AI-003, AI-004, AI-005, ROLE-022 | not run |
 | BASE-INPUT-002 | HTML | SECURITY-001 | not run |
 | BASE-INPUT-003 | Uploads | SECURITY-001 | not run |
 | BASE-SECRET-001 | No leakage | WIL-19, API-001, API-002, API-003, HIRING-001, HIRING-002, HIRING-003, HIRING-004, HIRING-005, PAYROLL-001, PAYROLL-002, PAYROLL-003, PAYROLL-004, PAYROLL-005, PAYROLL-006, BENEFITS-001, BENEFITS-002, BENEFITS-003, RETIRE-001, IDENTITY-001, IDENTITY-002, COMMS-001, LEARN-001, CONNECT-001, SECURITY-001, SECURITY-002 | not run |
@@ -61,12 +61,12 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 | BASE-OPS-003 | Idempotency | API-001, API-002, API-003, HIRING-001, HIRING-002, HIRING-003, HIRING-004, HIRING-005, PAYROLL-001, PAYROLL-002, PAYROLL-003, PAYROLL-004, PAYROLL-005, PAYROLL-006, BENEFITS-001, BENEFITS-002, BENEFITS-003, RETIRE-001, IDENTITY-001, IDENTITY-002, COMMS-001, LEARN-001, CONNECT-001 | not run |
 | BASE-OPS-004 | Failure is visible | WIL-18 | not run |
 | BASE-OPS-005 | Audit | AUDIT-001 | not run |
-| BASE-ROLE-001 | Roles through every door | WIL-01, WIL-02, WIL-03, WIL-04, WIL-05, WIL-06, WIL-07, WIL-08, WIL-09, WIL-10, WIL-11, WIL-12, WIL-13, WIL-14, WIL-15, WIL-16, WIL-17, WIL-18, WIL-19, WIL-20, WIL-21, PEOPLE-001, PEOPLE-002, PEOPLE-003, PEOPLE-004, PEOPLE-005, SELF-001, SELF-002, MOBILE-001, LOCALE-001, PEOPLE-006, PEOPLE-007, PEOPLE-008, ROLE-001, ROLE-002, ROLE-003, ROLE-004, ROLE-005, ROLE-006, ROLE-007, ROLE-008, ROLE-009, ROLE-010, ROLE-011, ROLE-012, ROLE-013, ROLE-014, ROLE-015, API-001, API-002, API-003, ROLE-016, ROLE-017, ROLE-018, ROLE-019, ROLE-020, ROLE-021, HIRING-001, HIRING-002, HIRING-003, HIRING-004, HIRING-005, FLOW-001, FLOW-002, FLOW-003, FLOW-004, SIGN-001, SIGN-002, US-001, US-002, EEO-001, EEO-003, EEO-002, EEO-004, SIGN-003, SIGN-004, SIGN-005, LEAVE-001, LEAVE-002, TIME-001, PAYROLL-001, PAYROLL-002, PAYROLL-003, PAYROLL-004, PAYROLL-005, PAYROLL-006, BENEFITS-001, BENEFITS-002, BENEFITS-003, RETIRE-001, IDENTITY-001, IDENTITY-002, COMMS-001, PERFORM-001, ENGAGE-001, COMP-001, LEARN-001, COMP-002, PERFORM-002, CONNECT-001, REPORT-001, MIGRATE-001, MIGRATE-002, DATA-001, DATA-002, AUDIT-001, SECURITY-001, SECURITY-002, OPS-001, OPS-002, OPEN-001, DATA-003, DATA-004, REPORT-002, REPORT-003, BOUNDARY-001, AI-001, AI-002, AGENT-001, AGENT-002, AGENT-003, AI-003, AI-004, AI-005 | not run |
+| BASE-ROLE-001 | Roles through every door | WIL-01, WIL-02, WIL-03, WIL-04, WIL-05, WIL-06, WIL-07, WIL-08, WIL-09, WIL-10, WIL-11, WIL-12, WIL-13, WIL-14, WIL-15, WIL-16, WIL-17, WIL-18, WIL-19, WIL-20, WIL-21, PEOPLE-001, PEOPLE-002, PEOPLE-003, PEOPLE-004, PEOPLE-005, SELF-001, SELF-002, MOBILE-001, LOCALE-001, PEOPLE-006, PEOPLE-007, PEOPLE-008, ROLE-001, ROLE-002, ROLE-003, ROLE-004, ROLE-005, ROLE-006, ROLE-007, ROLE-008, ROLE-009, ROLE-010, ROLE-011, ROLE-012, ROLE-013, ROLE-014, ROLE-015, API-001, API-002, API-003, ROLE-016, ROLE-017, ROLE-018, ROLE-019, ROLE-020, ROLE-021, HIRING-001, HIRING-002, HIRING-003, HIRING-004, HIRING-005, FLOW-001, FLOW-002, FLOW-003, FLOW-004, SIGN-001, SIGN-002, US-001, US-002, EEO-001, EEO-003, EEO-002, EEO-004, SIGN-003, SIGN-004, SIGN-005, LEAVE-001, LEAVE-002, TIME-001, PAYROLL-001, PAYROLL-002, PAYROLL-003, PAYROLL-004, PAYROLL-005, PAYROLL-006, BENEFITS-001, BENEFITS-002, BENEFITS-003, RETIRE-001, IDENTITY-001, IDENTITY-002, COMMS-001, PERFORM-001, ENGAGE-001, COMP-001, LEARN-001, COMP-002, PERFORM-002, CONNECT-001, REPORT-001, MIGRATE-001, MIGRATE-002, DATA-001, DATA-002, AUDIT-001, SECURITY-001, SECURITY-002, OPS-001, OPS-002, OPEN-001, DATA-003, DATA-004, REPORT-002, REPORT-003, BOUNDARY-001, AI-001, AI-002, AGENT-001, AGENT-002, AGENT-003, AI-003, AI-004, AI-005, ROLE-022 | not run |
 | BASE-AUDIT-001 | Searchable, durable audit | API-001, API-002, API-003, HIRING-001, HIRING-002, HIRING-003, HIRING-004, HIRING-005, PAYROLL-001, PAYROLL-002, PAYROLL-003, PAYROLL-004, PAYROLL-005, PAYROLL-006, BENEFITS-001, BENEFITS-002, BENEFITS-003, RETIRE-001, IDENTITY-001, IDENTITY-002, COMMS-001, LEARN-001, CONNECT-001, AUDIT-001 | not run |
 | BASE-BACKUP-001 | Independent backup, restore and rollback | OPS-001 | not run |
 | BASE-DATA-006 | Erasure respects retention and legal hold | WIL-16, WIL-17, MIGRATE-001, MIGRATE-002, DATA-001, DATA-002, DATA-003, DATA-004 | not run |
 | BASE-SIGNIN-001 | Standards-based SSO and lifecycle | WIL-17, WIL-19, IDENTITY-002 | not run |
-| BASE-SIGNIN-002 | Native multi-factor authentication | SECURITY-002 | not run |
+| BASE-SIGNIN-002 | Native multi-factor authentication | SECURITY-002, ROLE-022 | not run |
 | BASE-INSTALL-001 | Free self-host and removal | OPS-001, OPEN-001 | not run |
 | BASE-MAIL-001 | Truthful mail outcomes | WIL-18, FLOW-002, COMMS-001, REPORT-002 | not run |
 | BASE-ACCESSIBILITY-001 | One accessibility bar | MOBILE-001, OPS-001 | not run |
@@ -419,7 +419,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 2. Migrate direct grants into individually named levels and compare every member’s before/after report: no right widens.
 3. Change a level and inspect the same session and audit; the reviewed changed rights appear and reuse of the review is refused.
 
-#### ROLE-002 — Group-scoped levels and bulk assignment
+#### ROLE-002 — Group-scoped levels
 
 *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 
@@ -430,16 +430,15 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 2. Combine independently scoped levels and confirm neither scope grants the other’s fields; employer-wide settings remain outside scoped rights.
 3. Transfer a person across the boundary and read both sides of the effective date; a historical view grants no old access.
 
-#### ROLE-003 — Default self-service access and delegated access administration
+#### ROLE-003 — Default levels and timed invitations
 
 *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
 
-**Requirement.** The owner chooses the default level and invitation timing for hires, joiners, rehires and imported people. Invitations use the personal mailbox before start and work mailbox on start, support explicit bulk/deferred import, exclude former people and never restore prior rehire authority. Second-factor reset is a separate delegable right, never usable on oneself.
+**Requirement.** The owner chooses the default level and invitation timing for hires, joiners, rehires and imported people. Invitations use the personal mailbox before start and work mailbox on start, support explicit bulk/deferred import, exclude former people and never restore prior rehire authority.
 
 **Acceptance.**
 1. Choose a default, import 50 people and hire a candidate; read one invitation per eligible person at its configured time and none for former people.
 2. Change the bound default definition and require renewed consent; repeat a bulk invitation without duplicate access.
-3. Use the separate delegated factor-reset right and refuse self-reset; read ended sessions and required reenrollment.
 
 #### ROLE-004 — Job and employment fields
 
@@ -689,6 +688,15 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 2. Refuse out-of-scope targets, shared definitions with outside assignees, self/owner edits, redelegation and rights the delegate lacks.
 3. Request pay authority and apply it only through the distinct eligible administrator under current ceilings; revoke either actor’s authority and refuse the stale review.
 
+#### ROLE-022 — Delegated second-factor reset
+
+*Tier:* Core · *From:* ROLE-003 · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001, BASE-SIGNIN-002 · *Rules:* D-2
+
+**Requirement.** A separate explicit right delegates resetting another member’s second factor without granting access-level administration. The requester cannot reset their own factor. SECURITY-002 governs factor recovery, ended sessions and required reenrollment; an agent’s reset carries access and security under the company policy.
+
+**Acceptance.**
+1. Use the separate delegated factor-reset right for another member and refuse self-reset; read the ended sessions, audited actor and reason, and required reenrollment.
+
 ### Hiring
 
 #### HIRING-001 — Accepted-hire handoffs from Greenhouse, Lever, Workable and JazzHR
@@ -792,7 +800,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 4. Use band and location conditions, attach evidence, substitute an absent approver and inspect subject-follow status without widening private request reads.
 5. Change the native period or relevant band before final approval and refuse stale execution.
 
-#### SIGN-001 — Offer and policy templates with native e-signature
+#### SIGN-001 — Offer and policy signature templates
 
 *Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-3, D-1
 
@@ -804,7 +812,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 3. Use the template in a pinned workflow and preserve completed evidence through deliberate upgrade.
 4. At this door, compare the pinned workflow preview with execution; fail a step and observe blocked dependent work and closure, then upgrade deliberately without losing completed evidence.
 
-#### SIGN-002 — Cohort signature requests and the signed-documents report
+#### SIGN-002 — Cohort signature requests
 
 *Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-3
 
@@ -1126,7 +1134,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 ### Performance and HR modules
 
-#### PERFORM-001 — Performance reviews, goals and feedback
+#### PERFORM-001 — Review cycles and confidential feedback
 
 *Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001
 
@@ -1253,7 +1261,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 2. Archive a populated target HRIS, restore into an empty installation, compare all portable records/files and re-sign in.
 3. Confirm old sessions/credentials fail and scheduled provider work stays paused until explicitly reauthorized.
 
-#### DATA-002 — Retention, legal holds and complete erasure
+#### DATA-002 — Retention and legal holds
 
 *Tier:* Core · *Cites:* BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-2, D-1
 
@@ -1486,12 +1494,13 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | `willow.fields.change` | Personal-field edits and approvals | ROLE-016 | access or sensitive | not exposed through MCP |
 
-| `willow.levels.scope` | Group-scoped levels and bulk assignment | ROLE-002 | access or sensitive | not exposed through MCP |
+| `willow.levels.scope` | Group-scoped levels | ROLE-002 | access or sensitive | not exposed through MCP |
 
 | `willow.levels.assign` | Bulk assignment and guarded revert | ROLE-020 | access or sensitive | not exposed through MCP |
 
-| `willow.invitations.configure` | Default self-service access and delegated access administration | ROLE-003 | access or sensitive | not exposed through MCP |
+| `willow.invitations.configure` | Default levels and timed invitations | ROLE-003 | access or sensitive | not exposed through MCP |
 
+| `willow.factors.reset` | Reset another member’s second factor | ROLE-022 | access · security | not exposed through MCP |
 | `willow.levels.delegate` | Bounded delegated access administration | ROLE-021 | access or sensitive | not exposed through MCP |
 
 | `willow.levels.job` | Job and employment fields | ROLE-004 | access or sensitive | not exposed through MCP |
@@ -1540,13 +1549,13 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | `willow.changes.request` | Manager-initiated change requests through approval chains | FLOW-004 | standard or commitment or external or money or sensitive | not exposed through MCP |
 
-| `willow.templates.prepare` | Offer and policy templates with native e-signature | SIGN-001 | commitment or external or sensitive | not exposed through MCP |
+| `willow.templates.prepare` | Offer and policy signature templates | SIGN-001 | commitment or external or sensitive | not exposed through MCP |
 
 | `willow.docusign.send` | Optional DocuSign handoff | SIGN-004 | commitment or external or sensitive | not exposed through MCP |
 
 | `willow.signatures.record` | Native signing and sealed records | SIGN-003 | commitment or external or sensitive | not exposed through MCP |
 
-| `willow.signatures.request` | Cohort signature requests and the signed-documents report | SIGN-002 | commitment or external or sensitive | not exposed through MCP |
+| `willow.signatures.request` | Cohort signature requests | SIGN-002 | commitment or external or sensitive | not exposed through MCP |
 
 | `willow.signatures.report` | Signed-documents reporting | SIGN-005 | commitment or external or sensitive | not exposed through MCP |
 
@@ -1594,7 +1603,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | `willow.channels.deliver` | Slack and Microsoft Teams work notifications | COMMS-001 | external or live | not exposed through MCP |
 
-| `willow.reviews.run` | Performance reviews, goals and feedback | PERFORM-001 | standard or sensitive | not exposed through MCP |
+| `willow.reviews.run` | Review cycles and confidential feedback | PERFORM-001 | standard or sensitive | not exposed through MCP |
 
 | `willow.goals.manage` | Goals and development work | PERFORM-002 | standard or sensitive | not exposed through MCP |
 
@@ -1616,7 +1625,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | `willow.exports.prepare` | Usable employee exports and complete target-product portability | DATA-001 | sensitive or destructive or security | not exposed through MCP |
 
-| `willow.retention.manage` | Retention, legal holds and complete erasure | DATA-002 | sensitive or destructive or security | not exposed through MCP |
+| `willow.retention.manage` | Retention and legal holds | DATA-002 | sensitive or destructive or security | not exposed through MCP |
 
 | `willow.erasure.reconcile` | Erasure outside copies and restore fences | DATA-004 | sensitive or destructive or security | not exposed through MCP |
 
@@ -1914,8 +1923,8 @@ Judged from the code and tests at commit `0497caac7cd702abb9b61e66729853e39f304a
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 5 | 0 | 21 |
-| Target and push further | 30 | 50 | 28 | 108 |
-| All | 46 | 55 | 28 | 129 |
+| Target and push further | 30 | 50 | 29 | 109 |
+| All | 46 | 55 | 29 | 130 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1953,8 +1962,8 @@ Judged from the code and tests at commit `0497caac7cd702abb9b61e66729853e39f304a
 | `PEOPLE-007` | Certification renewal work | target | partial | `tests/willow/record-tables.mjs` — “PEOPLE-003 record tables” | Missing a provider completion journey writing certification and renewing native work; the cited table journey proves near-expiry/expired native records and manual renewal. |
 | `PEOPLE-008` | Custom-field import and payroll mappings | target | partial | `tests/willow/custom-fields.mjs` — “PEOPLE-001 typed fields” | Missing the shared-field journey through each additional connector/source; the cited custom-field journey proves BambooHR repeat/undo and generic/ADP payroll-file mappings only. |
 | `ROLE-001` | Named access levels with field-level rights | target | done | `tests/willow/levels.mjs` — “ROLE-001 named-level slice”; `tests/willow/levels-migration.mjs` — “migrationProof” |  |
-| `ROLE-002` | Group-scoped levels and bulk assignment | target | done | `tests/willow/levels-scope.mjs` — “scopeProof and transferProof”; `tests/willow/levels-scope-kinds.mjs` — “scopeKindsProof”; `tests/willow/levels-scope-decisions.mjs` — “decisionProof” |  |
-| `ROLE-003` | Default self-service access and delegated access administration | target | partial | `tests/willow/flows.mjs` — “flows public-door journey”; `tests/willow/levels-bulk.mjs` — “levels-bulk public-door journey”; `tests/willow/levels-bulk-browser.mjs` — “levels-bulk-browser public-door journey” | Automatic and timed invitations for hires, joiners, rehires and imports, complete delivery to all 50 imported employees and the hire journey remain unproved. Maintained Base invitation support and delegated native-factor resets are still required. |
+| `ROLE-002` | Group-scoped levels | target | done | `tests/willow/levels-scope.mjs` — “scopeProof and transferProof”; `tests/willow/levels-scope-kinds.mjs` — “scopeKindsProof”; `tests/willow/levels-scope-decisions.mjs` — “decisionProof” |  |
+| `ROLE-003` | Default levels and timed invitations | target | partial | `tests/willow/flows.mjs` — “flows public-door journey”; `tests/willow/levels-bulk.mjs` — “levels-bulk public-door journey”; `tests/willow/levels-bulk-browser.mjs` — “levels-bulk-browser public-door journey” | Automatic and timed invitations for hires, joiners, rehires and imports, complete delivery to all 50 imported employees and the hire journey remain unproved. Maintained Base invitation support is still required. |
 | `ROLE-004` | Job and employment fields | target | done | `tests/willow/levels-job-write.mjs` — “jobWriteProof”; `tests/willow/levels-job-read.mjs` — “jobReadProof” |  |
 | `ROLE-005` | Compensation | target | done | `tests/willow/levels-compensation-pay.mjs` — “compensationPayProof”; `tests/willow/levels-compensation-records.mjs` — “compensationRecordProof”; `tests/willow/levels-compensation-definitions.mjs` — “compensationDefinitionProof”; `tests/willow/levels-compensation-custody.mjs` — “compensationCustodyProof” |  |
 | `ROLE-006` | Time off and absence | target | done | `tests/willow/levels-leave.mjs` — “leaveLevelProof” |  |
@@ -1985,8 +1994,8 @@ Judged from the code and tests at commit `0497caac7cd702abb9b61e66729853e39f304a
 | `FLOW-002` | Persistent reminders, escalation and coverage | target | done | `tests/willow/work-followup.mjs` — “FLOW-002 cadence, quiet hours, durable restart, coverage, revocation, reschedule, delivery failures, current work sources and completion” |  |
 | `FLOW-003` | Role-specific preboarding packets | target | partial | `tests/willow/eeo-invitations.mjs` — “eeo-invitations public-door journey”; `tests/willow/eeo-invitations-browser.mjs` — “eeo-invitations-browser public-door journey” | Other role/work-state packet contents, required personal details and approvals, native signatures/forms, benefits choices and packet tasks remain. EEO-003 owns the EEO step; its answers never need HR approval. |
 | `FLOW-004` | Manager-initiated change requests through approval chains | target | done | `tests/willow/change-requests.mjs` — “FLOW-004 change requests” |  |
-| `SIGN-001` | Offer and policy templates with native e-signature | target | partial | `tests/willow/sign-templates.mjs` — “sign-templates public-door journey”; `tests/willow/sign-native.mjs` — “sign-native public-door journey”; `tests/willow/sign-custody.mjs` — “sign-custody public-door journey”; `tests/willow/retention-signatures.mjs` — “retention-signatures public-door journey”; `tests/willow/sign-restore.mjs` — “sign-restore public-door journey”; `tests/willow/workflow-signing.mjs` — “workflow-signing public-door journey”; `tests/willow/sign-webhooks.mjs` — “sign-webhooks public-door journey” | SIGN-001 remains PARTIAL. Unproved SIGN-001 obligations are: materially changed rendered-offer void and reissue with fresh review and consent, and refusal of changed sources or merge values between review and issue; signing-transition refusal after source-field, employer-wide authority or session revocation, and category revocation beyond the sequential prepared-HR-payload case now proved, including concurrent changes and forbidden access-administrator, agent and API-credential attempts, and direct same-person countersigner refusal; current category refusal for existing execution evidence; complete configured field-placement reconciliation; equality of presented and retained consent wording and actual language, supplied network metadata, exclusion of raw signing credentials from certificates and archives, and the complete protected audit schema including uncertain outcomes; distinct decline and deliberate void states; signing-specific notification custody, erased or held execution-evidence restore and erasure fences; and actual external-operation failure through the inherited reviewed workflow. Connected DocuSign sending, envelope ID, returned signed copy and certificate, duplicate and out-of-order callback refusal, old-callback refusal and an authorized employer-account trial remain unbuilt or unproved. Wider rendering support and ESIGN and UETA legal suitability remain unestablished; neither boundary supplies acceptance evidence. Active-session authentication is the supported alternative and does not additionally require an emailed signing credential. |
-| `SIGN-002` | Cohort signature requests and the signed-documents report | target | partial | `tests/willow/sign-native.mjs` — “sign-native public-door journey”; `tests/willow/sign-cohorts.mjs` — “sign-cohorts public-door journey”; `tests/willow/workflow-signing.mjs` — “workflow-signing public-door journey”; `tests/willow/sign-webhooks.mjs` — “sign-webhooks public-door journey” | SIGN-002 remains PARTIAL. Unproved SIGN-002 obligations are: non-owner employer-wide HR report access and its comparison with manager restrictions at 1440 and 390; complete displayed cohort-review and independent-consent assertions; signature-email recipient, authenticated-link and content assertions at the network edge, including failed and uncertain outcomes; category-revocation dispatch, enrollment and signing refusal; unknown and freshness reporting cases and numeric and dated CSV and XLSX parity; actual external-operation failure through the inherited reviewed workflow; and the applicable unproved per-recipient consent, authority, audit and custody riders named under SIGN-001. Native companion-app delivery remains explicitly inherited MOBILE-001 work in both documents, including the unbuilt iOS and Android apps, real devices and developer distribution accounts. Responsive browser signing and mail-provider acceptance do not establish native app delivery or inbox receipt. |
+| `SIGN-001` | Offer and policy signature templates | target | partial | `tests/willow/sign-templates.mjs` — “sign-templates public-door journey”; `tests/willow/sign-native.mjs` — “sign-native public-door journey”; `tests/willow/sign-custody.mjs` — “sign-custody public-door journey”; `tests/willow/retention-signatures.mjs` — “retention-signatures public-door journey”; `tests/willow/sign-restore.mjs` — “sign-restore public-door journey”; `tests/willow/workflow-signing.mjs` — “workflow-signing public-door journey”; `tests/willow/sign-webhooks.mjs` — “sign-webhooks public-door journey” | SIGN-001 remains PARTIAL. Unproved SIGN-001 obligations are: materially changed rendered-offer void and reissue with fresh review and consent, and refusal of changed sources or merge values between review and issue; signing-transition refusal after source-field, employer-wide authority or session revocation, and category revocation beyond the sequential prepared-HR-payload case now proved, including concurrent changes and forbidden access-administrator, agent and API-credential attempts, and direct same-person countersigner refusal; current category refusal for existing execution evidence; complete configured field-placement reconciliation; equality of presented and retained consent wording and actual language, supplied network metadata, exclusion of raw signing credentials from certificates and archives, and the complete protected audit schema including uncertain outcomes; distinct decline and deliberate void states; signing-specific notification custody, erased or held execution-evidence restore and erasure fences; and actual external-operation failure through the inherited reviewed workflow. Connected DocuSign sending, envelope ID, returned signed copy and certificate, duplicate and out-of-order callback refusal, old-callback refusal and an authorized employer-account trial remain unbuilt or unproved. Wider rendering support and ESIGN and UETA legal suitability remain unestablished; neither boundary supplies acceptance evidence. Active-session authentication is the supported alternative and does not additionally require an emailed signing credential. |
+| `SIGN-002` | Cohort signature requests | target | partial | `tests/willow/sign-native.mjs` — “sign-native public-door journey”; `tests/willow/sign-cohorts.mjs` — “sign-cohorts public-door journey”; `tests/willow/workflow-signing.mjs` — “workflow-signing public-door journey”; `tests/willow/sign-webhooks.mjs` — “sign-webhooks public-door journey” | SIGN-002 remains PARTIAL. Unproved SIGN-002 obligations are: non-owner employer-wide HR report access and its comparison with manager restrictions at 1440 and 390; complete displayed cohort-review and independent-consent assertions; signature-email recipient, authenticated-link and content assertions at the network edge, including failed and uncertain outcomes; category-revocation dispatch, enrollment and signing refusal; unknown and freshness reporting cases and numeric and dated CSV and XLSX parity; actual external-operation failure through the inherited reviewed workflow; and the applicable unproved per-recipient consent, authority, audit and custody riders named under SIGN-001. Native companion-app delivery remains explicitly inherited MOBILE-001 work in both documents, including the unbuilt iOS and Android apps, real devices and developer distribution accounts. Responsive browser signing and mail-provider acceptance do not establish native app delivery or inbox receipt. |
 | `US-001` | I-9, E-Verify and W-4 through completion | target | missing |  | No delivered public-door journey for i-9, e-verify and w-4 through completion. The full field modes, named integrations and statutory outcomes remain required as specified. |
 | `US-002` | State new-hire reporting and employer administration | target | missing |  | No delivered public-door journey for state new-hire reporting and employer administration. The full field modes, named integrations and statutory outcomes remain required as specified. |
 | `EEO-001` | Voluntary EEO self-identification in self-service | target | done | `tests/willow/eeo-self-id.mjs` — “EEO-001 self-identification” |  |
@@ -2012,7 +2021,7 @@ Judged from the code and tests at commit `0497caac7cd702abb9b61e66729853e39f304a
 | `IDENTITY-001` | Provisioning and verified deprovisioning | target | partial | `tests/willow/flows.mjs` — “flows public-door journey”; `tests/willow/identity.mjs` — “identity public-door journey”; `tests/willow/restore-access.mjs` — “restore-access public-door journey” | RL-101 resolves connection authority and minimal disclosure. Okta existing-account group add/remove and verified suspension are the foundation; Google Workspace/Microsoft 365, account creation, licenses, data ownership, complete scheduling and every session revocation remain unproved. |
 | `IDENTITY-002` | Google, Microsoft and Okta sign-in controls | target | partial | `tests/willow/phase2.mjs` — “phase2 public-door journey”; `tests/willow/enterprise-oidc.mjs` — “enterprise-oidc public-door journey” | Base-held: the pinned authentication modules have no SAML admission method and do not persist verified provider MFA assurance into sessions. Native MFA also requires SECURITY-002 and its maintained Base factor-secret sealing and installation-key custody. Owner-reviewed group mapping, employer MFA and session policy, and full live provider trials remain unproved. |
 | `COMMS-001` | Slack and Microsoft Teams work notifications | target | missing |  | No delivered public-door journey for slack and microsoft teams work notifications. The full field modes, named integrations and statutory outcomes remain required as specified. |
-| `PERFORM-001` | Performance reviews, goals and feedback | target | done | `tests/willow/performance.mjs` — “PERFORM-001 two teams, scoped feedback, late escalation, calibration, immutable releases, succession, appeals, cross-cycle goals, current authority and retained exit history” |  |
+| `PERFORM-001` | Review cycles and confidential feedback | target | done | `tests/willow/performance.mjs` — “PERFORM-001 two teams, scoped feedback, late escalation, calibration, immutable releases, succession, appeals, cross-cycle goals, current authority and retained exit history” |  |
 | `ENGAGE-001` | Engagement surveys and accountable action | target | partial | `tests/willow/surveys.mjs` — “ENGAGE-001 named/anonymous collection, disclosure, suppression, comments, work and follow-up” | Missing the optional AI summary journey citing protected source groups under company policy; the cited survey journey proves native collection, suppression, themes, owned plans and follow-up. |
 | `COMP-001` | Compensation bands and planning | target | partial | `tests/willow/compensation.mjs` — “COMP-001 bands, budgeted approvals, payroll reconciliation, equity and public forms” | Missing a company-policy agent pay-change journey and connected payroll read-back; the cited compensation journey proves native budget/publication guards and frozen-file human-recorded receipts. |
 | `LEARN-001` | Training assignments and TalentLMS connection | target | missing |  | No delivered public-door journey for training assignments and talentlms connection. The full field modes, named integrations and statutory outcomes remain required as specified. |
@@ -2023,7 +2032,7 @@ Judged from the code and tests at commit `0497caac7cd702abb9b61e66729853e39f304a
 | `MIGRATE-001` | Switch from each incumbent without losing history | target | partial | `tests/willow/flows.mjs` — “flows public-door journey” | Other named kits, expanded history types and payroll-roster matching at cutover. |
 | `MIGRATE-002` | Complete BambooHR move-in beyond the current kit | target | partial | `tests/willow/flows.mjs` — “flows public-door journey” | API source, history and custom tables, signatures, access levels, ATS data, BambooHR Payroll history and large archives. |
 | `DATA-001` | Usable employee exports and complete target-product portability | target | partial | `tests/willow/employee-export.mjs` — “employee-export public-door journey”; `tests/willow/employee-bundle.mjs` — “employee-bundle public-door journey”; `tests/willow/employee-bundle-browser.mjs` — “employee-bundle-browser public-door journey”; `tests/willow/restore-access.mjs` — “restore-access public-door journey”; `tests/willow/bundle-review-fixture.mjs` — “bundle-review-fixture public-door journey” | Other module histories, erasure restore fences, reference-size transfers and complete target-product archive/restore coverage. |
-| `DATA-002` | Retention, legal holds and complete erasure | target | partial | `tests/willow/retention.mjs` — “retention public-door journey”; `tests/willow/restore-erasure.mjs` — “restore-erasure public-door journey”; `tests/willow/retention-browser.mjs` — “retention-browser public-door journey”; `tests/willow/retention-import.mjs` — “retention-import public-door journey”; `tests/willow/retention-payroll.mjs` — “retention-payroll public-door journey”; `tests/willow/eeo-snapshot-erasure.mjs` — “eeo-snapshot-erasure public-door journey”; `tests/willow/eeo-snapshot.mjs` — “eeo-snapshot public-door journey”; `tests/willow/eeo-snapshot-browser.mjs` — “eeo-snapshot-browser public-door journey”; `tests/willow/eeo-preboard-erasure.mjs` — “eeo-preboard-erasure public-door journey” | The owner's "erasure history unverified" acknowledgement for a fresh destination is blocked on a maintained Base CLI/portability release (the pinned rer 0.2.68 has no v2 acknowledgement gate or import-report field); erasure of members without employment, complete import-redaction receipt tallies, and complete audit/history identity scrubbing for short or JSON-escaped names remain unproved. Loose files left by older imports without a native, retained or staged owner fail closed as unresolved blob custody; new imports keep unmapped ZIP entries only in the withdrawable original. |
+| `DATA-002` | Retention and legal holds | target | partial | `tests/willow/retention.mjs` — “retention public-door journey”; `tests/willow/restore-erasure.mjs` — “restore-erasure public-door journey”; `tests/willow/retention-browser.mjs` — “retention-browser public-door journey”; `tests/willow/retention-import.mjs` — “retention-import public-door journey”; `tests/willow/retention-payroll.mjs` — “retention-payroll public-door journey”; `tests/willow/eeo-snapshot-erasure.mjs` — “eeo-snapshot-erasure public-door journey”; `tests/willow/eeo-snapshot.mjs` — “eeo-snapshot public-door journey”; `tests/willow/eeo-snapshot-browser.mjs` — “eeo-snapshot-browser public-door journey”; `tests/willow/eeo-preboard-erasure.mjs` — “eeo-preboard-erasure public-door journey” | The owner's "erasure history unverified" acknowledgement for a fresh destination is blocked on a maintained Base CLI/portability release (the pinned rer 0.2.68 has no v2 acknowledgement gate or import-report field); erasure of members without employment, complete import-redaction receipt tallies, and complete audit/history identity scrubbing for short or JSON-escaped names remain unproved. Loose files left by older imports without a native, retained or staged owner fail closed as unresolved blob custody; new imports keep unmapped ZIP entries only in the withdrawable original. |
 | `AUDIT-001` | Traceable HR and automation history | target | partial | `tests/willow/flows.mjs` — “flows public-door journey” | Cross-provider history and erasure anonymization. |
 | `SECURITY-001` | Private-by-default HR operation and Base guarantees | target | partial | `tests/willow/flows.mjs` — “flows public-door journey” | Future modules, complete erasure and wider security/egress coverage. |
 | `SECURITY-002` | Native second-factor sign-in and an owner MFA policy | target | missing | `src/auth.server.ts` — “auth.server public-door journey” | No delivered public-door journey for native second-factor sign-in and an owner mfa policy. The full field modes, named integrations and statutory outcomes remain required as specified. |
@@ -2048,3 +2057,4 @@ Judged from the code and tests at commit `0497caac7cd702abb9b61e66729853e39f304a
 | `AI-003` | Policy-assistant provider boundary | push-further | partial | `tests/willow/ai-policy.mjs` — “ai-policy public-door journey”; `tests/willow/ai-escalation-proof.mjs` — “ai-escalation-proof public-door journey”; `tests/willow/ai-calculation-proof.mjs` — “ai-calculation-proof public-door journey”; `tests/willow/ai-handbook-proof.mjs` — “ai-handbook-proof public-door journey”; `tests/willow/ai-policy-browser.mjs` — “ai-policy-browser public-door journey”; `tests/willow/ai-handbook-browser.mjs` — “ai-handbook-browser public-door journey”; `tests/willow/retention.mjs` — “retention public-door journey”; `tests/willow/restore-access.mjs` — “restore-access public-door journey” | The existing typed policy path is partial; complete prohibited-input egress, real provider/account retention and the full original handbook target remain unproved. |
 | `AI-004` | Workflow-model structural boundary | push-further | partial | `tests/willow/phase2.mjs` — “phase2 public-door journey”; `tests/willow/ai-workflows-browser.mjs` — “ai-workflows-browser public-door journey”; `tests/willow/restore-access.mjs` — “restore-access public-door journey” | The structural workflow slice has existing minimized provider calls; full supported structural capability inputs, company policy and actual account-retention proof remain unproved. |
 | `AI-005` | Exact-version privileged workflow decisions | push-further | partial | `tests/willow/phase2.mjs` — “phase2 public-door journey”; `tests/willow/ai-workflows-browser.mjs` — “ai-workflows-browser public-door journey”; `tests/willow/restore-access.mjs` — “restore-access public-door journey” | Native exact-version human signoffs are a foundation; the complete connected-step set and company-policy execution including the all-autonomous journey remain unproved. |
+| `ROLE-022` | Delegated second-factor reset | target | missing | | No delivered delegated-factor-reset journey. Native second-factor reset and the maintained Base factor-secret custody required by SECURITY-002 remain unbuilt. |

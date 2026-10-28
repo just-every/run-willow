@@ -1,4 +1,4 @@
-// COMP-001 protected aggregate comparison under ct's approved fixed-partition policy.
+// COMP-002 protected aggregate comparison under ct's approved fixed-partition policy.
 import type { Bindings } from '../../auth.server'
 import { requirePermission, type Actor } from '../actor'
 import { insist, now, stmt } from '../core'

@@ -163,7 +163,7 @@ export async function startLeaver(env: Bindings, actor: Actor, input: Input) {
   const organizationGuard = await managerChangeGuard(env, { period: { id: periodId, personId: period.person_id, startDate: period.start_date, endDate: end } })
   const terms = await termsOn(env, periodId, end)
   const opened = await caseStatements(env, actor, template, period.person_id, periodId, end, terms?.manager_person_id ?? null)
-  // PEOPLE-003: every asset the person still holds becomes an IT return task that closes only with return evidence.
+  // PEOPLE-006: every asset the person still holds becomes an IT return task that closes only with return evidence.
   const assets = await heldAssets(env, period.person_id)
   const returns = assets.map((asset, index) => stmt(env, "INSERT INTO wl_case_tasks (id, case_id, position, title, assignee, due_date, evidence_required, system, action, record_row_id, dependencies, created_at, status) VALUES (?, ?, ?, ?, 'it', ?, 1, NULL, 'asset_return', ?, '[]', ?, 'open')",
     newId(), opened.caseId, 1000 + index, `Return ${asset.values.type} ${asset.values.serial}`, end, asset.rowId, now()))

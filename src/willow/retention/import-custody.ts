@@ -1,4 +1,4 @@
-// DATA-002's bridge to Base: retain SQL descriptions while building the native
+// DATA-003's bridge to Base: retain SQL descriptions while building the native
 // batch, then publish native erasure and import retirement in the same transaction.
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'

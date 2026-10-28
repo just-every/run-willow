@@ -1,4 +1,4 @@
-// DATA-002's inventory: every Willow table, blob store, derived store and import
+// DATA-003's inventory: every Willow table, blob store, derived store and import
 // custody item that can hold a person's data, or the reason it cannot. The preview
 // refuses to run if a table exists that is in neither list, so a new migration
 // cannot add a store the erasure forgets.

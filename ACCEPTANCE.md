@@ -8,10 +8,10 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 | Tier | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Core | 46 | 55 | 23 | 124 |
+| Core | 46 | 55 | 24 | 125 |
 | Agent surface | 0 | 0 | 5 | 5 |
 | Later | 0 | 0 | 0 | 0 |
-| Full target | 46 | 55 | 28 | 129 |
+| Full target | 46 | 55 | 29 | 130 |
 
 Judged from the code and tests at commit `0497caac7cd702abb9b61e66729853e39f304a6a` (26 October 2026). Field proof register: 24 rows; 0 passed, 0 failed, 24 not run.
 
@@ -469,7 +469,7 @@ Core · target · **done** · Cites BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-0
 **Evidence.** `tests/willow/levels.mjs` — “ROLE-001 named-level slice”; `tests/willow/levels-migration.mjs` — “migrationProof”
 **Gap.** None.
 
-#### ROLE-002 — Group-scoped levels and bulk assignment
+#### ROLE-002 — Group-scoped levels
 
 Core · target · **done** · Cites BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · Rules D-1
 
@@ -483,19 +483,18 @@ Core · target · **done** · Cites BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-0
 **Evidence.** `tests/willow/levels-scope.mjs` — “scopeProof and transferProof”; `tests/willow/levels-scope-kinds.mjs` — “scopeKindsProof”; `tests/willow/levels-scope-decisions.mjs` — “decisionProof”
 **Gap.** None.
 
-#### ROLE-003 — Default self-service access and delegated access administration
+#### ROLE-003 — Default levels and timed invitations
 
 Core · target · **partial** · Cites BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
 
-**Requirement.** The owner chooses the default level and invitation timing for hires, joiners, rehires and imported people. Invitations use the personal mailbox before start and work mailbox on start, support explicit bulk/deferred import, exclude former people and never restore prior rehire authority. Second-factor reset is a separate delegable right, never usable on oneself.
+**Requirement.** The owner chooses the default level and invitation timing for hires, joiners, rehires and imported people. Invitations use the personal mailbox before start and work mailbox on start, support explicit bulk/deferred import, exclude former people and never restore prior rehire authority.
 
 **Acceptance.**
 1. Choose a default, import 50 people and hire a candidate; read one invitation per eligible person at its configured time and none for former people.
 2. Change the bound default definition and require renewed consent; repeat a bulk invitation without duplicate access.
-3. Use the separate delegated factor-reset right and refuse self-reset; read ended sessions and required reenrollment.
 
 **Evidence.** `tests/willow/flows.mjs` — “flows public-door journey”; `tests/willow/levels-bulk.mjs` — “levels-bulk public-door journey”; `tests/willow/levels-bulk-browser.mjs` — “levels-bulk-browser public-door journey”
-**Gap.** Automatic and timed invitations for hires, joiners, rehires and imports, complete delivery to all 50 imported employees and the hire journey remain unproved. Maintained Base invitation support and delegated native-factor resets are still required.
+**Gap.** Automatic and timed invitations for hires, joiners, rehires and imports, complete delivery to all 50 imported employees and the hire journey remain unproved. Maintained Base invitation support is still required.
 
 #### ROLE-004 — Job and employment fields
 
@@ -808,6 +807,18 @@ Core · target · **partial** · From ROLE-003 · Cites BASE-ACCESS-004, BASE-IN
 **Evidence.** `tests/willow/flows.mjs` — “flows public-door journey”; `tests/willow/levels-bulk.mjs` — “levels-bulk public-door journey”; `tests/willow/levels-bulk-browser.mjs` — “levels-bulk-browser public-door journey”
 **Gap.** Relative-manager administrative scopes remain unimplemented; the cited native journey proves structurally group-bounded administration and independent sensitive-rights review. No status promotion is made.
 
+#### ROLE-022 — Delegated second-factor reset
+
+Core · target · **missing** · From ROLE-003 · Cites BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001, BASE-SIGNIN-002 · Rules D-2
+
+**Requirement.** A separate explicit right delegates resetting another member’s second factor without granting access-level administration. The requester cannot reset their own factor. SECURITY-002 governs factor recovery, ended sessions and required reenrollment; an agent’s reset carries access and security under the company policy.
+
+**Acceptance.**
+1. Use the separate delegated factor-reset right for another member and refuse self-reset; read the ended sessions, audited actor and reason, and required reenrollment.
+
+**Evidence.** None.
+**Gap.** No delivered delegated-factor-reset journey. Native second-factor reset and the maintained Base factor-secret custody required by SECURITY-002 remain unbuilt.
+
 ### Hiring
 
 #### HIRING-001 — Accepted-hire handoffs from Greenhouse, Lever, Workable and JazzHR
@@ -938,7 +949,7 @@ Core · target · **done** · Cites BASE-INPUT-001, BASE-ROLE-001 · Rules D-1
 **Evidence.** `tests/willow/change-requests.mjs` — “FLOW-004 change requests”
 **Gap.** None.
 
-#### SIGN-001 — Offer and policy templates with native e-signature
+#### SIGN-001 — Offer and policy signature templates
 
 Core · target · **partial** · Cites BASE-INPUT-001, BASE-ROLE-001 · Rules D-3, D-1
 
@@ -953,7 +964,7 @@ Core · target · **partial** · Cites BASE-INPUT-001, BASE-ROLE-001 · Rules D-
 **Evidence.** `tests/willow/sign-templates.mjs` — “sign-templates public-door journey”; `tests/willow/sign-native.mjs` — “sign-native public-door journey”; `tests/willow/sign-custody.mjs` — “sign-custody public-door journey”; `tests/willow/retention-signatures.mjs` — “retention-signatures public-door journey”; `tests/willow/sign-restore.mjs` — “sign-restore public-door journey”; `tests/willow/workflow-signing.mjs` — “workflow-signing public-door journey”; `tests/willow/sign-webhooks.mjs` — “sign-webhooks public-door journey”
 **Gap.** SIGN-001 remains PARTIAL. Unproved SIGN-001 obligations are: materially changed rendered-offer void and reissue with fresh review and consent, and refusal of changed sources or merge values between review and issue; signing-transition refusal after source-field, employer-wide authority or session revocation, and category revocation beyond the sequential prepared-HR-payload case now proved, including concurrent changes and forbidden access-administrator, agent and API-credential attempts, and direct same-person countersigner refusal; current category refusal for existing execution evidence; complete configured field-placement reconciliation; equality of presented and retained consent wording and actual language, supplied network metadata, exclusion of raw signing credentials from certificates and archives, and the complete protected audit schema including uncertain outcomes; distinct decline and deliberate void states; signing-specific notification custody, erased or held execution-evidence restore and erasure fences; and actual external-operation failure through the inherited reviewed workflow. Connected DocuSign sending, envelope ID, returned signed copy and certificate, duplicate and out-of-order callback refusal, old-callback refusal and an authorized employer-account trial remain unbuilt or unproved. Wider rendering support and ESIGN and UETA legal suitability remain unestablished; neither boundary supplies acceptance evidence. Active-session authentication is the supported alternative and does not additionally require an emailed signing credential.
 
-#### SIGN-002 — Cohort signature requests and the signed-documents report
+#### SIGN-002 — Cohort signature requests
 
 Core · target · **partial** · Cites BASE-INPUT-001, BASE-ROLE-001 · Rules D-3
 
@@ -1353,7 +1364,7 @@ Core · target · **missing** · Cites BASE-AUDIT-001, BASE-INPUT-001, BASE-MAIL
 
 ### Performance and HR modules
 
-#### PERFORM-001 — Performance reviews, goals and feedback
+#### PERFORM-001 — Review cycles and confidential feedback
 
 Core · target · **done** · Cites BASE-INPUT-001, BASE-ROLE-001
 
@@ -1513,7 +1524,7 @@ Core · target · **partial** · Cites BASE-DATA-001, BASE-DATA-003, BASE-DATA-0
 **Evidence.** `tests/willow/employee-export.mjs` — “employee-export public-door journey”; `tests/willow/employee-bundle.mjs` — “employee-bundle public-door journey”; `tests/willow/employee-bundle-browser.mjs` — “employee-bundle-browser public-door journey”; `tests/willow/restore-access.mjs` — “restore-access public-door journey”; `tests/willow/bundle-review-fixture.mjs` — “bundle-review-fixture public-door journey”
 **Gap.** Other module histories, erasure restore fences, reference-size transfers and complete target-product archive/restore coverage.
 
-#### DATA-002 — Retention, legal holds and complete erasure
+#### DATA-002 — Retention and legal holds
 
 Core · target · **partial** · Cites BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001 · Rules D-2, D-1
 

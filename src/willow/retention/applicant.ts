@@ -1,4 +1,4 @@
-// DATA-002 for an applicant who was not hired: every application sharing the contact email, their resumes,
+// DATA-003 for an applicant who was not hired: every application sharing the contact email, their resumes,
 // scorecards and timeline are classified, previewed and erased exactly as a former worker's are, with the
 // applicant's identity in audit replaced by one random label.
 import { erasureStatements, invalidateTransfersStatements, redactionStatements } from '@runeditrun/rer/modules/portability/journal'

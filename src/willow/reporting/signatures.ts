@@ -1,4 +1,4 @@
-// SIGN-002: status metadata only. A report's admission actor never owns signing rights.
+// SIGN-005: status metadata only. A report's admission actor never owns signing rights.
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
 import { readsCategory } from '../access'

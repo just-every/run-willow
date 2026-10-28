@@ -1,4 +1,4 @@
-// ROLE-001/012: selected saved and built-in definitions grant only scoped report reads.
+// ROLE-018 / ROLE-012: selected saved and built-in definitions grant only scoped report reads.
 import { BUILTIN_REPORTS } from '../reporting/builtin-catalog'
 import type { Bindings } from '../../auth.server'
 import { can, hasScopedGrant, type Actor } from '../actor'

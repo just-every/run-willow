@@ -1,4 +1,4 @@
-// Frozen EEO-1 reads include rows moved to DATA-002 custody. This is a narrow
+// Frozen EEO-1 reads include rows moved to DATA-003 custody. This is a narrow
 // compliance projection: no original identity, period id or free-text job title
 // leaves custody. Ordinary reports never use these readers.
 import type { Bindings } from '../../auth.server'

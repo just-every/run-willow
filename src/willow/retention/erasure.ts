@@ -1,4 +1,4 @@
-// DATA-002 erasure requests and the read-only preview. The preview classifies every store in
+// DATA-003 erasure requests and the read-only preview. The preview classifies every store in
 // the inventory for one former worker, binds the result in a digest, and writes nothing but
 // its audit row. The owner confirms that digest; a changed preview is refused as stale.
 import type { Bindings } from '../../auth.server'

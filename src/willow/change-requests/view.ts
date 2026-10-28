@@ -3,7 +3,7 @@ import { canRequestCompensationDefinition } from '../compensation/definitions'
 import { readsJobHistoryField, type JobField } from '../levels/job'
 // FLOW-004 reads. Only the requester, HR, the owner and members holding a role
 // in the request's resolved steps read it; the person whose terms change does
-// not follow it until an access level (ROLE-001) lets them. Pay is shown only
+// not follow it until an access level (ROLE-019) lets them. Pay is shown only
 // with pay.read: without it, a requester sees the percentage they entered and
 // any other approver sees that pay changes, with the values withheld.
 import type { Bindings } from '../../auth.server'

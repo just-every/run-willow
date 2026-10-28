@@ -1,4 +1,4 @@
-// COMP-001 uses Willow's existing forms, tables and current-authority read models.
+// COMP-001 / COMP-002 use Willow's existing forms, tables and current-authority read models.
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
 import { compensationHome, compensationCycle } from '../compensation/cycles'
