@@ -1804,7 +1804,7 @@ Core · push-further · **partial** · From AI-002 · Cites BASE-AGENT-003, BASE
 
 #### SURFACE-001 — People-operations registry
 
-Agent surface · target · **missing** · From new · Cites BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-013 · Register R-24
+Agent surface · target · **missing** · From new · Cites BASE-AGENT-002, BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-010, BASE-AGENT-013 · Register R-24
 
 **Requirement.** The MCP job registry matches the tool table and concrete non-tool reasons above, using the native actions and projections for each listed Core job.
 

@@ -73,14 +73,14 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 | BASE-DOCS-001 | On-site docs from one contract | none | not run |
 | BASE-AGENT-001 | One MCP door per seed | none | not run |
 | BASE-AGENT-002 | The seed's jobs are tools, through the UI's own actions | SURFACE-001, SURFACE-002, SURFACE-003, SURFACE-004, SURFACE-005 | not run |
-| BASE-AGENT-003 | Records are resources | WIL-15, WIL-20, AI-001, AI-002, AGENT-001, AGENT-002, AGENT-003, AI-003, AI-004, AI-005 | not run |
+| BASE-AGENT-003 | Records are resources | WIL-15, WIL-20, AI-001, AI-002, AGENT-001, AGENT-002, AGENT-003, AI-003, AI-004, AI-005, SURFACE-001 | not run |
 | BASE-AGENT-004 | Business identity and short-lived, audience-bound tokens | none | not run |
 | BASE-AGENT-005 | An agent acts as a person in a role, never more | none | not run |
 | BASE-AGENT-006 | Every action declares its risk class | WIL-15, WIL-20, SURFACE-001, SURFACE-002, SURFACE-003, SURFACE-004, SURFACE-005, AI-001, AI-002, AGENT-001, AGENT-002, AGENT-003, AI-003, AI-004, AI-005 | not run |
 | BASE-AGENT-007 | The company's policy decides, at one chokepoint | WIL-15, WIL-20, SURFACE-001, SURFACE-002, SURFACE-003, SURFACE-004, SURFACE-005, AI-001, AI-002, AGENT-001, AGENT-002, AGENT-003, AI-003, AI-004, AI-005 | not run |
 | BASE-AGENT-008 | Truthful attribution | WIL-15, WIL-20, AI-001, AI-002, AGENT-001, AGENT-002, AGENT-003, AI-003, AI-004, AI-005 | not run |
 | BASE-AGENT-009 | Every agent action is audited with its class and decision | none | not run |
-| BASE-AGENT-010 | Agents can follow changes | none | not run |
+| BASE-AGENT-010 | Agents can follow changes | SURFACE-001 | not run |
 | BASE-AGENT-011 | Limits are policy, and Pause stops everything | none | not run |
 | BASE-AGENT-012 | Writes are idempotent and conflict-safe | none | not run |
 | BASE-AGENT-013 | Manifest, docs and the conformance journey | SURFACE-001, SURFACE-002, SURFACE-003, SURFACE-004, SURFACE-005 | not run |
@@ -1644,9 +1644,9 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | `willow.onboarding.recover` | Recover stalled onboarding with controlled outreach | AGENT-003 | standard or money or access or security or accounts or sensitive or external or commitment or live | not exposed through MCP |
 
-**Resources.** `willow://people/{id}`, `willow://periods/{id}`, `willow://cases/{id}`, `willow://requests/{id}`, `willow://documents/{id}`, `willow://payroll/{id}`, `willow://candidates/{id}`, `willow://levels/{id}`, `willow://policies/{id}`, `willow://reports/{id}`, `willow://surveys/{id}`, `willow://reviews/{id}`, `willow://connections/{id}` and `willow://erasures/{id}` describe the native records and their dated versions.
+**Resources.** `willow://employers/{id}`, `willow://people/{id}`, `willow://periods/{id}`, `willow://members/{id}`, `willow://levels/{id}`, `willow://fields/{id}`, `willow://record-tables/{id}`, `willow://record-rows/{id}`, `willow://date-alerts/{id}`, `willow://cases/{id}`, `willow://tasks/{id}`, `willow://requests/{id}`, `willow://proposals/{id}`, `willow://documents/{id}`, `willow://shared-folders/{id}`, `willow://shared-files/{id}`, `willow://announcements/{id}`, `willow://leave-accounts/{id}`, `willow://policies/{id}`, `willow://protected-leave/{id}`, `willow://openings/{id}`, `willow://candidates/{id}`, `willow://applications/{id}`, `willow://interviews/{id}`, `willow://offers/{id}`, `willow://screening-orders/{id}`, `willow://signature-templates/{id}`, `willow://signatures/{id}`, `willow://statutory-forms/{id}`, `willow://eeo-submissions/{id}`, `willow://eeo-snapshots/{id}`, `willow://time-entries/{id}`, `willow://timesheets/{id}`, `willow://payroll/{id}`, `willow://benefit-plans/{id}`, `willow://benefit-elections/{id}`, `willow://retirement/{id}`, `willow://identity-accounts/{id}`, `willow://reviews/{id}`, `willow://goals/{id}`, `willow://surveys/{id}`, `willow://action-plans/{id}`, `willow://compensation-bands/{id}`, `willow://compensation-cycles/{id}`, `willow://awards/{id}`, `willow://training-courses/{id}`, `willow://training-assignments/{id}`, `willow://reports/{id}`, `willow://exports/{id}`, `willow://imports/{id}`, `willow://connections/{id}`, `willow://handoffs/{id}`, `willow://holds/{id}`, `willow://erasures/{id}`, `willow://audit/{id}`. Each template identifies that native record and its dated versions; related child records keep their native parent relationship.
 
-**Events.** Employee/terms/access changes, lifecycle/task outcomes, leave decisions, signing states, payroll/benefits/identity mismatches, reporting deliveries, erasure receipts and the inherited policy/review/approval events use their native record identities.
+**Events.** `people.changed`, `employment.changed`, `access.changed`, `field.changed`, `record-table.changed`, `date-alert.changed`, `case.changed`, `task.changed`, `request.changed`, `document.changed`, `company.changed`, `opening.changed`, `candidate.changed`, `offer.accepted`, `screening.changed`, `signature.completed`, `statutory-form.changed`, `eeo.changed`, `leave.changed`, `time.changed`, `payroll.corrected`, `benefits.acknowledged`, `retirement.changed`, `identity.observed`, `review.changed`, `goal.changed`, `survey.changed`, `action-plan.changed`, `compensation.changed`, `training.changed`, `report.delivered`, `connection.changed`, `hold.changed`, `erasure.completed`, plus the inherited approval, agent-review and policy event types. Each names its changed native record; delivery and observed-provider outcomes remain distinct.
 
 **Prompts.** Plan a joiner (WIL-04, FLOW-001); reconcile a mover (AGENT-001, PAYROLL-006); close a leaver (WIL-12, IDENTITY-001); simulate policy (AGENT-002); recover stalled onboarding (AGENT-003).
 
@@ -1658,7 +1658,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 #### SURFACE-001 — People-operations registry
 
-*Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-013 · *Register:* R-24
+*Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-002, BASE-AGENT-003, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-010, BASE-AGENT-013 · *Register:* R-24
 
 **Requirement.** The MCP job registry matches the tool table and concrete non-tool reasons above, using the native actions and projections for each listed Core job.
 
