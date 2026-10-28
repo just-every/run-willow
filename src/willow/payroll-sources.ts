@@ -42,9 +42,9 @@ function snapshot(actor: Actor) {
   const unrestricted = can(actor, 'people.manage')
   const readable = unrestricted ? '1' : `((person_id = ? AND ${currentFlag('employee_read')}) OR (person_id IN (SELECT value FROM json_each(?)) AND ${currentFlag('manager_read')}))`
   const filters: Partial<Record<keyof typeof sources, string>> = {
-    wl_self_changes: `kind<>'goal'`,
-    wl_self_decisions: `change_id IN (SELECT id FROM wl_self_changes WHERE kind<>'goal')`,
-    wl_self_reconciliation: `change_id IN (SELECT id FROM wl_self_changes WHERE kind<>'goal')`,
+    wl_self_changes: `kind NOT IN ('goal','training')`,
+    wl_self_decisions: `change_id IN (SELECT id FROM wl_self_changes WHERE kind NOT IN ('goal','training'))`,
+    wl_self_reconciliation: `change_id IN (SELECT id FROM wl_self_changes WHERE kind NOT IN ('goal','training'))`,
     wl_custom_fields: `id IN (${selectedFields})`,
     wl_custom_field_versions: `field_id IN (${selectedFields})`,
     wl_custom_field_values: `field_id IN (${selectedFields}) AND ${readable}`,

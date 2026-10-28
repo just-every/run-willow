@@ -1,3 +1,4 @@
+import { approveTrainingStatements } from '../training'
 import { approveRecordRowStatements } from '../record-tables/proposals'
 import { approveReviewStatements } from '../performance/corrections'
 import { approveGoalStatements } from '../performance/goals'
@@ -72,6 +73,8 @@ export async function decideSelfChange(env: Bindings, actor: Actor, input: Input
    statements.push(...await approveRecordRowStatements(env,actor,row))
   } else if(row.kind==='review') {
    statements.push(...await approveReviewStatements(env,actor,row))
+  } else if(row.kind==='training') {
+   statements.push(...await approveTrainingStatements(env,actor,row))
   } else if(row.kind==='goal') {
    statements.push(...await approveGoalStatements(env,actor,row))
   } else if(row.kind==='customField') {
@@ -102,7 +105,7 @@ export async function reconcileSelfChange(env: Bindings, actor: Actor, input: In
  const id=input.text('change'),reference=input.text('reference',{max:300})
  const change=await one(env,`${SELF_CHANGE_SELECT} WHERE c.id=?`,id)
  insist(change,'not_found',404)
- insist(!['goal','review'].includes(change.kind),'no_reconciliation_required',409)
+ insist(!['goal','review','training'].includes(change.kind),'no_reconciliation_required',409)
  insist(change.kind==='document'?nativeReviewsDocumentChange(actor,change):handlesSelfExceptions(actor,change.person_id),'forbidden',403)
  await commit(env,[...(change.kind==='document'?await documentReviewAuthority(env,actor,change,{nativeOnly:true}):can(actor,'payroll.handoff')&&can(actor,'pay.read') ? [] : await scopeFence(env,actor,change.person_id,'people.manage','people.private')),guard(env,'not_open',"EXISTS(SELECT 1 FROM wl_self_decisions WHERE change_id=? AND outcome='approved') AND NOT EXISTS(SELECT 1 FROM wl_self_reconciliation WHERE change_id=?)",id,id),stmt(env,'INSERT INTO wl_self_reconciliation VALUES (?,?,?,?)',id,reference,actor.id,now())],{actor:actor.id,action:'selfChange.reconcile',subject:id})
  return {id,status:'resolved'}
