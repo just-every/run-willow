@@ -1598,7 +1598,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | `willow.goals.manage` | Goals and development work | PERFORM-002 | standard or sensitive | not exposed through MCP |
 
-| `willow.surveys.run` | Engagement surveys and accountable action | ENGAGE-001 | standard or sensitive | not exposed through MCP |
+| `willow.surveys.run` | Engagement surveys and accountable action | ENGAGE-001 | standard or sensitive or external | not exposed through MCP |
 
 | `willow.compensation.publish` | Compensation bands and planning | COMP-001 | money or sensitive or commitment | not exposed through MCP |
 
@@ -1632,9 +1632,9 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | `willow.policy.disclose` | Policy-assistant provider boundary | AI-003 | standard or external or sensitive or commitment | not exposed through MCP |
 
-| `willow.workflows.draft` | Natural-language workflow building with impact preview | AI-002 | standard or external or sensitive or commitment | not exposed through MCP |
+| `willow.workflows.draft` | Natural-language workflow building with impact preview | AI-002 | standard or external or sensitive or commitment or money or access or live | not exposed through MCP |
 
-| `willow.workflows.decide` | Exact-version privileged workflow decisions | AI-005 | standard or external or sensitive or commitment | not exposed through MCP |
+| `willow.workflows.decide` | Exact-version privileged workflow decisions | AI-005 | standard or external or sensitive or commitment or money or access or security or live | not exposed through MCP |
 
 | `willow.workflows.disclose` | Workflow-model structural boundary | AI-004 | standard or external or sensitive or commitment | not exposed through MCP |
 
