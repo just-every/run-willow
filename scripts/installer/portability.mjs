@@ -2,6 +2,7 @@ import { localPortability } from '@runeditrun/rer/portability';
 
 const ownerReauthorizationRequired = ['notices', 'oidc', 'model', 'businessImport', 'policyAssistant', 'workflowAssistant', 'oktaProvisioning','signing'];
 const pauseConnections = (table, row) => {
+ if (table === 'wl_members') return {...row,operator_id:null};
  if (table === 'wl_sign_reviews') return {...row,used_at:row.used_at??Date.now()};
  if (table === 'wl_sign_requests' && ['sent','viewed'].includes(row.state)) return {...row,state:'voided',closure_reason:'restored',revision:row.revision+1};
  if (table === 'wl_sign_cohorts') return {...row,future_joiners:0,notify:0,stopped_at:row.stopped_at??Date.now()};

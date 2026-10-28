@@ -51,7 +51,7 @@ export async function proposeCustomField(env: Bindings, actor: Actor, input: Inp
 export async function approveCustomFieldStatements(env: Bindings, reviewer: Actor, row: Row) {
  const after = JSON.parse(row.after_json)
  const live = row.requested_by.startsWith('credential:') ? await liveRequester(env, { id: row.requested_by, sessionId: '' }) : null
- const member = live ? null : await one(env, 'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?', row.requested_by)
+ const member = live ? null : await one(env, 'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?', row.requested_by)
  insist(live || member, 'custom_approval_unavailable', 403)
  const requester = live?.actor ?? await actorFor(env, { id: member!.id, email: member!.email, name: member!.name, personId: member!.person_id, owner: member!.role === 'owner', sessionId: '' })
  const current = await customProposalDefinition(env, requester, row.row_id)

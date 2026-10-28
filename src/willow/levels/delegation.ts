@@ -24,13 +24,13 @@ const selfRank: Record<SelfMode,number>={view:0,approval:1,edit:2}
 const otherRank: Record<OtherMode,number>={none:0,view:1,approval:2,edit:3}
 export const PAY_RIGHTS=['pay.read','payroll.handoff','compensation.approve']
 export async function currentLevelAdmin(env: Bindings, actor: Actor) {
- const row=await one(env,`SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?`,actor.id)
+ const row=await one(env,`SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?`,actor.id)
  insist(row,'forbidden',403)
  const current=await actorFor(env,{id:row.id,email:row.email,name:row.name,personId:row.person_id,owner:row.role==='owner',sessionId:actor.sessionId})
  requireLevelAdmin(current)
  return current
 }
-export const levelSessionFence=(env: Bindings,actor: Actor)=>guard(env,'access_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email)
+export const levelSessionFence=(env: Bindings,actor: Actor)=>guard(env,'access_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.operator_id=o.id
  WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?)`,actor.sessionId,actor.id,Date.now())
 
 /** Administrative reach and carried rights are independent ceilings. */

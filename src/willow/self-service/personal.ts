@@ -31,7 +31,7 @@ export async function approvePersonalStatements(env: Bindings, reviewer: Actor, 
  const field=personalField(row.row_id), value=personalValue(Input.of({value:JSON.parse(row.after_json)[field]}),field)
  const snapshot=(await one<{seq:number}>(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
  const member=await one(env,`SELECT m.id,m.email,m.name,m.person_id,o.role FROM wl_members m
-  JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?`,row.requested_by)
+  JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?`,row.requested_by)
  let requester:Actor
  if(String(row.requested_by).startsWith('credential:'))requester=await currentCredentialPrincipal(env,String(row.requested_by).slice(11))
  else {

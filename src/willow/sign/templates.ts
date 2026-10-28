@@ -5,7 +5,7 @@ import { all, commit, guard, insist, newId, now, one, sha256Hex, stmt, type Row 
 import type { Input } from '../input'
 import { serve } from '../files'
 
-const SESSION=`SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email)
+const SESSION=`SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.operator_id=o.id
  WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?
  AND (o.role='owner' OR EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission='people.manage'))`
 const authority=(env:Bindings,actor:Actor)=>guard(env,'signature_authority_changed',`EXISTS(${SESSION})`,actor.sessionId,actor.id,now())

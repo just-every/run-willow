@@ -59,7 +59,7 @@ export function operatorAuth(env: Bindings, tokenProvider?: string) {
   config: { ...authConfig(env), providers, OIDC_TRANSACTION_SECRET: env.OIDC_TRANSACTION_SECRET },
   hooks: { afterConfirm: async ({ operator, method }) => {
    if (method === 'oidc') {
-    const member = await env.DB.prepare("SELECT 1 FROM wl_members WHERE email = ? AND status = 'active'").bind(operator.email.toLowerCase()).first()
+    const member = await env.DB.prepare("SELECT 1 FROM wl_members WHERE operator_id = ? AND status = 'active'").bind(operator.id).first()
     if (!member) throw new Error('not_a_member')
    }
   } },

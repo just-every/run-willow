@@ -53,7 +53,7 @@ export async function correctReview(env:Bindings,actor:Actor,input:Input) {
  return {id:prepared.id,version:prepared.version}
 }
 export async function approveReviewStatements(env:Bindings,reviewer:Actor,row:Row) {
- const member=await one(env,'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?',row.requested_by)
+ const member=await one(env,'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?',row.requested_by)
  insist(member,'review_requester_unavailable',403)
  const requester=await actorFor(env,{id:member.id,email:member.email,name:member.name,personId:member.person_id,owner:member.role==='owner',sessionId:''})
  const prepared=await prepareCorrection(env,requester,Input.of(JSON.parse(row.after_json)),true)

@@ -29,7 +29,7 @@ export const HANDBOOK_ATTESTATION = 'I reviewed this exact title and every claus
 
 // Check the live session and employer-wide grant inside every write transaction.
 const SESSION = `SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id
- JOIN wl_members m ON m.email=lower(o.email) WHERE s.id=? AND m.id=?
+ JOIN wl_members m ON m.operator_id=o.id WHERE s.id=? AND m.id=?
  AND o.status='active' AND m.status='active' AND s.revoked_at IS NULL
  AND s.operator_version=o.version AND s.expires_at>?`
 const MANAGEMENT = `(o.role='owner' OR EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission='people.manage'))`

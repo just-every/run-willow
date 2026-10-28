@@ -14,7 +14,7 @@ const currentManagers = `WITH current_managers AS (
  AND t.status='active' AND t.effective_from=(SELECT MAX(n.effective_from) FROM wl_terms n
  WHERE n.period_id=p.id AND n.status='active' AND n.effective_from<=?1)
 )`
-const activeMember = `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email
+const activeMember = `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id
  WHERE m.id=? AND m.status='active' AND o.status='active')`
 function nativeScope(actor: Actor, person: string, manager: string | null) {
  return can(actor,'people.manage') || actor.personId===person || (!!actor.personId && actor.personId===manager)
@@ -32,7 +32,7 @@ export async function goalHome(env: Bindings, actor: Actor) {
    FROM wl_people p LEFT JOIN current_managers m ON m.person_id=p.id ORDER BY name`,actor.today),
   all(env,`SELECT m.id,m.name,m.person_id,(o.role='owner' OR EXISTS(SELECT 1 FROM wl_effective_permissions permission
    WHERE permission.member_id=m.id AND permission.permission='people.manage')) AS manages_people
-   FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email
+   FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id
    WHERE m.status='active' AND o.status='active' ORDER BY m.name`),
   all(env,`${currentManagers} SELECT g.*,COALESCE(NULLIF(p.preferred_name,''),p.legal_name) AS person_name,
    owner.name AS owner_name,manager.manager_person_id,c.evidence,c.completed_by,c.completed_at
@@ -87,7 +87,7 @@ async function prepareGoalMutation(env:Bindings,actor:Actor,input:Input,operatio
   insist(milestones.length<=30&&milestones.every(m=>m.length<=300),'invalid_milestones')
   const owner=input.text('owner',{optional:!development})||null
   if(owner) {
-   const member=await one(env,'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?',owner)
+   const member=await one(env,'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?',owner)
    insist(member,'invalid_owner')
    const ownerActor=await actorFor(env,{id:member.id,email:member.email,name:member.name,personId:member.person_id,owner:member.role==='owner',sessionId:''})
    insist(writesGoal(ownerActor,person,row.manager_person_id),'invalid_owner')
@@ -134,7 +134,7 @@ export const finishDevelopment=(env:Bindings,actor:Actor,input:Input)=>mutateGoa
 export async function approveGoalStatements(env:Bindings,reviewer:Actor,row:Record<string,any>) {
  const after=JSON.parse(row.after_json)
  insist(['create','checkin','complete'].includes(after.operation),'invalid_goal_proposal')
- const member=await one(env,'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?',row.requested_by)
+ const member=await one(env,'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?',row.requested_by)
  insist(member,'goal_requester_unavailable',403)
  const requester=await actorFor(env,{id:member.id,email:member.email,name:member.name,personId:member.person_id,owner:member.role==='owner',sessionId:''})
  const prepared=await prepareGoalMutation(env,requester,Input.of(after.payload),after.operation,{approved:true,id:row.row_id})

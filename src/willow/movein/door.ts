@@ -63,7 +63,7 @@ export async function importDoorResponse(request: Request, env: Bindings): Promi
   try {
     if(operator) insist(request.headers.get('x-import-source')==='bamboohr','unknown_import_source')
     const key = await doorKey(env)
-    const owner = await one<{id:string}>(env, "SELECT m.id FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE o.role='owner' AND o.status='active' AND m.status='active'")
+    const owner = await one<{id:string}>(env, "SELECT m.id FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE o.role='owner' AND o.status='active' AND m.status='active'")
     if (!owner) return Response.json({error:'owner_required'}, {status:401})
     let prepared: (ImportDoorSource & {preview:Preview}) | null = null
     const body = async () => {

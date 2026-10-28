@@ -20,7 +20,7 @@ async function deliver(env: Bindings, recipient: Actor, kind: string, subject: s
   let status = 'failed', failure: string | null = 'mail_unavailable'
   try {
     // Recheck admission immediately before sending; never mail an ended member.
-    const current = await one(env, 'SELECT role FROM oa_operators WHERE lower(email)=?', recipient.email)
+    const current = await one(env, 'SELECT o.role FROM oa_operators o JOIN wl_members m ON m.operator_id=o.id WHERE m.id=?', recipient.id)
     const fresh = await actorFor(env, { ...recipient, owner: current?.role === 'owner' })
     if (!allowed(fresh)) {
       await stmt(env, "UPDATE wl_notices SET status='refused', failure='recipient_access_changed' WHERE id=?", id).run()
@@ -42,7 +42,7 @@ export async function notifyAction(env: Bindings, action: string, result: any) {
   if (!['joiner.start', 'mover.schedule', 'leaver.start', 'task.complete', 'leave.decide', 'payroll.draft', 'proposal.decide'].includes(action)) return undefined
   try {
     if (!(await connectionSettings(env))?.notices) return undefined
-    const members = await all(env, "SELECT m.id,m.email,m.name,m.person_id,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.status='active' AND o.status='active'")
+    const members = await all(env, "SELECT m.id,m.email,m.name,m.person_id,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.status='active' AND o.status='active'")
     const recipients: Actor[] = []
     for (const m of members) recipients.push(await actorFor(env, { id: m.id, email: m.email, name: m.name, personId: m.person_id, owner: m.role === 'owner', sessionId: '' }))
     let kind = '', subject = '', path = '', allowed: (a: Actor) => boolean = () => false

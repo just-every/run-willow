@@ -19,7 +19,7 @@ export async function enrollSignatureRecipient(env:Bindings,actor:Actor,snapshot
  const category=await one(env,'SELECT * FROM wl_doc_categories WHERE id=?',snapshot.category)
  insist(category?.subject_reads&&readsCategory(actor,personId,category),'signature_category_denied',403)
  insist(await eligibleSource(env,actor,snapshot.source,personId),'signature_source_target_denied',403)
- const counter=await one(env,"SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active'",snapshot.hr)
+ const counter=await one(env,"SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=? AND m.status='active' AND o.status='active'",snapshot.hr)
  insist(counter,'signature_hr_required',409)
  const counterActor=await actorFor(env,{id:counter.id,email:counter.email,name:counter.name,personId:counter.person_id,owner:counter.role==='owner',sessionId:''})
  insist(counterActor.owner||counterActor.permissions.has('people.manage'),'signature_hr_required',403)

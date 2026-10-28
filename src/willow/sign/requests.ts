@@ -50,7 +50,7 @@ export async function previewSignatures(env:Bindings,actor:Actor,input:Input) {
  }
  insist(people.length>0&&people.length<=200,'signature_recipients_required')
  const hr=input.text('hr',{optional:roles.length===1,max:100})||actor.id
- const counter=await one(env,`SELECT m.id,m.name FROM wl_members m WHERE m.id=? AND m.status='active' AND (EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission='people.manage') OR EXISTS(SELECT 1 FROM oa_operators o WHERE lower(o.email)=m.email AND o.role='owner' AND o.status='active'))`,hr)
+ const counter=await one(env,`SELECT m.id,m.name FROM wl_members m WHERE m.id=? AND m.status='active' AND (EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission='people.manage') OR EXISTS(SELECT 1 FROM oa_operators o WHERE o.id=m.operator_id AND o.role='owner' AND o.status='active'))`,hr)
  insist(counter,'signature_hr_required')
  const counterActor=await signingMember(env,hr)
  insist(counterActor&&can(counterActor,'people.manage'),'signature_hr_required',403)

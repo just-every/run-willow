@@ -28,7 +28,7 @@ export async function resolvePolicyEscalation(env: Bindings, actor: Actor, input
  actor=await freshAiActor(env,actor)
  insist(reviewsPolicyEscalations(actor),'forbidden',403)
  const id=input.text('escalation',{max:100})
- await commit(env,[levelSessionFence(env,actor),guard(env,'policy_followup_authority_changed',`EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND (o.role='owner' OR EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission IN ('people.manage','leave.manage'))))`,actor.id),
+ await commit(env,[levelSessionFence(env,actor),guard(env,'policy_followup_authority_changed',`EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=? AND (o.role='owner' OR EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission IN ('people.manage','leave.manage'))))`,actor.id),
   guard(env,'policy_followup_changed',"EXISTS(SELECT 1 FROM wl_ai_policy_escalations WHERE id=? AND status='open')",id),
   stmt(env,"UPDATE wl_ai_policy_escalations SET status='resolved',resolved_by=?,resolved_at=? WHERE id=? AND status='open'",actor.id,now(),id)],
  {actor:actor.id,action:'policy.followup.resolve',subject:id,detail:{outcome:'hr_followup_completed'}})

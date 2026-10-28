@@ -12,7 +12,7 @@ export async function deliverInvitation(env: Bindings, row: InvitationRow, token
   const eligible = `i.id=? AND i.token_hash=? AND i.delivery_status='pending' AND i.revoked_at IS NULL
     AND i.expires_at > CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)
     AND i.contact_email=a.contact_email AND ${PHASE_ELIGIBLE}
-    AND EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators p ON lower(p.email)=m.email
+    AND EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators p ON p.id=m.operator_id
       WHERE m.id=i.invited_by AND m.status='active' AND p.status='active' AND
       (p.role='owner' OR EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=m.id AND permission='people.manage')))`
   const joins = `wl_applicant_eeo_invitations i JOIN wl_hiring_applications a ON a.id=i.application_id

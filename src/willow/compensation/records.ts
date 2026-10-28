@@ -56,7 +56,7 @@ export function parseCompensationRecord(value: unknown): CompensationRecordPlan 
 }
 
 async function recordActor(env: Bindings, actor: Actor) {
- const row = await one(env, 'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?', actor.id)
+ const row = await one(env, 'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?', actor.id)
  insist(row, 'forbidden', 403)
  return actorFor(env, { id: row.id, email: row.email, name: row.name, personId: row.person_id, owner: row.role === 'owner', sessionId: actor.sessionId })
 }

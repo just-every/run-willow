@@ -24,16 +24,20 @@ import { personView } from './profile'
 
 export async function members(env: Bindings, actor: Actor, request: Request) {
   requirePermission(actor, 'people.manage')
-  const rows = await all(env, 'SELECT m.id, m.email, m.name, m.person_id, m.status, (SELECT json_group_array(permission) FROM wl_effective_permissions p WHERE p.member_id = m.id) AS permissions FROM wl_members m WHERE NOT EXISTS (SELECT 1 FROM wl_erasure_requests r WHERE r.person_id=m.person_id AND r.receipt_id IS NOT NULL) ORDER BY m.name')
-  const operators = new Map((await operatorAuth(env).listOperators(request)).map(operator => [operator.email.toLowerCase(), operator]))
+  const rows = await all(env, 'SELECT m.id, m.operator_id, m.email, m.name, m.person_id, m.status, (SELECT json_group_array(permission) FROM wl_effective_permissions p WHERE p.member_id = m.id) AS permissions FROM wl_members m WHERE NOT EXISTS (SELECT 1 FROM wl_erasure_requests r WHERE r.person_id=m.person_id AND r.receipt_id IS NOT NULL) ORDER BY m.name')
+  const operators = new Map((await operatorAuth(env).listOperators(request)).map(operator => [operator.id, operator]))
   return rows.map(row => {
-    const operator = operators.get(row.email)
+    const operator = operators.get(row.operator_id)
     return { id: row.id, email: row.email, name: row.name, person: row.person_id, status: row.status, signIn: operator?.status ?? null, owner: operator?.role === 'owner', permissions: operator?.role === 'owner' ? [...PERMISSIONS] : JSON.parse(row.permissions) }
   })
 }
 
 async function operatorByEmail(env: Bindings, request: Request, email: string) {
   return (await operatorAuth(env).listOperators(request)).find(operator => operator.email.toLowerCase() === email) ?? null
+}
+
+async function operatorById(env: Bindings, request: Request, id: string) {
+  return (await operatorAuth(env).listOperators(request)).find(operator => operator.id === id) ?? null
 }
 
 /** The owner sets a member's permissions. people.manage also makes their sign-in an admin, so they can manage members' access. */
@@ -45,7 +49,7 @@ export async function setPermissions(env: Bindings, actor: Actor, input: Input, 
   insist(member.status === 'active', 'access_ended', 409)
   const permissions = input.list('permissions')
   insist(permissions.every(permission => (PERMISSIONS as readonly string[]).includes(permission)), 'invalid_permissions')
-  const operator = await operatorByEmail(env, request, member.email)
+  const operator = member.operator_id ? await operatorById(env, request, member.operator_id) : null
   insist(operator, 'member_not_found', 404)
   insist(operator.role !== 'owner', 'owner_permissions_fixed', 409)
   const role = permissions.includes('people.manage') ? 'admin' : 'member'
@@ -85,9 +89,8 @@ export async function bulkGiveAccess(env: Bindings, actor: Actor, input: Input, 
     const active=await one(env,'SELECT 1 FROM wl_periods WHERE person_id=? AND start_date<=? AND (end_date IS NULL OR end_date>=?)',id,actor.today,actor.today)
     if(!active){skipped.push(id);continue}
     insist(person.work_email,'work_email_required')
-    const member=await one(env,'SELECT person_id,status FROM wl_members WHERE email=?',person.work_email)
-    insist(!member||!member.person_id||member.person_id===id,'email_linked_elsewhere',409)
-    if(member?.status==='active'&&member.person_id){skipped.push(id);continue}
+    const member=await one(env,'SELECT person_id,status FROM wl_members WHERE person_id=?',id)
+    if(member?.status==='active'){skipped.push(id);continue}
     eligible.push(id)
   }
   // Validate the exact default before the first outward invitation.
@@ -154,20 +157,21 @@ export async function giveAccess(env: Bindings, actor: Actor, input: Input, requ
   const snapshot=(await one(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
   const policy=await defaultAccessGrant(env,actor)
   const email = person.work_email as string, name = person.preferred_name || person.legal_name
-  const member = await one(env, 'SELECT * FROM wl_members WHERE email = ?', email)
-  insist(!member || !member.person_id || member.person_id === person.id, 'email_linked_elsewhere', 409)
+  const member = await one(env, 'SELECT * FROM wl_members WHERE person_id = ?', person.id)
+  const contact = await one(env, 'SELECT person_id FROM wl_members WHERE email = ?', email)
+  insist(!contact || contact.person_id === person.id, 'email_linked_elsewhere', 409)
   insist(!member || member.status !== 'active' || !member.person_id, 'already_has_access', 409)
   if(policy&&!actor.owner&&member) {
     const reason=member.id===actor.id?'delegation_target_fixed':await one(env,"SELECT 1 FROM wl_effective_permissions WHERE member_id=? AND permission='eeo.individual'",member.id)?'owner_only_delegation':null
     if(reason){await auditRead(env,actor.id,'access.denied',actor.id,{reason});insist(false,reason,403)}
   }
-  const auth = operatorAuth(env), operator = await operatorByEmail(env, request, email)
+  const auth = operatorAuth(env), operator = member?.operator_id ? await operatorById(env, request, member.operator_id) : await operatorByEmail(env, request, email)
   insist(!policy||operator?.role!=='owner','owner_access_fixed',409)
   const administrator=policy && !!await one(env,"SELECT 1 FROM wl_level_permissions p JOIN wl_levels s ON s.id=p.level_id WHERE p.level_id=? AND p.permission='people.manage' AND s.scope_kind='everyone'",policy.level_id)
   const role=administrator?'admin':'member'
   if (!operator) await auth.invite(request, { email, displayName: name, role, returnTo: '/app' })
   else if (operator.status === 'inactive') await auth.setOperatorStatus(request, operator.id, 'active')
-  const target=await one(env,'SELECT id,version,role FROM oa_operators WHERE lower(email)=?',email)
+  const target=await one(env, member?.operator_id ? 'SELECT id,version,role FROM oa_operators WHERE id=?' : 'SELECT id,version,role FROM oa_operators WHERE lower(email)=?', member?.operator_id ?? email)
   insist(target,'access_changed',409)
   insist(!policy||target.role!=='owner','owner_access_fixed',409)
   const id = member?.id ?? newId()
@@ -177,9 +181,9 @@ export async function giveAccess(env: Bindings, actor: Actor, input: Input, requ
     guard(env,'access_changed','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',snapshot),
     ...(currentOnly?[guard(env,'not_current_employee',activeSql,person.id,actor.today,actor.today)]:[]),
     member
-      ? stmt(env, "UPDATE wl_members SET person_id = ?, status = 'active' WHERE id = ?", person.id, id)
-      : stmt(env, "INSERT INTO wl_members (id, email, name, person_id, status, created_at) VALUES (?, ?, ?, ?, 'active', ?)", id, email, name, person.id, now()),
-    ...(operator&&policy?[stmt(env,"UPDATE oa_operators SET role=? WHERE id=? AND role!='owner'",role,operator.id)]:[]),
+      ? stmt(env, "UPDATE wl_members SET operator_id = ?, person_id = ?, status = 'active' WHERE id = ?", target.id, person.id, id)
+      : stmt(env, "INSERT INTO wl_members (id, operator_id, email, name, person_id, status, created_at) VALUES (?, ?, ?, ?, ?, 'active', ?)", id, target.id, email, name, person.id, now()),
+    ...(operator&&policy?[stmt(env,"UPDATE oa_operators SET role=? WHERE id=? AND role!='owner'",role,target.id)]:[]),
     ...(policy?[stmt(env,'INSERT OR IGNORE INTO wl_member_levels(member_id,level_id) VALUES(?,?)',id,policy.level_id)]:[]),
   ], { actor: actor.id, action: 'access.give', subject: person.id, detail: { member: id, invited: !operator, defaultLevel:policy?.level_id??null } })
   return { id, person: person.id, email }
@@ -191,7 +195,7 @@ export async function endAccessStatements(env: Bindings, actor: Actor, request: 
   await checkAdministrativePerson(env,actor,personId)
   const member = await one(env, 'SELECT * FROM wl_members WHERE person_id = ?', personId)
   if (!member || member.status === 'ended') return []
-  const auth = operatorAuth(env), operator = await operatorByEmail(env, request, member.email)
+  const auth = operatorAuth(env), operator = member.operator_id ? await operatorById(env, request, member.operator_id) : null
   insist(operator?.role !== 'owner', 'owner_access_fixed', 409)
   if (operator && operator.status === 'active') {
     await auth.setOperatorStatus(request, operator.id, 'inactive')
@@ -219,7 +223,7 @@ export async function visibilityPreview(env: Bindings, actor: Actor, memberId: s
   const member = await one(env, 'SELECT * FROM wl_members WHERE id = ?', memberId)
   insist(member, 'member_not_found', 404)
   insist(await one(env, 'SELECT 1 FROM wl_people WHERE id = ?', personId), 'person_not_found', 404)
-  const owner = !!await one(env, "SELECT 1 FROM oa_operators WHERE lower(email) = ? AND role = 'owner'", member.email)
+  const owner = !!await one(env, "SELECT 1 FROM oa_operators WHERE id = ? AND role = 'owner'", member.operator_id)
   const target = await actorFor(env, { id: member.id, email: member.email, name: member.name, owner, personId: member.person_id, sessionId: '' })
   const theirs = facets(target, personId), mine = facets(actor, personId)
   const both = new Set([...theirs].filter(facet => mine.has(facet)))

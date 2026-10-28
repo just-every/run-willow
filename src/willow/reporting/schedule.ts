@@ -30,7 +30,7 @@ export async function scheduleReport(env:Bindings,actor:Actor,input:Input) {
  return {id:report.id,revision}
 }
 async function activeMember(env:Bindings,id:string) {
- const row=await one(env,`SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active'`,id)
+ const row=await one(env,`SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=? AND m.status='active' AND o.status='active'`,id)
  if(!row)return null
  try{return await actorFor(env,{id:row.id,email:row.email,name:row.name,personId:row.person_id,owner:row.role==='owner',sessionId:''})}catch{return null}
 }

@@ -21,7 +21,7 @@ const globals=new WeakMap<Actor,{version:number;snapshot:number}>()
 const snapshot=async(env:Bindings)=>(await one(env,"SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download'"))!.seq
 async function hookPrincipal(env:Bindings,hook:Row,instant?:number) {
  if(!hook.global_member)return currentCredentialPrincipal(env,hook.credential_id,instant)
- const member=await one(env,"SELECT m.*,o.version FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active' AND o.role='owner' AND o.version=?",hook.global_member,hook.global_version)
+ const member=await one(env,"SELECT m.*,o.version FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=? AND m.status='active' AND o.status='active' AND o.role='owner' AND o.version=?",hook.global_member,hook.global_version)
  insist(member,'access_changed',403)
  const actor=await actorFor(env,{id:member.id,email:member.email,name:member.name,personId:member.person_id,owner:true,sessionId:''})
  actor.today=today(await employerZone(env),instant)
@@ -30,12 +30,12 @@ async function hookPrincipal(env:Bindings,hook:Row,instant?:number) {
 }
 function hookFence(env:Bindings,actor:Actor) {
  const global=globals.get(actor)
- return global?guard(env,'access_changed',"EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active' AND o.role='owner' AND o.version=?) AND (SELECT COALESCE(MAX(seq),0) FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download')=?",actor.id,global.version,global.snapshot):credentialFence(env,actor)
+ return global?guard(env,'access_changed',"EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=? AND m.status='active' AND o.status='active' AND o.role='owner' AND o.version=?) AND (SELECT COALESCE(MAX(seq),0) FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download')=?",actor.id,global.version,global.snapshot):credentialFence(env,actor)
 }
 async function assertHookCurrent(env:Bindings,actor:Actor) {
  if(!globals.has(actor))return assertCredentialCurrent(env,actor)
  const global=globals.get(actor)!
- insist(await snapshot(env)===global.snapshot&&await one(env,"SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active' AND o.role='owner' AND o.version=?",actor.id,global.version),'access_changed',403)
+ insist(await snapshot(env)===global.snapshot&&await one(env,"SELECT 1 FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=? AND m.status='active' AND o.status='active' AND o.role='owner' AND o.version=?",actor.id,global.version),'access_changed',403)
 }
 function endpoint(value:string) {
  let url:URL
@@ -74,7 +74,7 @@ export async function registerWebhook(env:Bindings,actor:Actor,input:Input) {
  insist(events.length>0&&new Set(events).size===events.length&&events.every(event=>(WEBHOOK_EVENTS as readonly string[]).includes(event)),'invalid_webhook_events')
  const url=endpoint(input.text('endpoint',{max:2000})),id=newId(),secret=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('')
  const cursor=(await one<{seq:number}>(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
- const owner=context?null:await one(env,"SELECT version FROM oa_operators WHERE lower(email)=? AND role='owner' AND status='active'",actor.email)
+ const owner=context?null:await one(env,"SELECT o.version FROM oa_operators o JOIN wl_members m ON m.operator_id=o.id WHERE m.id=? AND o.role='owner' AND o.status='active'",actor.id)
  await commit(env,[context?credentialFence(env,actor):levelSessionFence(env,actor),stmt(env,'INSERT INTO wl_webhooks(id,credential_id,global_member,global_version,endpoint,secret_cipher,fields_json,events_json,monitored_fields_json,cursor,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)',id,context?.id??null,context?null:actor.id,owner?.version??null,url,await protectSecret(env,secret),JSON.stringify(fields),JSON.stringify(events),JSON.stringify(monitored),cursor,now())],{actor:actor.id,action:'webhook.register',subject:id,detail:{kind:context?'permissioned':'global',credential:context?.id??null,fields,events}})
  return {apiVersion:'1',data:{id,active:false,approvalRequired:true},secret}
 }

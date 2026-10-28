@@ -6,7 +6,7 @@ import { answers } from './answers'
 import { application, APPLICATION_JOIN, identity } from './store'
 import type { ApplicantRecord, ApplicationOutcome, ApplicationRow } from './types'
 
-const COMPLIANCE = `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators p ON lower(p.email)=m.email
+const COMPLIANCE = `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators p ON p.id=m.operator_id
   WHERE m.id=? AND m.status='active' AND p.status='active'
   AND EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=m.id AND permission='eeo.individual'))`
 

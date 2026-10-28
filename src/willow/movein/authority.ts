@@ -8,7 +8,7 @@ import type { D1Database } from '../../modules/import-kit/src/d1/index'
 /** Current owner/session checked again inside every Base mutation. */
 export function ownerPredicate(actor: Actor) {
   return { sql: `EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id
-    JOIN wl_members m ON m.email=lower(o.email) WHERE s.id=? AND s.revoked_at IS NULL
+    JOIN wl_members m ON m.operator_id=o.id WHERE s.id=? AND s.revoked_at IS NULL
     AND s.expires_at>unixepoch()*1000 AND o.version=s.operator_version AND o.status='active'
     AND o.role='owner' AND m.id=? AND m.status='active')`, params: [actor.sessionId, actor.id] }
 }

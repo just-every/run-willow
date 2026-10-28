@@ -20,7 +20,7 @@ export async function assignReview(env:Bindings,actor:Actor,input:Input) {
  const id=newId(),cycle=input.text('cycle'),person=input.text('person'),member=input.text('member'),role=input.text('role'),due=requireDate(input.text('dueDate'),'invalid_dueDate')
  const c=await cycleRow(env,cycle);insist(c.status==='open','cycle_locked',409)
  insist(['self','peer','manager'].includes(role),'invalid_role')
- const m=await one(env,`SELECT m.* FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active'`,member)
+ const m=await one(env,`SELECT m.* FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=? AND m.status='active' AND o.status='active'`,member)
  insist(m,'member_not_active',409)
  insist(role!=='self'||m.person_id===person,'self_mismatch')
  if(role==='manager') {

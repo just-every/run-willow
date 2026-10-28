@@ -29,7 +29,7 @@ const REQ = '(SELECT id FROM wl_leave_requests WHERE person_id = ?1)'
 const CASES = '(SELECT id FROM wl_cases WHERE person_id = ?1)'
 const PCASES = '(SELECT id FROM wl_protected_cases WHERE person_id = ?1)'
 const GOALS = '(SELECT id FROM wl_goals WHERE person_id = ?1)'
-const OP = '(SELECT id FROM oa_operators WHERE lower(email) = ?5)'
+const OP = '(SELECT operator_id FROM wl_members WHERE id = ?2 AND operator_id IS NOT NULL)'
 const APPS = "(SELECT id FROM wl_hiring_applications WHERE ?3 <> '' AND lower(contact_email) = ?3)"
 const SELFC = '(SELECT id FROM wl_self_changes WHERE person_id = ?1)'
 const SURVEYA = '(SELECT id FROM wl_survey_answers WHERE member_id = ?2)'

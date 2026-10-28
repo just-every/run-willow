@@ -17,8 +17,8 @@ async function personaMembers(env: Bindings) {
   await env.DB.batch(missing.flatMap(([as, persona]) => {
     const email = `${as}@dev.localhost`
     return [
-      env.DB.prepare("INSERT OR IGNORE INTO wl_members (id, email, name, status, created_at) SELECT lower(hex(randomblob(16))), email, ?, 'active', ? FROM oa_operators WHERE email = ?").bind(persona.name, Date.now(), email),
-      ...persona.permissions.map(permission => env.DB.prepare("INSERT OR IGNORE INTO wl_permissions (member_id, permission, granted_by, granted_at) SELECT id, ?, 'dev-persona', ? FROM wl_members WHERE email = ?").bind(permission, Date.now(), email)),
+      env.DB.prepare("INSERT OR IGNORE INTO wl_members (id, operator_id, email, name, status, created_at) SELECT lower(hex(randomblob(16))), id, email, ?, 'active', ? FROM oa_operators WHERE email = ?").bind(persona.name, Date.now(), email),
+      ...persona.permissions.map(permission => env.DB.prepare("INSERT OR IGNORE INTO wl_permissions (member_id, permission, granted_by, granted_at) SELECT m.id, ?, 'dev-persona', ? FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE o.email = ?").bind(permission, Date.now(), email)),
     ]
   }))
 }

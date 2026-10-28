@@ -71,7 +71,7 @@ export async function currentSelfApprovalDeciders(env:Bindings,row:Row):Promise<
  const current=await one(env,`${SELF_CHANGE_SELECT} WHERE c.id=?`,row.id)
  if(!current)return []
  const selected=await selectedApprovalMembers(env,selfApprovalKey(current),current.person_id)
- const members=await all(env,"SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.status='active' AND o.status='active'")
+ const members=await all(env,"SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.status='active' AND o.status='active'")
  const native=await Promise.all(members.map(m=>actorFor(env,{id:m.id,email:m.email,name:m.name,personId:m.person_id,owner:m.role==='owner',sessionId:''})))
  return [...new Map([...native,...selected].filter(actor=>reviewsChange(actor,current)).map(actor=>[actor.id,actor])).values()]
 }

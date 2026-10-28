@@ -4,9 +4,9 @@ import { readsCategory } from '../access'
 import { guard, insist, now, one, type Row } from '../core'
 import { serve } from '../files'
 export const CONSENT='I consent to electronic records and signatures for this exact document. I can download a copy and withdraw before completion. I intend my entered name and initials to be my signature.'
-export const SESSION=`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email) WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?)`
+export const SESSION=`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.operator_id=o.id WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?)`
 export const session=(env:Bindings,actor:Actor)=>guard(env,'signature_session_changed',SESSION,actor.sessionId,actor.id,now())
-export const authority=(env:Bindings,actor:Actor)=>guard(env,'signature_authority_changed',`EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=? AND permission='people.manage') OR EXISTS(SELECT 1 FROM oa_operators WHERE email=? AND role='owner' AND status='active')`,actor.id,actor.email)
+export const authority=(env:Bindings,actor:Actor)=>guard(env,'signature_authority_changed',`EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=? AND permission='people.manage') OR EXISTS(SELECT 1 FROM oa_operators o JOIN wl_members m ON m.operator_id=o.id WHERE m.id=? AND o.role='owner' AND o.status='active')`,actor.id,actor.id)
 export const requestState=(row:Row)=>row.state==='voided'&&row.closure_reason==='cohort-cancelled'?'cancelled':row.state
 export const pending=(row:Row)=>['sent','viewed'].includes(row.state)
 export const SEQUENCE="COALESCE((SELECT MAX(seq) FROM wl_audit WHERE action NOT LIKE '%.read' AND action NOT LIKE '%.download'),0)"

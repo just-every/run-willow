@@ -40,7 +40,7 @@ export async function workflowSourceChanged(env: Bindings, source: WorkflowSourc
 
 /** Fresh employer-wide HR admission; a historical review never restores access. */
 export async function workflowAuthority(env: Bindings, actor: Actor) {
-  const row = await one(env, `SELECT m.id,m.email,m.name,m.person_id,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?`, actor.id)
+  const row = await one(env, `SELECT m.id,m.email,m.name,m.person_id,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?`, actor.id)
   insist(row, 'forbidden', 403)
   const current = await actorFor(env, { id: row.id, email: row.email, name: row.name, personId: row.person_id, owner: row.role === 'owner', sessionId: actor.sessionId })
   requirePermission(current, 'people.manage')
@@ -48,7 +48,7 @@ export async function workflowAuthority(env: Bindings, actor: Actor) {
 }
 
 export function workflowAuthorityGuard(env: Bindings, actor: Actor) {
-  return guard(env, 'workflow_authority_changed', `EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email)
+  return guard(env, 'workflow_authority_changed', `EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.operator_id=o.id
     WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?
     AND (o.role='owner' OR EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission='people.manage')))`, actor.sessionId, actor.id, Date.now())
 }

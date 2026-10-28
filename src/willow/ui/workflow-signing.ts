@@ -9,7 +9,7 @@ export async function signingEditor(env: Bindings, actor: Actor, data: { locatio
   const templates = (await signatureTemplates(env, actor)).filter(t => t.current && t.approvedAt)
   const counters = await all(env, `SELECT m.id,m.name FROM wl_members m WHERE m.status='active' AND
     (EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission='people.manage') OR
-    EXISTS(SELECT 1 FROM oa_operators o WHERE lower(o.email)=m.email AND o.role='owner' AND o.status='active'))`)
+    EXISTS(SELECT 1 FROM oa_operators o WHERE o.id=m.operator_id AND o.role='owner' AND o.status='active'))`)
   const levels = await all(env, 'SELECT id,name FROM wl_levels')
   return () => h`<details><summary>Native signing step</summary><p>Assign this step to HR. Issue requires a separate review of the exact recipients and document. Personal signatures and the sealed record complete it.</p>${select('Signature template', 'taskSignatureTemplate', templates.map(t => ({ value: t.id, label: `${t.title} · version ${t.version}` })), '', { required: false, blank: 'No signing step' })}${select('Named HR countersigner', 'taskSignatureHr', counters.map(m => ({ value: m.id, label: m.name })), '', { required: false, blank: 'Choose countersigner' })}${select('Signing recipients', 'taskSignatureCohort', [
     { value: 'named', label: 'The person in this case' }, { value: 'everyone', label: 'Everyone' },

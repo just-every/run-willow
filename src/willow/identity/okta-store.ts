@@ -9,7 +9,7 @@ export const OKTA_SYSTEM = 'Okta connected'
 export const oktaSettings = (env: Bindings) => one(env,'SELECT * FROM wl_okta_settings WHERE singleton=1')
 
 export function ownerSessionGuard(env: Bindings, actor: Actor) {
- return guard(env,'okta_authority_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email) WHERE s.id=? AND m.id=? AND s.revoked_at IS NULL AND s.expires_at>? AND s.operator_version=o.version AND o.status='active' AND o.role='owner' AND m.status='active')`,actor.sessionId,actor.id,now())
+ return guard(env,'okta_authority_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.operator_id=o.id WHERE s.id=? AND m.id=? AND s.revoked_at IS NULL AND s.expires_at>? AND s.operator_version=o.version AND o.status='active' AND o.role='owner' AND m.status='active')`,actor.sessionId,actor.id,now())
 }
 
 export async function currentOktaConfiguration(env: Bindings, actor: Actor) {

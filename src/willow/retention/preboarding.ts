@@ -115,7 +115,7 @@ export async function confirmPreboarding(env: Bindings, actor: Actor, input: Inp
       AND (status = 'revoked' OR (status = 'active' AND expires_at <= ${SQL_NOW})))`, packetId, packet.revision),
     guard(env, 'preview_stale', `NOT (${EMPLOYEE})`, packet.email, packetId),
     guard(env, 'preview_stale', "EXISTS (SELECT 1 FROM wl_erasure_requests WHERE id = ? AND preboarding_id = ? AND status = 'open')", request.id, packetId),
-    guard(env, 'stale', `EXISTS (SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email) = m.email
+    guard(env, 'stale', `EXISTS (SELECT 1 FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id
       WHERE m.id = ? AND m.status = 'active' AND o.status = 'active' AND o.role = 'owner')`, actor.id),
     stmt(env, 'INSERT INTO wl_erasure_window (token) VALUES (?)', erasure),
     ...await movePreboarding(env, plan.stores, erasure, at),

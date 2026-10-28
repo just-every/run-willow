@@ -57,7 +57,7 @@ export const readsWholeDefinition = (actor: Actor, kind: DefinitionKind) => can(
 export const hasDefinitionRead = (actor: Actor, kind: DefinitionKind) => readsWholeDefinition(actor, kind) || actor.compensationFields.some(grant => (grant.fields.self[kind] ?? 'none') !== 'none' || (grant.fields.others[kind] ?? 'none') !== 'none') || actor.scoped.some(grant => grant.permissions.has('pay.read'))
 
 export async function freshDefinitionActor(env: Bindings, actor: Actor) {
- const row = await one(env, 'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?', actor.id)
+ const row = await one(env, 'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?', actor.id)
  insist(row, 'forbidden', 403)
  return actorFor(env, { id: row.id, email: row.email, name: row.name, personId: row.person_id, owner: row.role === 'owner', sessionId: actor.sessionId })
 }

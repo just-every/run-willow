@@ -116,7 +116,7 @@ export async function decideTraining(env:Bindings,actor:Actor,input:Input) {
  insist(!await one(env,'SELECT 1 FROM wl_training_decisions WHERE request_id=?',id),'already_decided',409)
  const statements=[...live.guards,guard(env,'already_decided','NOT EXISTS(SELECT 1 FROM wl_training_decisions WHERE request_id=?)',id)]
  if(decision==='approve') {
-  const member=await one(env,'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?',row.requested_by)
+  const member=await one(env,'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?',row.requested_by)
   insist(member,'requester_unavailable',403)
   const requester=await actorFor(env,{id:member.id,email:member.email,name:member.name,personId:member.person_id,owner:member.role==='owner',sessionId:''})
   const prepared=await prepare(env,requester,Input.of(JSON.parse(row.payload_json)),row.operation,row.target_id,false)

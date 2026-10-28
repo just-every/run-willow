@@ -20,7 +20,7 @@ export async function levelData(env: Bindings, actor: Actor) {
   all<{id:string;name:string;version:number;follow_own_changes:number}>(env,'SELECT * FROM wl_levels ORDER BY name'),
   all(env,'SELECT level_id,permission FROM wl_level_permissions ORDER BY permission'),
   all(env,'SELECT * FROM wl_member_levels ORDER BY member_id,level_id'),
-  all(env,`SELECT m.id,m.email,m.name,m.status,m.person_id, o.role='owner' AS owner FROM wl_members m LEFT JOIN oa_operators o ON lower(o.email)=m.email ORDER BY m.name`),
+  all(env,`SELECT m.id,m.operator_id,m.email,m.name,m.status,m.person_id, o.role='owner' AS owner FROM wl_members m LEFT JOIN oa_operators o ON o.id=m.operator_id ORDER BY m.name`),
   all(env,'SELECT * FROM wl_level_migration ORDER BY name'),
   all(env,'SELECT * FROM wl_level_self_fields ORDER BY field'),
   levelScopes(env),

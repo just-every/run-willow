@@ -127,7 +127,7 @@ export async function planErasure(env: Bindings, actor: Actor, personId: string)
   insist(person, 'not_found', 404)
   const sequence = (await one<{ value: number }>(env, `SELECT ${BUSINESS_SEQUENCE} AS value`))!.value
   const examined = await inventoryCoverage(env), zone = await employerZone(env)
-  const member = await one<{ id: string; email: string; status: string }>(env, 'SELECT id, email, status FROM wl_members WHERE person_id = ?', personId)
+  const member = await one<{ id: string; operator_id: string | null; email: string; status: string }>(env, 'SELECT id, operator_id, email, status FROM wl_members WHERE person_id = ?', personId)
   const subject: Subject = { personId, memberId: member?.id ?? '', workEmail: (person.work_email ?? '').toLowerCase(), employeeNumber: person.employee_number ?? '', memberEmail: (member?.email ?? '').toLowerCase() }
   const periods = await all<{ start: string; end: string | null }>(env, 'SELECT start_date AS start, end_date AS end FROM wl_periods WHERE person_id = ? ORDER BY start_date', personId)
   const [adopted, rules, activeHolds, contractor, mapped] = await Promise.all([adoption(env), stateRules(env), holds(env, { active: true }), contractorStatus(env, actor.today), mappings(env)])
@@ -135,7 +135,7 @@ export async function planErasure(env: Bindings, actor: Actor, personId: string)
   const unclaimed = await unclaimedFiles(env)
   if (unclaimed) blockers.push({ kind: 'unclaimed_blob_custody', ref: 'FILES', reason: `${unclaimed} loose files have no native, retained or import-plan owner; resolve their custody before erasure` })
   if (periods.some(period => !period.end || period.end >= actor.today)) blockers.push({ kind: 'current_employment', ref: personId, reason: 'The person has a current or future employment period' })
-  if (member && (await one(env, "SELECT 1 FROM oa_operators WHERE lower(email) = ? AND role = 'owner'", subject.memberEmail))) blockers.push({ kind: 'owner_account', ref: member.id, reason: 'The owner account cannot be erased' })
+  if (member?.operator_id && (await one(env, "SELECT 1 FROM oa_operators WHERE id = ? AND role = 'owner'", member.operator_id))) blockers.push({ kind: 'owner_account', ref: member.id, reason: 'The owner account cannot be erased' })
   for (const [kind, table, where, reason] of OPEN_WORK) {
     const sql = `SELECT id FROM ${table} WHERE ${where}`
     for (const row of (await env.DB.prepare(sql).bind(personId).all<{ id: string }>()).results) blockers.push({ kind, ref: String(row.id), reason })
@@ -238,7 +238,7 @@ async function declaredCopies(env: Bindings, subject: Subject, createdAt: number
   const exports = (await one<{ n: number; first: number | null }>(env, "SELECT COUNT(*) AS n, MIN(at) AS first FROM wl_audit WHERE (action LIKE '%export%' OR action LIKE '%bundle%') AND at >= ?", createdAt))!
   const notices = subject.memberId ? (await one<{ n: number }>(env, "SELECT COUNT(*) AS n FROM wl_notices WHERE recipient = ? AND status IN ('accepted', 'development')", subject.memberId))!.n : 0
   const payroll = (await one<{ n: number }>(env, "SELECT COUNT(*) AS n FROM wl_payroll_batches WHERE status IN ('exported', 'acknowledged') AND instr(lines, ?1) > 0", subject.personId))!.n
-  const sso = subject.memberEmail ? (await one<{ n: number }>(env, 'SELECT COUNT(*) AS n FROM oa_external_identities WHERE operator_id IN (SELECT id FROM oa_operators WHERE lower(email) = ?)', subject.memberEmail))!.n : 0
+  const sso = subject.memberId ? (await one<{ n: number }>(env, 'SELECT COUNT(*) AS n FROM oa_external_identities WHERE operator_id=(SELECT operator_id FROM wl_members WHERE id=?)', subject.memberId))!.n : 0
   const model = (await one<{n:number}>(env,'SELECT COUNT(*) AS n FROM wl_ai_calls WHERE person_id=?',subject.personId))!.n
   const okta = (await one<{n:number}>(env,'SELECT COUNT(*) AS n FROM wl_okta_accounts WHERE person_id=?',subject.personId))!.n
   const webhooks=await all<{endpoint:string;copies:number}>(env,'SELECT w.endpoint,COUNT(*) AS copies FROM wl_webhook_deliveries d JOIN wl_webhooks w ON w.id=d.webhook_id WHERE d.person_id=? AND d.attempts>0 GROUP BY w.endpoint',subject.personId)

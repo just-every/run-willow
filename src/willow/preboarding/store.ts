@@ -42,7 +42,7 @@ export function activeGuard(env: Bindings, packet: PacketRow) {
 
 /** Recheck the current unscoped grant and admission in the committing batch. */
 export function authorityGuard(env: Bindings, actor: Actor, permission: Permission) {
-  return guard(env, 'stale', `EXISTS (SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email) = m.email
+  return guard(env, 'stale', `EXISTS (SELECT 1 FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id
     WHERE m.id = ? AND m.status = 'active' AND o.status = 'active' AND
     (EXISTS (SELECT 1 FROM wl_effective_permissions e WHERE e.member_id = m.id AND e.permission = ?)
       OR (? = 1 AND o.role = 'owner')))`, actor.id, permission, permission === 'eeo.individual' ? 0 : 1)

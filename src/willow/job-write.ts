@@ -22,7 +22,7 @@ export async function liveJobActor(env: Bindings, actor: Pick<Actor, 'id' | 'ses
   return {actor:current,fence:credentialFence(env,current)}
  }
  const snapshot = (await one<{ seq: number }>(env, 'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
- const member = await one(env, 'SELECT m.*, o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?', actor.id)
+ const member = await one(env, 'SELECT m.*, o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?', actor.id)
  insist(member, 'forbidden', 403)
  const current = await actorFor(env, { id: member.id, email: member.email, name: member.name, owner: member.role === 'owner', personId: member.person_id, sessionId: actor.sessionId })
  return { actor: current, fence: guard(env, 'access_changed', '(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?', snapshot) }

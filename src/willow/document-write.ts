@@ -18,12 +18,12 @@ export const reviewsDocumentChange=(actor:Actor,row:Row)=>actor.id!==row.request
 export const canDecideDocumentChange=reviewsDocumentChange
 async function fresh(env:Bindings,actor:Actor) {
  if(actor.id.startsWith('credential:'))return currentCredentialPrincipal(env,actor.id.slice(11))
- const row=await one(env,`SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?`,actor.id)
+ const row=await one(env,`SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?`,actor.id)
  insist(row,'forbidden',403)
  return actorFor(env,{id:row.id,email:row.email,name:row.name,personId:row.person_id,owner:row.role==='owner',sessionId:actor.sessionId})
 }
 const snapshotFence=(env:Bindings,source:number)=>guard(env,'access_changed','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',source)
-const sessionFence=(env:Bindings,actor:Actor)=>credentialContext(actor)?credentialFence(env,actor):guard(env,'access_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email)
+const sessionFence=(env:Bindings,actor:Actor)=>credentialContext(actor)?credentialFence(env,actor):guard(env,'access_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.operator_id=o.id
  WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?)`,actor.sessionId,actor.id,now())
 
 export async function writeDocument(env:Bindings,actor:Actor,input:Input,approval=false) {
@@ -71,5 +71,5 @@ export async function approveDocumentStatements(env:Bindings,reviewer:Actor,row:
  const requester=await fresh(env,{...reviewer,id:row.requested_by})
  const after=JSON.parse(row.after_json)
  insist(credentialPersonAllowed(requester,row.person_id)&&documentMode(requester,row.person_id,after.category)==='approval','document_approval_unavailable',403)
- return [snapshotFence(env,source),...(credentialContext(requester)?[credentialFence(env,requester)]:[guard(env,'document_approval_unavailable',"EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active')",requester.id)]),guard(env,'stale','EXISTS(SELECT 1 FROM wl_documents WHERE id=? AND revision=?)',after.document,row.source_revision),guard(env,'stale','EXISTS(SELECT 1 FROM wl_document_proposals WHERE change_id=? AND version_id=? AND document_id=? AND category_id=?)',row.id,after.version,after.document,after.category),stmt(env,'UPDATE wl_documents SET revision=? WHERE id=?',newId(),after.document)]
+ return [snapshotFence(env,source),...(credentialContext(requester)?[credentialFence(env,requester)]:[guard(env,'document_approval_unavailable',"EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=? AND m.status='active' AND o.status='active')",requester.id)]),guard(env,'stale','EXISTS(SELECT 1 FROM wl_documents WHERE id=? AND revision=?)',after.document,row.source_revision),guard(env,'stale','EXISTS(SELECT 1 FROM wl_document_proposals WHERE change_id=? AND version_id=? AND document_id=? AND category_id=?)',row.id,after.version,after.document,after.category),stmt(env,'UPDATE wl_documents SET revision=? WHERE id=?',newId(),after.document)]
 }

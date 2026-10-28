@@ -18,7 +18,7 @@ export async function application(env: Bindings, id: string): Promise<Applicatio
 /** Authority is employer-wide HR, never a team role or scoped worker permission. */
 export function hrGuard(env: Bindings, actor: Actor, row: ApplicationRow) {
   requirePermission(actor, 'people.manage')
-  return guard(env, 'applicant_access_changed', `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators p ON lower(p.email)=m.email
+  return guard(env, 'applicant_access_changed', `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators p ON p.id=m.operator_id
     WHERE m.id=? AND m.status='active' AND p.status='active' AND
     (p.role='owner' OR EXISTS(SELECT 1 FROM wl_effective_permissions WHERE member_id=m.id AND permission='people.manage')))
     AND EXISTS(SELECT 1 FROM wl_hiring_applications a JOIN wl_hiring_openings o ON o.id=a.opening_id

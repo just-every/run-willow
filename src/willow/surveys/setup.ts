@@ -6,9 +6,9 @@ import type { Input } from '../input'
 import type { Survey, SurveyKind, SurveyMode, SurveyPlan, SurveyQuestion } from './types'
 
 const BUSINESS_VERSION = "SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit WHERE action NOT LIKE '%.read'"
-const ACTIVE_MEMBER = `SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email
+const ACTIVE_MEMBER = `SELECT 1 FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id
   WHERE m.id=? AND m.status='active' AND o.status='active'`
-const ELIGIBLE_MEMBERS = `SELECT m.id,m.person_id FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email
+const ELIGIBLE_MEMBERS = `SELECT m.id,m.person_id FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id
   WHERE m.id IN (SELECT value FROM json_each(?)) AND m.status='active' AND o.status='active'
   AND EXISTS (SELECT 1 FROM wl_periods p WHERE p.person_id=m.person_id AND p.start_date<=? AND (p.end_date IS NULL OR p.end_date>=?))`
 

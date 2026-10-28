@@ -42,6 +42,7 @@
     "test:phase2-browser": "WILLOW_PHASE2_BROWSER=1 node tests/willow/phase2.mjs",
     "test:site": "rer build --site && node tests/willow/site.mjs",
     "test:open-source": "node tests/willow/open-public-start.mjs",
+    "test:membership-identity": "node tests/willow/membership-identity.mjs && node tests/willow/membership-migration.mjs",
     "delivery:spec": "node scripts/build-deployment-spec.mjs",
     "check:deployment-spec": "node scripts/build-deployment-spec.mjs --check"
   },

@@ -32,9 +32,9 @@ async function teamStatements(env: Bindings, id: string, members: string[]) {
  const statements = []
  for (const member of members) {
   insist(member.length <= 100, 'invalid_team')
-  const valid = await one(env, `SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active'`, member)
+  const valid = await one(env, `SELECT 1 FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=? AND m.status='active' AND o.status='active'`, member)
   insist(valid, 'inactive_team_member')
-  statements.push(guard(env, 'stale', `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active')`, member))
+  statements.push(guard(env, 'stale', `EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=? AND m.status='active' AND o.status='active')`, member))
   statements.push(stmt(env, 'INSERT INTO wl_hiring_team(opening_id,member_id) VALUES (?,?)', id, member))
  }
  return statements

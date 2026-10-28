@@ -55,7 +55,7 @@ export function hasApproval(actor: Pick<Actor, 'personId' | 'approvalGrants'>, k
 
 /** Return current actors, not a stored member snapshot, for a bound role label. */
 export async function selectedApprovalMembers(env: Bindings, key: string, person: string, levelId?: string): Promise<Actor[]> {
- const rows = await all<{ id: string; email: string; name: string; person_id: string | null; role: string }>(env, `SELECT DISTINCT m.id,m.email,m.name,m.person_id,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email JOIN wl_member_levels a ON a.member_id=m.id JOIN wl_level_approvals r ON r.level_id=a.level_id WHERE m.status='active' AND o.status='active' AND r.approval=? ${levelId ? 'AND a.level_id=?' : ''} ORDER BY m.id`, key, ...(levelId ? [levelId] : []))
+ const rows = await all<{ id: string; email: string; name: string; person_id: string | null; role: string }>(env, `SELECT DISTINCT m.id,m.email,m.name,m.person_id,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id JOIN wl_member_levels a ON a.member_id=m.id JOIN wl_level_approvals r ON r.level_id=a.level_id WHERE m.status='active' AND o.status='active' AND r.approval=? ${levelId ? 'AND a.level_id=?' : ''} ORDER BY m.id`, key, ...(levelId ? [levelId] : []))
  const actors = await Promise.all(rows.map(row => actorFor(env, { id: row.id, email: row.email, name: row.name, owner: row.role === 'owner', personId: row.person_id, sessionId: '' })))
  return actors.filter(actor => hasApproval(actor, key, person, levelId))
 }
@@ -63,10 +63,10 @@ export async function selectedApprovalMembers(env: Bindings, key: string, person
 /** Rebuild authority before reading business sources; guard every subsequent write. */
 export async function liveApprovalActor(env: Bindings, actor: Pick<Actor, 'id' | 'sessionId'>) {
  const snapshot = (await one<{ seq: number }>(env, 'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
- const row = await one(env, 'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=?', actor.id)
+ const row = await one(env, 'SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=?', actor.id)
  insist(row, 'forbidden', 403)
  const current = await actorFor(env, { id: row.id, email: row.email, name: row.name, owner: row.role === 'owner', personId: row.person_id, sessionId: actor.sessionId })
- return { actor: current, guards: [guard(env, 'access_changed', '(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?', snapshot), guard(env, 'access_changed', `EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email) WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?)`, actor.sessionId, actor.id, Date.now())] }
+ return { actor: current, guards: [guard(env, 'access_changed', '(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?', snapshot), guard(env, 'access_changed', `EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.operator_id=o.id WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?)`, actor.sessionId, actor.id, Date.now())] }
 }
 
 export async function approvalGuard(env: Bindings, actor: Pick<Actor, 'id' | 'sessionId'>, key: string, person: string, levelId?: string): Promise<D1PreparedStatement[]> {

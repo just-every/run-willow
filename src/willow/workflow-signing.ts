@@ -19,7 +19,7 @@ export async function validateSignatureStep(env: Bindings, actor: Actor, step: S
   insist(template?.approvedAt && template.current, 'signature_approved_template_required', 409)
   const counter = await one(env, `SELECT m.id,m.name FROM wl_members m WHERE m.id=? AND m.status='active' AND
     (EXISTS(SELECT 1 FROM wl_effective_permissions p WHERE p.member_id=m.id AND p.permission='people.manage') OR
-     EXISTS(SELECT 1 FROM oa_operators o WHERE lower(o.email)=m.email AND o.role='owner' AND o.status='active'))`, step.hr)
+     EXISTS(SELECT 1 FROM oa_operators o WHERE o.id=m.operator_id AND o.role='owner' AND o.status='active'))`, step.hr)
   insist(counter, 'signature_hr_required')
   return { template, counter }
 }

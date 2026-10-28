@@ -81,8 +81,8 @@ export async function currentActor(env: Bindings, request: Request): Promise<Act
   const email = session.operator.email.toLowerCase()
   const owner = session.operator.role === 'owner'
   if(owner) await initializeProvisionedDoor(env)
-  let member = await one<{ id: string; name: string; person_id: string | null; status: string }>(env, 'SELECT id, name, person_id, status FROM wl_members WHERE email = ?', email)
-  if (!member && owner) member = await ensureMember(env, email, session.operator.displayName || email)
+  let member = await one<{ id: string; name: string; person_id: string | null; status: string }>(env, 'SELECT id, name, person_id, status FROM wl_members WHERE operator_id = ?', session.operator.id)
+  if (!member && owner) member = await ensureMember(env, session.operator.id, email, session.operator.displayName || email)
   if (!member) throw new WillowError('not_a_member', 403)
   return await actorFor(env, { id: member.id, email, name: member.name, owner, personId: member.person_id, sessionId: session.id })
 }
@@ -90,7 +90,7 @@ export async function currentActor(env: Bindings, request: Request): Promise<Act
 /** Builds the actor for a member: used for the signed-in member and for visibility previews. */
 export async function actorFor(env: Bindings, member: { id: string; email: string; name: string; owner: boolean; personId: string | null; sessionId: string }): Promise<Actor> {
   const admission = await one(env, `SELECT m.status, o.status AS sign_in FROM wl_members m
-    LEFT JOIN oa_operators o ON lower(o.email) = m.email WHERE m.id = ?`, member.id)
+    LEFT JOIN oa_operators o ON o.id = m.operator_id WHERE m.id = ?`, member.id)
   insist(admission?.status === 'active' && admission.sign_in === 'active', 'access_ended', 403)
   const permissions = new Set((await all<{ permission: Permission }>(env, 'SELECT permission FROM wl_effective_permissions WHERE member_id = ?', member.id)).map(row => row.permission))
   // Ownership implies every right except EEO compliance, which the owner assigns explicitly.
@@ -101,9 +101,14 @@ export async function actorFor(env: Bindings, member: { id: string; email: strin
   return { ...member, permissions, reports, today: date, performanceFields, jobFields, leaveFields, compensationFields, approvalGrants: decisions, settingsGrants: settings, reportGrants: await reportGrants(env,member.id,member.personId,date), documentCategories: await documentGrants(env,member.id,member.personId,date), otherPersonal: await otherPersonalGrants(env, member.id, member.personId, date), followOwnChanges: await followsOwnChanges(env,member), scoped: member.owner ? [] : await scopedGrants(env, member.id, member.personId, date) }
 }
 
-export async function ensureMember(env: Bindings, email: string, name: string) {
-  await env.DB.batch([stmt(env, 'INSERT INTO wl_members (id, email, name, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(email) DO NOTHING', newId(), email, name, now())])
-  return (await one<{ id: string; name: string; person_id: string | null; status: string }>(env, 'SELECT id, name, person_id, status FROM wl_members WHERE email = ?', email))!
+export async function ensureMember(env: Bindings, operatorId: string, email: string, name: string) {
+  await env.DB.batch([
+    stmt(env, 'UPDATE wl_members SET operator_id = ? WHERE email = ? AND operator_id IS NULL', operatorId, email),
+    stmt(env, 'INSERT INTO wl_members (id, operator_id, email, name, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(email) DO NOTHING', newId(), operatorId, email, name, now()),
+  ])
+  const member = await one<{ id: string; name: string; person_id: string | null; status: string }>(env, 'SELECT id, name, person_id, status FROM wl_members WHERE operator_id = ?', operatorId)
+  insist(member, 'not_a_member', 403)
+  return member
 }
 
 /** Employer-wide: direct grants, unscoped levels and the owner. A scoped level never satisfies this. */

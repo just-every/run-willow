@@ -144,10 +144,10 @@ async function applyReviewedLevel(env: Bindings, actor: Actor, input: Input, req
  // Native grants and Base administrator transitions share one transaction.
  // Base's version/last-owner triggers remain authoritative and revoke prior sessions on transitions.
  const operators=await operatorAuth(env).listOperators(request)
- const statements=[levelSessionFence(env,actor),guard(env,'access_changed',"EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active')",creator.id),guard(env,'stale','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',review.snapshot),guard(env,'stale','EXISTS(SELECT 1 FROM wl_level_reviews WHERE id=? AND consumed=0)',review.id)]
+ const statements=[levelSessionFence(env,actor),guard(env,'access_changed',"EXISTS(SELECT 1 FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=? AND m.status='active' AND o.status='active')",creator.id),guard(env,'stale','(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?',review.snapshot),guard(env,'stale','EXISTS(SELECT 1 FROM wl_level_reviews WHERE id=? AND consumed=0)',review.id)]
  for(const impact of review.impact) {
   const member=data.members.find(m=>m.id===impact.member)!
-  const operator=operators.find(o=>o.email.toLowerCase()===member.email)
+  const operator=operators.find(o=>o.id===member.operator_id)
   if(operator && operator.role!=='owner') {
    const role=impact.after.includes('people.manage')?'admin':'member'
    if(operator.role!==role) statements.push(guard(env,'access_changed',"EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND role!='owner')",operator.id,operator.version),stmt(env,"UPDATE oa_operators SET role=? WHERE id=? AND role!='owner'",role,operator.id))

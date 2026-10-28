@@ -12,7 +12,7 @@ export async function surveyList(env:Bindings,actor:Actor) {
   if(!can(actor,'people.manage')&&!team&&!(membership&&survey.delivery_date<=actor.today))continue
   items.push({id:survey.id,name:survey.name,kind:survey.kind,mode:survey.mode,deliveryDate:survey.delivery_date,dueDate:survey.due_date,status:survey.status,own:membership?{answered:!!membership.answered,declined:!!membership.declined}:null,mayReadResults:can(actor,'people.manage')||team})
  }
- const members=can(actor,'people.manage')?await all(env,"SELECT m.id,m.name FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.status='active' AND o.status='active' AND m.person_id IS NOT NULL ORDER BY m.name"):[]
+ const members=can(actor,'people.manage')?await all(env,"SELECT m.id,m.name FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.status='active' AND o.status='active' AND m.person_id IS NOT NULL ORDER BY m.name"):[]
  return {items,mayCreate:can(actor,'people.manage'),members}
 }
 export async function surveyDetail(env:Bindings,actor:Actor,id:string) {

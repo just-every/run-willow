@@ -10,7 +10,7 @@ export async function cycleRow(env:Bindings,id:string) {
 }
 export const openGuard=(env:Bindings,id:string)=>guard(env,'stale',"EXISTS(SELECT 1 FROM wl_review_cycles WHERE id=? AND status='open')",id)
 export async function currentManager(env:Bindings,person:string,date:string) {
- return await one(env,`SELECT m.id FROM (${CURRENT_TERMS}) t JOIN wl_members m ON m.person_id=t.manager_person_id JOIN oa_operators o ON lower(o.email)=m.email WHERE t.person_id=?2 AND m.status='active' AND o.status='active'`,date,person)
+ return await one(env,`SELECT m.id FROM (${CURRENT_TERMS}) t JOIN wl_members m ON m.person_id=t.manager_person_id JOIN oa_operators o ON o.id=m.operator_id WHERE t.person_id=?2 AND m.status='active' AND o.status='active'`,date,person)
 }
 /** Reconcile dated succession before every performance read/write. Historical recipients never disappear. */
 export async function reconcileRecipients(env:Bindings,date:string) {

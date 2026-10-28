@@ -7,7 +7,7 @@ import { signatureTemplates } from './templates'
 
 /** A scheduler rebuilds current authority; the reviewed initiator's session is never retained. */
 export async function signingMember(env:Bindings,id:string):Promise<Actor|null> {
- const m=await one(env,"SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON lower(o.email)=m.email WHERE m.id=? AND m.status='active' AND o.status='active'",id)
+ const m=await one(env,"SELECT m.*,o.role FROM wl_members m JOIN oa_operators o ON o.id=m.operator_id WHERE m.id=? AND m.status='active' AND o.status='active'",id)
  if(!m)return null
  try {return await actorFor(env,{id:m.id,email:m.email,name:m.name,personId:m.person_id,owner:m.role==='owner',sessionId:''})} catch {return null}
 }

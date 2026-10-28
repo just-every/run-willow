@@ -20,10 +20,10 @@ export async function administratorAuthority(env:Bindings,actor:Actor) {
  const snapshot=await businessSnapshot(env)
  actor=await currentLevelAdmin(env,actor)
  insist(canCredentialAdmin(actor),'access_administrator_required',403)
- const row=await one<{id:string;version:number}>(env,`SELECT o.id,o.version FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email)
+ const row=await one<{id:string;version:number}>(env,`SELECT o.id,o.version FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.operator_id=o.id
  WHERE s.id=? AND m.id=? AND m.status='active' AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?`,actor.sessionId,actor.id,now())
  insist(row,'access_administrator_required',403)
- return {actor,row,fence:guard(env,'access_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.email=lower(o.email)
+ return {actor,row,fence:guard(env,'access_changed',`EXISTS(SELECT 1 FROM oa_sessions s JOIN oa_operators o ON o.id=s.operator_id JOIN wl_members m ON m.operator_id=o.id
  WHERE s.id=? AND m.id=? AND m.status='active' AND o.id=? AND o.version=? AND o.status='active' AND s.revoked_at IS NULL AND s.operator_version=o.version AND s.expires_at>?) AND (SELECT COALESCE(MAX(seq),0) FROM wl_audit WHERE action NOT LIKE '%.read' AND action<>'document.download')=?`,actor.sessionId,actor.id,row.id,row.version,now(),snapshot)}
 }
 export async function credentialCeiling(env:Bindings,actor:Actor,id:string,writeScopes:string[]) {
