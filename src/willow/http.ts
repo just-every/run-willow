@@ -132,7 +132,7 @@ export async function willowResponse(request: Request, original: Bindings): Prom
 async function apiResponse(env: Bindings, actor: Actor, request: Request, url: URL) {
   const path = url.pathname.slice('/api/willow/'.length)
   if (request.method === 'POST') {
-    const action = actions[path]
+    const action = Object.hasOwn(actions, path) ? actions[path] : undefined
     if (!action) throw new WillowError('not_found', 404)
     const result = await action(env, actor, await Input.from(request), request)
     if (path === 'apiKey.issue' || path === 'apiKey.rotate' || path === 'oauth.authorize') return json(result)
@@ -155,7 +155,7 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
       return redirect(env,'/app/import','notice','Import updated. Review its status below.')
     }
     const name = path.match(/^\/app\/do\/([\w.]+)$/)?.[1]
-    const action = name ? actions[name] : undefined
+    const action = name && Object.hasOwn(actions, name) ? actions[name] : undefined
     if (!action) throw new WillowError('not_found', 404)
     const input = await Input.from(request)
     const returnTo = safeReturnTo(input.text('returnTo', { optional: true, max: 300 }) || '/app', '/app')

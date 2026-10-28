@@ -14,6 +14,32 @@ try {
   const preview = (member, person, cookie = owner, status = 200) => h.api(`preview?member=${member}&person=${person}`, cookie, undefined, status)
   const person = id => api(`people/${id}`)
 
+  await check('registered-actions-only', async () => {
+    const cookie = s.employee.cookie
+    const registered = async (path, body) => {
+      const response = await h.raw(`/api/willow/${path}`, { cookie, body })
+      assert.equal(response.status, 200, `${path}: registered action/read status`)
+      return response.json().catch(() => { throw new Error('registered action/read must return JSON') })
+    }
+    for (const name of ['unregistered-action', 'constructor', '__proto__', 'hasOwnProperty']) {
+      for (const prefix of ['/api/willow/', '/app/do/']) {
+        const response = await h.raw(prefix + name, { cookie, body: {} })
+        const body = await response.text()
+        // Assertions expose only booleans/statuses, never a response or binding value.
+        const hasBinding = Object.keys(h.vars).some(key => body.includes(key)) ||
+          ['SESSION_SECRET', 'SETUP_TOKEN', 'MAIL_API_KEY', 'RER_DEV_KEY'].some(key => body.includes(h.vars[key]))
+        assert.equal(hasBinding, false, `${prefix}${name}: unknown actions never return runtime bindings`)
+        assert.equal(response.status, 404, `${prefix}${name}: unknown action status`)
+        if (prefix === '/api/willow/') assert.equal(body === '{"error":"not_found"}', true, 'unknown action response')
+      }
+    }
+    const before = await registered(`people/${s.employee.person}`)
+    await registered('person.update', { person: before.id, revision: before.revision, preferredName: 'Dispatch control' })
+    const after = await registered(`people/${before.id}`)
+    assert.equal(after.preferredName, 'Dispatch control', 'registered member action still saves')
+    await registered('person.update', { person: before.id, revision: after.revision, preferredName: before.preferredName ?? '' })
+  })
+
   await check('payroll-source-transaction', async () => {
     const request = await h.api('leave.request', s.employee.cookie, { account: s.employee.account, startDate: day(5), endDate: day(5) })
     await api('leave.decide', { request: request.id, decision: 'approve' })

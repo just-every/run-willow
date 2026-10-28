@@ -124,7 +124,7 @@ const ERRORS: Record<string, string> = {
   not_your_task: 'this task belongs to someone else.',
   not_your_decision: 'this decision belongs to someone else.',
 }
-export const describeError = (code: string) => ERRORS[code] ?? code.replace(/_/g, ' ') + '.'
+export const describeError = (code: string) => Object.hasOwn(ERRORS, code) ? ERRORS[code] : code.replace(/_/g, ' ') + '.'
 
 export const hidden = (name: string, value: unknown) => h`<input type="hidden" name="${name}" value="${value}">`
 
@@ -172,11 +172,14 @@ const TONES: Record<string, 'done' | 'wait' | 'alert'> = {
   upcoming: 'wait', scheduled: 'wait', draft: 'wait', 'awaiting sign-off': 'wait', pending: 'wait', open: 'wait', proposed: 'wait', 'receipt not yet acknowledged': 'wait', leave: 'wait',
   overdue: 'alert', unresolved: 'alert', failed: 'alert',
 }
-const toneOf = (text: string) => TONES[text.toLowerCase().replace(/^yes \(.*\)$/, 'yes')]
+const toneOf = (text: string) => {
+  const key = text.toLowerCase().replace(/^yes \(.*\)$/, 'yes')
+  return Object.hasOwn(TONES, key) ? TONES[key] : undefined
+}
 /** A status chip, toned by its words and shown in sentence case ("overdue" -> "Overdue"). */
 // Stored statuses keep their spelling; people read US English.
 const US_LABELS: Record<string, string> = { cancelled: 'canceled' }
-export const tag = (text: unknown) => { const tone = toneOf(String(text ?? '')); return h`<span class="tag${tone ? ` tone-${tone}` : ''}">${sentence(US_LABELS[String(text)] ?? String(text ?? ''))}</span>` }
+export const tag = (text: unknown) => { const tone = toneOf(String(text ?? '')); return h`<span class="tag${tone ? ` tone-${tone}` : ''}">${sentence(Object.hasOwn(US_LABELS, String(text)) ? US_LABELS[String(text)] : String(text ?? ''))}</span>` }
 
 /** An initials disc beside a person's name (never part of a link's name), tinted by the name. */
 export const avatar = (name: string) => {
