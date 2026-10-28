@@ -21,7 +21,7 @@ Judged from the code and tests at commit `0497caac7cd702abb9b61e66729853e39f304a
 
 #### WIL-01 — Employer setup and explicit membership
 
-Core · published · **done** · Cites BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · Rules D-1
+Core · published · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · Rules D-1
 
 **Requirement.** The employer record holds its name, time zone, country and currency, locations, departments, immutable schedules and private document categories. Owner-set direct grants remain explicit; managing a person grants none. Named levels and delegated administration add only their stated rights, and reactivation restores no removed grant.
 
@@ -385,7 +385,7 @@ Core · target · **partial** · Cites BASE-INPUT-001, BASE-ROLE-001
 
 #### MOBILE-001 — Mobile work and accessible companion apps
 
-Core · target · **partial** · Cites BASE-ACCESSIBILITY-001, BASE-INPUT-001, BASE-ROLE-001 · Register R-19, R-22
+Core · target · **partial** · Cites BASE-ACCESS-002, BASE-ACCESSIBILITY-001, BASE-INPUT-001, BASE-ROLE-001 · Register R-19, R-22
 
 **Requirement.** The responsive portal and native iOS/Android apps support permitted profile updates, document reading/signing, PTO and tasks, hourly clock/breaks and manager timesheet/leave decisions. Locked-device push exposes no private employee data. Reconnected drafts use current authority and source revisions. Company-home audiences/celebration consent, review releases and anonymous-survey boundaries follow their native doors. Accessibility uses Base’s single bar.
 

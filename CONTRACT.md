@@ -40,7 +40,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 | Base duty | Duty | Delta clauses | Base journey |
 | --- | --- | --- | --- |
 | BASE-ACCESS-001 | Sign-in | none | not run |
-| BASE-ACCESS-002 | Sessions | WIL-17, WIL-19, IDENTITY-002, SECURITY-001 | not run |
+| BASE-ACCESS-002 | Sessions | WIL-17, WIL-19, IDENTITY-002, SECURITY-001, WIL-01, MOBILE-001 | not run |
 | BASE-ACCESS-003 | Public endpoints | none | not run |
 | BASE-ACCESS-004 | Server-side authorisation | WIL-01, WIL-02, WIL-03, WIL-04, WIL-05, WIL-06, WIL-07, WIL-08, WIL-09, WIL-10, WIL-11, WIL-12, WIL-13, WIL-14, WIL-15, WIL-16, WIL-17, WIL-18, WIL-19, WIL-20, WIL-21, ROLE-001, ROLE-002, ROLE-003, ROLE-004, ROLE-005, ROLE-006, ROLE-007, ROLE-008, ROLE-009, ROLE-010, ROLE-011, ROLE-012, ROLE-013, ROLE-014, ROLE-015, ROLE-016, ROLE-017, ROLE-018, ROLE-019, ROLE-020, ROLE-021, IDENTITY-001, IDENTITY-002, SECURITY-001, SECURITY-002, ROLE-022 | not run |
 | BASE-INPUT-001 | Validation | WIL-01, WIL-02, WIL-03, WIL-04, WIL-05, WIL-06, WIL-07, WIL-08, WIL-09, WIL-10, WIL-11, WIL-12, WIL-13, WIL-14, WIL-15, WIL-16, WIL-17, WIL-18, WIL-19, WIL-20, WIL-21, PEOPLE-001, PEOPLE-002, PEOPLE-003, PEOPLE-004, PEOPLE-005, SELF-001, SELF-002, MOBILE-001, LOCALE-001, PEOPLE-006, PEOPLE-007, PEOPLE-008, ROLE-001, ROLE-002, ROLE-003, ROLE-004, ROLE-005, ROLE-006, ROLE-007, ROLE-008, ROLE-009, ROLE-010, ROLE-011, ROLE-012, ROLE-013, ROLE-014, ROLE-015, API-001, API-002, API-003, ROLE-016, ROLE-017, ROLE-018, ROLE-019, ROLE-020, ROLE-021, HIRING-001, HIRING-002, HIRING-003, HIRING-004, HIRING-005, FLOW-001, FLOW-002, FLOW-003, FLOW-004, SIGN-001, SIGN-002, US-001, US-002, EEO-001, EEO-003, EEO-002, EEO-004, SIGN-003, SIGN-004, SIGN-005, LEAVE-001, LEAVE-002, TIME-001, PAYROLL-001, PAYROLL-002, PAYROLL-003, PAYROLL-004, PAYROLL-005, PAYROLL-006, BENEFITS-001, BENEFITS-002, BENEFITS-003, RETIRE-001, IDENTITY-001, IDENTITY-002, COMMS-001, PERFORM-001, ENGAGE-001, COMP-001, LEARN-001, COMP-002, PERFORM-002, CONNECT-001, REPORT-001, MIGRATE-001, MIGRATE-002, DATA-001, DATA-002, AUDIT-001, SECURITY-001, SECURITY-002, OPS-001, OPS-002, OPEN-001, DATA-003, DATA-004, REPORT-002, REPORT-003, BOUNDARY-001, AI-001, AI-002, AGENT-001, AGENT-002, AGENT-003, AI-003, AI-004, AI-005, ROLE-022 | not run |
@@ -87,7 +87,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 ## Published clauses
 
-- `WIL-01`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
+- `WIL-01`: *Tier:* Core · *Cites:* BASE-ACCESS-002, BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1
 - `WIL-02`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
 - `WIL-03`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001
 - `WIL-04`: *Tier:* Core · *Cites:* BASE-ACCESS-004, BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1, D-5
@@ -353,7 +353,7 @@ The primary journey: Import the employer’s people and history, onboard a hire,
 
 #### MOBILE-001 — Mobile work and accessible companion apps
 
-*Tier:* Core · *Cites:* BASE-ACCESSIBILITY-001, BASE-INPUT-001, BASE-ROLE-001 · *Register:* R-19, R-22
+*Tier:* Core · *Cites:* BASE-ACCESS-002, BASE-ACCESSIBILITY-001, BASE-INPUT-001, BASE-ROLE-001 · *Register:* R-19, R-22
 
 **Requirement.** The responsive portal and native iOS/Android apps support permitted profile updates, document reading/signing, PTO and tasks, hourly clock/breaks and manager timesheet/leave decisions. Locked-device push exposes no private employee data. Reconnected drafts use current authority and source revisions. Company-home audiences/celebration consent, review releases and anonymous-survey boundaries follow their native doors. Accessibility uses Base’s single bar.
 
