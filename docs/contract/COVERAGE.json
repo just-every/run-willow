@@ -6577,64 +6577,55 @@
       "file": "ACCEPTANCE.md",
       "line": 3,
       "text": "Target: the connected SMB HRIS in [CONTRACT.md](CONTRACT.md), approved",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 4,
       "text": "16 October 2026. The delivered edition has a substantial records, documents,",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 5,
       "text": "leave, lifecycle and reviewed payroll-file foundation. The target also includes",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 6,
       "text": "hiring and background-check orders, self-service in English and Spanish,",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 7,
       "text": "access levels, native second-factor sign-in, an open API and webhooks, live",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 8,
       "text": "payroll (including Paychex Flex)/benefits/access reconciliation, native signed packets, EEO-1 and ACA",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 9,
       "text": "data, a stated reference-employer capacity, performance, engagement and agents",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 10,
       "text": "that finish approved work.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 11,
       "text": "Statuses below distinguish that target from what is implemented today.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
@@ -6815,29 +6806,25 @@
       "file": "ACCEPTANCE.md",
       "line": 44,
       "text": "Each entry lists the required public-door journey, current status and existing",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 45,
       "text": "proof or missing portion. A future journey has no implied implemented endpoint.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 46,
       "text": "Existing test names cover their present guarantees only; they do not prove the",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 47,
       "text": "expanded module that cites them as a foundation.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
@@ -9052,8 +9039,7 @@
       "file": "ACCEPTANCE.md",
       "line": 358,
       "text": "[Envelope](https://github.com/just-every/run-envelope) (BOUNDARY-001).",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
@@ -9079,316 +9065,271 @@
       "file": "ACCEPTANCE.md",
       "line": 364,
       "text": "Existing installations upgrade in place. Stop dev and preview, keep a private",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 365,
       "text": "export and retain the release that made it: an export restores with that",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 366,
       "text": "release. Update the existing checkout, run `rer install`, then `rer setup` to",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 367,
       "text": "apply forward migrations while retaining owner/data. For recovery restore on",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 368,
       "text": "the original release before upgrading. Applied migrations 0001\u20130008 retain",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 369,
       "text": "their original bytes; 0009\u20130018 carry the current identity/import structures.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 371,
       "text": "A populated upgrade compares records, grants, effective employment history,",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 372,
       "text": "leave ledger, lifecycle work, payroll history, audit, import custody and stored",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 373,
       "text": "document bytes before/after. Fresh setup/export-import do not replace that",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 374,
       "text": "comparison. Future modules extend the comparison to signatures, access levels,",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 375,
       "text": "hiring, EEO, benefits, performance, surveys, time, webhooks, provider outcomes",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 376,
       "text": "and agent approvals; API credentials, like sessions, never carry over. Never",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 377,
       "text": "reactivate an ended sign-in or carry sessions/credentials into an archive;",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 378,
       "text": "restore must pause external work until reauthorization (DATA-001). Erasure",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 379,
       "text": "requires held-record handling and restore fences (DATA-002).",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 383,
       "text": "Reconcile real exports for BambooHR, Rippling, HiBob, Gusto HR, Factorial",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 384,
       "text": "and Deel HR against MIGRATE-001; verify history, document bytes/signatures,",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 385,
       "text": "counts and leave balances before closing cutover. Current BambooHR shapes",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 386,
       "text": "are documented in [IMPORTING.md](IMPORTING.md); other kits remain work.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 387,
       "text": "Reconcile a live hire/change/leave/exit with Gusto, ADP RUN, ADP Workforce",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 388,
       "text": "Now, QuickBooks Payroll and Paychex Flex separately, matching each existing",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 389,
       "text": "provider roster at cutover first. Check [field authority and cutover](FIELD-AUTHORITY.md),",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 390,
       "text": "provider acknowledgment and fresh read-back. An ADP file does not prove",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 391,
       "text": "either ADP live integration. Test benefits, deductions, retirement and",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 392,
       "text": "identity with the employer\u2019s chosen named services as their clauses require.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 393,
       "text": "Review employer US policies, work-state forms, accrual/holiday and retention",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 394,
       "text": "rules with the responsible professionals. Exercise Mitratech, state reporting,",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 395,
       "text": "W-4/payroll receipt, native signing (and DocuSign where chosen), EEO-1 upload",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 396,
       "text": "and ACA 1095-C handoff through rejection and correction.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 397,
       "text": "Post a real opening to Indeed, ZipRecruiter and LinkedIn and hire through it",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 398,
       "text": "(HIRING-002\u2013004); connect the employer's downstream tools through API keys",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 399,
       "text": "and webhooks (API-001\u2013003) before switching off the incumbent.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 400,
       "text": "Run the OPS-002 reference employer on the owner's hosted account and record",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 401,
       "text": "every bound before inviting the real workforce.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 402,
       "text": "Employer decisions, payroll execution, brokerage and official verification",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 403,
       "text": "remain with their accountable people/providers, while Willow completes its",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 404,
       "text": "own handoffs.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 405,
       "text": "Validate hosted operation, backups/upgrades, real mail, mobile apps, SSO,",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 406,
       "text": "the native second-factor policy (SECURITY-002) for HR and payroll levels",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 407,
       "text": "without SSO, Spanish employee screens and accessibility with",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 408,
       "text": "owner-authorized accounts. Review each optional model\u2019s",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 409,
       "text": "exact data scope/retention and enforce human approval of employment, pay,",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 410,
       "text": "benefits and access decisions. A checked task cannot establish coverage,",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 411,
       "text": "payment, account revocation or legal compliance.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 413,
       "text": "Current clause totals: **50 done / 31 partial / 22 missing (103 total)**. Missing and partial journeys remain in the build target; they are not outside scope.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
@@ -9444,57 +9385,49 @@
       "file": "ACCEPTANCE.md",
       "line": 129,
       "text": "- **ROLE-008 \u2014 Performance and engagement. Status: partial.** Target: reviews, goals, feedback, 1:1 notes and engagement results (PERFORM-001, ENGAGE-001) under the four modes. Before shipping, ROLE-001 preserves ENGAGE-001 named and anonymous result grants, HR-only anonymous comments and recipient-only anonymous participation and reminder visibility in its new doors or channels. Before adding levels, app doors or channels, ROLE-001 preserves PERFORM-001's own-input and HR-note boundaries, explicit immutable releases, named audited succession withholding and retained former-manager releases, including current-authority exports and reminders. Rider: a level can never reveal an anonymous author, a manager's private notes to the subject, or an unreleased review. Acceptance: crawl a performance View level over a cycle with HR notes, anonymous comments and an unreleased review; none appear. Current evidence: `tests/willow/performance.mjs` \u2192 performanceLevelProof in `tests/willow/levels-performance.mjs`: scoped released-review and goal View; real confidential input, HR-note, anonymous-comment and unreleased-cycle exclusions; named withholding, current-authority history bundle, every registered door and same-session independent revocation. goalModeProof in the same file proves scoped native Edit and exact HR-approved goal creation, check-ins and completion; stale-source, scope, mode and ended-access refusal; selected reviewer routing and no self approval or provider handoff. Native forms, downloads and tooltip behavior at 1440/390 run in the same journey. `tests/willow/performance.mjs` \u2192 engagementThemeProof and engagementThemeBrowserProof in `tests/willow/levels-performance.mjs` prove published themes through scoped native forms, page, JSON and CSV, real raw-answer and comment exclusions, minimum-five cohort refusal, fixed nonrespondent scope transfers, independent native participation and same-session revocation at 1440/390. `tests/willow/levels-performance.mjs` (reviewModeProof, called by performance.mjs) proves immutable immediate and independently HR-approved corrections, exact pending bytes, independent self modes, stale and concurrent sources, closed-cycle refusal, scope moves, withholding, revocation, ended access, private-input exclusions, permitted review bundles and no provider handoff. reviewModeBrowserProof in the same file exercises the native level selection, impact, correction, pending and HR decision forms with tooltips at 1440 and 390. reviewMigrationProof upgrades a populated pre-correction database and proves pending requests remain actionable, decision and reconciliation history survives, and existing readers gain no correction authority.  authoredEntryProof in `tests/willow/levels-performance.mjs` proves independent self and scoped other-person feedback and private 1:1 modes, exact append-only histories and shared HR approval, no self approval, rejected and stale proposals, concurrent decisions, current scope and revocation, ended authors, subject confidentiality, agent-context exclusion and no provider handoff. authoredEntryBrowser operates the existing level editor, field entry forms and shared review and decision history at 1440 and 390. The full public-door crawl includes real private authored records alongside confidential review input, HR notes, anonymous comments and an unreleased cycle. Remaining: Released reviews, goals, authored feedback and private 1:1 notes have native modes. Raw engagement-result field modes remain unimplemented independently of anonymous-comment grants. Adopted conservative default: retain existing employer-wide HR-only raw named results, protected anonymous aggregates and HR-only released anonymous comments; published-theme levels gain none of those raw records. A compatible ct ruling is required before widening that disclosure or enabling raw-result editing and approval. The target and ENGAGE-001 suppression, consent and recipient-only participation boundaries remain unchanged.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 131,
       "text": "Current read slice (23 October 2026): levels independently add View of released review summaries and goals and check-ins about themselves or scoped other people. A review must already have an explicit immutable release; a named withholding prevents an additional level source from bypassing it, while previously delivered native releases retain custody. Field reads do not grant raw inputs, HR calibration notes, review acknowledgment or appeal, editing, work ownership or survey result access. Changes are previewed per affected member, audited and effective on the next request; built-in and migrated levels gain no performance fields. API-001\u2013003, MOBILE-001, COMMS-001 and ROLE-015 inherit these current read projections before adding doors. Full modes and remaining performance and engagement fields remain required.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 133,
       "text": "Goal modes (23 October 2026): Edit adds native goal entry and check-ins within the level\u2019s current scope. Only the named active development owner or HR completes development work. Edit with approval stores an exact immutable SELF-001 goal proposal and changes no goal, check-in or completion until a different authorized reviewer decides. Approval rechecks current requester admission, goal mode, scope, owner eligibility and source state atomically; revoked, moved-out, ended or stale requests cannot publish. Goal approvals can be selected under ROLE-011 only with current goal reads; the selection grants no editing. Approved goals create no payroll or provider-reconciliation exception. Goal history and authorized requests share current-authority bundle projections, and owner work follows current field authority. Existing self/manager/HR sources remain in force.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 135,
       "text": "Released-review corrections (23 October 2026): explicit self or scoped other-person Edit appends a correction to the latest already released summary in an open cycle. Edit with approval records the exact before and proposed summary and rating in SELF-001, visible only to its currently authorized requester and employer-wide HR until a different HR reviewer decides it; the subject cannot decide their own correction. No mode creates an initial release or reads raw inputs, private notes or an unreleased cycle. Applying a correction rechecks live requester access, field mode, current scope, named withholding, source version and the open cycle in the same transaction. Earlier releases retain their bytes and recipients. Approved corrections create no provider handoff. Native pages, JSON, history downloads and selected review bundles retain current-authority projections. API-001\u2013003, MOBILE-001, COMMS-001 and ROLE-015 inherit these correction boundaries.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 137,
       "text": "Published engagement themes (23 October 2026): an explicit View adds only HR-published themes and action plans, when every member of the fixed survey cohort is within the reader\u2019s current field reach. Former members and nonrespondents stay in that scope check. Self participation remains recipient-only, raw named answers and suppressed aggregates retain existing result grants, and anonymous comments remain HR-only. Theme View grants no survey publication, comment moderation, plan completion or reminder authority. Page, JSON and CSV use the same projection, and scope moves and revocation apply on the next request. CT approved published-theme View with riders on 23 October 2026 at 11:50Z: an additional level source requires at least five people in the fixed cohort and grants published themes only. Raw result grants and anonymous-comment grants remain independent. ROLE-008 stays partial for its remaining modes and fields. API-001\u2013003, MOBILE-001, COMMS-001 and ROLE-015 inherit the fixed-cohort and participation exclusions.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 139,
       "text": "Authored performance fields (28 October 2026): feedback and private 1:1 notes have independent self and scoped other-person modes. Their native records are visible only to their current field-authorized author and employer-wide HR; a level does not reveal another author's records to the subject or a manager. Edit appends a new immutable version. Edit with HR approval stores the exact before and proposed content in SELF-001, with a due date and independent HR decision; it publishes nothing until approval. Approval rechecks the active author, current field mode, current scope and unchanged source in the same transaction. Current-authority histories retain earlier versions, and manual entries create no provider or payroll handoff. Confidential assigned review inputs, private calibration, immutable releases and anonymous participation keep their existing independent boundaries. Records and proposal evidence use DATA-002 personnel custody and stay outside agent context. The conservative existing native HR-only raw-result boundary remains in force; published-theme levels never acquire raw engagement answers or anonymous comments. Raw-result modes beyond that floor remain unfinished and require a compatible ct ruling before new disclosure.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 141,
       "text": "- **ROLE-009 \u2014 Training and learning. Status: partial.** Target: assignments, completions, certifications and the TalentLMS link state (LEARN-001) under the four modes; Edit is assign/waive/record completion; self Edit is completion where the course allows. Acceptance: a training level assigns and records a completion for in-scope people only; out-of-scope assignment refused; certifications visible per View. Current evidence: `tests/willow/performance.mjs` invokes trainingModeProof in `tests/willow/levels-performance.mjs`: exact scoped assignment and due date, out-of-scope assignment and completion refusal, manual completion and waiver, course-controlled self completion, independent assignment and completion and certification modes, and explicit disconnected TalentLMS state. The same proof asserts SELF-001 before and proposed snapshots, current HR decisions, immutable outcomes, concurrent and replay refusal, stale sources, mode and scope revocation, sensitive-context exclusion, fixed deduplicated approval reminders and closure, and no external handoff. trainingBrowserProof operates native course settings, level review, assignment, completion, certification, waiver and shared HR review and decision history at 1440 and 390 with tooltips. trainingMigrationProof preserves existing pending and decided training plus personal-change histories, carries the existing work owner and custom deadline and history and accepted reminder claim into the shared source, refuses a duplicate send after upgrade and consumes a migrated request once. `tests/willow/retention.mjs` proves current training stores and shared proposals are classified, retained certificate and approved proposal bytes stay in restricted personnel custody, ordinary reads lose erased records and replay cannot restore them. Remaining: DONE certification is deferred under the pending evidence rule.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 143,
       "text": "Native training modes (26 October 2026): assignments, completions and certification evidence have independent self and scoped other-person modes, carried by the existing reviewed level matrix. No additional access contributes nothing; View reads only its selected fields, Edit applies native assignment, waiver or manual completion, and Edit with HR approval retains the exact immutable proposal without publishing a training record. A certificate field requiring approval independently holds the entire completion. Only a different currently authorized employer-wide HR reviewer may decide; neither the requester nor the subject may approve. Applying a proposal rechecks the active requester, current field modes, current scope, course policy and unchanged source inside the audited transaction. Completed or waived assignments cannot receive a second outcome. Existing owner and employer-wide HR authority remains an independent source. Self Edit permits only completion of an existing assignment when the immutable course explicitly allows self completion; it grants no self assignment, waiver or certificate issuance. Required training and approval work uses FLOW-002 schedules and fixed notices. Training evidence stays outside agent context and uses DATA-002 personnel custody and current-authority projections. TalentLMS is displayed as not connected; these native manual records claim no provider verification. LEARN-001 retains provider rosters, enrollments, completion callbacks, provider certificates, renewal and departed-learner suspension as its unimplemented target. Training changes now use SELF-001's immutable before and proposed snapshots, owner, due date, current-authority HR decision, stale-source fence and retained decision history. Native manual training creates no payroll or provider handoff; LEARN-001 retains connected-system reconciliation. Existing standalone requests and decisions migrate into the shared queue without changing their outcomes.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "docs/CLAIMS.md",
