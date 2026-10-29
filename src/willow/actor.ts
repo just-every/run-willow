@@ -81,16 +81,18 @@ export async function currentActor(env: Bindings, request: Request): Promise<Act
   const email = session.operator.email.toLowerCase()
   const owner = session.operator.role === 'owner'
   if(owner) await initializeProvisionedDoor(env)
-  let member = await one<{ id: string; name: string; person_id: string | null; status: string }>(env, 'SELECT id, name, person_id, status FROM wl_members WHERE email = ?', email)
+  let member = await one<{ id: string; name: string; person_id: string | null; status: string }>(env, 'SELECT m.id,m.name,m.person_id,m.status FROM wl_members m LEFT JOIN wl_agent_people b ON b.member_id=m.id WHERE b.operator_id=? OR (b.operator_id IS NULL AND m.email=?)', session.operator.id,email)
   if (!member && owner) member = await ensureMember(env, email, session.operator.displayName || email)
   if (!member) throw new WillowError('not_a_member', 403)
+  await env.DB.prepare('INSERT OR IGNORE INTO wl_agent_people(operator_id,member_id) VALUES(?,?)').bind(session.operator.id,member.id).run()
   return await actorFor(env, { id: member.id, email, name: member.name, owner, personId: member.person_id, sessionId: session.id })
 }
 
 /** Builds the actor for a member: used for the signed-in member and for visibility previews. */
 export async function actorFor(env: Bindings, member: { id: string; email: string; name: string; owner: boolean; personId: string | null; sessionId: string }): Promise<Actor> {
   const admission = await one(env, `SELECT m.status, o.status AS sign_in FROM wl_members m
-    LEFT JOIN oa_operators o ON lower(o.email) = m.email WHERE m.id = ?`, member.id)
+    LEFT JOIN wl_agent_people b ON b.member_id=m.id
+    LEFT JOIN oa_operators o ON o.id=b.operator_id OR (b.operator_id IS NULL AND lower(o.email)=m.email) WHERE m.id = ?`, member.id)
   insist(admission?.status === 'active' && admission.sign_in === 'active', 'access_ended', 403)
   const permissions = new Set((await all<{ permission: Permission }>(env, 'SELECT permission FROM wl_effective_permissions WHERE member_id = ?', member.id)).map(row => row.permission))
   // Ownership implies every right except EEO compliance, which the owner assigns explicitly.

@@ -1,4 +1,5 @@
 // HIRING-003 manual pipeline foundation. No matching, ranking, mail or provider claims.
+import { agentAttribution } from './agent-attribution'
 import type { Bindings } from '../auth.server'
 import { can, requirePermission, type Actor } from './actor'
 import { all, auditRead, commit, guard, insist, json, newId, now, one, stmt } from './core'
@@ -65,7 +66,7 @@ export async function addHiringCandidate(env: Bindings, actor: Actor, input: Inp
  const id = newId(), stage = json<string[]>(row.stages, [])[0], at = now()
  await commit(env, [accessGuard(env, actor, row),
  stmt(env, 'INSERT INTO wl_hiring_applications(id,opening_id,name,contact_email,source,stage,created_at) VALUES (?,?,?,?,?,?,?)', id, row.id, name, email, source, stage, at),
- stmt(env, `INSERT INTO wl_hiring_events(application_id,actor,kind,to_stage,at) VALUES (?,?,'created',?,?)`, id, actor.id, stage, at)],
+ stmt(env, `INSERT INTO wl_hiring_events(application_id,actor,kind,to_stage,at,agent_label) VALUES (?,?,'created',?,?,?)`, id, actor.id, stage, at, agentAttribution(env)?.actor.label??null)],
  { actor: actor.id, action: 'hiring.candidate.create', subject: id })
  return { id, stage, revision: 1 }
 }
@@ -79,7 +80,7 @@ export async function moveHiringCandidate(env: Bindings, actor: Actor, input: In
  guard(env, 'stale', 'EXISTS(SELECT 1 FROM wl_hiring_applications WHERE id=? AND revision=?)', row.id, revision),
  guard(env,'application_closed','NOT EXISTS(SELECT 1 FROM wl_hiring_closures WHERE application_id=?)',row.id),
  stmt(env, 'UPDATE wl_hiring_applications SET stage=?,revision=revision+1 WHERE id=?', stage, row.id),
- stmt(env, `INSERT INTO wl_hiring_events(application_id,actor,kind,from_stage,to_stage,at) VALUES (?,?,'stage',?,?,?)`, row.id, actor.id, row.stage, stage, now())],
+ stmt(env, `INSERT INTO wl_hiring_events(application_id,actor,kind,from_stage,to_stage,at,agent_label) VALUES (?,?,'stage',?,?,?,?)`, row.id, actor.id, row.stage, stage, now(), agentAttribution(env)?.actor.label??null)],
  { actor: actor.id, action: 'hiring.candidate.move', subject: row.id, detail: { revision: row.revision + 1 } })
  return { id: row.id, stage, revision: row.revision + 1 }
 }
@@ -92,7 +93,7 @@ export async function scoreHiringCandidate(env: Bindings, actor: Actor, input: I
  const id = newId()
  await commit(env, [accessGuard(env, actor, job),
  guard(env, 'stale', '(SELECT COALESCE(MAX(version),0) FROM wl_hiring_scorecards WHERE application_id=? AND author=?)=?', row.id, actor.id, version),
- stmt(env, 'INSERT INTO wl_hiring_scorecards(id,application_id,author,version,evidence,created_at) VALUES (?,?,?,?,?,?)', id, row.id, actor.id, version + 1, evidence, now())],
+ stmt(env, 'INSERT INTO wl_hiring_scorecards(id,application_id,author,version,evidence,created_at,agent_label) VALUES (?,?,?,?,?,?,?)', id, row.id, actor.id, version + 1, evidence, now(), agentAttribution(env)?.actor.label??null)],
  { actor: actor.id, action: 'hiring.scorecard.record', subject: row.id, detail: { version: version + 1 } })
  return { id, version: version + 1 }
 }
@@ -134,8 +135,8 @@ export async function hiringOpening(env: Bindings, actor: Actor, id: string) {
 }
 export async function hiringApplication(env: Bindings, actor: Actor, id: string) {
  const { row } = await application(env, actor, id)
- const timeline = await all(env, 'SELECT e.seq,e.actor,m.name AS actorName,e.kind,e.from_stage,e.to_stage,e.at FROM wl_hiring_events e JOIN wl_members m ON m.id=e.actor WHERE e.application_id=? ORDER BY e.seq', id)
- const scorecards = await all(env, 'SELECT s.id,s.author,m.name AS authorName,s.version,s.evidence,s.created_at FROM wl_hiring_scorecards s JOIN wl_members m ON m.id=s.author WHERE s.application_id=? ORDER BY s.created_at,s.id', id)
+ const timeline = await all(env, 'SELECT e.seq,e.actor,COALESCE(e.agent_label,m.name) AS actorName,e.kind,e.from_stage,e.to_stage,e.at FROM wl_hiring_events e JOIN wl_members m ON m.id=e.actor WHERE e.application_id=? ORDER BY e.seq', id)
+ const scorecards = await all(env, 'SELECT s.id,s.author,COALESCE(s.agent_label,m.name) AS authorName,s.version,s.evidence,s.created_at FROM wl_hiring_scorecards s JOIN wl_members m ON m.id=s.author WHERE s.application_id=? ORDER BY s.created_at,s.id', id)
  await auditRead(env, actor.id, 'hiring.candidate.read', id)
  const resumes = await all(env, 'SELECT id,version,filename,media_type,size,sha256,uploaded_by,uploaded_at FROM wl_hiring_resumes WHERE application_id=? ORDER BY version DESC', id)
  const closure = await one<{outcome:string;closed_at:number}>(env,'SELECT outcome,closed_at FROM wl_hiring_closures WHERE application_id=?',id)

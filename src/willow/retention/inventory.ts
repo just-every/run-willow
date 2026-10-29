@@ -1,3 +1,4 @@
+import { AGENT_CUSTODY } from '../agent-door/custody'
 // DATA-002's inventory: every Willow table, blob store, derived store and import
 // custody item that can hold a person's data, or the reason it cannot. The preview
 // refuses to run if a table exists that is in neither list, so a new migration
@@ -204,7 +205,7 @@ export const AUTHORED: [string, string][] = [
 export const AUTHORED_STORES: Store[] = AUTHORED.map(([table, column]) => MEMBER_ROWS(table, column))
 
 /** Stores the preview measures per document category, custom field and record table. */
-export const DYNAMIC = ['wl_documents', 'wl_document_versions', 'wl_custom_field_values', 'wl_record_rows', 'wl_record_row_versions']
+export const DYNAMIC = [...AGENT_CUSTODY,'wl_documents', 'wl_document_versions', 'wl_custom_field_values', 'wl_record_rows', 'wl_record_row_versions']
 
 /** Tables that hold no person's data, each with its reason. The preview refuses when a table is in neither list. */
 const NONE = (reason: string, ...tables: string[]): [string, string][] => tables.map(table => [table, reason])

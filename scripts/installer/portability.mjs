@@ -1,7 +1,11 @@
 import { localPortability } from '@runeditrun/rer/portability';
 
-const ownerReauthorizationRequired = ['notices', 'oidc', 'model', 'businessImport', 'policyAssistant', 'workflowAssistant', 'oktaProvisioning','signing'];
+const ownerReauthorizationRequired = ['notices', 'oidc', 'model', 'businessImport', 'policyAssistant', 'workflowAssistant', 'oktaProvisioning','signing','agentDoor'];
 const pauseConnections = (table, row) => {
+ if (table === 'agent_door_state') return {...row,envelope:null,local_document:null,local_revision:0,local_paused:1,decision_lock:null,decision_until:null};
+ if (table === 'agent_door_approvals' && ['pending','executing'].includes(row.state)) return {...row,state:'expired'};
+ if (table === 'bs_settings') return {...row,stopped:0,owner_id:null,document:null,rev:0,token:'',applied_at:null};
+ if (table === 'agent_door_agents') return {...row,revoked:1};
  if (table === 'wl_sign_reviews') return {...row,used_at:row.used_at??Date.now()};
  if (table === 'wl_sign_requests' && ['sent','viewed'].includes(row.state)) return {...row,state:'voided',closure_reason:'restored',revision:row.revision+1};
  if (table === 'wl_sign_cohorts') return {...row,future_joiners:0,notify:0,stopped_at:row.stopped_at??Date.now()};
@@ -25,6 +29,10 @@ export default {
  requiredConfiguration: ['OWNER_EMAIL', 'SESSION_SECRET', 'SETUP_TOKEN', 'AUTH_ORIGIN', 'MAIL_PROVIDER', 'MAIL_FROM'],
  exportRow: pauseConnections,
  importSafety: {
+  agent_door_state:{envelope:[null],local_document:[null],local_revision:[0],local_paused:[1]},
+  agent_door_approvals:{state:['executed','refused','expired','rejected']},
+  bs_settings:{stopped:[0],owner_id:[null],document:[null],rev:[0]},
+  agent_door_agents:{revoked:[1]},
   wl_sign_cohorts: { future_joiners:[0],notify:[0] },
   wl_sign_requests: { state:['signed','declined','expired','voided','withdrawn'] },
   wl_okta_settings: { enabled: [0] },

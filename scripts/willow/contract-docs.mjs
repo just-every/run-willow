@@ -33,7 +33,11 @@ for(const id of ids) {
  if(row.length!==6)throw Error('Unsupported table cell: '+id)
  const entry=`- **${id} — ${clause.title}. Status: ${clause.status}.** ${paragraphs[0]}${row[4]?' Current evidence: '+row[4]:''}${row[5]?' Remaining: '+row[5]:''}\n${paragraphs.length>1?'\n'+paragraphs.slice(1).join('\n\n')+'\n':''}\n`
  const start=acceptance.indexOf('- **'+id+' — ')
- if(start<0)throw Error('Missing acceptance entry: '+id)
+ if(start<0) {
+  if(!acceptance.includes('## Shared agent door\n'))acceptance+='\n## Shared agent door\n\n'
+  acceptance+=entry
+  continue
+ }
  const rest=acceptance.slice(start),next=rest.slice(1).search(/\n(?:- \*\*|#{2,3} )/)
  const end=next<0?acceptance.length:start+next+2
  acceptance=acceptance.slice(0,start)+entry+acceptance.slice(end)

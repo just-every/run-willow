@@ -1,6 +1,7 @@
 import { liveSettingsActor } from './levels/settings-authority'
 // Flow 1 (settings): the employer, its locations, departments, working
 // schedules and private document categories.
+import { businessSettings } from './business-settings'
 import type { Bindings } from '../auth.server'
 import { requirePermission, type Actor } from './actor'
 import { all, commit, insist, newId, now, one, stmt } from './core'
@@ -10,7 +11,8 @@ import type { Input } from './input'
 export interface Employer { name: string; timezone: string; country: string; currency: string }
 
 export async function employer(env: Bindings): Promise<Employer | null> {
-  return await one<Employer>(env, 'SELECT name, timezone, country, currency FROM wl_employer WHERE singleton = 1')
+  const row=await one<Employer>(env, 'SELECT name, timezone, country, currency FROM wl_employer WHERE singleton = 1')
+  return row?{...row,name:await businessSettings(env).resolve('display_name',row.name) as string}:null
 }
 
 export async function requireEmployer(env: Bindings): Promise<Employer> {

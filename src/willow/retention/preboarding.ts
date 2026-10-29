@@ -1,3 +1,4 @@
+import { requireNoAgentCustody } from '../agent-door/custody'
 // DATA-002 for expired or withdrawn preboarding identities, without employee authority.
 import { erasureStatements, invalidateTransfersStatements, redactionStatements } from '@runeditrun/rer/modules/portability/journal'
 import type { Bindings } from '../../auth.server'
@@ -29,6 +30,7 @@ function matchingHolds(active: Hold[], packet: Packet, cls: Item['class'], first
 
 /** Read metadata and counts only. Capture the business fence before any planning read. */
 export async function planPreboarding(env: Bindings, actor: Actor, packetId: string) {
+  await requireNoAgentCustody(env)
   requireOwner(actor)
   const sequence = (await one<{ value: number }>(env, `SELECT ${BUSINESS_SEQUENCE} AS value`))!.value
   const packet = await one<Packet>(env, `SELECT p.id, p.identity_id, i.name, i.email, p.created_at, i.created_at AS identity_created_at,
@@ -97,6 +99,7 @@ export async function previewPreboarding(env: Bindings, actor: Actor, packetId: 
 }
 
 export async function confirmPreboarding(env: Bindings, actor: Actor, input: Input) {
+  await requireNoAgentCustody(env)
   requireOwner(actor)
   input.only(['preboarding', 'digest', 'returnTo'])
   const packetId = input.text('preboarding', { max: 64 }), digest = input.text('digest', { max: 64 })

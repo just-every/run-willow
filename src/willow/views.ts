@@ -66,7 +66,7 @@ type View = (env: Bindings, actor: Actor, request: Request, id: string, url: URL
 
 export async function audit(env: Bindings, actor: Actor) {
   requirePermission(actor, 'audit.read')
-  return await all(env, 'SELECT seq, at, actor, action, subject, detail FROM wl_audit ORDER BY seq DESC LIMIT 500')
+  return await all(env, 'SELECT seq, at, actor, action, subject, detail, agent_id, agent_name, operation_id, approvers FROM wl_audit ORDER BY seq DESC LIMIT 500')
 }
 
 const query = (url: URL) => Input.of(Object.fromEntries(url.searchParams))

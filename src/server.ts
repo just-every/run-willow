@@ -11,6 +11,9 @@ import { authResponse, runtimeBindings, type Bindings } from './auth.server'
 import { importDoorResponse } from './willow/movein/door'
 import { willowResponse } from './willow/http'
 import { runWorkScheduler } from './willow/work-scheduler'
+import { agentDocs } from './willow/agent-door/docs'
+import { willowAgentDoor } from './willow/agent-door'
+import { businessSettings } from './willow/business-settings'
 import { willowFrame } from './willow/frame'
 
 import { lobbyResponse } from './base/lobby'
@@ -42,6 +45,12 @@ export default withDemo({
     const asset = await staticAssetResponse(request, env)
     if (asset) return documentResponse(asset)
     env = runtimeBindings(env)
+    const docs=agentDocs(env,request)
+    if(docs)return documentResponse(docs)
+    const settings = await businessSettings(env).handle(request)
+    if(settings)return settings
+    const agent = await willowAgentDoor(env).handle(request)
+    if(agent)return documentResponse(agent)
     const lobby = await lobbyResponse(request, env, identity)
     if (lobby) return documentResponse(lobby)
     const state = await setupStateResponse(request, env)

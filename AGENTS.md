@@ -157,3 +157,5 @@ CONTRACT.md is the acceptance and status source. After changing a clause, run
 `check`; include each changed clause ID. This synchronizes its existing acceptance
 entry and the generated delivery register in docs/CLAIMS.md. Regenerate the
 edition lock last with `node scripts/edition-authoring/cli.mjs lock`.
+
+Lander-Regenerate: node scripts/willow/contract-docs.mjs write BASE-AGENT-001 BASE-AGENT-002 BASE-AGENT-003 BASE-AGENT-004 BASE-AGENT-005 BASE-AGENT-006 BASE-AGENT-007 BASE-AGENT-008 BASE-AGENT-009 BASE-AGENT-010 BASE-AGENT-011 BASE-AGENT-012 BASE-AGENT-013

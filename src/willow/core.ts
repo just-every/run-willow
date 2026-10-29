@@ -1,6 +1,7 @@
 // Shared primitives: typed errors, ids, D1 helpers, audited atomic commits and
 // in-batch preconditions (wl_guard rows abort the whole batch when false).
 import type { Bindings } from '../auth.server'
+import { agentAttribution } from './agent-attribution'
 
 export class WillowError extends Error {
   constructor(readonly code: string, readonly status = 400, readonly detail?: unknown) {
@@ -36,11 +37,12 @@ export interface Audit { actor: string; action: string; subject: string; detail?
 /** Runs the statements atomically with an audit event in the same batch. A failed guard raises its code. */
 export async function commit(env: Bindings, statements: D1PreparedStatement[], audit: Audit | Audit[]) {
   const events = Array.isArray(audit) ? audit : [audit]
+  const agent = agentAttribution(env)
   try {
     await env.DB.batch([
       ...statements,
       stmt(env, 'DELETE FROM wl_guard'),
-      ...events.map(event => stmt(env, 'INSERT INTO wl_audit (at, actor, action, subject, detail) VALUES (?, ?, ?, ?, ?)', now(), event.actor, event.action, event.subject, JSON.stringify(event.detail ?? {}))),
+      ...events.map(event => stmt(env, 'INSERT INTO wl_audit (at, actor, action, subject, detail, agent_id, agent_name, operation_id, approvers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', now(), event.actor, event.action, event.subject, JSON.stringify(event.detail ?? {}), agent?.agent.id ?? null, agent?.actor.label ?? null, agent?.operationId ?? null, agent ? JSON.stringify(agent.approvers) : null)),
     ])
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -54,7 +56,8 @@ export async function commit(env: Bindings, statements: D1PreparedStatement[], a
 
 /** Records a read of private data. Reads of private fields are always audited. */
 export async function auditRead(env: Bindings, actor: string, action: string, subject: string, detail?: unknown) {
-  await env.DB.prepare('INSERT INTO wl_audit (at, actor, action, subject, detail) VALUES (?, ?, ?, ?, ?)').bind(now(), actor, action, subject, JSON.stringify(detail ?? {})).run()
+  const agent = agentAttribution(env)
+  await env.DB.prepare('INSERT INTO wl_audit (at, actor, action, subject, detail, agent_id, agent_name, operation_id, approvers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(now(), actor, action, subject, JSON.stringify(detail ?? {}), agent?.agent.id ?? null, agent?.actor.label ?? null, agent?.operationId ?? null, agent ? JSON.stringify(agent.approvers) : null).run()
 }
 
 export async function sha256Hex(bytes: Uint8Array | string): Promise<string> {

@@ -113,6 +113,6 @@ export async function auditPage(env: Bindings, actor: Actor, url: URL) {
   const records = new Map(subjects.map(row => [row.id as string, sentence(row.label as string)]))
   const who = (id: string) => names.get(id) ?? (id === 'scheduler' ? 'Willow (reminders)' : id === 'system' ? 'Willow' : 'Former member')
   const record = (subject: string) => subject === 'organisation' ? 'Organization' : records.get(subject) ?? subject.slice(0, 40)
-  const body = h`<h1>Audit trail</h1><p class="muted">Every change, and every read of private details, pay, confidential reasons and documents. Newest first; the latest 500.</p><section class="card">${table(['When', 'Who', 'What', 'Record'], events.map(event => [formatInstant(event.at, company?.timezone ?? 'UTC'), who(event.actor), h`<span title="${event.action}">${actionLabel(event.action)}</span>`, record(event.subject)]))}</section>`
+  const body = h`<h1>Audit trail</h1><p class="muted">Every change, and every read of private details, pay, confidential reasons and documents. Newest first; the latest 500.</p><section class="card">${table(['When', 'Who', 'What', 'Record'], events.map(event => [formatInstant(event.at, company?.timezone ?? 'UTC'), event.agent_name || who(event.actor), h`<span title="${event.action}">${actionLabel(event.action)}</span>`, record(event.subject)]))}</section>`
   return page('Audit', actor, body, { current: '/app/audit', url })
 }

@@ -1,3 +1,4 @@
+import { requireNoAgentCustody } from '../agent-door/custody'
 // DATA-002 erasure requests and the read-only preview. The preview classifies every store in
 // the inventory for one former worker, binds the result in a digest, and writes nothing but
 // its audit row. The owner confirms that digest; a changed preview is refused as stale.
@@ -122,6 +123,7 @@ export interface Plan { sequence: number; view: Awaited<ReturnType<typeof previe
 
 /** Classifies every store for one person without writing; the preview and the execution share it. */
 export async function planErasure(env: Bindings, actor: Actor, personId: string) {
+  await requireNoAgentCustody(env)
   requireOwner(actor)
   const person = await one<{ id: string; legal_name: string; preferred_name: string | null; work_email: string | null; employee_number: string | null; created_at: number }>(env, 'SELECT id, legal_name, preferred_name, work_email, employee_number, created_at FROM wl_people WHERE id = ?', personId)
   insist(person, 'not_found', 404)

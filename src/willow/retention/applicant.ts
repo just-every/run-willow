@@ -1,3 +1,4 @@
+import { requireNoAgentCustody } from '../agent-door/custody'
 // DATA-002 for an applicant who was not hired: every application sharing the contact email, their resumes,
 // scorecards and timeline are classified, previewed and erased exactly as a former worker's are, with the
 // applicant's identity in audit replaced by one random label.
@@ -18,6 +19,7 @@ const hex = (bytes: number) => Array.from(crypto.getRandomValues(new Uint8Array(
 const TERMINAL = new Set(['hired', 'rejected', 'withdrawn'])
 
 export async function planApplicant(env: Bindings, actor: Actor, applicationId: string) {
+  await requireNoAgentCustody(env)
   requireOwner(actor)
   const sequence = (await one<{value:number}>(env,`SELECT ${BUSINESS_SEQUENCE} AS value`))!.value
   const app = await one<{ id: string; name: string; contact_email: string | null }>(env, 'SELECT id, name, contact_email FROM wl_hiring_applications WHERE id = ?', applicationId)
@@ -78,6 +80,7 @@ export async function previewApplicant(env: Bindings, actor: Actor, applicationI
 }
 
 export async function confirmApplicant(env: Bindings, actor: Actor, input: Input) {
+  await requireNoAgentCustody(env)
   requireOwner(actor)
   const applicationId = input.text('application', { max: 64 }), digest = input.text('digest', { max: 64 })
   const request = await one<{ id: string; source: string; received_on: string }>(env, "SELECT id, source, received_on FROM wl_erasure_requests WHERE application_id = ? AND status = 'open'", applicationId)

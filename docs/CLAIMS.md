@@ -103,6 +103,19 @@ Generated from CONTRACT.md. Acceptance and delivery scope remain in that source.
 | OPEN-001 | Free and open source under the MIT license | done |
 | AI-001 | Cited HR policy answers under the reader’s authority | partial |
 | AI-002 | Natural-language workflow building with impact preview | partial |
+| BASE-AGENT-001 | One MCP door per seed | partial |
+| BASE-AGENT-002 | The seed's jobs are tools, through the UI's own actions | partial |
+| BASE-AGENT-003 | Records are resources | partial |
+| BASE-AGENT-004 | Business identity and short-lived, audience-bound tokens | partial |
+| BASE-AGENT-005 | An agent acts as a person in a role, never more | partial |
+| BASE-AGENT-006 | Every action declares its risk class | partial |
+| BASE-AGENT-007 | The company's policy decides, at one chokepoint | partial |
+| BASE-AGENT-008 | Truthful attribution | partial |
+| BASE-AGENT-009 | Every agent action is audited with its class and decision | partial |
+| BASE-AGENT-010 | Agents can follow changes | partial |
+| BASE-AGENT-011 | Limits are policy, and Pause stops everything | partial |
+| BASE-AGENT-012 | Writes are idempotent and conflict-safe | partial |
+| BASE-AGENT-013 | Manifest, docs and the conformance journey | partial |
 | AGENT-001 | Reconcile an approved employee change until systems agree | partial |
 | AGENT-002 | Policy simulation and expected-versus-observed outcomes | partial |
 | AGENT-003 | Recover stalled onboarding with controlled outreach | partial |
