@@ -77,3 +77,22 @@ agent-surface journey and its native owner/attribution fixtures.
 The prior draft's conformance exposed an oversized-body transport edge. The
 0.2.88 normal verification result is reported separately, retaining the CLI's
 actual failure exit for any failing point.
+
+The ct table names 113 tools and 55 resource templates. This CORE declaration
+has ten native tools, no public resource templates and no prompts or events.
+The exact name overlap is directory.browse, people.read and plans.prepare
+(with the willow prefix); the other 110 ct tool names are absent. Its proposed
+candidates.manage is represented only by the native candidate tools listed in
+agent-surface.json. Additional native names are hiring.status, candidates.list,
+candidates.read, candidates.create, candidates.move, candidates.scorecard and
+plans.read. All use the willow prefix. Three internal record readers do not
+constitute public resource adoption. Only standard and sensitive classes are
+implemented. The journey covers each declared pair, pending joiner preparation
+and manual hiring; the ct hire/mover/leave/payroll/departure specialist week,
+provider read-back and nine other risk classes remain unproved.
+
+SURFACE-001–005 and AGENT-006/007/010/013 are not clauses in current main.
+AGENT-001–003 retain their native partial status: multi-provider reconciliation,
+cross-person simulation and controlled recovery remain gaps. The ct branch is
+not merged and its surface is not rewritten. This adoption changes no native
+signing, identity-provider, payroll, AI or access-administration authority.
