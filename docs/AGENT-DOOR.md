@@ -82,6 +82,11 @@ history, native audit, catalogue, named completed approval, pending proposals,
 stale-record error and Pause are captured at 1440 and 390 pixels. Additional
 inactive and allow-list-excluded sponsor fixtures remain undeclared; they are
 not counted as passes. No seed queue or provider edge is declared.
+Normal `WILLOW_VERIFY_SHARD=records-policy pnpm exec rer verify` also passes
+(exit 0): all six native policy journeys, the production hosted-output check,
+the hydration check and 1218/1218 door points. The home page is plain HTML;
+`/setup` redirects unauthenticated readers to sign-in. The verifier reports
+those hydration boundaries explicitly.
 
 The ct table names 113 tools and 55 resource templates. This CORE declaration
 has ten native tools, no public resource templates and no prompts or events.
