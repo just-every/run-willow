@@ -1252,11 +1252,11 @@
       "executable": false
     },
     "native/App.jsx": {
-      "sha256": "70474ad374eed7b79f747ab4ecb3559bf9904af597f16db4e148cd259cfc3ebd",
+      "sha256": "c03e1baefd77e9fa571adc991799e0d46b31ed4d98c86244bb2956efcdc0e9fd",
       "executable": false
     },
     "native/bridge.js": {
-      "sha256": "845d6bb47f849f0dcb54991adae69c2d72c33faf2be1bbda63a6744de7b382af",
+      "sha256": "87de902f97d327a3c381a553cd0a3de34f973b5cb7858b1684984ff5dd28ba2b",
       "executable": false
     },
     "native/index.js": {
@@ -4412,7 +4412,7 @@
       "executable": false
     },
     "src/willow/locale/messages/es-US.json": {
-      "sha256": "03dcb28462d03f6384124c0f354253ccf671b9fe16718783cbf51ab28a1ead29",
+      "sha256": "41b2f30f856291230dad4869c6d8c9a4589a55bce250aeac8c202fd3ad44ea12",
       "executable": false
     },
     "src/willow/locale/notices.ts": {
@@ -5080,7 +5080,7 @@
       "executable": false
     },
     "src/willow/ui/record-tables.ts": {
-      "sha256": "0f033e61263a6c25597b4a8040b02260ea4fa98fc8063c8ebdeac2caa531c457",
+      "sha256": "3dfe6d4b1ee8a2bee9206163b8c48e2914250693ff79d65ebaa04d6ae89d283c",
       "executable": false
     },
     "src/willow/ui/retention.ts": {
@@ -5104,7 +5104,7 @@
       "executable": false
     },
     "src/willow/ui/signatures.ts": {
-      "sha256": "e00ee33828a21e1336a8069e328af729e1b30252015f928299338e7c5aa9ce90",
+      "sha256": "6e62115a2bd4f2bce4d94ff95aadcb664b42c426b1d61b87b7da2f30e9ad8ed1",
       "executable": false
     },
     "src/willow/ui/survey-plan.ts": {
@@ -5524,11 +5524,11 @@
       "executable": false
     },
     "tests/willow/locale-native.mjs": {
-      "sha256": "0f4bc58d942b21593d31ad8fe1345fffd1d0edaa4a19286b6a54fba1661f2419",
+      "sha256": "dec073b080f23c80dce2eba61151d53014a8080411d3c3a1814ed61198542c50",
       "executable": false
     },
     "tests/willow/locale.mjs": {
-      "sha256": "4de794d31d60bbbb06352caaf16562a153b7351fe9e4c7cb7a3566c9812f4f80",
+      "sha256": "08b761af35b68415e389766a5ecd9d418509c91931d9717b8338992506aca64c",
       "executable": false
     },
     "tests/willow/okta-edge.mjs": {

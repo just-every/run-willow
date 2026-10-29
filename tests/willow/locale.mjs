@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
+import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { PDFDocument } from 'pdf-lib'
 import { harness,file } from './harness.mjs'
@@ -250,5 +251,8 @@ try {
  await portal(path,{localeAction:'choose',language:'en'},404)
  assert.equal((await h.raw('/api/willow/me')).status,401)
  await candidateContext?.close()
+ // Full recorded edge bodies support review without publishing bearer links or device tokens.
+ const fixedMail=[...new Map(messages.filter(m=>m.subject.startsWith('Willow:')).map(m=>{const value={subject:m.subject,content:m.content.map(c=>({type:c.type,value:c.value.replace(/https?:[^\s"<>]+/g,'[authenticated link]')}))};return [JSON.stringify(value),value]})).values()]
+ await writeFile(join(evidenceDirectory,'locale-delivery.json'),JSON.stringify({mail:fixedMail,push:[...new Map(pushes.map(p=>{const value={title:p.title,body:p.body,data:p.data};return [JSON.stringify(value),value]})).values()]},null,2)+'\n')
  console.log('PASS LOCALE-001 candidate: independent language → EEO → Spanish signed receipt → careers submission and separate EEO → withdrawal')
 } finally {await browser?.close();await h.close()}

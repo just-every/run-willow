@@ -4,7 +4,7 @@ export const bridgeScript = `window.willowNativeRequest=async function(id,path,b
  if(!/^\\/api\\/willow\\/[a-zA-Z0-9_./?=&%-]+$/.test(path))return;
  try{const r=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',headers:{accept:'application/json',...(body?{'content-type':'application/json','origin':location.origin}:{})},body:body?JSON.stringify(body):undefined});
  window.ReactNativeWebView.postMessage(JSON.stringify({id,status:r.status,data:await r.json()}));}
- catch(e){window.ReactNativeWebView.postMessage(JSON.stringify({id,status:0,data:{error:'network_unavailable'}}));}};true;`
+ catch(e){window.ReactNativeWebView.postMessage(JSON.stringify({id,status:0,data:{error:'network_unavailable'}}));}};window.ReactNativeWebView.postMessage(JSON.stringify({ready:true,path:location.pathname}));true;`
 export function createBridge(webview) {
  let sequence=0
  const pending=new Map()
