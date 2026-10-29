@@ -766,7 +766,7 @@
       "executable": false
     },
     "docs/AGENT-DOOR.md": {
-      "sha256": "26ebd8012501173ff0c9de7cd84e033887c94870d36eb3112d253098becd4fc7",
+      "sha256": "0654bdad2a1fd4331e1123b971b720e09a52c367cc29a3cfc633023a5874321d",
       "executable": false
     },
     "docs/backup.md": {
@@ -5722,7 +5722,7 @@
       "executable": false
     },
     "tests/willow/journey.mjs": {
-      "sha256": "60583a3c2558d431c86e57ea8ee05f1050c467b5f48eea02bb055832c6420c5d",
+      "sha256": "e1a1fe610333138eff7cb1919cd89032fa736dfd824e9e55f0fa7926a1632370",
       "executable": false
     },
     "tests/willow/leave-policies-browser.mjs": {

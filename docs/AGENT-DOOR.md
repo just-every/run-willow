@@ -113,3 +113,9 @@ validateMailDeclaration, accepts that specification. Managed builds use
 runeditrun/delivery at ff70d729948753ffdcceeca94aad063af2dcd979.
 The copied adoption guide describes secretSource in prose without an example
 secret-named assignment. Runtime source and CLI version remain separate pins.
+
+The existing commands journey deliberately updates its two obsolete dry-run
+exit assertions for the pinned CLI: `rer deploy --dry-run` now succeeds locally
+without credentials while explicitly leaving target secrets and remote readiness
+unverified. The journey retains the missing Cloudflare/mail guidance checks and
+checks that remote readiness is not claimed. No deploy is performed.

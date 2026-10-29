@@ -232,16 +232,24 @@ try {
   const { domain } = JSON.parse(await readFile(join(root, 'deploy-site.json'), 'utf8'))
   deployment.vars.MAIL_FROM = `Willow <synthetic-willow-1@${domain}>`
   await writeFile(deploymentFile, JSON.stringify(deployment, null, 2) + '\n')
-  // Dry runs build the artifact, then refuse when target secret bindings cannot be checked.
-  const dryRun = await command(root, ['deploy', '--dry-run'], { expectedExit: 3 })
+  // A dry run validates and builds locally without contacting Cloudflare.
+  // Missing credentials remain guidance for a real deploy, never hosted proof.
+  const deployResult = output => output.split('\n').flatMap(line => {
+    try { return [JSON.parse(line)] } catch { return [] }
+  }).findLast(row => row.verb === 'deploy' && row.event === 'result')
+  const dryRun = await command(root, ['deploy', '--dry-run', '--json'])
   assert.match(dryRun, /CLOUDFLARE_ACCOUNT_ID/)
   assert.match(dryRun, /CLOUDFLARE_API_TOKEN/)
   assert.match(dryRun, /MAIL_API_KEY/)
+  assert.equal(deployResult(dryRun).dryRun, true)
+  assert.equal(deployResult(dryRun).deployed, false)
   await mkdir(join(root,'exports'), {recursive:true})
   await writeFile(join(root,'exports/production-test.env'), 'MAIL_API_KEY=test-no-network-mail-key\n', {mode:0o600})
-  const suppliedMail = await command(root, ['deploy', '--dry-run', '--env-file', 'exports/production-test.env'], { expectedExit: 3 })
+  const suppliedMail = await command(root, ['deploy', '--dry-run', '--env-file', 'exports/production-test.env', '--json'])
   assert.match(suppliedMail, /CLOUDFLARE_ACCOUNT_ID/)
   assert.match(suppliedMail, /CLOUDFLARE_API_TOKEN/)
+  assert.equal(deployResult(suppliedMail).dryRun, true)
+  assert.equal(deployResult(suppliedMail).deployed, false)
   await writeFile(deploymentFile, deploymentSource)
   await restoreJourney({ root, target: join(scratch, 'target'), port })
 } finally {
