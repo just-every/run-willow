@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 import { aiWorkflowSection } from './ai-workflows'
 import { excludesText } from '../retention/excluded'
 import { selfExceptions } from '../self-service/view'
@@ -29,7 +30,7 @@ export async function payrollPage(env: Bindings, actor: Actor, url: URL) {
 <section class="card"><h2>Approved profile revisions</h2><p>Private values remain with HR. Review each revision with HR and record the downstream handoff; this is not a provider confirmation.</p>${revisions.length ? table(['Person','Revision','Due','Outcome'],revisions.map(r=>[h`<a href="/app/people/${r.personId}">Person record</a>`,r.kind==='legalName'?'Legal name':'Dependent',formatDate(r.dueDate),r.status==='resolved'?h`${tag('resolved')} ${r.reference}`:form('self.reconcile','/app/payroll',[hidden('change',r.id),field('Handoff reference','reference')],'Record handoff',{secondary:true})])) : h`<p class="muted">No profile revisions.</p>`}</section>
 <section class="card"><h2>New change batch</h2>${form('payroll.draft', '/app/payroll/{id}', [field('Pay period start', 'periodStart', { type: 'date' }), field('Pay period end', 'periodEnd', { type: 'date' })], 'Prepare draft', { layout: 'row-form' })}<p class="muted">A draft gathers every change effective by the period end that has not been handed off yet.</p></section>
 <section class="card"><h2>Batches</h2>${list.length ? table(['Period', 'Status', 'Lines', 'Exceptions', 'Provider reference'], list.map(batch => [h`<a href="/app/payroll/${batch.id}">${formatDate(batch.periodStart)} – ${formatDate(batch.periodEnd)}</a>`, tag(batch.status), batch.lines, batch.exceptions, batch.providerReference ?? '—'])) : h`<p class="muted">No batches yet.</p>`}</section>`
-  return page('Payroll', actor, body, { current: '/app/payroll', url })
+  return page(msg('Payroll'), actor, body, { current: '/app/payroll', url })
 }
 
 export async function batchPage(env: Bindings, actor: Actor, id: string, url: URL) {
@@ -41,7 +42,7 @@ ${batch.previewStatus.issues.length ? h`<section class="card"><h2>Export blocker
 ${batch.filePreview ? h`<section class="card"><h2>Actual file preview · ${batch.layoutFormat}</h2><pre>${batch.filePreview}</pre><p>Export freezes these exact bytes. A changed source or mapping requires another preview.</p></section>` : ''}
 <section class="card batch-actions">${batch.erasureReceipt ? h`<p>The original file was withdrawn by an approved erasure. The remaining workers' lines are preserved below.</p>` : batch.status === 'draft' ? h`${form('payroll.preview', `/app/payroll/${id}`, [hidden('batch', id)], 'Preview export file', { secondary: true })}${form('payroll.export', `/app/payroll/${id}`, [hidden('batch', id), hidden('previewRevision', batch.previewRevision)], 'Export this batch')}${form('payroll.discard', '/app/payroll', [hidden('batch', id)], 'Discard draft', { secondary: true })}` : h`<p><a class="button" href="/app/payroll/${id}.csv">Download CSV</a></p>`}
 ${batch.status === 'exported' ? form('payroll.acknowledge', `/app/payroll/${id}`, [hidden('batch', id), field('Provider reference', 'reference'), field('Note', 'note', { required: false })], 'Record provider acknowledgement', { secondary: true }) : ''}</section>`
-  return page('Payroll batch', actor, body, { current: '/app/payroll', url })
+  return page(msg('Payroll batch'), actor, body, { current: '/app/payroll', url })
 }
 
 export async function reportsPage(env: Bindings, actor: Actor, url: URL) {
@@ -60,7 +61,7 @@ ${report.compensation ? h`<section class="card"><h2>Compensation</h2><p class="m
 ${report.customFields ? h`<section class="card"><h2>Custom fields</h2>${table(['Person', ...report.customFields.columns.map((column: any) => column.label)], report.customFields.rows.map((row: any) => [h`<a href="/app/people/${row.personId}">${row.name}</a>`, ...report.customFields.columns.map((column: any) => row.withheldFields.includes(column.key) ? 'Withheld' : row.values[column.key] === null ? 'Not recorded' : String(row.values[column.key] ?? ''))]))}</section>` : ''}
 ${tables.length ? h`<section class="card"><h2>Record tables</h2>${table(['Table', 'People you may read', 'Rows in force', ''], tables.map(item => [item.table.label, item.people, item.rows.length, h`<a href="/app/reports/tables/${item.table.key}.csv?asOf=${report.filters.asOf}">Download CSV</a>`]))}</section>` : ''}
 <p class="muted">${report.calculation}</p><p><a href="/app/reports.csv?${csvQuery.toString()}">Download as CSV</a></p>`
-  return page('Reports', actor, body, { current: '/app/reports', url })
+  return page(msg('Reports'), actor, body, { current: '/app/reports', url })
 }
 
 export async function proposalsPage(env: Bindings, actor: Actor, url: URL) {
@@ -68,7 +69,7 @@ export async function proposalsPage(env: Bindings, actor: Actor, url: URL) {
   const drafts = h`${await modelDraftSection(env, actor, url)}${await aiWorkflowSection(env,actor,url)}`
   const body = h`<h1>Proposals</h1><p>Your own agent (or a colleague) can prepare a joiner or a mover through Willow’s JSON API. Nothing changes until you approve the exact plan here; a plan whose records changed since must be prepared again.</p>${drafts}
 <section class="card">${list.length ? table(['Proposed', 'Kind', 'Summary', 'By', 'Status'], list.map(item => [formatDate(new Date(item.proposedAt).toISOString().slice(0, 10)), KIND_LABELS[item.kind] ?? item.kind, h`<a href="/app/proposals/${item.id}">${item.summary}</a>`, item.agent, tag(item.status)])) : h`<p class="muted">No proposals yet.</p>`}</section>`
-  return page('Proposals', actor, body, { current: '/app/proposals', url })
+  return page(msg('Proposals'), actor, body, { current: '/app/proposals', url })
 }
 
 export async function proposalPage(env: Bindings, actor: Actor, id: string, url: URL) {
@@ -78,7 +79,7 @@ export async function proposalPage(env: Bindings, actor: Actor, id: string, url:
 ${item.missing.length ? h`<section class="card"><h2>Missing information</h2><ul>${item.missing.map(entry => h`<li>${entry.replace(/_/g, ' ')}</li>`)}</ul></section>` : ''}
 ${item.status === 'pending' ? h`<section class="card">${form('proposal.decide', `/app/proposals/${id}`, [hidden('proposal', id), hidden('decision', 'approve')], 'Approve and run this plan')}${form('proposal.decide', `/app/proposals/${id}`, [hidden('proposal', id), hidden('decision', 'decline')], 'Decline', { secondary: true })}</section>` : ''}
 ${item.receipt ? h`<section class="card"><h2>Receipt</h2><pre>${JSON.stringify(item.receipt, null, 2)}</pre></section>` : ''}`
-  return page('Proposal', actor, body, { current: '/app/proposals', url })
+  return page(msg('Proposal'), actor, body, { current: '/app/proposals', url })
 }
 
 const PERSON = 'coalesce(p.preferred_name, p.legal_name)'
@@ -114,5 +115,5 @@ export async function auditPage(env: Bindings, actor: Actor, url: URL) {
   const who = (id: string) => names.get(id) ?? (id === 'scheduler' ? 'Willow (reminders)' : id === 'system' ? 'Willow' : 'Former member')
   const record = (subject: string) => subject === 'organisation' ? 'Organization' : records.get(subject) ?? subject.slice(0, 40)
   const body = h`<h1>Audit trail</h1><p class="muted">Every change, and every read of private details, pay, confidential reasons and documents. Newest first; the latest 500.</p><section class="card">${table(['When', 'Who', 'What', 'Record'], events.map(event => [formatInstant(event.at, company?.timezone ?? 'UTC'), who(event.actor), h`<span title="${event.action}">${actionLabel(event.action)}</span>`, record(event.subject)]))}</section>`
-  return page('Audit', actor, body, { current: '/app/audit', url })
+  return page(msg('Audit'), actor, body, { current: '/app/audit', url })
 }

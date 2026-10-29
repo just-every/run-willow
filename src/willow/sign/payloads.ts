@@ -1,3 +1,4 @@
+import { locale,msg } from '../locale/runtime'
 import { eligibleSource } from './source'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
 import type { Bindings } from '../../auth.server'
@@ -30,10 +31,10 @@ export async function prepareSignature(env:Bindings,actor:Actor,input:Input) {
  insist(approvedDigest,'signature_approved_bytes_missing',409)
  const sessionBinding=await sha256Hex(actor.sessionId)
  await commit(env,[session(env,actor),guard(env,'signature_inputs_changed',SEQUENCE+'=?',sequence),
-  stmt(env,'INSERT INTO wl_sign_payloads VALUES(?,?,?,?,?,?,?,?,?,?,?,?,NULL)',id,row.id,actor.id,sessionBinding,row.revision,row.rendered_sha256,approvedDigest,stored.sha256,stored.size,JSON.stringify(values),'en',now()),
+  stmt(env,'INSERT INTO wl_sign_payloads(id,request_id,member_id,session_binding,request_revision,source_sha256,approved_sha256,sha256,size,values_json,language,created_at,used_at,consent) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,NULL,?)',id,row.id,actor.id,sessionBinding,row.revision,row.rendered_sha256,approvedDigest,stored.sha256,stored.size,JSON.stringify(values),locale(),now(),msg(CONSENT)),
   stmt(env,'INSERT INTO wl_sign_files(id,request_id,person_id,sha256,size,created_at) VALUES(?,?,?,?,?,?)',newId(),row.id,row.person_id,stored.sha256,stored.size,now())],
   {actor:actor.id,action:'signature.prepare',subject:row.id,detail:{review:id,template:row.template_id,revision:row.revision,sourceDigest:row.rendered_sha256,payloadDigest:stored.sha256}})
- return {id,request:row.id,revision:row.revision,digest:row.rendered_sha256,sha256:stored.sha256,values,language:'en',consent:CONSENT,title:row.title,category:row.category_id,categoryName:row.category_name,expiresAt:Math.min(row.expires_at,now()+15*60000)}
+ return {id,request:row.id,revision:row.revision,digest:row.rendered_sha256,sha256:stored.sha256,values,language:locale(),consent:msg(CONSENT),template:row.template_id,title:row.title,category:row.category_id,categoryName:row.category_name,expiresAt:Math.min(row.expires_at,now()+15*60000)}
 }
 
 export async function consumePayload(env:Bindings,actor:Actor,input:Input,row:Row,detail:Row,statements:D1PreparedStatement[]) {
@@ -43,7 +44,7 @@ export async function consumePayload(env:Bindings,actor:Actor,input:Input,row:Ro
  insist(payload.request_revision===row.revision&&payload.source_sha256===row.rendered_sha256&&detail.canSign,'signature_payload_changed',409)
  await bytes(env,payload.sha256,payload.size)
  statements.push(guard(env,'signature_payload_used','EXISTS(SELECT 1 FROM wl_sign_payloads WHERE id=? AND used_at IS NULL AND session_binding=?)',id,binding),stmt(env,'UPDATE wl_sign_payloads SET used_at=? WHERE id=?',now(),id))
- return {sha256:payload.sha256,size:payload.size,values:JSON.parse(payload.values_json),approvedDigest:payload.approved_sha256,sessionBinding:binding,language:payload.language}
+ return {sha256:payload.sha256,size:payload.size,values:JSON.parse(payload.values_json),approvedDigest:payload.approved_sha256,sessionBinding:binding,language:payload.language,consent:payload.consent??CONSENT}
 }
 
 export async function signaturePayloadFile(env:Bindings,actor:Actor,id:string) {

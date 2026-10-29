@@ -1,3 +1,4 @@
+import { locale } from './locale/runtime'
 // Calendar dates for employment: ISO YYYY-MM-DD in the employer's time zone.
 import { insist } from './core'
 
@@ -43,13 +44,13 @@ export function today(zone: string, instant = Date.now()): string {
 }
 
 export function formatInstant(instant: number, zone: string): string {
-  return new Intl.DateTimeFormat('en-US', { timeZone: zone, dateStyle: 'medium', timeStyle: 'short' }).format(instant)
+  return new Intl.DateTimeFormat(locale()==='en'?'en-US':locale(), { timeZone: zone, dateStyle: 'medium', timeStyle: 'short' }).format(instant)
 }
 
 export function formatDate(date: string | null | undefined): string {
   if (!date) return '—'
   const [year, month, day] = date.split('-').map(Number)
-  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', dateStyle: 'medium' }).format(Date.UTC(year, month - 1, day))
+  return new Intl.DateTimeFormat(locale()==='en'?'en-US':locale(), { timeZone: 'UTC', dateStyle: 'medium' }).format(Date.UTC(year, month - 1, day))
 }
 
 /** Minutes as hours with two decimals, e.g. 450 -> "7.50". */
@@ -67,5 +68,5 @@ export function parseHours(value: string, code: string): number {
 /** A calendar day with its weekday, e.g. "Mon, Oct 26"; the year only when it is not this year's. */
 export function formatDay(date: string, today: string, { year = false } = {}): string {
   const [y, m, d] = date.split('-').map(Number)
-  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', ...(year || date.slice(0, 4) !== today.slice(0, 4) ? { year: 'numeric' } : {}) }).format(Date.UTC(y, m - 1, d))
+  return new Intl.DateTimeFormat(locale()==='en'?'en-US':locale(), { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', ...(year || date.slice(0, 4) !== today.slice(0, 4) ? { year: 'numeric' } : {}) }).format(Date.UTC(y, m - 1, d))
 }

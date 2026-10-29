@@ -1,3 +1,4 @@
+import { msg,locale } from '../locale/runtime'
 // Stored values as people read them: roles, employment types, task offsets, ISO dates and
 // audit actions. Records keep their stored spelling; only the page wording changes here.
 import { formatDay, isDate } from '../dates'
@@ -9,7 +10,7 @@ export const KIND_LABELS: Record<string, string> = { joiner: 'Joiner', mover: 'M
 /** First letter up, the rest as written: "overdue" -> "Overdue", "in force" -> "In force". */
 export const sentence = (text: string) => text.replace(/^\p{Ll}/u, letter => letter.toUpperCase())
 
-export const assignee = (value: string) => ASSIGNEE_LABELS[value] ?? sentence(value)
+export const assignee = (value: string) => msg(ASSIGNEE_LABELS[value] ?? sentence(value))
 
 const days = (count: number) => `${count} day${count === 1 ? '' : 's'}`
 /** A task's deadline relative to the case date: "3 days before", "On the day", "2 days after". */
@@ -26,8 +27,8 @@ export function displayValue(value: unknown, today: string): string {
   if (value === null || value === undefined || value === '') return '—'
   const text = String(value)
   if (isDate(text)) return formatDay(text, today, { year: true })
-  if (Object.hasOwn(TYPE_LABELS, text)) return TYPE_LABELS[text]
-  if (Object.hasOwn(KIND_LABELS, text)) return KIND_LABELS[text]
+  if (Object.hasOwn(TYPE_LABELS, text)) return msg(TYPE_LABELS[text])
+  if (Object.hasOwn(KIND_LABELS, text)) return msg(KIND_LABELS[text])
   return text
 }
 

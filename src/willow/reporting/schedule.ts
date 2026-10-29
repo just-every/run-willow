@@ -1,3 +1,4 @@
+import { sendFixedNotice } from '../locale/notices'
 // REPORT-001: immutable-version schedules, safe authenticated links and durable one-attempt custody.
 import { isReporter, requireReportReader } from '../levels/reports'
 import type { Bindings } from '../../auth.server'
@@ -54,7 +55,7 @@ export async function runReportScheduler(env:Bindings,instant=now()) {
       if(!sender||!env.MAIL_FROM){status='refused';failure='mail_unavailable'}
       else {
        try {
-        const result=await sender.send({deliveryId:id,from:env.MAIL_FROM,to:[member.email],subject:'Willow: scheduled report ready',html:`<p>A scheduled report is ready.</p><p><a href="${link}">Sign in to view your permitted report</a></p>`,text:`A scheduled report is ready. Sign in to view your permitted report: ${link}`,headers:{'Auto-Submitted':'auto-generated'}})
+        const result=await sendFixedNotice(env,'member',member.id,sender,{deliveryId:id,from:env.MAIL_FROM,to:[member.email],subject:'Willow: scheduled report ready',html:`<p>A scheduled report is ready.</p><p><a href="${link}">Sign in to view your permitted report</a></p>`,text:`A scheduled report is ready. Sign in to view your permitted report: ${link}`,headers:{'Auto-Submitted':'auto-generated'}})
         status=result?.status==='accepted'?'accepted':result?.status==='development'&&env.AUTH_LOCAL==='true'?'development':result?.status==='uncertain'?'uncertain':'refused'
         failure=['accepted','development'].includes(status)?null:status==='uncertain'?'mail_outcome_uncertain':'mail_refused'
        }catch{status='uncertain';failure='mail_outcome_uncertain'}

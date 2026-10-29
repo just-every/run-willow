@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 import { previewPreboarding } from '../retention/preboarding'
 // DATA-002 pages: the owner's retention census (table adoption, state rules, class mappings, holds,
 // erasure requests) and the read-only erasure preview. HR sees only the request form and list.
@@ -39,7 +40,7 @@ export async function retentionPage(env: Bindings, actor: Actor, url: URL) {
     owner && r.receipt ? h`<a href="${PATH}/receipts/${r.receipt}">Receipt</a>` : owner && r.status !== 'withdrawn' ? h`<a href="${PATH}/erasure?${r.preboarding ? 'preboarding' : r.applicant ? 'application' : 'person'}=${r.person.id}">Preview</a> ${form('erasure.withdraw', PATH, hidden('request', r.id), 'Withdraw', { secondary: true })}` : ''])) : h`<p>No erasure requests.</p>`
   if (!actor.owner) {
     const people = await all<{ id: string; name: string }>(env, 'SELECT id, legal_name AS name FROM wl_people ORDER BY legal_name')
-    return page('Erasure requests', actor, h`<h1>Erasure requests</h1><p>HR opens a request and records where it came from. The owner alone decides.</p>
+    return page(msg('Erasure requests'), actor, h`<h1>Erasure requests</h1><p>HR opens a request and records where it came from. The owner alone decides.</p>
 <section class="card"><h2>Open a request</h2>${requestForm(people, actor.today)}${applicantForm(applicants, actor.today)}${preboardingForm(preboarders,actor.today)}</section><section class="card"><h2>Requests</h2>${requests(false)}</section>`, { current: PATH, url })
   }
   const classOptions = CLASS_KEYS.map(key => ({ value: key, label: data.classes.find((c: any) => c.key === key).label }))
@@ -47,7 +48,7 @@ export async function retentionPage(env: Bindings, actor: Actor, url: URL) {
   const adopted = data.adopted?.table_version === data.tableVersion
   const mapRows = (kind: string, rows: any[], name: string) => rows.map(row => [name, row[kind === 'document_category' ? 'name' : 'key'], row.class ? data.classes.find((c: any) => c.key === row.class).label : tag('unmapped')])
   const mappingRefs = [...data.mappings.documentCategories.map((r: any) => ({ value: `document_category:${r.id}`, label: `Document category: ${r.name}` })), ...data.mappings.customFields.map((r: any) => ({ value: `custom_field:${r.id}`, label: `Custom field: ${r.key}` })), ...data.mappings.recordTables.map((r: any) => ({ value: `record_table:${r.id}`, label: `Record table: ${r.key}` }))]
-  return page('Retention and erasure', actor, h`<p class="back"><a href="/app/settings">← Settings</a></p><h1>Retention and erasure</h1>
+  return page(msg('Retention and erasure'), actor, h`<p class="back"><a href="/app/settings">← Settings</a></p><h1>Retention and erasure</h1>
 <p>The owner alone adopts the retention table, confirms each work state, places holds and decides erasures. Nothing here deletes anything.</p>
 <section class="card"><h2>Retention table <small>${data.tableVersion}</small></h2><p>A dated federal default, not legal advice. You adopt it once; periods may be lengthened, never shortened.</p>
 ${table(['Record class', 'Rule', 'Source'], data.classes.map((c: any) => [c.label, c.rule, c.citation]))}
@@ -75,7 +76,7 @@ export async function erasurePage(env: Bindings, actor: Actor, url: URL) {
   const preboarding = url.searchParams.has('preboarding')
   const applicant = url.searchParams.has('application')
   const preview = preboarding ? await previewPreboarding(env,actor,url.searchParams.get('preboarding') ?? '') : applicant ? await previewApplicant(env, actor, url.searchParams.get('application') ?? '') : await previewErasure(env, actor, url.searchParams.get('person') ?? '')
-  return page('Erasure preview', actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Erasure preview</h1>
+  return page(msg('Erasure preview'), actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Erasure preview</h1>
 <p>${preview.person.name}. This preview changes nothing; the owner confirms its digest to approve.</p>
 ${preview.blockers.length ? h`<section class="card"><h2>Blocked</h2>${table(['What', 'Reference'], preview.blockers.map(b => [b.reason, b.ref]))}</section>` : ''}
 <section class="card"><h2>Summary</h2><dl><dt>Rows examined</dt><dd>${preview.summary.rows}</dd><dt>Erased now</dt><dd>${preview.summary.erased}</dd><dt>Anonymized</dt><dd>${preview.summary.anonymized}</dd><dt>Redacted from custody</dt><dd>${preview.summary.redacted}</dd><dt>Retained</dt><dd>${preview.summary.retained}</dd><dt>Held</dt><dd>${preview.summary.held}</dd><dt>Files</dt><dd>${preview.summary.blobs} (${preview.summary.bytes} bytes)</dd></dl></section>
@@ -85,7 +86,7 @@ ${preview.blockers.length ? h`<section class="card"><h2>Blocked</h2>${table(['Wh
 }
 
 export function receiptPage(actor: Actor, data: Awaited<ReturnType<typeof erasureReceipt>>, url?: URL) {
-  return page('Erasure receipt', actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Erasure receipt: ${data.label}</h1>
+  return page(msg('Erasure receipt'), actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Erasure receipt: ${data.label}</h1>
 <p>The receipt holds counts and labels only: no name, email, tax identifier, birth date or employee number.</p>
 <section class="card"><dl><dt>Request source</dt><dd>${SOURCE_LABELS[data.source]}</dd><dt>Received</dt><dd>${formatDate(data.receivedOn)}</dd><dt>Approved by</dt><dd>${data.approvedBy ?? '—'}</dd><dt>Preview digest</dt><dd><code>${data.digest.slice(0, 16)}</code></dd>
 <dt>Erased</dt><dd>${data.totals.erased}</dd><dt>Anonymized</dt><dd>${data.totals.anonymized}</dd><dt>Retained</dt><dd>${data.totals.retained}</dd><dt>Held</dt><dd>${data.totals.held}</dd><dt>Files deleted</dt><dd>${data.blobs.deleted} of ${data.blobs.total} (${data.blobs.bytes} bytes)</dd></dl></section>
@@ -95,13 +96,13 @@ export function receiptPage(actor: Actor, data: Awaited<ReturnType<typeof erasur
 }
 
 export function retainedPage(actor: Actor, data: Awaited<ReturnType<typeof retainedRecords>>, url?: URL) {
-  return page('Retained records', actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Retained records</h1>
+  return page(msg('Retained records'), actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Retained records</h1>
 <p>Records kept for a retention rule or a hold, in restricted custody: absent from the directory, profiles, search, reports and exports. Only the owner reads them; EEO values also need EEO compliance.</p>
 <section class="card">${data.records.length ? table(['Person', 'Record', 'Class', 'Until', 'Values'], data.records.map(r => [r.person, r.table, r.class ?? '—', r.hold ? 'Hold' : r.expiry ? formatDate(r.expiry) : '—', r.values ? h`<details><summary>Read retained values</summary><pre>${JSON.stringify(r.values, null, 2)}</pre></details>` : r.restricted])) : h`<p>No retained records.</p>`}</section>`, { current: PATH, url })
 }
 
 export function retentionReviewPage(actor: Actor, data: Awaited<ReturnType<typeof reviewList>>, url?: URL) {
-  return page('Records past retention', actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Records past retention</h1>
+  return page(msg('Records past retention'), actor, h`<p class="back"><a href="${PATH}">← Retention and erasure</a></p><h1>Records past retention</h1>
 <p>People who are not being erased whose retention period has run out for some records. Nothing here is purged silently: you confirm one person's purge by its digest.</p>
 <section class="card">${data.records.length ? table(['Person', 'Records', 'Classes', ''], data.records.map(r => [r.person.name, r.rows, [...new Set(r.expired.map(item => item.class))].join(', '), r.purgeable ? form('retention.purge', `${PATH}/review`, [hidden('person', r.person.id), hidden('digest', r.digest)], 'Purge these records', { secondary: true }) : h`Blocked: ${r.blockers.join(', ').replace(/_/g, ' ')}`])) : h`<p>No records are past their retention period.</p>`}</section>`, { current: PATH, url })
 }

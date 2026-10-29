@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 // PEOPLE-003: record-table sections for a person's page and the table definitions page.
 import { can, type Actor } from '../actor'
 import { formatDate } from '../dates'
@@ -21,7 +22,7 @@ function display(value: FieldValue | undefined, column: Column): string {
 function inputs(columns: Column[], values: Record<string, FieldValue> = {}): Html[] {
   return columns.map(column => {
     const name = `col.${column.key}`, value = values[column.key]
-    if (column.type === 'boolean') return select(column.label, name, [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }], typeof value === 'boolean' ? String(value) : '', { required: column.required, blank: 'Not recorded' })
+    if (column.type === 'boolean') return select(column.label, name, [{ value: 'true', label: msg('Yes') }, { value: 'false', label: msg('No') }], typeof value === 'boolean' ? String(value) : '', { required: column.required, blank: 'Not recorded' })
     if (column.type === 'select') return select(column.label, name, column.validation.options as { value: string; label: string }[], String(value ?? ''), { required: column.required, blank: 'Not recorded' })
     return field(column.label, name, { type: column.type === 'date' ? 'date' : 'text', value: value ?? '', required: column.required })
   })
@@ -36,7 +37,7 @@ export function recordTablesSection(projected: PersonRecordTables, actor: Actor 
 ${item.rows.length ? table(['From', ...item.columns.map(column => column.label)], item.rows.map(row => [formatDate(row.effectiveFrom!), ...item.columns.map(column => display(row.values![column.key], column))])) : h`<p class="muted">No rows in force on ${formatDate(projected.asOf)}.</p>`}
 ${writable ? item.rows.map(row => h`<details><summary>Change ${display(row.values![item.columns[0].key], item.columns[0])}</summary>${form('recordRow.write', back, [hidden('person', personId), hidden('table', item.id), hidden('row', row.id), field('Effective from', 'effectiveFrom', { type: 'date', value: actor!.today }), ...inputs(item.columns, row.values!)], 'Save new version', { secondary: true })}${form('recordRow.write', back, [hidden('person', personId), hidden('table', item.id), hidden('row', row.id), hidden('remove', 'yes'), field('Removed from', 'effectiveFrom', { type: 'date', value: actor!.today })], 'Remove row', { secondary: true })}</details>`) : ''}
 ${[...item.rows, ...item.formerRows].some(row => row.history.length > 1 || !row.values) ? h`<details><summary>${item.label} history</summary>${table(['Row', 'Effective from', 'Values', 'Recorded by'], [...item.rows, ...item.formerRows].flatMap(row => row.history.map(version => [row.id.slice(0, 8), formatDate(version.effectiveFrom),
-  version.removed ? 'Removed' : item.columns.map(column => `${column.label}: ${display(version.values[column.key], column)}`).join('; '), `${version.recordedBy} · ${new Date(version.recordedAt).toISOString()}`])))}</details>` : ''}
+  version.removed ? msg('Removed') : item.columns.map(column => `${column.label}: ${display(version.values[column.key], column)}`).join('; '), `${version.recordedBy} · ${new Date(version.recordedAt).toISOString()}`])))}</details>` : ''}
 ${writable && projected.asOf === actor!.today ? h`<details><summary>Add to ${item.label.toLowerCase()}</summary>${form('recordRow.write', back, [hidden('person', personId), hidden('table', item.id), field('Effective from', 'effectiveFrom', { type: 'date', value: actor!.today }), ...inputs(item.columns)], 'Add row', { secondary: true })}</details>` : ''}`
   })}</section>`
 }
@@ -46,7 +47,7 @@ function tableForm(definition: RecordTable | null): Html {
     definition ? h`${hidden('table', definition.id)}<p>${definition.key} · ${CLASSES[definition.classification]}</p>` : h`${field('Table key', 'key', { hint: 'Lowercase letters, numbers and underscores. The key and classification remain fixed.' })}${select('Classification', 'classification', ['general', 'hr', 'payroll'].map(value => ({ value, label: CLASSES[value] })))}`,
     field('Label', 'label', { value: definition?.current.label }),
     ...(definition?.classification === 'contact' ? [] : [h`<fieldset><legend>General tables only</legend>${check('The person may read their rows', 'employeeRead', definition?.current.employeeRead)}${check('Their current direct manager may read their rows', 'managerRead', definition?.current.managerRead)}</fieldset>`]),
-    ...(definition?.builtIn ? [] : [area('Columns (JSON list of key, label, type, required and validation, as for custom fields)', 'columnsJson', JSON.stringify(definition?.current.columns ?? [{ key: 'name', label: 'Name', type: 'text', required: true, validation: { maxLength: 200 } }], null, 1), true)]),
+    ...(definition?.builtIn ? [] : [area('Columns (JSON list of key, label, type, required and validation, as for custom fields)', 'columnsJson', JSON.stringify(definition?.current.columns ?? [{ key: 'name', label: msg('Name'), type: 'text', required: true, validation: { maxLength: 200 } }], null, 1), true)]),
     check('Retire this table', 'retired', definition?.current.retired),
   ], definition ? 'Save new version' : 'Create table')
 }

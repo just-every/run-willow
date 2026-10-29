@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 import { excludesText } from '../retention/excluded'
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
@@ -9,7 +10,7 @@ import { h,page,table } from './html'
 const route='/app/reports/library'
 export async function builtinReportsPage(env:Bindings,actor:Actor,url:URL) {
  const reports=await builtinReports(env,actor)
- return page('Report library',actor,h`<header class="page-head"><h1>Report library</h1><p>Built-in reports use your current field access and the people your reporting rights reach.</p></header><section class="card"><h2>Available reports</h2>${reports.length?table(['Report','About this report'],reports.map(report=>[h`<a href="${route}/${report.id}">${report.name}</a>`,report.description])):h`<p>No built-in reports are selected for your levels.</p>`}</section>`,{current:route,url})
+ return page(msg('Report library'),actor,h`<header class="page-head"><h1>Report library</h1><p>Built-in reports use your current field access and the people your reporting rights reach.</p></header><section class="card"><h2>Available reports</h2>${reports.length?table(['Report','About this report'],reports.map(report=>[h`<a href="${route}/${report.id}">${report.name}</a>`,report.description])):h`<p>No built-in reports are selected for your levels.</p>`}</section>`,{current:route,url})
 }
 function sources(result:BuiltinResult) {
  const turnover=result.totals.turnover as {sources?:{personId:string;source:string;endDate:string}[];denominatorSources?:{date:string;people:{personId:string;source:string}[]}[]}|undefined

@@ -230,6 +230,7 @@ jobs:
           node "$RUNNER_TEMP/willow-playwright/node_modules/playwright/cli.js" install --only-shell chromium
           printf 'WILLOW_PLAYWRIGHT_PATH=%s/willow-playwright/node_modules/playwright/index.mjs\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: sh scripts/willow/signing-journey.sh
+      - run: WILLOW_LOCALE_BROWSER=1 node tests/willow/locale.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

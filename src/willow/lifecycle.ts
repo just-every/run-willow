@@ -91,8 +91,8 @@ export async function caseStatements(env: Bindings, actor: Actor, template: Row,
     statements: [
       guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_templates WHERE id=? AND status='active')", template.id),
       stmt(env, "INSERT INTO wl_cases (id, kind, person_id, period_id, template_id, anchor_date, status, opened_by, opened_at, revision) VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)", caseId, template.kind, personId, periodId, template.id, anchor, actor.id, now(), newId()),
-      ...tasks.map(task => stmt(env, "INSERT INTO wl_case_tasks (id, case_id, position, title, assignee, assignee_person_id, due_date, evidence_required, system, action, dependencies, source_task, created_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open')",
-        ids.get(task.position), caseId, task.position, task.title, task.assignee, task.manager, task.dueDate, task.evidence_required, task.system, task.action, JSON.stringify(task.dependencies.filter(p => ids.has(p)).map(p => ids.get(p))), task.key, now())),
+      ...tasks.map(task => stmt(env, "INSERT INTO wl_case_tasks (id, case_id, position, title, assignee, assignee_person_id, due_date, evidence_required, system, action, dependencies, source_task, created_at, translation_source, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open')",
+        ids.get(task.position), caseId, task.position, task.title, task.assignee, task.manager, task.dueDate, task.evidence_required, task.system, task.action, JSON.stringify(task.dependencies.filter(p => ids.has(p)).map(p => ids.get(p))), task.key, now(), template.id+':'+task.position)),
     ],
   }
 }
@@ -259,7 +259,7 @@ export async function caseDetail(env: Bindings, actor: Actor, id: string) {
     template: { id: template.id, family: template.family_id, name: template.name, version: template.version },
     missing: sees(actor, caseRow.person_id, 'lifecycle') ? await missingFields(env, caseRow, template) : [],
     upgrades: upgrades.map(upgrade => ({ ...upgrade, at: upgrade.at, detail: !history.some(task => task.action === 'signature') || can(actor, 'people.manage') && history.every(task => task.action !== 'signature' || !task.evidence || evidenceVisible.get(task.id)) ? upgrade.detail : null })),
-    tasks: await Promise.all(tasks.map(async task => ({ id: task.id, assetRow: task.record_row_id, title: task.title, assignee: task.assignee, dueDate: task.due_date, evidenceRequired: !!task.evidence_required, system: task.system, action: task.action, status: task.status, evidence: evidenceVisible.get(task.id) ? task.evidence : null, completedAt: task.completed_at, mine: answersFor(actor, task, caseRow), failure: task.failure, blockedBy: await blockedBy(env, task) }))),
+    tasks: await Promise.all(tasks.map(async task => ({ id: task.id, assetRow: task.record_row_id, translationSource:task.translation_source, title: task.title, assignee: task.assignee, dueDate: task.due_date, evidenceRequired: !!task.evidence_required, system: task.system, action: task.action, status: task.status, evidence: evidenceVisible.get(task.id) ? task.evidence : null, completedAt: task.completed_at, mine: answersFor(actor, task, caseRow), failure: task.failure, blockedBy: await blockedBy(env, task) }))),
   }
 }
 
@@ -276,5 +276,5 @@ export async function casesFor(env: Bindings, personId: string, asOf?: { date: s
 /** Open tasks this member answers for, across every case. */
 export async function myTasks(env: Bindings, actor: Actor) {
   const rows = await all(env, "SELECT t.*, c.person_id, c.kind, p.legal_name, p.preferred_name FROM wl_case_tasks t JOIN wl_cases c ON c.id = t.case_id JOIN wl_people p ON p.id = c.person_id WHERE t.status = 'open' AND t.superseded_at IS NULL AND c.status='open' ORDER BY t.due_date, t.position")
-  return await Promise.all(rows.filter(row => answersFor(actor, row, row)).map(async row => ({ id: row.id, case: row.case_id, kind: row.kind, person: displayName(row), title: row.title, dueDate: row.due_date, overdue: row.due_date < actor.today, evidenceRequired: !!row.evidence_required, system: row.system, failure: row.failure, blockedBy: await blockedBy(env, row) })))
+  return await Promise.all(rows.filter(row => answersFor(actor, row, row)).map(async row => ({ id: row.id, case: row.case_id, kind: row.kind, person: displayName(row), translationSource:row.translation_source,title: row.title, dueDate: row.due_date, overdue: row.due_date < actor.today, evidenceRequired: !!row.evidence_required, system: row.system, failure: row.failure, blockedBy: await blockedBy(env, row) })))
 }

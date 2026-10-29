@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 import type { Bindings } from '../../auth.server'
 import type { Actor } from '../actor'
 import { aiSettings } from '../ai-provider'
@@ -40,5 +41,5 @@ ${table(['Task', 'Role and deadline', 'Conditions and gates'], workflow.recipe.m
 ${workflow.gaps.length ? h`<h3>Unresolved provider work</h3><ul>${workflow.gaps.map((gap: any) => h`<li>Task ${gap.position}: ${gap.detail}</li>`)}</ul>` : ''}
 ${workflow.steps.map(step => h`<h3>Task ${step.position} · ${step.authority === 'it' ? 'IT' : 'Payroll'} signoff</h3><p>${workflow.sourceStale ? 'Signoff invalidated. HR must request a fresh draft before a new approval.' : step.approved ? 'Approved by a distinct current authority.' : 'Awaiting a distinct authorized reviewer.'}</p>${step.canApprove ? form('workflow.step.approve', `/app/workflow-approvals?workflow=${workflow.id}`, [hidden('workflow', workflow.id), hidden('position', step.position), hidden('authority', step.authority), hidden('revision', workflow.revision)], `Approve ${step.authority === 'it' ? 'IT' : 'payroll'} step ${step.position}`) : ''}`)}
 </section>`) : h`<section class="card"><p>No pending steps are assigned to your current authority.</p></section>`}`
-  return page('Workflow step approvals', actor, body, { current: '/app/tasks', url })
+  return page(msg('Workflow step approvals'), actor, body, { current: '/app/tasks', url })
 }

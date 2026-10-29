@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 import { handbookSourcesSection } from './ai-handbooks'
 import { aiControlsSection } from './ai-controls'
 import { levels } from '../levels/store'
@@ -37,7 +38,7 @@ export async function employerPage(env: Bindings, actor: Actor, url: URL) {
     field('Country (two-letter code)', 'country', { value: current?.country ?? 'US', hint: 'For example US. Willow encodes no country rules: you supply your own policies.' }),
     field('Currency (three-letter code)', 'currency', { value: current?.currency ?? 'USD' }),
   ], 'Save')}</section></div>`
-  return page('Employer', actor, body, { current: '/app/settings', url, showNav: Boolean(current) })
+  return page(msg('Employer'), actor, body, { current: '/app/settings', url, showNav: Boolean(current) })
 }
 
 export async function settingsPage(env: Bindings, actor: Actor, url: URL) {
@@ -70,13 +71,13 @@ ${manage ? h`<section class="card templates"><h2>Lifecycle templates</h2><p clas
 ${templateList.filter(template => template.status === 'active').map(template => h`<h3>${template.name} ${tag(`${template.kind} v${template.version}`)}</h3><p class="muted">Required information: ${template.requiredFields.map(field => field.replace(/_/g, ' ')).join(', ') || 'none'}</p><ol>${template.tasks.map(task => h`<li>${task.title} — ${assignee(task.assignee)} · ${dueOffset(task.dueOffsetDays).toLowerCase()}${task.system ? ` · ${task.system}` : ''}${task.evidenceRequired ? ' · evidence' : ''}</li>`)}</ol>`)}
 ${templateList.filter(template => template.status === 'draft').map(template => h`<h3>${template.name} ${tag(`draft v${template.version}`)}</h3>${form('template.preview', '/app/settings?review={id}', [hidden('template', template.id), field('Preview case date', 'asOf', { type: 'date', value: actor.today })], 'Review publication')}`)}
 <h3>New template</h3>${form('template.create', '/app/settings', [select('Revise existing workflow', 'family', templateList.filter(template => template.status === 'active').map(template => ({ value: template.family, label: template.name })), '', { required: false, blank: 'Create a new workflow' }), select('Kind', 'kind', [{ value: 'joiner', label: 'Joiner' }, { value: 'mover', label: 'Mover' }, { value: 'leaver', label: 'Leaver' }]), field('Template name', 'name'), checks('Required information before the case completes', 'requiredFields', REQUIRED_FIELDS.map(value => ({ value, label: value.replace(/_/g, ' ') }))), ...[1, 2, 3, 4, 5].map(taskRow)], 'Save template', { layout: 'tasks' })}</section>` : ''}</div>`
-  return page('Settings', actor, body, { current: '/app/settings', url, signing:true })
+  return page(msg('Settings'), actor, body, { current: '/app/settings', url, signing:true })
 }
 
 export async function customFieldsPage(env: Bindings, actor: Actor, url: URL) {
   const definitions = await listFieldDefinitions(env, actor, url.searchParams.get('asOf') ?? actor.today)
   const tables = can(actor,'people.manage')?await listRecordTables(env, actor):[]
-  return page('Custom fields', actor, h`${can(actor,'people.manage')?h`<p class="back"><a href="/app/settings">← Settings</a></p>`:''}<h1>Custom fields${can(actor,'people.manage')?' and tables':''}</h1>${fieldDefinitionSection(definitions, actor)}${recordTableDefinitions(tables, actor)}`, { current: '/app/settings', url })
+  return page(msg('Custom fields'), actor, h`${can(actor,'people.manage')?h`<p class="back"><a href="/app/settings">← Settings</a></p>`:''}<h1>Custom fields${can(actor,'people.manage')?' and tables':''}</h1>${fieldDefinitionSection(definitions, actor)}${recordTableDefinitions(tables, actor)}`, { current: '/app/settings', url })
 }
 
 export async function accessPage(env: Bindings, actor: Actor, request: Request, url: URL) {
@@ -94,5 +95,5 @@ ${actor.owner&&levelChoices?h`<section class="card"><h2>Default portal access</h
     actor.owner && !member.owner && member.status === 'active' ? h`<details><summary>Change</summary>${form('member.permissions', '/app/access', [hidden('member', member.id), checks('Permissions', 'permissions', PERMISSIONS.map(value => ({ value, label: PERMISSION_LABELS[value] })), member.permissions)], 'Save permissions', { secondary: true })}<p class="muted">Bundles: HR = ${PRESETS.hr.join(', ')}; payroll = ${PRESETS.payroll.join(', ')}; IT = ${PRESETS.it.join(', ')}.</p></details>` : '']))}</section>
 <section class="card"><h2>Preview what a member sees</h2><form method="get" action="/app/access" class="row-form">${select('Member', 'member', list.map(member => ({ value: member.id, label: member.name })), previewMember ?? '')}${select('About this person', 'person', people.map(person => ({ value: person.id, label: person.name })), previewPerson ?? '')}<button type="submit">Preview</button></form>
 ${preview ? h`<h3>${preview.member.name} ${preview.member.isThisPerson ? '(this person)' : preview.member.managesThisPerson ? '(their manager)' : ''}</h3>${table(['What', 'Visible to them'], preview.facets.map(facet => [facet.label, tag(facet.visible ? (facet.withheldFromYou ? 'Yes (withheld from you)' : 'Yes') : 'No')]))}${table(['Personal field','Visible to them'],preview.personalFields.map(field=>[field.label,tag(field.visible?(field.withheldFromYou?'Yes (withheld from you)':'Yes'):'No')]))}${preview.reportSelections.length?h`<h4>Selected reports</h4><p>These selections do not add field or profile access. Current people and field permissions still apply when the report runs.</p>${table(['Report','Can include this person'],preview.reportSelections.map(report=>[report.name??'Definition withheld from you',tag(report.reachesThisPerson?'Yes':'No')]))}`:''}${table(['Additional performance reads','Level grant'],preview.performanceFields.map(field=>[field.label,tag(field.levelView?'View':'No additional access')]))}${preview.customFields.length ? table(['Custom field', 'Visible to them'], preview.customFields.map(field => [field.label, tag(field.visible ? (field.withheldFromYou ? 'Yes (withheld from you)' : 'Yes') : 'No')])) : ''}<details><summary>Exactly what they would receive (your access applies)</summary><pre>${JSON.stringify(preview.view, null, 2)}</pre></details>` : ''}</section>`
-  return page('Access', actor, body, { current: '/app/access', url })
+  return page(msg('Access'), actor, body, { current: '/app/access', url })
 }

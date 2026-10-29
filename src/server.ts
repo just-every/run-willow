@@ -49,7 +49,7 @@ export default withDemo({
     const imported = await importDoorResponse(request, env)
     if (imported) return imported
     const auth = await authResponse(request, env)
-    if (auth) return documentResponse(await willowFrame(auth))
+    if (auth) return documentResponse(await willowFrame(auth,request))
     const willow = await willowResponse(request, env)
     if (willow) return documentResponse(willow)
     return documentResponse(await dispatch(request, () => api.fetch(request, env, execution), () => start.fetch(request)))

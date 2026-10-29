@@ -11,6 +11,7 @@ export async function unclaimedFiles(env: Bindings) {
     for (const object of page.objects) {
       const sha = object.key.slice('sha256/'.length)
       const row = await one<{ n: number }>(env, `SELECT
+        (SELECT COUNT(*) FROM wl_preboard_signatures WHERE sha256=?1) +
         (SELECT COUNT(*) FROM wl_sign_files WHERE sha256=?1) +
         (SELECT COUNT(*) FROM wl_document_versions WHERE sha256=?1) +
         (SELECT COUNT(*) FROM wl_hiring_resumes WHERE sha256=?1) +

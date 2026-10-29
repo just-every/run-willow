@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 // HIRING-003: native forms reuse the existing guarded manual pipeline actions.
 import type { Bindings } from '../../auth.server'
 import { can, employerZone, type Actor } from '../actor'
@@ -11,7 +12,7 @@ const teamOptions = async (env: Bindings, actor: Actor, request: Request) =>
 export async function hiringPage(env: Bindings, actor: Actor, request: Request, url: URL) {
  const openings = await hiringOpenings(env, actor)
  const options = can(actor, 'people.manage') ? await teamOptions(env, actor, request) : null
- return page('Hiring', actor, h`<h1>Hiring</h1><p>Internal manual reviews. Openings here are not published job postings. People decide every stage change.</p>
+ return page(msg('Hiring'), actor, h`<h1>Hiring</h1><p>Internal manual reviews. Openings here are not published job postings. People decide every stage change.</p>
  ${openings.length ? table(['Opening', 'Stages'], openings.map(o => [h`<a href="${root}/openings/${o.id}">${o.name}</a>`, o.stages.join(' → ')])) : h`<p>No hiring reviews are available to you.</p>`}
  ${options ? h`<section class="card"><h2>Create an internal review</h2>${form('hiring.opening', root, [field('Opening name', 'name'),
  h`<fieldset><legend>Stages in order</legend>${Array.from({length:6}, (_, i) => field(`Stage ${i + 1}`, 'stages', {value:['New','Screen','Interview','Offer','Hired','Rejected'][i],required:i<2}))}</fieldset>`,
@@ -24,6 +25,7 @@ export async function hiringOpeningPage(env: Bindings, actor: Actor, request: Re
  const here = `${root}/openings/${id}`
  return page(opening.name, actor, h`<p class="back"><a href="${root}">← Hiring</a></p><h1>${opening.name}</h1>
  <p>Internal review · ${opening.stages.join(' → ')}</p>
+ ${options?h`<section class="card"><h2>Careers publication</h2><p><a href="/careers/${id}">Open public application page</a> · <a href="/app/translations">Employer translations</a></p>${form('career.publish',here,[hidden('opening',id),field('Public description','description'),h`<label class="check"><input type="checkbox" name="active" value="yes" checked> Publish this opening and email a separate voluntary self-identification invitation after application</label>`],'Save careers publication')}</section>`:''}
  ${table(['Candidate', 'Stage', 'Source'], opening.candidates.map(c => [h`<a href="${root}/applications/${c.id}">${c.name}</a>`, tag(c.stage), c.source]))}
  <section class="card"><h2>Add a candidate</h2><p>A contact email is not verified identity. Applications stay separate, including repeat email addresses.</p>
  ${form('hiring.candidate', here, [hidden('opening', id),field('Candidate name','name'),field('Contact email','contactEmail',{type:'email'}),field('Source','source')], 'Add candidate')}</section>

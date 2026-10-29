@@ -49,7 +49,7 @@ export function targets(plan: Plan): Target[] {
   return result
 }
 
-const SOURCE_TABLES = ['wl_sign_files', 'wl_document_versions', 'wl_hiring_resumes', 'wl_protected_certifications', 'wl_company_file_versions']
+const SOURCE_TABLES = ['wl_preboard_signatures','wl_sign_files', 'wl_document_versions', 'wl_hiring_resumes', 'wl_protected_certifications', 'wl_company_file_versions']
 
 export interface RowTarget { id: string; table: string; from: string; blob?: string; item: Pick<Item, 'disposition' | 'class' | 'rule' | 'expiry' | 'hold'> }
 

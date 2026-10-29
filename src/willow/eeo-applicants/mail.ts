@@ -1,3 +1,4 @@
+import { sendFixedNotice } from '../locale/notices'
 // The bearer exists only in this delivery call. Neither audit nor action responses carry it.
 import type { Bindings } from '../../auth.server'
 import { operatorMail } from '../../mail.server.mjs'
@@ -25,7 +26,7 @@ export async function deliverInvitation(env: Bindings, row: InvitationRow, token
     if (sender && env.MAIL_FROM) {
       const link = new URL(`/applicant-self-id/${token}`, env.AUTH_ORIGIN).href
       const copy = 'You may complete voluntary self-identification in Willow. Your answers are separate from your application, are never shown to the hiring team and do not affect selection.'
-      const sent = await sender.send({ deliveryId: row.id, from: env.MAIL_FROM, to: [current.contact_email],
+      const sent = await sendFixedNotice(env,'applicant',row.application_id,sender,{ deliveryId: row.id, from: env.MAIL_FROM, to: [current.contact_email],
         subject: 'Willow: voluntary self-identification invitation',
         text: `${copy}\n\nComplete voluntary self-identification: ${link}\n\nThis invitation expires in 14 days.`,
         html: `<p>${copy}</p><p><a href="${esc(link)}">Complete voluntary self-identification</a></p><p>This invitation expires in 14 days.</p>`,

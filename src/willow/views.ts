@@ -1,3 +1,5 @@
+import { clockView } from './clock'
+import { translationHome,languageFor } from './locale/store'
 import { webhookList } from './webhooks'
 import { trainingHome } from './training'
 import { signatureRequests,signatureRequest } from './sign/requests'
@@ -75,6 +77,7 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
+  clock:clockView,translations:translationHome,
   webhooks:webhookList,
   signatureRequests,signatureRequest:(env,actor,_request,id,url)=>signatureRequest(env,actor,id,url.searchParams.get('asOf')??undefined),
   signatureTemplates,
@@ -128,7 +131,7 @@ export const views: Record<string, View> = {
   modelDraft: (env, actor, _request, id) => modelDraft(env, actor, id),
   levels: (env, actor) => levels(env,actor),
   levelReview: (env, actor, request, id) => levelReview(env,actor,id!),
-  me: async (env, actor) => ({ id: actor.id, email: actor.email, name: actor.name, owner: actor.owner, person: actor.personId, permissions: [...actor.permissions], scoped: actor.scoped.map(grant => ({ level: grant.level, scope: grant.scope, permissions: [...grant.permissions].sort(), people: grant.people.size })), selfWriteModes: await selfWriteModes(env,actor), manages: [...actor.reports], today: actor.today, employer: await employer(env) }),
+  me: async (env, actor) => ({ language:await languageFor(env,'member',actor.id), id: actor.id, email: actor.email, name: actor.name, owner: actor.owner, person: actor.personId, permissions: [...actor.permissions], scoped: actor.scoped.map(grant => ({ level: grant.level, scope: grant.scope, permissions: [...grant.permissions].sort(), people: grant.people.size })), selfWriteModes: await selfWriteModes(env,actor), manages: [...actor.reports], today: actor.today, employer: await employer(env) }),
   permissions: async () => PERMISSION_LABELS,
   settings: async (env,actor) => { insist(can(actor,'people.manage')||can(actor,'leave.manage'),'forbidden',403); return settings(env) },
   members: (env, actor, request) => members(env, actor, request),

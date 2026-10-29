@@ -1,3 +1,5 @@
+import { msg } from '../locale/runtime'
+import { content,contentLabel } from './html'
 import { holdsSetting } from '../levels/settings'
 import { can, type Actor } from '../actor'
 import { formatDate } from '../dates'
@@ -55,9 +57,9 @@ ${definitions.length ? definitions.map(schema => h`<h3>${schema.definition?.labe
 export function customValueInputs(definitions: EffectiveField[], values: Record<string, FieldValue> = {}): Html {
   return h`${definitions.filter(definition => !definition.retired).map(definition => {
     const name = `custom.${definition.key}`, value = values[definition.key] ?? ''
-    const control = definition.type === 'boolean' ? h`${hidden('customBoolean', definition.key)}${select(definition.label, name, [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }], typeof value === 'boolean' ? String(value) : '', { required: definition.required, blank: 'Not recorded' })}` :
-      definition.type === 'select' ? select(definition.label, name, definition.validation.options, String(value), { required: definition.required, blank: 'Not recorded' }) :
-        field(definition.label, name, { type: definition.type === 'date' ? 'date' : 'text', value, required: definition.required, hint: ruleDescription(definition) })
+    const control = definition.type === 'boolean' ? h`${hidden('customBoolean', definition.key)}${select(contentLabel('customField',((definition as EffectiveField).definitionVersionId??definition.id),'label',definition.label), name, [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }], typeof value === 'boolean' ? String(value) : '', { required: definition.required, blank: 'Not recorded' })}` :
+      definition.type === 'select' ? select(contentLabel('customField',((definition as EffectiveField).definitionVersionId??definition.id),'label',definition.label), name, definition.validation.options.map(o=>({...o,label:contentLabel('customField',((definition as EffectiveField).definitionVersionId??definition.id),'option:'+o.value,o.label)})), String(value), { required: definition.required, blank: 'Not recorded' }) :
+        field(contentLabel('customField',((definition as EffectiveField).definitionVersionId??definition.id),'label',definition.label), name, { type: definition.type === 'date' ? 'date' : 'text', value, required: definition.required, hint: ruleDescription(definition) })
     return h`${hidden('customField', definition.key)}${control}`
   })}`
 }
@@ -67,7 +69,7 @@ export function customPersonSection(projected: PersonCustomFields, actor?: Actor
   const visible = projected.fields
   const editable = actor ? visible.filter(item => writesCustomField(actor, item.currentDefinition) && !item.currentDefinition.retired) : []
   const values = Object.fromEntries(visible.map(item => [item.key, item.value]))
-  return h`<section class="card"><h2>Custom fields</h2>${table(['Field', 'Value', 'Definition'], visible.map(item => [item.definition.label, displayValue(item.value, item.definition), `${item.key} · v${item.definition.version}${item.definition.retired ? ' (retired)' : ''}`]))}
+  return h`<section class="card"><h2>Custom fields</h2>${table(['Field', 'Value', 'Definition'], visible.map(item => [content('customField',item.definition.definitionVersionId,'label',item.definition.label), displayValue(item.value, item.definition), `${item.key} · v${item.definition.version}${item.definition.retired ? ' (retired)' : ''}`]))}
 ${visible.map(item => h`<details><summary>${item.definition.label} history</summary>${definitionHistory(item.definitions)}${table(['Effective from', 'Value', 'Definition', 'Revision', 'Recorded by'], item.history.map(revision => {
     const definition = item.definitions.find(version => version.id === revision.definitionVersionId)
     return [formatDate(revision.effectiveFrom), displayValue(revision.value, definition), definition ? `${definition.label} · v${definition.version}` : revision.definitionVersionId,
@@ -77,8 +79,8 @@ ${actor && personId && editable.length && projected.asOf === actor.today ? h`<de
 }
 
 function displayValue(value: FieldValue, definition?: FieldDefinitionVersion | EffectiveField): string {
-  if (value === null) return 'Not recorded'
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
-  if (definition?.type === 'select') return definition.validation.options.find(option => option.value === value)?.label ?? value
+  if (value === null) return msg('Not recorded')
+  if (typeof value === 'boolean') return msg(value ? 'Yes' : 'No')
+  if (definition?.type === 'select') return contentLabel('customField',((definition as EffectiveField).definitionVersionId??definition.id),'option:'+value,definition.validation.options.find(option => option.value === value)?.label ?? value)
   return value
 }

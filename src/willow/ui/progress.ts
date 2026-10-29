@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 // In progress: people with an open change, whether payroll, records and access agree
 // yet, and the selected change with its timeline and Willow's own follow-up.
 import type { Bindings } from '../../auth.server'
@@ -56,7 +57,7 @@ ${part('What Willow checked', said.checked)}${part('When Willow reminds', said.r
 }
 
 function panel(item: Selected, today: string, checked: string | null, said: Explanation | null) {
-  const kindPath = item.kind === 'leave' ? { label: 'Request', open: 'Open request' } : { label: 'Case', open: 'Open case' }
+  const kindPath = item.kind === 'leave' ? { label: msg('Request'), open: 'Open request' } : { label: msg('Case'), open: 'Open case' }
   const agent = item.agent
   const explainHref = said ? `/app/progress?select=${item.key}` : `/app/progress?select=${item.key}&explain=1#explain`
   return h`<aside class="card selected-change" aria-labelledby="selected-name">
@@ -65,7 +66,7 @@ function panel(item: Selected, today: string, checked: string | null, said: Expl
 <div class="case-box"><section class="change"><div class="change-title"><h3>${item.what}</h3><p>${item.detail}</p>${tag(item.status)}</div>
 <dl><div><dt>Effective date</dt><dd>${formatDay(item.effective, today, { year: true })}</dd></div>${item.tasks ? h`<div><dt>Tasks done</dt><dd>${item.tasks.done} of ${item.tasks.total}</dd></div>` : item.endDate ? h`<div><dt>Last day</dt><dd>${formatDay(item.endDate, today, { year: true })}</dd></div>` : ''}</dl>
 ${item.template ? h`<p class="template">Template: ${item.template}</p>` : ''}</section>
-${item.steps.length ? h`<section class="timeline"><h3>${item.kind === 'leave' ? 'Request timeline' : 'Tasks timeline'}</h3><ol>${item.steps.map(step)}</ol></section>` : ''}
+${item.steps.length ? h`<section class="timeline"><h3>${item.kind === 'leave' ? msg('Request timeline') : msg('Tasks timeline')}</h3><ol>${item.steps.map(step)}</ol></section>` : ''}
 ${item.expected && item.observed ? h`<section class="compare"><h3>Expected vs observed</h3><div class="pair"><div><small>Expected</small><b>${item.expected.title}</b><span>${item.expected.detail}</span></div><div${item.exception ? raw(' class="off"') : ''}><small>Observed</small><b>${item.observed.title}</b><span>${item.observed.detail}</span></div></div></section>` : ''}</div>
 ${agent ? h`<section class="agent" aria-label="Willow"><img src="/brand/mark.svg" alt="" width="36" height="66"><div><h3>Willow</h3>${agent.said.map(sentence => h`<p>${sentence}</p>`)}${checked ? h`<p class="checked" role="status">${checked}</p>` : ''}</div></section>` : ''}
 <div class="agent-actions">${agent?.canRun ? form('work.run', `/app/progress?select=${item.key}`, [], 'Check due work now') : ''}<a class="button${agent?.canRun ? ' secondary' : ''}" href="${item.path}">${kindPath.open}</a><a class="button secondary" href="${explainHref}"${said ? raw(' aria-current="true"') : ''}>Explain</a></div>
@@ -84,5 +85,5 @@ export async function progressPage(env: Bindings, actor: Actor, url: URL) {
   const body = h`<div class="progress"><header class="board-head"><h1>In progress</h1><p>${people}, ${board.needYou ? h`<strong>${board.needYou} ${board.needYou === 1 ? 'needs' : 'need'} you</strong>` : 'none need you'}</p></header>
 ${board.rows.length ? h`<div class="board">${table(board)}${board.selected ? panel(board.selected, board.today, checked, said) : ''}</div>`
     : h`<section class="card empty"><img src="/brand/mark.svg" alt="" width="34" height="62"><h2>Nothing is in progress</h2><p>Joiner, mover and leaver cases you can see, and leave waiting for your decision, appear here with whether payroll, records and access agree yet.</p></section>`}</div>`
-  return page('In progress', actor, body, { current: '/app/progress', url: frame, wide: true })
+  return page(msg('In progress'), actor, body, { current: '/app/progress', url: frame, wide: true })
 }

@@ -161,7 +161,7 @@ export async function signatureRequest(env:Bindings,actor:Actor,id:string,asOf?:
  const isPending=pending(row)&&row.expires_at>now()
  const sourceEligible=!isPending||await eligibleSource(env,actor,row.source_version,row.person_id)
  const participant=actor.personId===row.person_id||actor.id===row.hr_member||can(actor,'people.manage')
- return {id:row.id,title:row.title,category:row.category_name,deliveries:participant?deliveries:[],person:row.person_id,state:pending(row)&&!isPending?'expired':requestState(row),revision:row.revision,digest:participant?row.rendered_sha256:null,expiresAt:row.expires_at,canSign:isPending&&sourceEligible&&eligible&&index<signers.length,canManage:can(actor,'people.manage'),participant,signer:index,fields:participant?JSON.parse(row.fields_json):[],signers:participant?signers:[],signed:participant?signed.map(e=>({member:e.member_id,at:e.at,signer:e.signer})):[],sealedVersion:participant?row.sealed_version:null,certificate:participant&&row.certificate?JSON.parse(row.certificate):null}
+ return {id:row.id,template:row.template_id,title:row.title,category:row.category_name,deliveries:participant?deliveries:[],person:row.person_id,state:pending(row)&&!isPending?'expired':requestState(row),revision:row.revision,digest:participant?row.rendered_sha256:null,expiresAt:row.expires_at,canSign:isPending&&sourceEligible&&eligible&&index<signers.length,canManage:can(actor,'people.manage'),participant,signer:index,fields:participant?JSON.parse(row.fields_json):[],signers:participant?signers:[],signed:participant?signed.map(e=>({member:e.member_id,at:e.at,signer:e.signer})):[],sealedVersion:participant?row.sealed_version:null,certificate:participant&&row.certificate?JSON.parse(row.certificate):null}
 }
 
 export async function actSignature(env:Bindings,actor:Actor,input:Input,request:Request) {
@@ -186,11 +186,11 @@ export async function actSignature(env:Bindings,actor:Actor,input:Input,request:
   const prepared=await consumePayload(env,actor,input,row,detail,statements)
   const prior=await all(env,"SELECT * FROM wl_sign_events WHERE request_id=? AND kind='sign' ORDER BY signer",row.id)
   const stored={sha256:prepared.sha256,size:prepared.size}
-  Object.assign(event,{values:prepared.values,sourceDigest:row.rendered_sha256,approvedDigest:prepared.approvedDigest,payloadDigest:prepared.sha256,consentVersion:'2026-10-26',language:prepared.language,sessionBinding:prepared.sessionBinding})
+  Object.assign(event,{consent:prepared.consent,values:prepared.values,sourceDigest:row.rendered_sha256,approvedDigest:prepared.approvedDigest,payloadDigest:prepared.sha256,consentVersion:'2026-10-26',language:prepared.language,sessionBinding:prepared.sessionBinding})
   statements.push(stmt(env,'UPDATE wl_sign_requests SET rendered_sha256=?,rendered_size=? WHERE id=?',stored.sha256,stored.size,row.id))
   if(detail.signer===detail.signers.length-1) {
    state='signed';sealed=newId()
-   certificate={request:row.id,language:prepared.language,approvedDigest:prepared.approvedDigest,template:row.template_id,sha256:stored.sha256,consent:CONSENT,completedAt:now(),signers:[...prior.map(e=>({member:e.member_id,at:e.at,...JSON.parse(e.detail)})),{member:actor.id,at:now(),...event}]}
+   certificate={request:row.id,language:prepared.language,approvedDigest:prepared.approvedDigest,template:row.template_id,sha256:stored.sha256,consent:prepared.consent,completedAt:now(),signers:[...prior.map(e=>({member:e.member_id,at:e.at,...JSON.parse(e.detail)})),{member:actor.id,at:now(),...event}]}
    statements.push(stmt(env,'INSERT INTO wl_documents(id,person_id,category_id,title,revision,created_by,created_at) VALUES(?,?,?,?,?,?,?)',row.document_id,row.person_id,row.category_id,row.title,newId(),actor.id,now()),stmt(env,'INSERT INTO wl_document_versions(id,document_id,number,filename,media_type,size,sha256,uploaded_by,uploaded_at) VALUES(?,?,1,?,?,?,?,?,?)',sealed,row.document_id,'signed.pdf','application/pdf',stored.size,stored.sha256,actor.id,now()))
   } else state='viewed'
  } else if(action==='view') { insist(self||counter,'signature_signer_required',403);state='viewed' }
