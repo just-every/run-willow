@@ -30,19 +30,19 @@ function definitionForm(actor: Actor, schema: FieldSchema | null, returnTo: stri
 
 function definitionHistory(definitions: FieldDefinitionVersion[]) {
   return table(['Version', 'Effective from', 'Label and type', 'Rules', 'Visibility', 'Recorded by'], definitions.map(definition => [
-    `v${definition.version}`, formatDate(definition.effectiveFrom), `${definition.label} (${definition.type})`,
-    `${definition.required ? 'Required' : 'Optional'}${definition.retired ? '; retired' : ''}; ${ruleDescription(definition)}`,
-    [definition.employeeRead ? 'Person' : '', definition.managerRead ? 'Direct manager' : ''].filter(Boolean).join(', ') || 'Matching permission',
+    `v${definition.version}`, formatDate(definition.effectiveFrom), h`${content('customField',definition.id,'label',definition.label)} (${msg(definition.type)})`,
+    `${msg(definition.required ? 'Required' : 'Optional')}${definition.retired ? '; '+msg('Retired') : ''}; ${ruleDescription(definition)}`,
+    [definition.employeeRead ? msg('Person') : '', definition.managerRead ? msg('Direct manager') : ''].filter(Boolean).join(', ') || msg('Matching permission'),
     `${definition.recordedBy} · ${new Date(definition.recordedAt).toISOString()}`,
   ]))
 }
 
 function ruleDescription(definition: FieldDefinitionVersion | EffectiveField): string {
   switch (definition.type) {
-    case 'text': return `${definition.validation.minLength ?? 0}–${definition.validation.maxLength} characters`
+    case 'text': return `${definition.validation.minLength ?? 0}–${definition.validation.maxLength} ${msg('characters')}`
     case 'number': case 'date': return `Minimum ${definition.validation.min ?? 'none'}; maximum ${definition.validation.max ?? 'none'}`
-    case 'boolean': return 'Yes or no'
-    case 'select': return definition.validation.options.map(option => `${option.label} (${option.value})`).join(', ')
+    case 'boolean': return msg('Yes or no')
+    case 'select': return definition.validation.options.map(option => `${contentLabel('customField',((definition as EffectiveField).definitionVersionId??definition.id),'option:'+option.value,option.label).replace(/^\u2060/,'')} (${option.value})`).join(', ')
   }
 }
 
@@ -72,7 +72,7 @@ export function customPersonSection(projected: PersonCustomFields, actor?: Actor
   return h`<section class="card"><h2>Custom fields</h2>${table(['Field', 'Value', 'Definition'], visible.map(item => [content('customField',item.definition.definitionVersionId,'label',item.definition.label), displayValue(item.value, item.definition), `${item.key} · v${item.definition.version}${item.definition.retired ? ' (retired)' : ''}`]))}
 ${visible.map(item => h`<details><summary>${content('customField',item.definition.definitionVersionId,'label',item.definition.label)} history</summary>${definitionHistory(item.definitions)}${table(['Effective from', 'Value', 'Definition', 'Revision', 'Recorded by'], item.history.map(revision => {
     const definition = item.definitions.find(version => version.id === revision.definitionVersionId)
-    return [formatDate(revision.effectiveFrom), displayValue(revision.value, definition), definition ? `${definition.label} · v${definition.version}` : revision.definitionVersionId,
+    return [formatDate(revision.effectiveFrom), displayValue(revision.value, definition), definition ? content('customField',definition.id,'label',definition.label) : revision.definitionVersionId,
       h`${revision.id}${revision.correctsId ? h`<br>Corrects ${revision.correctsId}` : ''}`, `${revision.recordedBy} · ${new Date(revision.recordedAt).toISOString()}`]
   }))}</details>`)}
 ${actor && personId && editable.length && projected.asOf === actor.today ? h`<details><summary>Update custom fields</summary>${form('customField.write', `/app/people/${personId}`, [hidden('person', personId), field('Effective from', 'effectiveFrom', { type: 'date', value: actor.today }), customValueInputs(editable.map(item => item.currentDefinition), values)], 'Save custom fields')}</details>` : ''}</section>`

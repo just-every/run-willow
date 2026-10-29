@@ -112,7 +112,9 @@
           "migrations/core/0096_signature_closure.sql",
           "migrations/core/0097_training_modes.sql",
           "migrations/core/0102_locale.sql",
-          "migrations/core/0103_locale_cover_text.sql"
+          "migrations/core/0103_locale_cover_text.sql",
+          "native",
+          "migrations/core/0104_mobile_push.sql"
         ]
       }
     },

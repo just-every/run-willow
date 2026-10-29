@@ -1,3 +1,4 @@
+import { msg,employerText } from '../locale/runtime'
 import { signatureMetrics, signatureMeasures, usesSignatures, SIGNATURE_BASIS } from './signature-metrics'
 import { SIGNATURE_COLUMNS, type SignatureSource } from './signatures'
 import { isReporter, reportAdmission, requireReportReader, selectedReport } from '../levels/reports'
@@ -12,7 +13,7 @@ import { effectiveFieldDefinitions } from '../custom-fields/store'
 import { datedExceptions } from './exceptions'
 import { erasedExcluded } from '../retention/excluded'
 import { requireReporter, STANDARD_COLUMNS, type ReportDefinition } from './definitions'
-interface ReportRow { personId:string;name:string;source:string;cells:Record<string,string|null>;withheld:string[];signatureSources:SignatureSource[];signatureWithheld:boolean;workSources:{id:string;caseId:string;dueDate:string}[];exceptionSources:{kind:string;path:string;dueDate:string}[];overdueSources:{kind:string;path:string;dueDate:string}[];measures:{headcount:number;fte:number|null;tenureDays:number|null;leaveMinutes:number|null;liabilityCents:number|null;currency:string|null;openExceptions:number;overdueWork:number} }
+interface ReportRow { personId:string;name:string;source:string;cells:Record<string,string|null>;displayCells?:Record<string,string|null>;withheld:string[];signatureSources:SignatureSource[];signatureWithheld:boolean;workSources:{id:string;caseId:string;dueDate:string}[];exceptionSources:{kind:string;path:string;dueDate:string}[];overdueSources:{kind:string;path:string;dueDate:string}[];measures:{headcount:number;fte:number|null;tenureDays:number|null;leaveMinutes:number|null;liabilityCents:number|null;currency:string|null;openExceptions:number;overdueWork:number} }
 const roundedCents=(minutes:number,cents:number,denominator:number)=>{const product=BigInt(minutes)*BigInt(cents),absolute=product<0n?-product:product,den=BigInt(denominator);const result=Number((absolute*2n+den)/(den*2n))*(product<0n?-1:1);insist(Number.isSafeInteger(result),'liability_out_of_range');return result}
 const sum=(values:(number|null)[])=>values.reduce<number>((s,v)=>s+(v??0),0)
 export async function runReport(env:Bindings,actor:Actor,definition:ReportDefinition,reportId?:string) {
@@ -60,7 +61,16 @@ export async function runReport(env:Bindings,actor:Actor,definition:ReportDefini
  const denominator=(activeAt(definition.from)+activeAt(definition.to))/2,leavers=filteredPeriods.filter(p=>p.end_date&&p.end_date>=definition.from&&p.end_date<=definition.to).length
  const turnoverSources=filteredPeriods.filter(p=>p.end_date&&p.end_date>=definition.from&&p.end_date<=definition.to).map(p=>({personId:p.person_id,startDate:p.start_date,endDate:p.end_date,source:`/app/people/${p.person_id}?asOf=${p.end_date}`}))
  const denominatorSources=[definition.from,definition.to].map(date=>({date,people:filteredPeriods.filter(p=>p.start_date<=date&&(!p.end_date||p.end_date>=date)).map(p=>({personId:p.person_id,source:`/app/people/${p.person_id}?asOf=${date}`}))}))
- const columns=definition.columns.map(key=>{const f=custom.find(f=>'custom.'+f.key===key);return {key,label:STANDARD_COLUMNS[key]??(f&&rows.some(r=>!r.withheld.includes(key))?f.label:key)}})
+ const columns=definition.columns.map(key=>{const f=custom.find(f=>'custom.'+f.key===key);return {key,label:STANDARD_COLUMNS[key]??(f&&rows.some(r=>!r.withheld.includes(key))?employerText('customField',f.definitionVersionId,'label',f.label):key)}})
+ for(const row of rows) {
+  row.displayCells={...row.cells}
+  for(const field of custom) {
+   const key='custom.'+field.key,value=row.cells[key]
+   if(row.withheld.includes(key)||value==null)continue
+   const option=(field.validation as {options?:{value:string;label:string}[]}).options?.find(option=>option.value===value)
+   if(option)row.displayCells[key]=employerText('customField',field.definitionVersionId,'option:'+option.value,option.label)
+  }
+ }
  const totals={headcount:sum(rows.map(r=>r.measures.headcount)),fte:Math.round(sum(rows.map(r=>r.measures.fte))*1000)/1000,unknownFte:rows.filter(r=>r.measures.headcount&&r.measures.fte===null).length,tenureDays:sum(rows.map(r=>r.measures.tenureDays)),averageTenureDays:rows.filter(r=>r.measures.tenureDays!==null).length?sum(rows.map(r=>r.measures.tenureDays))/rows.filter(r=>r.measures.tenureDays!==null).length:null,leaveHours:sum(rows.map(r=>r.measures.leaveMinutes))/60,liability,unknownLiability:rows.filter(r=>r.measures.liabilityCents===null).length,openExceptions:sum(rows.map(r=>r.measures.openExceptions)),overdueWork:sum(rows.map(r=>r.measures.overdueWork)),turnover:{leavers,denominator,rate:denominator?leavers/denominator:null,sources:turnoverSources,denominatorSources}}
  const signatureSources=rows.flatMap(row=>row.signatureSources)
  const signatureTotals=signatures?{...signatureMeasures(signatureSources),withheldPeople:rows.filter(row=>row.signatureWithheld).length,sources:signatureSources}:null

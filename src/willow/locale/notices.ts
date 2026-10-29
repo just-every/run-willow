@@ -1,3 +1,4 @@
+import { sendMobileNotice } from '../mobile/push'
 import type { Bindings } from '../../auth.server'
 import { languageFor } from './store'
 import { msg } from './runtime'
@@ -9,5 +10,7 @@ export async function sendFixedNotice(env:Bindings,kind:string,subject:string,se
  const text=(part:string)=>part.replace(/^(\s*)([\s\S]*?)(\s*)$/,(_,a,b,c)=>a+fragment(b)+c)
  const html=message.html?.replace(/>([^<]+)</g,(_:string,value:string)=>'>'+text(value)+'<')
  const plain=message.text?.split('\n').map(fragment).join('\n')
- return sender.send({...message,subject:msg(message.subject,language),html,text:plain})
+ const result=await sender.send({...message,subject:msg(message.subject,language),html,text:plain})
+ if(kind==='member')await sendMobileNotice(env,subject).catch(()=>{})
+ return result
 }
