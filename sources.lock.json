@@ -692,7 +692,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "e532a2e99e41cda9d3e793d3ada730b2d3aacbe7e7338b0ac4c8e67456c56bc7",
+      "sha256": "defbdc11c42b983abb9c0cd58c3b84bd732a7bd39c4388b4668ecb3bf5275b0f",
       "executable": false
     },
     ".gitignore": {
@@ -5528,7 +5528,7 @@
       "executable": false
     },
     "tests/willow/locale.mjs": {
-      "sha256": "08b761af35b68415e389766a5ecd9d418509c91931d9717b8338992506aca64c",
+      "sha256": "059f8a94658f07897fc3e1ac3a88432a6a471de109e30e4553e2151c66e2d544",
       "executable": false
     },
     "tests/willow/okta-edge.mjs": {

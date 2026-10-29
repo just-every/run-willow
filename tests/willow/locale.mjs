@@ -50,7 +50,10 @@ try {
  for(const [key,text] of [['title','Aviso de seguridad'],['body','Revise la nueva guía de seguridad.']])await translate({...sources.sources.find(x=>x.source===announcement.versionId&&x.field===key),translated:text})
  await h.api('translation.write',employee,{...shirt,language:'es-US',translated:'Not allowed'},403)
  await api('connections.notices',{enabled:true})
- await nativeLocaleJourney(h,employee,page)
+ // The required browser/native CI job installs and compiles both native platforms.
+ // Plain Worker verification keeps its normal web-only dependency footprint.
+ if(browser)await nativeLocaleJourney(h,employee,page)
+ await h.api('mobile.push.register',employee,{token:'ExpoPushToken[locale-employee]',platform:'ios',enabled:true})
  await h.api('mobile.push.register',s.ended.cookie,{token:'ExpoPushToken[revoked-device]',platform:'android',enabled:true})
  await api('access.end',{person:s.ended.person})
  await h.api('mobile.push.register',s.ended.cookie,{token:'ExpoPushToken[revoked-device]',platform:'android',enabled:true},401)
