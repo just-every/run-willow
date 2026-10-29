@@ -74,9 +74,13 @@ adapters and journeys, and BASE-AGENT-002/003 remain partial for that gap.
 No existing test is weakened or removed. The only new test tooling is the
 agent-surface journey and its native owner/attribution fixtures.
 
-The prior draft's conformance exposed an oversized-body transport edge. The
-0.2.88 normal verification result is reported separately, retaining the CLI's
-actual failure exit for any failing point.
+The 0.2.88 focused production conformance passed 1190 of 1191 points, including
+all CORE subset refusals and both supported MCP eras. The remaining failure is
+the native browser journey at agents-390-navigation. Normal unsharded verify
+stopped earlier at AI-002's concurrent location creation (409 precondition_failed);
+the normal records-policy shard passed all six native journeys, then stopped
+in Base hydration before the agent phase. These failure exits are retained;
+normal verification is not claimed green.
 
 The ct table names 113 tools and 55 resource templates. This CORE declaration
 has ten native tools, no public resource templates and no prompts or events.
