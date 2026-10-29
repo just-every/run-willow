@@ -2,13 +2,14 @@
 
 Willow uses Base's shared agent door at `/mcp`, with canonical protected-resource
 metadata, `/api/rer/agent-policy`, `/agents` and the native person approval and
-Pause doors. `/docs/agents` and the specialist prompt describe the production
-registry. The copied runtime and CLI both select Base
-`f96363bf919ea3e7ed1837daba6894810a50e4a6` (`rer-v0.2.86`).
+Pause doors. `/docs/agents` describes the production registry. The runtime is
+pinned to Base `114ef7a61f080da053af783c5fbe06f625d692cc` (`rer-v0.2.88`);
+the separately pinned, released CLI is `@runeditrun/rer@0.2.88`.
 
 This is a declared initial set: native record inspection, pending joiner plans
-and manual hiring work. `agent-surface.json` is the exact tool/resource and
-conformance declaration. Current native field, level, opening-team and HR grants
+and manual hiring work. `agent-surface.json` is the exact effective tool and
+conformance declaration. Both it and `createAgentDoor` declare the mandatory
+CORE capabilities: tools, policy, pause, audit and idempotency. Current native field, level, opening-team and HR grants
 are re-read at each call. An agent receives no interactive native session.
 A plan remains pending for native HR decision, and candidate evidence always
 identifies the agent as preparer for the real sponsoring interviewer.
@@ -35,10 +36,15 @@ route, credential or database writer. The normal `rer verify` invokes Base's
 conformance after Willow's existing checks; the focused local command is
 `node node_modules/@runeditrun/rer/cli/agent-door.mjs . deploy.json` after build.
 
-The copied Base implementation still includes its built-in events tool. Willow
-adds no native subscription, external mail delivery, multi-sponsor execution or
-resource-refresh family. These remain partial obligations. Events are not a
-claim of a complete ongoing HR reconciliation agent.
+Events, public MCP resources, specialist prompts and subscriptions are undeclared.
+They have empty catalogues, no discovery advertisement and typed
+`capability_not_declared` refusals; resource links are withheld. Native read tools
+still inspect permitted employee, application and proposal records through the
+same native visibility readers. Internal resource adapters remain available to
+audit, without opening the public resource family. External mail, multi-sponsor
+execution and resource refresh remain partial obligations. The subset does not
+claim the unscoped optional families or weaken owner, principal, consent,
+authorization, approval, policy, Pause or replay checks.
 
 Agent decisions, exact summaries, approvals and replay outcomes retain private
 custody. Native erasure remains closed once door evidence exists, including an
@@ -60,15 +66,14 @@ and `willow.plans.prepare`; native manual hiring splits the proposed
 `willow.candidates.manage` into create, move, scorecard, read and list, with
 `willow.hiring.status` as a content-free native work witness. `willow.plans.read`
 inspects existing proposals. Date-specific reads use the `asOf` argument.
-Resources are people, applications and proposals. The declared classes are
+Native record readers cover people, applications and proposals; the public
+resource family is undeclared. The declared classes are
 standard and sensitive. Broader native jobs in the proposed surface still need
 adapters and journeys, and BASE-AGENT-002/003 remain partial for that gap.
 
 No existing test is weakened or removed. The only new test tooling is the
 agent-surface journey and its native owner/attribution fixtures.
 
-The pinned shared transport/verifier has an outstanding oversized-body edge:
-the conformance POST can fail at the verifier fetch boundary instead of exposing
-the expected HTTP 413. This is not suppressed or retried by Willow. The normal
-CLI failure exit is retained while the Base edge is pending; native registry,
-policy, resource, attribution and browser checks remain independently reported.
+The prior draft's conformance exposed an oversized-body transport edge. The
+0.2.88 normal verification result is reported separately, retaining the CLI's
+actual failure exit for any failing point.

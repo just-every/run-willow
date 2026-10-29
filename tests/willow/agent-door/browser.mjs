@@ -5,10 +5,10 @@ import {chromium} from '@playwright/test'
 // The browser receives unmodified production HTTP responses from the disposable
 // verifier request function. It has no app binding or production credential.
 export async function browserProof({request,origin,cookie,application,tool}) {
- const directory=process.env.WILLOW_EVIDENCE_DIR||resolve('..','..','..','evidence','sx-door-adopt-willow-2')
+ const directory=process.env.WILLOW_EVIDENCE_DIR||resolve('evidence','agent-door')
  await mkdir(directory,{recursive:true})
  let phase='launch'
- const browser=await chromium.launch({executablePath:process.env.CI?undefined:'/usr/bin/chromium',args:['--no-sandbox']})
+ const browser=await chromium.launch({args:['--no-sandbox']})
  try {
   const context=await browser.newContext()
   await context.addCookies(cookie.split('; ').map(part=>{const at=part.indexOf('=');return {name:part.slice(0,at),value:part.slice(at+1),url:origin}}))

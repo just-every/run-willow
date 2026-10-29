@@ -127,17 +127,6 @@
       "clauses": [
         "HIRING-003"
       ]
-    },
-    {
-      "name": "willow.events.list",
-      "scope": "events:read",
-      "readOnly": true,
-      "classes": [
-        "standard"
-      ],
-      "clauses": [
-        "BASE-AGENT-010"
-      ]
     }
   ],
   "notTools": [
@@ -169,11 +158,7 @@
       "reason": "screen"
     }
   ],
-  "resources": [
-    "willow://people/{id}",
-    "willow://applications/{id}",
-    "willow://proposals/{id}"
-  ],
+  "resources": [],
   "witness": {
     "tool": "willow.hiring.status",
     "args": {}
@@ -401,21 +386,6 @@
           "facts": {
             "measure": 1,
             "kind": "applicant"
-          }
-        }
-      ]
-    },
-    {
-      "id": "events",
-      "tool": "willow.events.list",
-      "args": {
-        "limit": 200
-      },
-      "expect": [
-        {
-          "class": "standard",
-          "facts": {
-            "measure": 1
           }
         }
       ]
