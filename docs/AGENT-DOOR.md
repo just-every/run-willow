@@ -100,3 +100,9 @@ AGENT-001–003 retain their native partial status: multi-provider reconciliatio
 cross-person simulation and controlled recovery remain gaps. The ct branch is
 not merged and its surface is not rewritten. This adoption changes no native
 signing, identity-provider, payroll, AI or access-administration authority.
+
+The changed public agent docs and unauthenticated Agents door were inspected
+against the real production Worker's HTTP ingress at 1440 and 390 pixels:
+both returned 200 with no horizontal overflow. The sign-in control measured
+46.8 pixels high. The private native browser journey remains failed; these
+public captures do not replace it or establish the full specialist week.
