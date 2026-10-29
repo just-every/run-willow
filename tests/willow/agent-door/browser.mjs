@@ -25,8 +25,11 @@ export async function browserProof({request,origin,cookie,application,tool}) {
   const page=await context.newPage()
   const approvalsResponse=await request(new URL('/agents/api/approvals',origin).href,{headers:{Cookie:cookie}})
   const approvals=(await approvalsResponse.json()).approvals
-  const approval=approvals.find(approval=>approval.state==='expired')
-  assert(approval,'Consent revocation expires retained pending reads')
+  const approval=approvals.find(approval=>approval.state==='executed'&&approval.tool==='willow.plans.prepare')
+  assert(approval,'The declared held plan has a completed native approval')
+  assert.equal(approval.prepared_by.for.name,'Olive Owner')
+  assert(approval.approvals.some(mark=>mark.name==='Olive Owner'),'The real named person approved the agent preparation')
+  assert(approval.summary_sha256&&approval.summary,'The approval retains its exact server summary')
   const paths=[['agents','/agents'],['candidate',`/app/hiring/applications/${application}`],['audit','/app/audit'],['agent-docs','/docs/agents'],['approval',`/agents/approvals/${approval.id}`],['proposals','/app/proposals'],['candidate-error',`/app/hiring/applications/${application}?error=stale`]]
   for(const [name,path] of paths)for(const width of [1440,390]) {
    phase=name+'-'+width+'-navigation'

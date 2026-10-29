@@ -5534,7 +5534,7 @@
       "executable": false
     },
     "tests/willow/agent-door/browser.mjs": {
-      "sha256": "e6beda57ae538506e07378eb02a948c342ee2fb0ca5c8924294f53fc1c30b7bd",
+      "sha256": "200e5c00ee53e8efdffb8660830a2a86c54e2aef144c873281ba05c9367d63d9",
       "executable": false
     },
     "tests/willow/agent-door/journey.mjs": {
