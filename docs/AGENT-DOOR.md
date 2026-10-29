@@ -3,8 +3,8 @@
 Willow uses Base's shared agent door at `/mcp`, with canonical protected-resource
 metadata, `/api/rer/agent-policy`, `/agents` and the native person approval and
 Pause doors. `/docs/agents` describes the production registry. The runtime is
-pinned to Base `114ef7a61f080da053af783c5fbe06f625d692cc` (`rer-v0.2.88`);
-the separately pinned, released CLI is `@runeditrun/rer@0.2.88`.
+pinned to Base `2135c394939f4a737adabdc8003b0e667b31ac5a` (`rer-v0.2.91`);
+the separately pinned, released CLI is `@runeditrun/rer@0.2.91`.
 
 This is a declared initial set: native record inspection, pending joiner plans
 and manual hiring work. `agent-surface.json` is the exact effective tool and
@@ -74,13 +74,14 @@ adapters and journeys, and BASE-AGENT-002/003 remain partial for that gap.
 No existing test is weakened or removed. The only new test tooling is the
 agent-surface journey and its native owner/attribution fixtures.
 
-The 0.2.88 focused production conformance passed 1190 of 1191 points, including
-all CORE subset refusals and both supported MCP eras. The remaining failure is
-the native browser journey at agents-390-navigation. Normal unsharded verify
-stopped earlier at AI-002's concurrent location creation (409 precondition_failed);
-the normal records-policy shard passed all six native journeys, then stopped
-in Base hydration before the agent phase. These failure exits are retained;
-normal verification is not claimed green.
+The released 0.2.91 focused production conformance passes 1218/1218 points,
+including all CORE subset refusals, both supported MCP eras, owner binding,
+unknown-subject and changed-email refusals, consent revocation, replay, held
+execution and the native browser journey. Screens for agent work, candidate
+history, native audit, catalogue, named completed approval, pending proposals,
+stale-record error and Pause are captured at 1440 and 390 pixels. Additional
+inactive and allow-list-excluded sponsor fixtures remain undeclared; they are
+not counted as passes. No seed queue or provider edge is declared.
 
 The ct table names 113 tools and 55 resource templates. This CORE declaration
 has ten native tools, no public resource templates and no prompts or events.
@@ -101,8 +102,9 @@ cross-person simulation and controlled recovery remain gaps. The ct branch is
 not merged and its surface is not rewritten. This adoption changes no native
 signing, identity-provider, payroll, AI or access-administration authority.
 
-The changed public agent docs and unauthenticated Agents door were inspected
-against the real production Worker's HTTP ingress at 1440 and 390 pixels:
-both returned 200 with no horizontal overflow. The sign-in control measured
-46.8 pixels high. The private native browser journey remains failed; these
-public captures do not replace it or establish the full specialist week.
+MAIL_FROM is a public variable in Wrangler and the generated deployment
+specification. The platform's validateCandidateSpec, including its
+validateMailDeclaration, accepts that specification. Managed builds use
+runeditrun/delivery at ff70d729948753ffdcceeca94aad063af2dcd979.
+The copied adoption guide describes secretSource in prose without an example
+secret-named assignment. Runtime source and CLI version remain separate pins.

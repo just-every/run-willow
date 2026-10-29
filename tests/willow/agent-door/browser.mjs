@@ -8,7 +8,7 @@ export async function browserProof({request,origin,cookie,application,tool}) {
  const directory=process.env.WILLOW_EVIDENCE_DIR||resolve('evidence','agent-door')
  await mkdir(directory,{recursive:true})
  let phase='launch'
- const browser=await chromium.launch({args:['--no-sandbox']})
+ const browser=await chromium.launch({...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--no-sandbox']})
  try {
   const context=await browser.newContext()
   await context.addCookies(cookie.split('; ').map(part=>{const at=part.indexOf('=');return {name:part.slice(0,at),value:part.slice(at+1),url:origin}}))
