@@ -64,7 +64,7 @@ async function journey(width, ownerOpen, employeeOpen, persona) {
     // The BambooHR fixtures this journey imports are an Australian employer's.
     await owner.getByLabel('Country (two-letter code)').fill('AU')
     await owner.getByLabel('Currency (three-letter code)').fill('AUD')
-    await owner.getByRole('button', { name: 'Save' }).click()
+    await owner.getByRole('button', { name: 'Save', exact: true }).click()
     await saved(owner)
   }
   // The employee signs in once (dev persona) so HR can link their person record.

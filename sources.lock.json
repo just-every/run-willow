@@ -5326,7 +5326,7 @@
       "executable": false
     },
     "tests/willow/journey.mjs": {
-      "sha256": "60583a3c2558d431c86e57ea8ee05f1050c467b5f48eea02bb055832c6420c5d",
+      "sha256": "12275e51536aca2fbe74d23b735b2e5119f2eb3fe60e91957993921a884c2d49",
       "executable": false
     },
     "tests/willow/leave-policies-browser.mjs": {
