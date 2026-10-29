@@ -110,7 +110,9 @@
           "migrations/core/0094_workflow_signing.sql",
           "migrations/core/0095_signature_payloads.sql",
           "migrations/core/0096_signature_closure.sql",
-          "migrations/core/0097_training_modes.sql"
+          "migrations/core/0097_training_modes.sql",
+          "migrations/core/0102_locale.sql",
+          "migrations/core/0103_locale_cover_text.sql"
         ]
       }
     },

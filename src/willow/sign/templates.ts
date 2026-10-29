@@ -13,7 +13,7 @@ const currentSource=`EXISTS(SELECT 1 FROM wl_company_file_versions v JOIN wl_com
  WHERE v.id=? AND v.sha256=? AND v.version=(SELECT MAX(version) FROM wl_company_file_versions WHERE file_id=v.file_id)
  AND folder.version=(SELECT MAX(version) FROM wl_company_folder_versions WHERE folder_id=folder.folder_id) AND folder.retired=0)`
 const currentTemplate=`NOT EXISTS(SELECT 1 FROM wl_sign_templates newer WHERE newer.family=? AND newer.version>?)`
-const digest=(row:Row)=>sha256Hex(JSON.stringify({id:row.id,family:row.family,version:row.version,title:row.title,source:row.source_version,sha256:row.source_sha256,category:row.category_id,signers:JSON.parse(row.signers_json),fields:JSON.parse(row.fields_json)}))
+const digest=(row:Row)=>sha256Hex(JSON.stringify({id:row.id,family:row.family,version:row.version,title:row.title,...(row.cover_text?{coverText:row.cover_text}:{}),source:row.source_version,sha256:row.source_sha256,category:row.category_id,signers:JSON.parse(row.signers_json),fields:JSON.parse(row.fields_json)}))
 
 function configuration(input:Input) {
  const signers=input.has('signerOrder')?(input.text('signerOrder')==='employee_hr'?['employee','hr']:['employee']):input.json('signers')
@@ -41,7 +41,7 @@ function configuration(input:Input) {
 
 export async function writeSignatureTemplate(env:Bindings,actor:Actor,input:Input) {
  requirePermission(actor,'people.manage')
- input.only(['template','source','title','category','signers','fields','signerOrder','fieldKind','fieldSigner','fieldPage','fieldX','fieldY','fieldWidth','fieldHeight','returnTo'])
+ input.only(['template','source','title','coverText','category','signers','fields','signerOrder','fieldKind','fieldSigner','fieldPage','fieldX','fieldY','fieldWidth','fieldHeight','returnTo'])
  const prior=input.text('template',{optional:true,max:100})
  const old=prior?await one(env,'SELECT * FROM wl_sign_templates WHERE id=?',prior):null
  insist(!prior||old,'signature_template_not_found',404)
@@ -54,7 +54,7 @@ export async function writeSignatureTemplate(env:Bindings,actor:Actor,input:Inpu
  const config=configuration(input),id=newId(),family=old?.family??id,version=(old?.version??0)+1
  await commit(env,[authority(env,actor),guard(env,'signature_source_changed',currentSource,source.id,source.sha256),
   guard(env,'signature_template_changed','NOT EXISTS(SELECT 1 FROM wl_sign_templates WHERE family=? AND version>=?)',family,version),
-  stmt(env,'INSERT INTO wl_sign_templates(id,family,version,title,source_version,source_sha256,category_id,signers_json,fields_json,recorded_by,recorded_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)',id,family,version,input.text('title',{max:160}),source.id,source.sha256,category,JSON.stringify(config.signers),JSON.stringify(config.fields),actor.id,now())],
+  stmt(env,'INSERT INTO wl_sign_templates(id,family,version,title,source_version,source_sha256,category_id,signers_json,fields_json,recorded_by,recorded_at,cover_text) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',id,family,version,input.text('title',{max:160}),source.id,source.sha256,category,JSON.stringify(config.signers),JSON.stringify(config.fields),actor.id,now(),input.text('coverText',{optional:true,max:4000}))],
   {actor:actor.id,action:'signature.template.draft',subject:id,detail:{family,version,source:source.id,category}})
  return {id,family,version}
 }
@@ -83,5 +83,5 @@ export async function approveSignatureTemplate(env:Bindings,actor:Actor,input:In
 export async function signatureTemplates(env:Bindings,actor:Actor) {
  requirePermission(actor,'people.manage')
  const rows=await all(env,`SELECT t.*,a.approved_at FROM wl_sign_templates t LEFT JOIN wl_sign_template_approvals a ON a.template_id=t.id ORDER BY t.recorded_at,t.id`)
- return Promise.all(rows.map(async row=>({id:row.id,family:row.family,version:row.version,title:row.title,sourceVersion:row.source_version,sourceSha256:row.source_sha256,sourceUrl:'/app/company/files/'+row.source_version+'?download=1',category:row.category_id,signers:JSON.parse(row.signers_json),fields:JSON.parse(row.fields_json),digest:await digest(row),approvedAt:row.approved_at,current:!!await one(env,'SELECT 1 WHERE '+currentTemplate+' AND '+currentSource,row.family,row.version,row.source_version,row.source_sha256)})))
+ return Promise.all(rows.map(async row=>({id:row.id,family:row.family,version:row.version,title:row.title,coverText:row.cover_text??'',sourceVersion:row.source_version,sourceSha256:row.source_sha256,sourceUrl:'/app/company/files/'+row.source_version+'?download=1',category:row.category_id,signers:JSON.parse(row.signers_json),fields:JSON.parse(row.fields_json),digest:await digest(row),approvedAt:row.approved_at,current:!!await one(env,'SELECT 1 WHERE '+currentTemplate+' AND '+currentSource,row.family,row.version,row.source_version,row.source_sha256)})))
 }

@@ -50,6 +50,7 @@ try {
  let home=await html('/app',employee)
  assert.match(home,/<html lang="es-US">/);assert.match(home,/Aviso de seguridad/);assert.match(home,/Revise la nueva guía/)
  assert.match(home,/Solicitar permiso/);assert.ok(!home.includes('Review the new safety guide.'))
+ if(page)await capture(page,'/app/people/'+s.employee.person,'profile')
  const profile=await html('/app/people/'+s.employee.person,employee)
  assert.match(profile,/Talla de camisa/);assert.match(profile,/Pequeña/);assert.match(profile,/Badge color[\s\S]*Sin traducción/);assert.match(profile,/>Home</,'record value Home is never translated')
  const report=await api('report.save',{definition:{name:'Workforce',columns:['name','leaveHours'],asOf:'today',status:'all'}})
@@ -57,6 +58,7 @@ try {
  if(page){
   await capture(page,'/app','home')
   await page.goto(h.origin+'/app/leave');await page.getByLabel('Primer día',{exact:true}).fill(start);await page.getByLabel('Último día',{exact:true}).fill(end);await page.getByRole('button',{name:'Calcular',exact:true}).click()
+  await page.screenshot({path:join(evidenceDirectory,'locale-quote-390.png'),fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:join(evidenceDirectory,'locale-quote-1440.png'),fullPage:true});await page.setViewportSize({width:390,height:844})
   await page.getByLabel('Motivo (opcional y confidencial: su gerente no lo ve)').fill('Familia')
   await page.getByRole('button',{name:'Enviar solicitud',exact:true}).click()
   await page.waitForURL('**/app/leave/*')
@@ -74,14 +76,15 @@ try {
  const folder=await api('company.folder',{name:'Agreements',audience:{kind:'everyone',id:null}})
  const source=await api('company.file',{folder:folder.id,title:'Safety agreement',file:file('safety.pdf',await pdf.save())})
  const category=await api('category.create',{name:'Signed policies',subjectReads:true})
- const template=await api('signature.template',{source:source.versionId,title:'Safety agreement',category:category.id,signers:['employee'],fields:[{signer:0,kind:'signature',page:1,x:.1,y:.4,width:.7,height:.08}]})
+ const template=await api('signature.template',{source:source.versionId,title:'Safety agreement',coverText:'Read the safety policy before signing.',category:category.id,signers:['employee'],fields:[{signer:0,kind:'signature',page:1,x:.1,y:.4,width:.7,height:.08}]})
+ const cover=(await api('translations')).sources.find(x=>x.source===template.id&&x.field==='cover');await translate({...cover,translated:'Lea la política de seguridad antes de firmar.'})
  const t=(await api('signature-templates')).find(t=>t.id===template.id)
  await api('signature.template.approve',{template:t.id,digest:t.digest,reviewed:true})
  const review=await api('signature.preview',{template:t.id,people:[s.employee.person],hr:s.hr.member,expiresAt:Date.now()+86400000})
  const sent=await api('signature.send',{review:review.id,digest:review.digest,approved:true}),id=sent.requests[0]
  const detail=await h.api('signature-requests/'+id,employee),bound={request:id,revision:detail.revision,digest:detail.digest}
  const payload=await h.api('signature.prepare',employee,{...bound,name:'Empleado de prueba'})
- assert.equal(payload.language,'es-US');assert.match(payload.consent,/Doy mi consentimiento/)
+ assert.equal(payload.language,'es-US');assert.match(await html('/app/signatures/'+id,employee),/Lea la política de seguridad/);assert.match(payload.consent,/Doy mi consentimiento/)
  if(page){await capture(page,'/app/signatures/'+id,'signature');await page.getByLabel('Nombre para la firma').fill('Empleado de prueba');await page.getByRole('button',{name:'Revisar documento para firmar'}).click();assert.match(await page.locator('main').innerText(),/Doy mi consentimiento/);await page.screenshot({path:join(evidenceDirectory,'locale-consent-390.png'),fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:join(evidenceDirectory,'locale-consent-1440.png'),fullPage:true});await page.setViewportSize({width:390,height:844})}
  await h.api('language.choose',employee,{language:'en'})
  await h.api('signature.act',employee,{...bound,payload:payload.id,action:'sign',consent:true})
@@ -96,6 +99,22 @@ try {
  await h.api('clock.punch',employee,{kind:'in',revision:0},409)
  for(const kind of ['break','resume','out']){clock=await h.api('clock',employee);await h.api('clock.punch',employee,{kind,revision:clock.revision})}
  if(page)await capture(page,'/app/clock','clock')
+ // The same display choice governs survey questions and official-form decisions.
+ const survey=await api('survey.create',{name:'Shift preferences',kind:'pulse',mode:'named',questions:[{key:'shift',label:'Preferred shift',type:'choice',options:['Morning','Evening']}],members:[s.employee.member],deliveryDate:today,dueDate:day(7)})
+ const surveySources=(await api('translations')).sources.filter(x=>x.source===survey.id)
+ for(const [original,translated] of [['Shift preferences','Preferencias de turno'],['Preferred shift','Turno preferido'],['Morning','Mañana'],['Evening','Tarde']])await translate({...surveySources.find(x=>x.original===original),translated})
+ assert.match(await html('/app/surveys/'+survey.id,employee),/Turno preferido/)
+ if(page){await capture(page,'/app/surveys/'+survey.id,'survey');await page.getByLabel('Turno preferido').selectOption('Morning');await page.getByRole('button',{name:'Enviar respuesta',exact:true}).click()}
+ else await h.api('survey.respond',employee,{survey:survey.id,answers:{shift:'Morning'}})
+ assert.equal((await api('surveys/'+survey.id+'/results')).namedAnswers[0].answers.shift,'Morning')
+ const forms=await html('/app/official-forms',employee)
+ assert.match(forms,/fw4sp\.pdf/);assert.match(forms,/href="[^"]+\/i-9\.pdf"/);assert.match(forms,/solo de referencia/)
+ const puertoRico=await html('/app/official-forms?jurisdiction=PR',employee);assert.match(puertoRico,/solo para completar en Puerto Rico/)
+ if(page)await capture(page,'/app/official-forms','official-forms')
+ // A new source version never inherits an older announcement translation.
+ await api('company.announce',{id:announcement.id,title:'Revised safety update',body:'Read the revised safety guide.',startsOn:today,audience:{kind:'everyone',id:null}})
+ const revised=await html('/app',employee);assert.match(revised,/Revised safety update[\s\S]*Sin traducción/);assert.ok(!revised.includes('Aviso de seguridad'))
+
  const valuesSpanish=(await h.api('people/'+s.employee.person,employee)).customFields.fields.map(x=>[x.key,x.value])
  await h.api('language.choose',employee,{language:'en'})
  const valuesEnglish=(await h.api('people/'+s.employee.person,employee)).customFields.fields.map(x=>[x.key,x.value])
@@ -106,6 +125,12 @@ try {
  assert.ok(spanishReportCsv.includes('Nombre'));assert.ok(!spanishReportCsv.includes('employee@example.com'))
  assert.deepEqual(localizedReport.result.totals,englishReport.result.totals);assert.deepEqual(localizedReport.result.rows.map(r=>r.cells),englishReport.result.rows.map(r=>r.cells))
  await h.api('language.choose',owner,{language:'en'})
+ // Sign-in carries a display choice without granting a session.
+ const signInChoice=await h.raw('/signin?language=es-US')
+ assert.equal(signInChoice.status,303)
+ const signInCookie=signInChoice.headers.get('set-cookie').split(';')[0]
+ assert.match(await html('/signin',signInCookie),/Enviar enlace para iniciar sesión/)
+ if(browser){const authContext=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:390,height:844}});await authContext.addCookies(cookies(signInCookie));const authPage=await authContext.newPage();await capture(authPage,'/signin','signin');await authContext.close();const hrContext=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:390,height:844}});await hrContext.addCookies(cookies(owner));const hrPage=await hrContext.newPage();await capture(hrPage,'/app/translations','translations');await hrContext.close()}
  await context?.close()
  console.log('PASS LOCALE-001 employee: translation → Spanish PTO and private notice → exact consent certificate → clock → invariant values/totals')
  // Journey 2: invitation identity chooses Spanish, submits EEO and signs; public applicant chooses independently.

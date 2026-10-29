@@ -17,7 +17,7 @@ const raceNames = (races: string[] | null) => races?.length ? races.map(race => 
 const instant = (value: number) => new Date(value).toISOString()
 
 export function eeoHistoryRow(version: EeoRevision) {
-  return [version.sequence, instant(version.recordedAt), h`Form version ${version.formVersion} · ${version.source === 'preboarding/self-identified' ? 'preboarding self-identification' : version.source === 'applicant self-identification' ? `applicant self-identification · ${'phase' in version ? version.phase : ''}` : 'employee self-identification'}`,
+  return [version.sequence, instant(version.recordedAt), h`Form version ${version.formVersion} · ${msg(version.source === 'preboarding/self-identified' ? 'preboarding self-identification' : version.source === 'applicant self-identification' ? 'applicant self-identification' : 'employee self-identification')}`,
     version.formVersion === 2 ? `${answerLabel(version.hispanic, HISPANIC)}; ${raceNames(version.races)}` : answerLabel(version.raceEthnicity, RACE_ETHNICITY),
     answerLabel(version.sex, SEX), version.veteran ? answerLabel(version.veteran, VETERAN_CHOICES) + (version.veteranClasses?.length ? ` (${version.veteranClasses.map(value => answerLabel(value, VETERAN_CLASSES)).join(', ')})` : '') : '—', version.disability ? answerLabel(version.disability, DISABILITY) : '—']
 }

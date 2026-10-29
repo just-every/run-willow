@@ -3,7 +3,16 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import catalogs from './catalogs'
 export const languages = Object.entries(catalogs).map(([value, c]) => ({value,label:c.name}))
 export const validLanguage = (value: string) => Object.hasOwn(catalogs,value)
-export const normalizeLanguage = (value: string) => validLanguage(value)?value:value.toLowerCase().startsWith('es')?'es-US':'en'
+export function normalizeLanguage(value:string):string {
+ for(const part of value.split(',')){
+  const requested=part.split(';')[0].trim().toLowerCase()
+  const exact=languages.find(item=>item.value.toLowerCase()===requested)
+  if(exact)return exact.value
+  const base=languages.find(item=>item.value.split('-')[0].toLowerCase()===requested.split('-')[0])
+  if(base)return base.value
+ }
+ return 'en'
+}
 export interface LocaleContext { language: string; translations: Translation[]; path: string; invitation?: boolean }
 export interface Translation { kind: string; source: string; field: string; original: string; language: string; translated: string }
 const context = new AsyncLocalStorage<LocaleContext>()
@@ -19,8 +28,7 @@ export function errorMessage(code:string) {
  const catalog=catalogs[locale() as keyof typeof catalogs]
  const exact=catalog?.messages[code as keyof typeof catalog.messages]
  if(exact)return exact
- const field=code.replace(/^(missing|invalid|too_long)_/,'').replaceAll('_',' ')
- if(locale()==='es-US')return code.startsWith('missing_')?'Complete los campos obligatorios.':code.startsWith('too_long_')?'El valor es demasiado largo.':code.startsWith('invalid_')?'Revise los datos ingresados.':'No se pudo completar la solicitud. Revise los datos y vuelva a intentarlo.'
+ if(locale()!=='en')return msg(code.startsWith('missing_')?'Complete the required fields.':code.startsWith('too_long_')?'The value is too long.':code.startsWith('invalid_')?'Review the entered values.':'The request could not be completed. Review the details and try again.')
  return code.replaceAll('_',' ')+'.'
 }
 export function translated(kind:string,source:string,field:string,original:string) {

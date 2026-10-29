@@ -13,7 +13,7 @@ export async function authFrame(response:Response,request?:Request) {
  rewriter.on('h1,h2,label,button,a,p,title',{text(chunk){
   const original=chunk.text,trimmed=original.trim()
   let translated=msg(trimmed,language)
-  if(language==='es-US'&&/^Sign in to /.test(trimmed))translated='Iniciar sesión en '+trimmed.slice(11)
+  if(/^Sign in to /.test(trimmed))translated=msg('Sign in to',language)+' '+trimmed.slice(11)
   if(translated!==trimmed)chunk.replace(original.replace(trimmed,translated))
  }})
  return rewriter.transform(response)

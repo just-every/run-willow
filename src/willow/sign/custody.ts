@@ -10,7 +10,7 @@ export const authority=(env:Bindings,actor:Actor)=>guard(env,'signature_authorit
 export const requestState=(row:Row)=>row.state==='voided'&&row.closure_reason==='cohort-cancelled'?'cancelled':row.state
 export const pending=(row:Row)=>['sent','viewed'].includes(row.state)
 export const SEQUENCE="COALESCE((SELECT MAX(seq) FROM wl_audit WHERE action NOT LIKE '%.read' AND action NOT LIKE '%.download'),0)"
-export const rowFor=(env:Bindings,id:string)=>one(env,`SELECT r.*,t.title,t.source_version,t.category_id,t.signers_json,t.fields_json,c.name AS category_name,c.subject_reads,c.manager_reads FROM wl_sign_requests r JOIN wl_sign_templates t ON t.id=r.template_id JOIN wl_doc_categories c ON c.id=t.category_id WHERE r.id=?`,id)
+export const rowFor=(env:Bindings,id:string)=>one(env,`SELECT r.*,t.title,t.cover_text,t.source_version,t.category_id,t.signers_json,t.fields_json,c.name AS category_name,c.subject_reads,c.manager_reads FROM wl_sign_requests r JOIN wl_sign_templates t ON t.id=r.template_id JOIN wl_doc_categories c ON c.id=t.category_id WHERE r.id=?`,id)
 export function readable(actor:Actor,row:Row) { return readsCategory(actor,row.person_id,row)&&(can(actor,'people.manage')||actor.personId===row.person_id||actor.reports.has(row.person_id)) }
 export async function bytes(env:Bindings,hash:string,size:number) {
  const response=await serve(env,{sha256:hash,size,filename:'document.pdf',mediaType:'application/pdf'})

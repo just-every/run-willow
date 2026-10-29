@@ -58,7 +58,7 @@ async function localizedInvitation(env:Bindings,request:Request,url:URL,found:{n
   if(!(error instanceof WillowError) && !(error instanceof AuthError)) throw error
   if(wantsJson) return json({error:error.code,message:errorMessage(error.code)},error.status)
   const correctable=request.method==='POST' && [400,409].includes(error.status)
-  const response=correctable ? page('Could not save your answers',null,h`<h1>Could not save your answers</h1><p>${errorMessage(error.code)}</p><p><a href="${url.pathname}">Return to your form</a></p>`,{status:error.status,showNav:false}) : page('Invitation unavailable',null,h`<h1>Invitation unavailable</h1><p>This invitation cannot be opened. Ask the sender for a current invitation.</p>`,{status:error.status,showNav:false})
+  const response=correctable ? page(msg('Could not save your answers'),null,h`<h1>Could not save your answers</h1><p>${errorMessage(error.code)}</p><p><a href="${url.pathname}">Return to your form</a></p>`,{status:error.status,showNav:false}) : page(msg('Invitation unavailable'),null,h`<h1>Invitation unavailable</h1><p>This invitation cannot be opened. Ask the sender for a current invitation.</p>`,{status:error.status,showNav:false})
   response.headers.set('referrer-policy','strict-origin')
   return response
  }

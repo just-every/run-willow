@@ -34,7 +34,7 @@ export async function prepareSignature(env:Bindings,actor:Actor,input:Input) {
   stmt(env,'INSERT INTO wl_sign_payloads(id,request_id,member_id,session_binding,request_revision,source_sha256,approved_sha256,sha256,size,values_json,language,created_at,used_at,consent) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,NULL,?)',id,row.id,actor.id,sessionBinding,row.revision,row.rendered_sha256,approvedDigest,stored.sha256,stored.size,JSON.stringify(values),locale(),now(),msg(CONSENT)),
   stmt(env,'INSERT INTO wl_sign_files(id,request_id,person_id,sha256,size,created_at) VALUES(?,?,?,?,?,?)',newId(),row.id,row.person_id,stored.sha256,stored.size,now())],
   {actor:actor.id,action:'signature.prepare',subject:row.id,detail:{review:id,template:row.template_id,revision:row.revision,sourceDigest:row.rendered_sha256,payloadDigest:stored.sha256}})
- return {id,request:row.id,revision:row.revision,digest:row.rendered_sha256,sha256:stored.sha256,values,language:locale(),consent:msg(CONSENT),template:row.template_id,title:row.title,category:row.category_id,categoryName:row.category_name,expiresAt:Math.min(row.expires_at,now()+15*60000)}
+ return {id,request:row.id,revision:row.revision,digest:row.rendered_sha256,sha256:stored.sha256,values,language:locale(),consent:msg(CONSENT),template:row.template_id,title:row.title,coverText:row.cover_text,category:row.category_id,categoryName:row.category_name,expiresAt:Math.min(row.expires_at,now()+15*60000)}
 }
 
 export async function consumePayload(env:Bindings,actor:Actor,input:Input,row:Row,detail:Row,statements:D1PreparedStatement[]) {
