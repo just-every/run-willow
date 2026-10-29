@@ -66,3 +66,9 @@ adapters and journeys, and BASE-AGENT-002/003 remain partial for that gap.
 
 No existing test is weakened or removed. The only new test tooling is the
 agent-surface journey and its native owner/attribution fixtures.
+
+The pinned shared transport/verifier has an outstanding oversized-body edge:
+the conformance POST can fail at the verifier fetch boundary instead of exposing
+the expected HTTP 413. This is not suppressed or retried by Willow. The normal
+CLI failure exit is retained while the Base edge is pending; native registry,
+policy, resource, attribution and browser checks remain independently reported.
