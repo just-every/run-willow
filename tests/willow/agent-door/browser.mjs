@@ -4,7 +4,7 @@ import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
 // The browser receives unmodified production HTTP responses from the disposable
 // verifier request function. It has no app binding or production credential.
-export async function browserProof({request,origin,cookie,application}) {
+export async function browserProof({request,origin,cookie,application,tool}) {
  const directory=process.env.WILLOW_EVIDENCE_DIR||resolve('..','..','..','evidence','sx-door-adopt-willow-2')
  await mkdir(directory,{recursive:true})
  let phase='launch'
@@ -23,7 +23,11 @@ export async function browserProof({request,origin,cookie,application}) {
   })
   phase='new-page'
   const page=await context.newPage()
-  const paths=[['agents','/agents'],['candidate',`/app/hiring/applications/${application}`],['audit','/app/audit'],['agent-docs','/docs/agents']]
+  const approvalsResponse=await request(new URL('/agents/api/approvals',origin).href,{headers:{Cookie:cookie}})
+  const approvals=(await approvalsResponse.json()).approvals
+  const approval=approvals.find(approval=>approval.state==='expired')
+  assert(approval,'Consent revocation expires retained pending reads')
+  const paths=[['agents','/agents'],['candidate',`/app/hiring/applications/${application}`],['audit','/app/audit'],['agent-docs','/docs/agents'],['approval',`/agents/approvals/${approval.id}`],['proposals','/app/proposals'],['candidate-error',`/app/hiring/applications/${application}?error=stale`]]
   for(const [name,path] of paths)for(const width of [1440,390]) {
    phase=name+'-'+width+'-navigation'
    await page.setViewportSize({width,height:1000})
@@ -34,6 +38,18 @@ export async function browserProof({request,origin,cookie,application}) {
    if(width===1440)assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Horizontal overflow: '+path)
    await page.screenshot({path:resolve(directory,`agent-door-${name}-${width}.png`),fullPage:true})
   }
+  const pause=async paused=>request(new URL('/agents/api/pause',origin).href,{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({paused})})
+  assert.equal((await pause(true)).status,200)
+  try {
+   const refused=await tool('willow.hiring.status',{})
+   assert.equal(refused.result?._meta?.['com.runeditrun/error']?.code,'agents_paused')
+   for(const width of [1440,390]) {
+    phase='paused-'+width
+    await page.setViewportSize({width,height:1000})
+    await page.goto(origin+'/agents',{waitUntil:'networkidle'})
+    await page.screenshot({path:resolve(directory,`agent-door-paused-${width}.png`),fullPage:true})
+   }
+  }finally{assert.equal((await pause(false)).status,200)}
   await context.close()
  }catch(error){console.error('Agent browser step failed: '+phase+' ('+error.name+')');throw error}finally{await browser.close()}
 }

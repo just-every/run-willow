@@ -7,6 +7,6 @@ export default async function({tool,request,origin,cookie}) {
  assert(candidates.length>0)
  assert(candidates.some(candidate=>candidate.timeline.some(event=>event.actorName.includes(' for Olive Owner'))))
  assert(candidates.some(candidate=>candidate.scorecards.some(card=>card.authorName.includes(' for Olive Owner'))))
- await browserProof({request,origin,cookie,application:candidates.find(candidate=>candidate.timeline.some(event=>event.actorName.includes(' for Olive Owner'))).id})
+ await browserProof({request,origin,cookie,tool,application:candidates.find(candidate=>candidate.timeline.some(event=>event.actorName.includes(' for Olive Owner'))).id})
  assert(data.proposals.some(proposal=>proposal.agent.includes(' for Olive Owner')&&proposal.status==='pending'))
 }

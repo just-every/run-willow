@@ -1,6 +1,6 @@
 import type { Bindings } from '../../auth.server'
 import { insist, one } from '../core'
-export const AGENT_CUSTODY=['agent_door_state','agent_door_agents','agent_door_audit','agent_door_calls','agent_door_approvals','agent_door_reviews','agent_door_events','agent_door_usage','bs_settings','bs_overrides','bs_logo','bs_team','bs_audit','bs_assert','wl_agent_people']
+export const AGENT_CUSTODY=['wl_agent_installation_owner','agent_door_state','agent_door_agents','agent_door_audit','agent_door_calls','agent_door_approvals','agent_door_reviews','agent_door_events','agent_door_usage','bs_settings','bs_overrides','bs_logo','bs_team','bs_audit','bs_assert','wl_agent_people']
 /** Retained decision evidence may contain private reads, arguments and text.
  * Until subject-scoped custody/redaction is agreed, erasure cannot claim to
  * remove these copies. Never delete approval/audit evidence opportunistically. */

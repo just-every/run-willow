@@ -13,7 +13,7 @@ are re-read at each call. An agent receives no interactive native session.
 A plan remains pending for native HR decision, and candidate evidence always
 identifies the agent as preparer for the real sponsoring interviewer.
 
-Business `owner_id` resolves through the claimed OA owner and a durable
+Business `owner_id` resolves through the claimed OA owner and a fixed `wl_agent_installation_owner` account and a durable
 `wl_agent_people` binding to the native Willow member. Native sessions establish
 that binding through ordinary admission. Token email never chooses the account.
 The native member, account status and all effective grants are re-read; a local
@@ -21,7 +21,7 @@ admin is not a Business policy editor. Business team reconciliation and multiple
 sponsors are undeclared. Existing Willow API/OAuth credentials keep their original
 scopes and HTTP doors; they are not accepted as MCP company credentials.
 
-New SQL uses additive migrations 0102–0106. Native audited batches include the
+New SQL uses additive migrations 0102–0107. Native audited batches include the
 original door operation, agent, sponsor and named approvers, and fence the current
 native account, grants, policy revision, Pause, agent and consent. Native record
 revisions still guard writes. No Undo is invented for these operations. No paid

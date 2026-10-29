@@ -45,7 +45,7 @@ for(const id of ids) {
 const counts=contract.counts??Object.fromEntries(['done','partial','missing'].map(status=>[status,contract.clauses.filter(c=>c.status===status).length]))
 acceptance=acceptance.replace(/Current clause totals: \*\*\d+ done \/ \d+ partial \/ \d+ missing \(\d+ total\)\*\*/, `Current clause totals: **${counts.done} done / ${counts.partial} partial / ${counts.missing} missing (${contract.clauses.length} total)**`)
 const claims='# Willow delivery status\n\nGenerated from CONTRACT.md. Acceptance and delivery scope remain in that source.\n\n| Clause | Title | Status |\n| --- | --- | --- |\n'+contract.clauses.map(clause=>`| ${clause.id} | ${clause.title.replaceAll('/',' and ')} | ${clause.status} |`).join('\n')+'\n'
-for(const [file,content] of [['ACCEPTANCE.md',acceptance],['docs/CLAIMS.md',claims]]) {
+for(const [file,content] of [['ACCEPTANCE.md',acceptance.trimEnd()+'\n'],['docs/CLAIMS.md',claims]]) {
  if(mode==='write')fs.writeFileSync(file,content)
  else if(!fs.existsSync(file)||fs.readFileSync(file,'utf8')!==content)throw Error('Stale generated document: '+file)
 }

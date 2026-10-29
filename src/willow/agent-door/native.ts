@@ -11,11 +11,11 @@ export async function native<T>(run:()=>Promise<T>):Promise<T> {
  * native batch, without changing authorization, native services or identities. */
 export async function agentEnvironment(env:Bindings, ctx:ToolContext):Promise<Bindings> {
  const db=env.DB
+   const identity=await one(env,`SELECT o.version FROM wl_agent_people b JOIN oa_operators o ON o.id=b.operator_id JOIN wl_members m ON m.id=b.member_id WHERE m.id=? AND o.status='active' AND m.status='active'`,ctx.person.id)
+   if(!identity)throw new ToolRefusal('unauthenticated')
  const snapshot=(await one<{seq:number}>(env,'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
  const wrapped=new Proxy(db, {get(target,key) {
   if(key==='batch')return async (statements:D1PreparedStatement[])=>{
-   const identity=await one(env,`SELECT o.version FROM wl_agent_people b JOIN oa_operators o ON o.id=b.operator_id JOIN wl_members m ON m.id=b.member_id WHERE m.id=? AND o.status='active' AND m.status='active'`,ctx.person.id)
-   if(!identity)throw new ToolRefusal('unauthenticated')
    // Native audit rows and their agent attribution share the business batch.
 
    return db.batch([

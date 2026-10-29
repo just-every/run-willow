@@ -84,6 +84,7 @@ export async function currentActor(env: Bindings, request: Request): Promise<Act
   let member = await one<{ id: string; name: string; person_id: string | null; status: string }>(env, 'SELECT m.id,m.name,m.person_id,m.status FROM wl_members m LEFT JOIN wl_agent_people b ON b.member_id=m.id WHERE b.operator_id=? OR (b.operator_id IS NULL AND m.email=?)', session.operator.id,email)
   if (!member && owner) member = await ensureMember(env, email, session.operator.displayName || email)
   if (!member) throw new WillowError('not_a_member', 403)
+  if(owner)await env.DB.prepare('INSERT OR IGNORE INTO wl_agent_installation_owner(singleton,operator_id) VALUES(1,?)').bind(session.operator.id).run()
   await env.DB.prepare('INSERT OR IGNORE INTO wl_agent_people(operator_id,member_id) VALUES(?,?)').bind(session.operator.id,member.id).run()
   return await actorFor(env, { id: member.id, email, name: member.name, owner, personId: member.person_id, sessionId: session.id })
 }

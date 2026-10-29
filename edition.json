@@ -116,7 +116,8 @@
           "migrations/core/0104_agent_door.sql",
           "migrations/core/0105_agent_people.sql",
           "agent-surface.json",
-          "migrations/core/0106_agent_custody.sql"
+          "migrations/core/0106_agent_custody.sql",
+          "migrations/core/0107_agent_owner_binding.sql"
         ]
       }
     },

@@ -139,6 +139,7 @@ export async function confirmErasure(env: Bindings, actor: Actor, input: Input) 
   }
   const statements: D1PreparedStatement[] = [
     guard(env, 'preview_stale', `${BUSINESS_SEQUENCE} = ?`, plan.sequence),
+    stmt(env, 'DELETE FROM wl_agent_people WHERE member_id=?', subject.memberId),
     stmt(env, 'INSERT INTO wl_erasure_window (token) VALUES (?)', erasureId),
     stmt(env, 'PRAGMA defer_foreign_keys = on'),
     stmt(env, "INSERT INTO wl_people (id, legal_name, origin, revision, created_at, updated_at) VALUES (?, ?, 'native', ?, ?, ?)", stubPerson, label, newId(), at, at),

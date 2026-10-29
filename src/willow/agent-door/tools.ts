@@ -2,6 +2,7 @@ import type { Bindings } from '../../auth.server'
 import { defineTool, type ToolDefinition, type JsonSchema } from '../../modules/agent-door/index.ts'
 import { actions } from '../actions'
 import { Input } from '../input'
+import { hiringOpening } from '../hiring'
 import { prepareJoiner } from '../lifecycle'
 import { actor, native, agentEnvironment } from './native'
 import { directory,personRecord,proposalRecord,candidateRecord,nativeWitness,sensitive,standard } from './records'
@@ -33,15 +34,15 @@ export function tools(env:Bindings):ToolDefinition[] {
   }),
   ...mutations.map(spec=>defineTool({
    name:`willow.${spec.name}`,title:spec.title,description:spec.title+'. No candidate identity matching, outreach, ranking or employment decision.',
-   scope:'willow:hiring',readOnly:false,inputSchema:schema(spec.properties,spec.required),outputSchema:result,classes:['sensitive'],clauses:['HIRING-003'],untrusted:true,
+   scope:'willow:hiring',readOnly:false,inputSchema:schema(spec.properties,spec.required),outputSchema:spec.name==='candidates.scorecard'?schema({id:text,version:{type:'integer',minimum:1}}):schema({id:text,stage:{type:'string'},revision:{type:'integer',minimum:1}}),classes:['sensitive'],clauses:['HIRING-003'],untrusted:true,
    async classify(args,ctx){
     const who=await actor(env,ctx)
     if(spec.target==='application')await candidateRecord(env,ctx,String(args.application))
-    else {const {hiringOpening}=await import('../hiring');await native(()=>hiringOpening(env,who,String(args.opening)))}
+    else await native(()=>hiringOpening(env,who,String(args.opening)))
     return sensitive(spec.kind)
    },
    async summary(args,ctx){const record=spec.target==='application'?await candidateRecord(env,ctx,String(args.application)):null;return {target:{id:String(args[spec.target]),name:record?.name??String(args.name)},items:[spec.title,...(args.stage?[String(args.stage)]:[]),...(args.contactEmail?[String(args.contactEmail)]:[]),...(args.evidence?[String(args.evidence)]:[])]}},
-   async target(args,ctx){if(spec.target==='application')await candidateRecord(env,ctx,String(args.application));return {kind:spec.target,id:String(args[spec.target])}},
+   async target(args,ctx){if(spec.target==='application')await candidateRecord(env,ctx,String(args.application));else await native(async()=>hiringOpening(env,await actor(env,ctx),String(args.opening)));return {kind:spec.target,id:String(args[spec.target])}},
    ...(spec.name==='candidates.move'?{revisionType:'integer' as const,revision:async(args:Record<string,unknown>,ctx:Parameters<ToolDefinition['classify']>[1])=>(await candidateRecord(env,ctx,String(args.application))).revision}:{}),
    async run(args,ctx){
     const scoped=await agentEnvironment(env,ctx)

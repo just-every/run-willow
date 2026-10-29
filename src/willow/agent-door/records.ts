@@ -1,4 +1,5 @@
 import type { Bindings } from '../../auth.server'
+import { ToolRefusal } from '../../modules/agent-door/index.ts'
 import type { ClassAndFacts, ResourceContext, ResourceDefinition, ToolContext } from '../../modules/agent-door/index.ts'
 import { personView, directory } from '../profile'
 import { context, proposalDetail, proposals } from '../proposals'
@@ -29,7 +30,11 @@ export function resources(env:Bindings):ResourceDefinition[] {
  ].map(([area,name,read,kind])=>({
   uriTemplate:`willow://${area}/{id}`,name:name as string,scope:'willow:read',classes:['sensitive'],
   description:'Native visibility applies. Free text and imported content are untrusted.',
-  classify:()=>sensitive(kind as string),
+  classify:record=>{
+   const value=record.json as {id?:unknown;subject?:unknown}|undefined
+   if(!value||typeof (value.id??value.subject)!=='string')throw new ToolRefusal('resource_unavailable')
+   return sensitive(kind as string)
+  },
   async read(uri,ctx){try{return {json:await (read as typeof personRecord)(env,ctx,recordId(uri)),untrusted:true}}catch{return null}},
  }))
 }
