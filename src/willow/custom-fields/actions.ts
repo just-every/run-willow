@@ -57,9 +57,12 @@ export async function writeFieldValues(env: Bindings, actor: Actor, input: Input
   const person = input.text('person'), effectiveFrom = input.text('effectiveFrom')
   const native = await one(env, 'SELECT id FROM wl_people WHERE id = ?', person)
   insist(native, 'not_found', 404)
-  const change = await customValueStatements(env, actor, person, customValuesInput(input), effectiveFrom, { requireAll: true })
+  const supplied=customValuesInput(input)
+  const change = await customValueStatements(env, actor, person, supplied, effectiveFrom, { requireAll: true })
+  const keys=Object.keys(supplied as Record<string,unknown>)
+  const fields=change.definitions.filter(field=>keys.includes(field.key)||keys.includes(field.id)).map(field=>field.key)
   await commit(env, [...change.guards, guard(env, 'person_changed', 'EXISTS (SELECT 1 FROM wl_people WHERE id = ?)', person), ...change.statements],
-    { actor: actor.id, action: 'customField.write', subject: person, detail: { effectiveFrom, fields: Object.keys(change.values) } })
+    { actor: actor.id, action: 'customField.write', subject: person, detail: { effectiveFrom, fields } })
   return { id: person, effectiveFrom, values: change.values }
 }
 
