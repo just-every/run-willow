@@ -692,7 +692,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "defbdc11c42b983abb9c0cd58c3b84bd732a7bd39c4388b4668ecb3bf5275b0f",
+      "sha256": "e532a2e99e41cda9d3e793d3ada730b2d3aacbe7e7338b0ac4c8e67456c56bc7",
       "executable": false
     },
     ".gitignore": {
@@ -5088,7 +5088,7 @@
       "executable": false
     },
     "src/willow/ui/self-service.ts": {
-      "sha256": "0a3d076a5eb70348b851fb5c7da8364064660b2294f9d381b609f74c6129fcd5",
+      "sha256": "a7e5206fc7dfccf243e4ac4a2a6aea98e6e7beb9c134bc28b9d625737e60a1bc",
       "executable": false
     },
     "src/willow/ui/settings-areas.ts": {

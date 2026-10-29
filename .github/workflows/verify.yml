@@ -39,6 +39,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
       - run: pnpm exec rer check --profile first-party
+      - if: matrix.shard == 'records-people'
+        run: npm ci --prefix native --no-audit --no-fund
       - run: pnpm exec rer verify
       - if: matrix.shard == 'core'
         run: pnpm run test:site

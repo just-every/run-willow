@@ -1,4 +1,4 @@
-import { msg } from '../locale/runtime'
+import { msg,locale } from '../locale/runtime'
 // SELF-001: personal updates that need HR approval, with immutable proposals.
 import { customApprovalForms } from './custom-approval'
 import type { Bindings } from '../../auth.server'
@@ -32,7 +32,7 @@ function dependentFields(values: Record<string, unknown> = {}) {
 
 function personalRequestForms(view: Record<string, unknown>, modes: PersonalModes) {
   const fields = SELF_FIELDS.filter(key => key!=='legalName' && modes[key] === 'approval')
-  return fields.length ? h`<section class="card private"><h2>Request a personal detail change</h2><p>HR reviews these fields before they change. Leave a value blank to request its removal.</p>${fields.map(key => h`<details><summary>Change ${msg(PERSONAL_LABELS[key])}</summary>${form('self.request', `${route}/{id}`, [hidden('kind', 'personal'), hidden('field', key), field(PERSONAL_LABELS[key], 'value', { required: false, type: key === 'date_of_birth' ? 'date' : 'text', value: key === 'preferredName' ? view.preferredName : (view.private as Record<string, unknown>)[key] })], msg('Request change'))}</details>`)}</section>` : h``
+  return fields.length ? h`<section class="card private"><h2>Request a personal detail change</h2><p>HR reviews these fields before they change. Leave a value blank to request its removal.</p>${fields.map(key => h`<details><summary>Change ${locale()==='en'?PERSONAL_LABELS[key].toLowerCase():msg(PERSONAL_LABELS[key])}</summary>${form('self.request', `${route}/{id}`, [hidden('kind', 'personal'), hidden('field', key), field(PERSONAL_LABELS[key], 'value', { required: false, type: key === 'date_of_birth' ? 'date' : 'text', value: key === 'preferredName' ? view.preferredName : (view.private as Record<string, unknown>)[key] })], locale()==='en'?`Request ${PERSONAL_LABELS[key].toLowerCase()} change`:msg('Request change'))}</details>`)}</section>` : h``
 }
 
 function requestForms(view: Record<string, unknown>, modes: PersonalModes) {
