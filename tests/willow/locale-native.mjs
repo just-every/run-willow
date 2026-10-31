@@ -16,8 +16,9 @@ export async function nativeLocaleJourney(h,cookie,page) {
  const {EmployeeHome}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'))
  const {Platform}=await import(nativeHost)
  const {bridgeScript,createBridge}=await import('../../native/bridge.js')
- let bridge
- if(page){await page.goto(h.origin+'/app');bridge=createBridge(()=>({injectJavaScript:script=>page.evaluate(script)}));await page.exposeFunction('willowNativeResponse',value=>bridge.receive(value));await page.evaluate(bridgeScript);await page.evaluate(()=>{window.ReactNativeWebView={postMessage:value=>window.willowNativeResponse(value)}})}
+ let bridge,ready=false,resolveReady
+ const readyEvent=new Promise(resolve=>{resolveReady=resolve})
+ if(page){await page.goto(h.origin+'/app');bridge=createBridge(()=>({injectJavaScript:script=>page.evaluate(script)}));await page.exposeFunction('willowNativeResponse',value=>{if(JSON.parse(value).ready){ready=true;resolveReady()}else bridge.receive(value)});await page.evaluate(()=>{window.ReactNativeWebView={postMessage:value=>window.willowNativeResponse(value)}});await page.evaluate(bridgeScript);await Promise.race([readyEvent,new Promise((_,reject)=>{const timer=setTimeout(()=>reject(new Error('native bridge startup timed out')),5000);timer.unref()})]);assert.ok(ready,'native home waits for the authenticated WebView bridge')}
  globalThis.IS_REACT_ACT_ENVIRONMENT=true
  for(const platform of ['ios','android']) {
   Platform.OS=platform
