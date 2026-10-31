@@ -40,6 +40,8 @@ const cls = (key: ClassKey): Kind => ({ class: key })
 const s = (id: string, table: string, label: string, kind: Kind, from: string, extra: Partial<Store> = {}): Store => ({ id, table, label, kind, from: `${table} t WHERE ${from}`, ...extra })
 
 export const STORES: Store[] = [
+  s('mobile_push','wl_mobile_push','Session-bound mobile push registrations','erase','t.member_id=?2',{ms:'t.created_at'}),
+  s('mobile_deliveries','wl_mobile_deliveries','Value-free mobile delivery custody','erase','t.member_id=?2',{ms:'t.created_at'}),
   s('display_language','wl_display_languages','Display language preferences','erase',"(t.kind='member' AND t.subject=?2) OR (t.kind='preboarding' AND t.subject IN (SELECT id FROM wl_preboard_packets WHERE linked_person_id=?1))"),
   s('clock_events','wl_clock_events','Native clock events',cls('payroll'),'t.person_id=?1',{ms:'t.at'}),
   s('preboard_signatures','wl_preboard_signatures','Preboarding signed receipts',cls('personnel'),'t.packet_id IN (SELECT id FROM wl_preboard_packets WHERE linked_person_id=?1)',{ms:'t.signed_at',blob:'t.size'}),

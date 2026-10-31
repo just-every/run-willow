@@ -1,3 +1,4 @@
+import { msg,employerText } from './locale/runtime'
 import type { JobField } from './levels/job'
 // DATA-001: exports consume the same permission projection as a person's page.
 import type { Bindings } from '../auth.server'
@@ -91,13 +92,18 @@ export async function employeeExportData(env: Bindings, actor: Actor, url: URL) 
     const withheld = fields.filter(key => key.startsWith('custom.') ? !view.customFields.fields.some((item: EffectiveField) => `custom.${item.key}` === key) : columns[key].job ? !view.jobFields?.[columns[key].job!] : columns[key].personal ? !Object.hasOwn(view.private ?? {},columns[key].personal!) : columns[key].facet === 'pay' ? !term(view)?.pay : columns[key].facet && !view.facets.includes(columns[key].facet!))
     rows.push([person.id, filters.date, scope!, withheld.join(';'), ...fields.map(key => withheld.includes(key) ? '' : String(columns[key].value(view) ?? ''))])
   }
-  return { scope: scope!, asOf: filters.date, fields, rows, records }
+  const labels=['person_id','as_of','scope','withheld_fields',...fields.map(key=>{
+    const definition=customDefinitions.find(f=>'custom.'+f.key===key)
+    return definition?(records.some(person=>person.customFields?.fields.some((item:EffectiveField)=>item.key===definition.key))?employerText('customField',definition.definitionVersionId,'label',definition.label):key):msg(columns[key].label)
+  })]
+  return { scope: scope!, asOf: filters.date, fields, rows, labels, records }
 }
 
 export async function employeeExport(env: Bindings, actor: Actor, url: URL, format: 'csv' | 'xlsx') {
-  const { scope, asOf, fields, rows, records } = await employeeExportData(env, actor, url)
+  const { scope, asOf, fields, rows, labels, records } = await employeeExportData(env, actor, url)
   await auditRead(env, actor.id, 'employee.export', scope, { asOf, fields, people: records.length, format })
-  const body = format === 'csv' ? employeeCsv(rows) : employeeXlsx(rows)
+  const displayRows=url.searchParams.get('labels')==='display'?[labels,...rows.slice(1)]:rows
+  const body = format === 'csv' ? employeeCsv(displayRows) : employeeXlsx(displayRows)
   return new Response(body as BodyInit, { headers: {
     'content-type': format === 'csv' ? 'text/csv; charset=utf-8' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'content-disposition': `attachment; filename="willow-employees-${asOf}.${format}"`,

@@ -48,8 +48,8 @@ ${isReporter(actor)?h`<section class="card"><h2>Create a report</h2><p>Organizat
 }
 
 function resultRows(result: ReportResult) {
-  return result.rows.length ? table([...result.columns.map(column => column.label), 'Sources'], result.rows.map(row => [
-    ...result.columns.map(column => row.withheld.includes(column.key) ? h`<strong>Withheld</strong>` : row.cells[column.key] === null ? h`<span class="muted">Unknown / not recorded</span>` : breakable(row.cells[column.key]!)),
+  return result.rows.length ? table([...result.columns.map(column => column.key.startsWith('custom.')?'\u2060'+column.label:column.label), 'Sources'], result.rows.map(row => [
+    ...result.columns.map(column => row.withheld.includes(column.key) ? h`<strong>Withheld</strong>` : (row.displayCells??row.cells)[column.key] === null ? h`<span class="muted">Unknown / not recorded</span>` : breakable((row.displayCells??row.cells)[column.key]!)),
     h`<a href="${row.source}" data-report-source>${row.name}: person record</a>${row.signatureSources.length ? h`<ul>${row.signatureSources.map(source=>h`<li><a href="${source.source}">${source.title}: ${source.state}</a></li>`)}</ul>` : ''}${row.exceptionSources.length ? h`<ul>${row.exceptionSources.map(source=>h`<li><a href="${source.path}">${source.kind}</a></li>`)}</ul>` : ''}${row.overdueSources.length ? h`<ul>${row.overdueSources.map(source=>h`<li><a href="${source.path}">Overdue ${source.kind.replaceAll('-',' ')}</a></li>`)}</ul>` : ''}${row.workSources.length ? h`<ul>${row.workSources.map(work => h`<li><a href="/app/cases/${work.caseId}">Case work due ${formatDate(work.dueDate)}</a></li>`)}</ul>` : ''}`,
   ])) : h`<p class="muted">No permitted people match this report.</p>`
 }

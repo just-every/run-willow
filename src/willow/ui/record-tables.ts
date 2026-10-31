@@ -1,4 +1,4 @@
-import { msg } from '../locale/runtime'
+import { msg,employerText } from '../locale/runtime'
 // PEOPLE-003: record-table sections for a person's page and the table definitions page.
 import { can, type Actor } from '../actor'
 import { formatDate } from '../dates'
@@ -7,13 +7,14 @@ import type { PersonRecordTables } from '../record-tables/rows'
 import { writesTable, type Column, type RecordTable } from '../record-tables/schema'
 import { area, field, form, h, hidden, select, table, tag, type Html } from './html'
 
-export const ASSET_CONDITIONS = ['new', 'good', 'fair', 'damaged', 'lost'].map(value => ({ value, label: value[0].toUpperCase() + value.slice(1) }))
+export const ASSET_CONDITIONS = ['new', 'good', 'fair', 'damaged', 'lost'].map(value => ({ value, get label(){return msg(value[0].toUpperCase() + value.slice(1))} }))
+const FIXED_TABLE_LABELS:Record<string,string>={assets:'Company assets',certifications:'Certifications and licenses',education:'Education',emergency_contacts:'Emergency contacts',dependents:'Dependents'}
 const CLASSES: Record<string, string> = { contact: 'Private contact', general: 'General', hr: 'Private / HR', payroll: 'Payroll' }
 const check = (label: string, name: string, selected = false) => h`<label class="check"><input type="checkbox" name="${name}" value="yes"${selected ? h` checked` : ''}> ${label}</label>`
 
 function display(value: FieldValue | undefined, column: Column): string {
   if (value === null || value === undefined) return '—'
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  if (typeof value === 'boolean') return msg(value ? 'Yes' : 'No')
   if (column.type === 'date') return formatDate(value)
   if (column.type === 'select') return (column.validation.options as { value: string; label: string }[]).find(option => option.value === value)?.label ?? value
   return value
@@ -33,12 +34,14 @@ export function recordTablesSection(projected: PersonRecordTables, actor: Actor 
   return h`<section class="card facet-records"><h2>Records</h2>${projected.tables.map(item => {
     const writable = actor && !item.retired && writesTable(actor, personId, item as unknown as RecordTable)
     const back = `/app/people/${personId}`
-    return h`<h3>${item.label} ${tag(CLASSES[item.classification])}</h3>
-${item.rows.length ? table(['From', ...item.columns.map(column => column.label)], item.rows.map(row => [formatDate(row.effectiveFrom!), ...item.columns.map(column => display(row.values![column.key], column))])) : h`<p class="muted">No rows in force on ${formatDate(projected.asOf)}.</p>`}
-${writable ? item.rows.map(row => h`<details><summary>Change ${display(row.values![item.columns[0].key], item.columns[0])}</summary>${form('recordRow.write', back, [hidden('person', personId), hidden('table', item.id), hidden('row', row.id), field('Effective from', 'effectiveFrom', { type: 'date', value: actor!.today }), ...inputs(item.columns, row.values!)], 'Save new version', { secondary: true })}${form('recordRow.write', back, [hidden('person', personId), hidden('table', item.id), hidden('row', row.id), hidden('remove', 'yes'), field('Removed from', 'effectiveFrom', { type: 'date', value: actor!.today })], 'Remove row', { secondary: true })}</details>`) : ''}
-${[...item.rows, ...item.formerRows].some(row => row.history.length > 1 || !row.values) ? h`<details><summary>${item.label} history</summary>${table(['Row', 'Effective from', 'Values', 'Recorded by'], [...item.rows, ...item.formerRows].flatMap(row => row.history.map(version => [row.id.slice(0, 8), formatDate(version.effectiveFrom),
-  version.removed ? msg('Removed') : item.columns.map(column => `${column.label}: ${display(version.values[column.key], column)}`).join('; '), `${version.recordedBy} · ${new Date(version.recordedAt).toISOString()}`])))}</details>` : ''}
-${writable && projected.asOf === actor!.today ? h`<details><summary>Add to ${item.label.toLowerCase()}</summary>${form('recordRow.write', back, [hidden('person', personId), hidden('table', item.id), field('Effective from', 'effectiveFrom', { type: 'date', value: actor!.today }), ...inputs(item.columns)], 'Add row', { secondary: true })}</details>` : ''}`
+    const label=item.builtIn&&FIXED_TABLE_LABELS[item.key]===item.label?msg(item.label):employerText('recordTable',item.id,'label',item.label)
+    const columns=item.builtIn?item.columns.map(column=>({...column,label:msg(column.label)})):item.columns
+    return h`<h3>${label} ${tag(CLASSES[item.classification])}</h3>
+${item.rows.length ? table(['From', ...columns.map(column => column.label)], item.rows.map(row => [formatDate(row.effectiveFrom!), ...columns.map(column => display(row.values![column.key], column))])) : h`<p class="muted">No rows in force on ${formatDate(projected.asOf)}.</p>`}
+${writable ? item.rows.map(row => h`<details><summary>Change ${display(row.values![columns[0].key], columns[0])}</summary>${form('recordRow.write', back, [hidden('person', personId), hidden('table', item.id), hidden('row', row.id), field('Effective from', 'effectiveFrom', { type: 'date', value: actor!.today }), ...inputs(columns, row.values!)], 'Save new version', { secondary: true })}${form('recordRow.write', back, [hidden('person', personId), hidden('table', item.id), hidden('row', row.id), hidden('remove', 'yes'), field('Removed from', 'effectiveFrom', { type: 'date', value: actor!.today })], 'Remove row', { secondary: true })}</details>`) : ''}
+${[...item.rows, ...item.formerRows].some(row => row.history.length > 1 || !row.values) ? h`<details><summary>${label} history</summary>${table(['Row', 'Effective from', 'Values', 'Recorded by'], [...item.rows, ...item.formerRows].flatMap(row => row.history.map(version => [row.id.slice(0, 8), formatDate(version.effectiveFrom),
+  version.removed ? msg('Removed') : columns.map(column => `${column.label}: ${display(version.values[column.key], column)}`).join('; '), `${version.recordedBy} · ${new Date(version.recordedAt).toISOString()}`])))}</details>` : ''}
+${writable && projected.asOf === actor!.today ? h`<details><summary>Add to ${label.toLowerCase()}</summary>${form('recordRow.write', back, [hidden('person', personId), hidden('table', item.id), field('Effective from', 'effectiveFrom', { type: 'date', value: actor!.today }), ...inputs(columns)], 'Add row', { secondary: true })}</details>` : ''}`
   })}</section>`
 }
 

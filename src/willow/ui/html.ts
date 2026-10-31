@@ -90,7 +90,7 @@ const headers = {
   'referrer-policy': 'strict-origin',
   'x-content-type-options': 'nosniff',
   'x-robots-tag': 'noindex, nofollow',
-  'content-security-policy': "default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; media-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
+  'content-security-policy': "default-src 'none'; connect-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; media-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
 }
 
 const STYLES = ['/fonts/fonts.css', '/rer-theme.css', '/willow-tokens.css', '/willow.css', '/willow-layouts.css', '/willow-progress.css', '/willow-connections.css','/willow-tooltips.css']

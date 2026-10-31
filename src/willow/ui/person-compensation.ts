@@ -8,9 +8,9 @@ import { area, field, form, h, hidden, select, table, tag, type Html } from './h
 
 type View = Record<string, any>
 type Kind = 'bonus' | 'equity'
-const bases = [{ value: 'salary', label: msg('Salary per year') }, { value: 'hourly', label: msg('Hourly rate') }, { value: 'unknown', label: msg('Not known yet') }]
-const date = (value: string | undefined) => value === undefined ? 'Withheld' : formatDate(value)
-const payText = (terms: View) => !Object.hasOwn(terms, 'pay') ? 'Withheld' : terms.pay ? formatPay(terms.pay.basis, terms.pay.amountCents, terms.pay.currency) : 'Not recorded'
+const bases = () => [{ value: 'salary', label: msg('Salary per year') }, { value: 'hourly', label: msg('Hourly rate') }, { value: 'unknown', label: msg('Not known yet') }]
+const date = (value: string | undefined) => value === undefined ? msg('Withheld') : formatDate(value)
+const payText = (terms: View) => !Object.hasOwn(terms, 'pay') ? msg('Withheld') : terms.pay ? formatPay(terms.pay.basis, terms.pay.amountCents, terms.pay.currency) : msg('Not recorded')
 
 function payChange(actor: Actor, person: string, view: View, historical=false): Html {
  const period = view.employment?.find((item: View) => item.id === view.selectedPeriod)
@@ -24,7 +24,7 @@ function payChange(actor: Actor, person: string, view: View, historical=false): 
  ${form(edit ? 'compensation.pay' : 'change.request', edit ? `/app/people/${person}` : '/app/changes/{id}', [
   hidden('person', person), ...(edit ? [hidden('period', period.id), hidden('revision', period.revision)] : []),
   field('Effective from', 'effectiveFrom', { type: 'date', value: historical?'':actor.today }),
-  ...((historical?view.compensationFields.history:view.compensationFields.pay) ? [select('Pay basis', 'payBasis', bases, current?.basis ?? 'salary'), field('Pay amount', 'payAmount', { required: false, value: current?.amountCents == null ? '' : (current.amountCents / 100).toFixed(2), hint: 'Amount in the employment currency. An unknown basis may leave the amount empty.' })]
+  ...((historical?view.compensationFields.history:view.compensationFields.pay) ? [select('Pay basis', 'payBasis', bases(), current?.basis ?? 'salary'), field('Pay amount', 'payAmount', { required: false, value: current?.amountCents == null ? '' : (current.amountCents / 100).toFixed(2), hint: 'Amount in the employment currency. An unknown basis may leave the amount empty.' })]
    : [field('Pay increase percent', 'payIncreasePercent', { hint: 'The request can be reviewed without revealing the current amount.' })]),
   area('Reason', 'reason'),
  ], edit ? msg('Schedule pay change') : msg('Submit pay request'), { layout: 'columns' })}</details>`
@@ -53,7 +53,7 @@ function awards(actor: Actor, person: string, view: View, kind: Kind, dated: boo
  return h`<h3>${kind === 'bonus' ? msg('Bonus records') : msg('Equity records')}</h3>${!readable ? h`<p>Withheld</p>` : records.length ? table(
   ['Effective', ...(kind === 'bonus' ? ['Amount'] : ['Units', 'Security']), 'Version', 'Note', 'Source'],
   records.map(record => [date(record.effectiveDate), ...(kind === 'bonus' ? [formatMoney(record.amountCents, record.currency)] : [record.units, record.security]), record.version, record.note ?? '—', record.source === 'cycle' ? msg('Published compensation cycle') : msg('Native award')]),
- ) : h`<p class="muted">No ${kind} records.</p>`}
+ ) : h`<p class="muted">${msg(kind==='bonus'?'No bonus records.':'No equity records.')}</p>`}
  ${!dated ? awardForm(actor, person, kind) : ''}${!dated && readable ? latest.map(record => awardForm(actor, person, kind, record)) : ''}`
 }
 

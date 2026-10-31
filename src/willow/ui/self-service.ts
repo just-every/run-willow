@@ -13,7 +13,7 @@ import { area, field, form, h, hidden, page, select, table, tag, when, type Html
 
 const route = '/app/self-changes'
 const hr = (actor: Actor, personId = '') => canAbout(actor, 'people.manage', personId) && canAbout(actor, 'people.private', personId)
-const title = (kind: string) => kind === 'recordRow' ? 'Record table change' : kind === 'review' ? 'Review correction' : kind === 'performanceEntry' ? 'Authored performance change' : kind === 'training' ? 'Training change' : kind === 'goal' ? 'Goal change' : kind === 'customField' ? 'Custom field change' : kind === 'document' ? 'Document change' : kind === 'legalName' ? 'Legal name change' : kind === 'dependent' ? 'Dependent change' : 'Personal detail change'
+const title = (kind: string) => msg(kind === 'recordRow' ? 'Record table change' : kind === 'review' ? 'Review correction' : kind === 'performanceEntry' ? 'Authored performance change' : kind === 'training' ? 'Training change' : kind === 'goal' ? 'Goal change' : kind === 'customField' ? 'Custom field change' : kind === 'document' ? 'Document change' : kind === 'legalName' ? 'Legal name change' : kind === 'dependent' ? 'Dependent change' : 'Personal detail change')
 const PERSONAL_LABELS: Record<SelfField, string> = { legalName:'Legal name', preferredName: 'Preferred name', ...PRIVATE_LABELS }
 const LABELS: Record<string, string> = { ...PERSONAL_LABELS, summary:'Released summary',rating:'Human rating',version:'Released version', operation:'Operation', course:'Course', assignment:'Assignment', certificate:'Certification evidence', payload:'Proposed details',field:'Performance field',text:'Entry text', title:'Goal', milestones:'Milestones', dueDate:'Due date', owner:'Goal owner', progress:'Progress percent', evidence:'Completion evidence', goal:'Goal id', source:'Source revision', legalName: 'Legal name', name: 'Name', relationship: 'Relationship', row: 'Dependent row', values: 'Details', removed: 'Removed' }
 type PersonalModes = Record<SelfField, 'view' | 'approval' | 'edit'>
@@ -23,7 +23,7 @@ function snapshot(value: unknown): Html {
   if (value === null || value === undefined) return h`<dl class="facts"><dt>Dependent</dt><dd>Not recorded</dd></dl>`
   if (Array.isArray(value)) return h`<ol>${value.map(item => h`<li>${snapshot(item)}</li>`)}</ol>`
   if (typeof value !== 'object') return h`<dl class="facts"><dt>Value</dt><dd>${typeof value === 'boolean' ? (value ? msg('Yes') : msg('No')) : value}</dd></dl>`
-  return h`<dl class="facts">${Object.entries(value).map(([key, item]) => h`<dt>${LABELS[key] ?? key.replace(/_/g, ' ')}</dt><dd>${item !== null && typeof item === 'object' ? snapshot(item) : item === null || item === '' ? '—' : typeof item === 'boolean' ? (item ? msg('Yes') : msg('No')) : key === 'date_of_birth' && typeof item === 'string' ? formatDate(item) : item}</dd>`)}</dl>`
+  return h`<dl class="facts">${Object.entries(value).map(([key, item]) => h`<dt>${LABELS[key] ? msg(LABELS[key]) : key.replace(/_/g, ' ')}</dt><dd>${item !== null && typeof item === 'object' ? snapshot(item) : item === null || item === '' ? '—' : typeof item === 'boolean' ? (item ? msg('Yes') : msg('No')) : key === 'date_of_birth' && typeof item === 'string' ? formatDate(item) : item}</dd>`)}</dl>`
 }
 
 function dependentFields(values: Record<string, unknown> = {}) {
@@ -32,7 +32,7 @@ function dependentFields(values: Record<string, unknown> = {}) {
 
 function personalRequestForms(view: Record<string, unknown>, modes: PersonalModes) {
   const fields = SELF_FIELDS.filter(key => key!=='legalName' && modes[key] === 'approval')
-  return fields.length ? h`<section class="card private"><h2>Request a personal detail change</h2><p>HR reviews these fields before they change. Leave a value blank to request its removal.</p>${fields.map(key => h`<details><summary>Change ${PERSONAL_LABELS[key].toLowerCase()}</summary>${form('self.request', `${route}/{id}`, [hidden('kind', 'personal'), hidden('field', key), field(PERSONAL_LABELS[key], 'value', { required: false, type: key === 'date_of_birth' ? msg('date') : msg('text'), value: key === 'preferredName' ? view.preferredName : (view.private as Record<string, unknown>)[key] })], `Request ${PERSONAL_LABELS[key].toLowerCase()} change`)}</details>`)}</section>` : h``
+  return fields.length ? h`<section class="card private"><h2>Request a personal detail change</h2><p>HR reviews these fields before they change. Leave a value blank to request its removal.</p>${fields.map(key => h`<details><summary>Change ${msg(PERSONAL_LABELS[key])}</summary>${form('self.request', `${route}/{id}`, [hidden('kind', 'personal'), hidden('field', key), field(PERSONAL_LABELS[key], 'value', { required: false, type: key === 'date_of_birth' ? 'date' : 'text', value: key === 'preferredName' ? view.preferredName : (view.private as Record<string, unknown>)[key] })], msg('Request change'))}</details>`)}</section>` : h``
 }
 
 function requestForms(view: Record<string, unknown>, modes: PersonalModes) {

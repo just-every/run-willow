@@ -18,7 +18,7 @@ export async function jobFieldPanel(env:Bindings,actor:Actor,person:string,view:
  choices.employmentType=EMPLOYMENT_TYPES.map(value=>({value,label:value.replace('_',' ')}))
  return h`<section class="card"><h2>Change permitted job fields</h2><p>Each change affects one granted field. Requests follow the configured job approval chain and leave the record unchanged until approved.</p>${permitted.map(key=>{
   const immediate=canEditJobField(actor,person,key),name=immediate?'value':key
-  const input=choices[key]?select(JOB_LABELS[key],name,choices[key]!, '',{required:true}):field(JOB_LABELS[key],name,{type:key==='startDate'||key==='endDate'?msg('date'):msg('text'),required:key!=='endDate',hint:key==='fte'?'A fraction between 0 and 1.':undefined})
+  const input=choices[key]?select(JOB_LABELS[key],name,choices[key]!, '',{required:true}):field(JOB_LABELS[key],name,{type:key==='startDate'||key==='endDate'?'date':'text',required:key!=='endDate',hint:key==='fte'?'A fraction between 0 and 1.':undefined})
   return h`<details><summary>${JOB_LABELS[key]}${immediate?'':' · approval required'}</summary>${form(immediate?'job.field':'change.request',immediate?`/app/people/${person}`:'/app/changes/{id}',[hidden('person',person),...(immediate?[hidden('period',period.id),hidden('revision',period.revision),hidden('field',key)]:[]),input,field('Effective from','effectiveFrom',{type:'date',value:actor.today}),field('Reason','reason')],immediate?`Save ${JOB_LABELS[key].toLowerCase()}`:`Request ${JOB_LABELS[key].toLowerCase()} change`)}</details>`
  })}</section>`
 }

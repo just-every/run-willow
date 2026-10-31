@@ -25,7 +25,7 @@ export default {
  product: 'people/willow',
  // Door grants record consumed nonces: retain replay protection, permanent
  // revoked keys, approvals and custody; pause only Business enablement.
- excludeTables: ['wl_agent_installation_owner','wl_agent_people','bs_team','wl_sign_payloads','wl_identity_token_health','wl_api_credentials','wl_api_credential_limits','wl_oauth_tokens','wl_oauth_codes','wl_oauth_refresh','wl_webhooks','wl_webhook_deliveries','wl_ai_workflow_step_approvals'],
+ excludeTables: ['wl_mobile_push','wl_agent_installation_owner','wl_agent_people','bs_team','wl_sign_payloads','wl_identity_token_health','wl_api_credentials','wl_api_credential_limits','wl_oauth_tokens','wl_oauth_codes','wl_oauth_refresh','wl_webhooks','wl_webhook_deliveries','wl_ai_workflow_step_approvals'],
  buckets: { files: { prefix: 'sha256/' } },
  requiredConfiguration: ['OWNER_EMAIL', 'SESSION_SECRET', 'SETUP_TOKEN', 'AUTH_ORIGIN', 'MAIL_PROVIDER', 'MAIL_FROM'],
  exportRow: pauseConnections,

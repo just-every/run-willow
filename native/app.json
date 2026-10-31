@@ -1,0 +1,1 @@
+{"expo":{"name":"Willow","slug":"willow-companion","version":"0.1.0","scheme":"willow","platforms":["ios","android"],"ios":{"bundleIdentifier":"org.runeditrun.willow","supportsTablet":true},"android":{"package":"org.runeditrun.willow"},"plugins":["expo-notifications"],"extra":{"eas":{"projectId":""}}}}

@@ -45,3 +45,8 @@ export function literalParts(strings:TemplateStringsArray):string[] {
  return joined.replace(/(^|>)([^<]+)/g,(_,lead,value)=>lead+text(value))
  .replace(/(aria-label|placeholder|data-label)="([^"\x00]*)"/g,(_,key,value)=>key+'="'+msg(value).replaceAll('&','&amp;').replaceAll('"','&quot;')+'"').split(marker)
 }
+
+export function employerText(kind:string,source:string,field:string,original:string) {
+ const value=translated(kind,source,field,original)
+ return value.text+(value.untranslated?' ('+msg('Untranslated')+')':'')
+}

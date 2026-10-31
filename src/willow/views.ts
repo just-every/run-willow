@@ -1,3 +1,5 @@
+import catalogs from './locale/catalogs'
+import { locale } from './locale/runtime'
 import { clockView } from './clock'
 import { translationHome,languageFor } from './locale/store'
 import { webhookList } from './webhooks'
@@ -77,7 +79,7 @@ import { workList } from './work'
 import { progress } from './progress'
 
 export const views: Record<string, View> = {
-  clock:clockView,translations:translationHome,
+  mobile:async()=>({language:locale(),catalogs}),clock:clockView,translations:translationHome,
   webhooks:webhookList,
   signatureRequests,signatureRequest:(env,actor,_request,id,url)=>signatureRequest(env,actor,id,url.searchParams.get('asOf')??undefined),
   signatureTemplates,

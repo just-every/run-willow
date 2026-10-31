@@ -25,16 +25,16 @@ export const HISTORY_HEADERS = ['Version', 'Recorded', 'Form', 'Ethnicity and ra
 
 export function contractorForms(current: EeoRevision | null, phase: 'pre-offer' | 'post-offer' = 'post-offer') {
   const veteran = VETERAN_INVITATION
-  return h`<section class="card"><h2>${phase === 'pre-offer' ? 'Pre-offer protected veteran invitation to self-identify' : veteran.title}</h2><p class="muted">${veteran.source.url} (read ${veteran.source.read})</p>
-${veteran.intro.map(text => h`<p>${text}</p>`)}<ul>${veteran.definitions.map(text => h`<li>${msg(text)}</li>`)}</ul>
-${phase === 'post-offer' ? h`<p>${veteran.userra}</p>` : ''}
-<p>${phase === 'pre-offer' ? 'If you believe you belong to any of these protected veteran categories, please identify yourself below. You do not need to identify a particular classification before an offer.' : veteran.ask}</p>
+  return h`<section class="card"><h2>${msg(phase === 'pre-offer' ? 'Pre-offer protected veteran invitation to self-identify' : veteran.title)}</h2><p class="muted">${veteran.source.url} (read ${veteran.source.read})</p>
+${veteran.intro.map(text => h`<p>${msg(text)}</p>`)}<ul>${veteran.definitions.map(text => h`<li>${msg(text)}</li>`)}</ul>
+${phase === 'post-offer' ? h`<p>${msg(veteran.userra)}</p>` : ''}
+<p>${msg(phase === 'pre-offer' ? 'If you believe you belong to any of these protected veteran categories, please identify yourself below. You do not need to identify a particular classification before an offer.' : veteran.ask)}</p>
 ${select('Protected veteran status', 'veteran', [...VETERAN_CHOICES].map(o=>({...o,label:msg(o.label)})), current?.veteran ?? '', { required: false, blank: 'Not recorded' })}
 ${phase === 'post-offer' ? checks(veteran.classesHeading, 'veteranClasses', [...VETERAN_CLASSES].map(o=>({...o,label:msg(o.label)})), current?.veteranClasses ?? []) : ''}
-${phase === 'post-offer' ? h`<p>${veteran.accommodation}</p>` : ''}<p>${veteran.voluntary}</p>${phase === 'post-offer' ? h`<p>${veteran.confidential}</p>` : h`<p>Your answers are confidential and never shown to the hiring team.</p>`}</section>
-<section class="card"><h2>${CC305.title}</h2><p class="muted">${CC305.formNumber} · ${CC305.omb} · ${CC305.expires}</p>${CC305.why.map(text => h`<p>${text}</p>`)}
-<h3>${CC305.howTitle}</h3><p>${CC305.how}</p><ul>${CC305.examples.map(text => h`<li>${msg(text)}</li>`)}</ul><p>${CC305.choose}</p>
-${select('Disability', 'disability', [...DISABILITY].map(o=>({...o,label:msg(o.label)})), current?.disability ?? '', { required: false, blank: 'Not recorded' })}<p class="muted">${CC305.burden}</p></section>`
+${phase === 'post-offer' ? h`<p>${msg(veteran.accommodation)}</p>` : ''}<p>${msg(veteran.voluntary)}</p>${phase === 'post-offer' ? h`<p>${msg(veteran.confidential)}</p>` : h`<p>Your answers are confidential and never shown to the hiring team.</p>`}</section>
+<section class="card"><h2>${msg(CC305.title)}</h2><p class="muted">${msg(CC305.formNumber)} · ${msg(CC305.omb)} · ${msg(CC305.expires)}</p>${CC305.why.map(text => h`<p>${msg(text)}</p>`)}
+<h3>${msg(CC305.howTitle)}</h3><p>${msg(CC305.how)}</p><ul>${CC305.examples.map(text => h`<li>${msg(text)}</li>`)}</ul><p>${msg(CC305.choose)}</p>
+${select('Disability', 'disability', [...DISABILITY].map(o=>({...o,label:msg(o.label)})), current?.disability ?? '', { required: false, blank: 'Not recorded' })}<p class="muted">${msg(CC305.burden)}</p></section>`
 }
 
 export function eeoFields(current: EeoRevision | null, contractor: boolean, phase: 'pre-offer' | 'post-offer' = 'post-offer') {

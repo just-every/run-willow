@@ -36,6 +36,7 @@ export async function employeeBundle(env: Bindings, actor: Actor, url: URL, requ
     files.push({ name: path, size: bytes.length, open: async () => new Blob([bytes]).stream() })
     manifestFiles.push({ path, size: bytes.length, sha256: await sha256Hex(bytes), mediaType })
   }
+  await addText('display-labels.csv',employeeCsv([data.rows[0],data.labels]),'text/csv')
   for (const person of data.records) {
     const record: Record<string, unknown> = { personId: person.id, revision: person.revision, asOf: data.asOf, withheldSections: [] }
     // The shared projection contains only explicitly selected and currently readable custom fields.

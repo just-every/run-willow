@@ -119,7 +119,9 @@
           "migrations/core/0106_agent_custody.sql",
           "migrations/core/0107_agent_owner_binding.sql",
           "migrations/core/0108_locale.sql",
-          "migrations/core/0109_locale_cover_text.sql"
+          "migrations/core/0109_locale_cover_text.sql",
+          "native",
+          "migrations/core/0110_mobile_push.sql"
         ]
       }
     },
