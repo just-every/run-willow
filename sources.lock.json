@@ -1874,7 +1874,7 @@
       "executable": false
     },
     "scripts/willow/signing-journey.sh": {
-      "sha256": "7ce298926dc45b81470ab9b7d99b3a4a05c57dfdbfba7c899dda20afd243860f",
+      "sha256": "5b98cbab49841748515f3d15da0268e5a2e7a5f7600fb155223ec5801d2528f7",
       "executable": false
     },
     "SEED-COMMAND-CONTRACT.md": {
@@ -5982,7 +5982,7 @@
       "executable": false
     },
     "tests/willow/locale.mjs": {
-      "sha256": "08b761af35b68415e389766a5ecd9d418509c91931d9717b8338992506aca64c",
+      "sha256": "059f8a94658f07897fc3e1ac3a88432a6a471de109e30e4553e2151c66e2d544",
       "executable": false
     },
     "tests/willow/okta-edge.mjs": {
