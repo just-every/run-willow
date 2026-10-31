@@ -70,7 +70,7 @@ export function customPersonSection(projected: PersonCustomFields, actor?: Actor
   const editable = actor ? visible.filter(item => writesCustomField(actor, item.currentDefinition) && !item.currentDefinition.retired) : []
   const values = Object.fromEntries(visible.map(item => [item.key, item.value]))
   return h`<section class="card"><h2>Custom fields</h2>${table(['Field', 'Value', 'Definition'], visible.map(item => [content('customField',item.definition.definitionVersionId,'label',item.definition.label), displayValue(item.value, item.definition), `${item.key} · v${item.definition.version}${item.definition.retired ? ' (retired)' : ''}`]))}
-${visible.map(item => h`<details><summary>${item.definition.label} history</summary>${definitionHistory(item.definitions)}${table(['Effective from', 'Value', 'Definition', 'Revision', 'Recorded by'], item.history.map(revision => {
+${visible.map(item => h`<details><summary>${content('customField',item.definition.definitionVersionId,'label',item.definition.label)} history</summary>${definitionHistory(item.definitions)}${table(['Effective from', 'Value', 'Definition', 'Revision', 'Recorded by'], item.history.map(revision => {
     const definition = item.definitions.find(version => version.id === revision.definitionVersionId)
     return [formatDate(revision.effectiveFrom), displayValue(revision.value, definition), definition ? `${definition.label} · v${definition.version}` : revision.definitionVersionId,
       h`${revision.id}${revision.correctsId ? h`<br>Corrects ${revision.correctsId}` : ''}`, `${revision.recordedBy} · ${new Date(revision.recordedAt).toISOString()}`]

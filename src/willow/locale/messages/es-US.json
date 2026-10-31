@@ -934,6 +934,23 @@
     "preboarding self-identification": "autoidentificación antes del ingreso",
     "employee self-identification": "autoidentificación del empleado",
     "applicant self-identification": "autoidentificación del solicitante",
-    "too_many_applications": "Se alcanzó el límite de solicitudes. Inténtelo más tarde."
+    "too_many_applications": "Se alcanzó el límite de solicitudes. Inténtelo más tarde.",
+    "A scheduled report is ready. Sign in to view your permitted report:": "Hay un informe programado disponible. Inicie sesión para ver el informe autorizado:",
+    "Cover text": "Texto de presentación",
+    "Form": "Formulario",
+    "Protected veteran": "Veterano protegido",
+    "Named": "Identificada",
+    "Anonymous": "Anónima",
+    "named": "identificada",
+    "anonymous": "anónima",
+    "Cycle": "Ciclo",
+    "Progress": "Progreso",
+    "Author": "Autor",
+    "Sign in to": "Iniciar sesión en",
+    "Complete the required fields.": "Complete los campos obligatorios.",
+    "The value is too long.": "El valor es demasiado largo.",
+    "Review the entered values.": "Revise los datos ingresados.",
+    "The request could not be completed. Review the details and try again.": "No se pudo completar la solicitud. Revise los datos y vuelva a intentarlo.",
+    "Open case": "Abrir caso"
   }
 }

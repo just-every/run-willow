@@ -2,7 +2,7 @@ import { languageCookie } from './locale/auth-frame'
 import { careerResponse } from './locale/careers'
 import { clockPage } from './clock'
 import { officialFormsPage } from './locale/official-forms'
-import { inLocale, normalizeLanguage } from './locale/runtime'
+import { inLocale, normalizeLanguage,msg } from './locale/runtime'
 import { languageFor, translationData } from './locale/store'
 import { translationsPage } from './ui/translations'
 import { signatureTemplateSettings } from './ui/signature-templates'
@@ -130,7 +130,7 @@ async function localizedResponse(request: Request, original: Bindings): Promise<
     if(url.pathname==='/app/oauth/authorize')return await oauthConsentPage(env,actor,request,url)
     if(url.pathname.startsWith('/api/willow/v1/'))throw new WillowError('credential_required',401)
     return await inLocale({language:await languageFor(env,'member',actor.id,request.headers.get('accept-language')??'en'),translations:await translationData(env),path:url.pathname},async()=>{
-      try {return api?await apiResponse(env,actor!,request,url):await pageResponse(env,actor!,request,url)}catch(error){if(api)throw error;const {code,status}=failure(error);return page('Something went wrong',actor,h`<h1>That did not work</h1><p>${describeError(code)}</p><p><a href="/app">Back to Willow</a></p>`,{status})}
+      try {return api?await apiResponse(env,actor!,request,url):await pageResponse(env,actor!,request,url)}catch(error){if(api)throw error;const {code,status}=failure(error);return page(msg('Something went wrong'),actor,h`<h1>That did not work</h1><p>${describeError(code)}</p><p><a href="/app">Back to Willow</a></p>`,{status})}
     })
   } catch (error) {
     const { code, status, detail } = failure(error)
@@ -138,8 +138,8 @@ async function localizedResponse(request: Request, original: Bindings): Promise<
       const response=json({ error: code, ...(url.pathname === '/api/willow/policy.answer' && status !== 401 ? { limitation: 'No policy answer is available. Ask HR before relying on an entitlement or taking action.', needsHr: true, escalation: POLICY_ESCALATION_PATH } : {}), ...(detail === undefined ? {} : { detail }) }, status)
       return request.headers.has('authorization')?credentialResponse(request,response):response
     }
-    if (status === 404) return page('Not found', actor, h`<h1>Not found</h1><p>There is nothing here you can open.</p><p><a href="/app">Back to Willow</a></p>`, { status: 404 })
-    return page('Something went wrong', actor, h`<h1>That did not work</h1><p>${code.replace(/_/g, ' ')}</p><p><a href="/app">Back to Willow</a></p>`, { status })
+    if (status === 404) return page(msg('Not found'), actor, h`<h1>Not found</h1><p>There is nothing here you can open.</p><p><a href="/app">Back to Willow</a></p>`, { status: 404 })
+    return page(msg('Something went wrong'), actor, h`<h1>That did not work</h1><p>${code.replace(/_/g, ' ')}</p><p><a href="/app">Back to Willow</a></p>`, { status })
   }
 }
 
@@ -165,7 +165,7 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
     if (path === '/app/import/execute') {
       const input=await Input.from(request), result=await importForm(env,actor,request,input)
       await reconcileRecipients(env,actor.today)
-      if(input.text('action')==='reconcile') return page('Import reconciliation',actor,h`<p class="back"><a href="/app/import">← Move in</a></p><h1>Import reconciliation</h1><section class="card"><p>${result.ok?'The imported records agree with the reviewed source.':'Some records differ from the reviewed source.'}</p><dl><dt>Source records</dt><dd>${result.counts.sourceRecords}</dd><dt>Present</dt><dd>${result.counts.present}</dd><dt>Explained omissions</dt><dd>${result.counts.explained}</dd><dt>Native records</dt><dd>${result.counts.nativeTargets}</dd></dl></section>`,{current:'/app/import',url})
+      if(input.text('action')==='reconcile') return page(msg('Import reconciliation'),actor,h`<p class="back"><a href="/app/import">← Move in</a></p><h1>Import reconciliation</h1><section class="card"><p>${result.ok?'The imported records agree with the reviewed source.':'Some records differ from the reviewed source.'}</p><dl><dt>Source records</dt><dd>${result.counts.sourceRecords}</dd><dt>Present</dt><dd>${result.counts.present}</dd><dt>Explained omissions</dt><dd>${result.counts.explained}</dd><dt>Native records</dt><dd>${result.counts.nativeTargets}</dd></dl></section>`,{current:'/app/import',url})
       return redirect(env,'/app/import','notice','Import updated. Review its status below.')
     }
     const name = path.match(/^\/app\/do\/([\w.]+)$/)?.[1]
@@ -197,7 +197,7 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
   // The owner sets up the employer before anything else.
   if (!await employer(env)) {
     if (actor.owner) return path === '/app/employer' ? employerPage(env, actor, url) : Response.redirect(`${env.AUTH_ORIGIN}/app/employer`, 303)
-    return page('Not ready', actor, h`<div class="first-run"><h1>Willow is not set up yet</h1><p>The owner needs to set up the employer first.</p></div>`)
+    return page(msg('Not ready'), actor, h`<div class="first-run"><h1>Willow is not set up yet</h1><p>The owner needs to set up the employer first.</p></div>`)
   }
   const found = match(PAGE_DOORS, path)
   if (!found) throw new WillowError('not_found', 404)

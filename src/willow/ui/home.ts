@@ -17,7 +17,7 @@ import { ASSET_CONDITIONS } from './record-tables'
 import { KIND_LABELS, assignee } from './labels'
 
 function taskList(tasks: Awaited<ReturnType<typeof myTasks>>, today: string) {
-  return tasks.length ? table(['Due', 'Task', 'Person', ''], tasks.map(task => [h`${formatDay(task.dueDate, today)}${task.overdue ? h` ${tag('overdue')}` : ''}`, h`${content('task',task.translationSource??'','title',task.title)}${task.failure ? h`<br><strong>Failed; still open:</strong> ${task.failure}` : ''}${task.blockedBy.length ? h`<br><span class="muted">Blocked by: ${task.blockedBy.map(t => t.title).join(', ')}</span>` : ''}${task.system ? h` <span class="muted">(${task.system})</span>` : ''}`, person(task.person), h`<a class="chip-link" href="/app/cases/${task.case}">Open ${task.kind} case</a>`])) : h`<p class="muted">Nothing waiting for you.</p>`
+  return tasks.length ? table(['Due', 'Task', 'Person', ''], tasks.map(task => [h`${formatDay(task.dueDate, today)}${task.overdue ? h` ${tag('overdue')}` : ''}`, h`${content('task',task.translationSource??'','title',task.title)}${task.failure ? h`<br><strong>Failed; still open:</strong> ${task.failure}` : ''}${task.blockedBy.length ? h`<br><span class="muted">Blocked by: ${task.blockedBy.map(t => t.title).join(', ')}</span>` : ''}${task.system ? h` <span class="muted">(${task.system})</span>` : ''}`, person(task.person), h`<a class="chip-link" href="/app/cases/${task.case}">${msg('Open case')}</a>`])) : h`<p class="muted">Nothing waiting for you.</p>`
 }
 
 export async function homePage(env: Bindings, actor: Actor, url: URL) {
