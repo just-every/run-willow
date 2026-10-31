@@ -136,3 +136,11 @@ ul.cases { list-style: none; padding: 0; }
 @media (max-width: 600px) {
   .batch-actions > *, .batch-actions button { width: 100%; }
 }
+
+/* The display-language choice is available without opening the phone navigation. */
+.language-choice { display:flex; align-items:end; justify-content:flex-end; gap:.6rem; padding:.6rem 1.25rem; margin:0; flex-wrap:wrap; }
+.language-choice .field { margin:0; min-width:12rem; }
+.language-choice label { font-size:.8rem; }
+.language-choice button { margin:0; }
+@media(max-width:600px) { .language-choice { justify-content:flex-start; padding:.6rem 1rem; } .language-choice .field { flex:1; min-width:10rem; } }
+html:not([lang="en"]) .rail nav a { white-space:normal; overflow-wrap:anywhere; padding-block:8px; }

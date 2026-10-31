@@ -1,3 +1,4 @@
+import { sendFixedNotice } from '../locale/notices'
 import type { Bindings } from '../../auth.server'
 import { operatorMail } from '../../mail.server.mjs'
 import { connectionSettings } from '../connections'
@@ -25,7 +26,7 @@ export async function dispatchCohortNotices(env:Bindings,cohort?:string,instant=
     if(!sender||!env.MAIL_FROM){status='failed';failure='mail_unavailable'}
     else try {
      const path=env.AUTH_ORIGIN+'/app/signatures/'+row.id
-     const result=await sender.send({deliveryId:id,from:env.MAIL_FROM,to:[fresh.recipient.email],subject:'Willow: signature request',html:`<p>A signature request is ready in Willow.</p><p><a href="${esc(path)}">Sign in to Willow</a></p>`,text:`A signature request is ready in Willow.\n\nSign in to Willow: ${path}\n`,headers:{'Auto-Submitted':'auto-generated'}})
+     const result=await sendFixedNotice(env,'member',fresh.recipient.id,sender,{deliveryId:id,from:env.MAIL_FROM,to:[fresh.recipient.email],subject:'Willow: signature request',html:`<p>A signature request is ready in Willow.</p><p><a href="${esc(path)}">Sign in to Willow</a></p>`,text:`A signature request is ready in Willow.\n\nSign in to Willow: ${path}\n`,headers:{'Auto-Submitted':'auto-generated'}})
      if(result?.status==='accepted'||result?.status==='development'&&env.AUTH_LOCAL==='true'){status=result.status;failure=null}
      else if(result?.status==='uncertain'){status='uncertain';failure='mail_outcome_uncertain'}
      else if(result?.status==='rate_limited'){status='failed';failure='mail_rate_limited'}

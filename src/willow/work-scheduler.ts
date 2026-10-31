@@ -1,3 +1,4 @@
+import { sendFixedNotice } from './locale/notices'
 import { reconcileRecipients } from './performance/store'
 import { expireSignatures } from './sign/expiry'
 import { enrollSignatureJoiners } from './sign/cohorts'
@@ -56,7 +57,7 @@ export async function runWorkScheduler(env: Bindings, instant=now()) {
      else try {
       // Fixed content and authenticated link only; never send the title, person, date or next-action text.
       const path=env.AUTH_ORIGIN+'/app/tasks'
-      const result=await sender.send({deliveryId:id,from:env.MAIL_FROM,to:[fresh.member.email],subject:'Willow: assigned work needs attention',html:`<p>There is assigned work to review in Willow.</p><p><a href="${esc(path)}">Sign in to Willow</a></p>`,text:`There is assigned work to review in Willow.\n\nSign in to Willow: ${path}\n`,headers:{'Auto-Submitted':'auto-generated'}})
+      const result=await sendFixedNotice(env,'member',fresh.member.id,sender,{deliveryId:id,from:env.MAIL_FROM,to:[fresh.member.email],subject:'Willow: assigned work needs attention',html:`<p>There is assigned work to review in Willow.</p><p><a href="${esc(path)}">Sign in to Willow</a></p>`,text:`There is assigned work to review in Willow.\n\nSign in to Willow: ${path}\n`,headers:{'Auto-Submitted':'auto-generated'}})
       if (result?.status==='accepted' || result?.status==='development' && env.AUTH_LOCAL==='true') {status=result.status;failure=null}
       else if (result?.status==='uncertain') {status='uncertain';failure='mail_outcome_uncertain'}
       else if (result?.status==='rate_limited') {status='failed';failure='mail_rate_limited'}

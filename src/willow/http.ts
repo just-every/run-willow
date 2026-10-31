@@ -1,3 +1,10 @@
+import { languageCookie } from './locale/auth-frame'
+import { careerResponse } from './locale/careers'
+import { clockPage } from './clock'
+import { officialFormsPage } from './locale/official-forms'
+import { inLocale, normalizeLanguage } from './locale/runtime'
+import { languageFor, translationData } from './locale/store'
+import { translationsPage } from './ui/translations'
 import { signatureTemplateSettings } from './ui/signature-templates'
 import { signaturePayloadFile } from './sign/payloads'
 import { signaturesPage,signaturePage,signaturePreviewPage,signatureConsentPage } from './ui/signatures'
@@ -64,7 +71,7 @@ import { Input } from './input'
 import { batchFile } from './payroll'
 import { summary, summaryCsv } from './reports'
 import { tableReportCsv } from './record-tables/report'
-import { h, page } from './ui/html'
+import { h, page, describeError } from './ui/html'
 import { casePage, homePage, tasksPage } from './ui/home'
 import { leavePage, requestPage } from './ui/leave'
 import { importPage, previewPage } from './ui/movein'
@@ -91,6 +98,12 @@ function failure(error: unknown): { code: string; status: number; detail?: unkno
 }
 
 export async function willowResponse(request: Request, original: Bindings): Promise<Response | null> {
+ const path=new URL(request.url).pathname
+ if(path.startsWith('/careers'))return careerResponse(runtimeBindings(original),request,new URL(request.url))
+ if(!path.startsWith('/app')&&!path.startsWith('/api/willow/')&&!match(INVITATION_DOORS,path))return null
+ return inLocale({language:normalizeLanguage(request.headers.get('accept-language')??'en'),translations:await translationData(runtimeBindings(original)),path},()=>localizedResponse(request,original))
+}
+async function localizedResponse(request: Request, original: Bindings): Promise<Response | null> {
   const env = runtimeBindings(original)
   const url = new URL(request.url)
   if(url.pathname==='/api/willow/oauth/token')return oauthTokenResponse(env,request)
@@ -116,8 +129,9 @@ export async function willowResponse(request: Request, original: Bindings): Prom
     if (!actor) return api ? json({ error: 'authentication_required' }, 401) : Response.redirect(`${env.AUTH_ORIGIN}/signin?returnTo=${encodeURIComponent(url.pathname)}`, 303)
     if(url.pathname==='/app/oauth/authorize')return await oauthConsentPage(env,actor,request,url)
     if(url.pathname.startsWith('/api/willow/v1/'))throw new WillowError('credential_required',401)
-    if (api) return await apiResponse(env, actor, request, url)
-    return await pageResponse(env, actor, request, url)
+    return await inLocale({language:await languageFor(env,'member',actor.id,request.headers.get('accept-language')??'en'),translations:await translationData(env),path:url.pathname},async()=>{
+      try {return api?await apiResponse(env,actor!,request,url):await pageResponse(env,actor!,request,url)}catch(error){if(api)throw error;const {code,status}=failure(error);return page('Something went wrong',actor,h`<h1>That did not work</h1><p>${describeError(code)}</p><p><a href="/app">Back to Willow</a></p>`,{status})}
+    })
   } catch (error) {
     const { code, status, detail } = failure(error)
     if (api || request.headers.has('authorization') || actor&&isCredentialActor(actor)) {
@@ -170,7 +184,9 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
       await reconcileRecipients(env,actor.today)
       const notices = await notifyAction(env, name!, result)
       const failed = notices?.failure || notices?.deliveries?.some(item => ['failed','refused'].includes(item.status))
-      return redirect(env, returnTo.replace('{id}', encodeURIComponent(result?.id ?? '')), 'notice', failed ? 'Saved. Email notice delivery failed; continue the work in Willow.' : result?.notice ?? 'Saved.')
+      const response=redirect(env, returnTo.replace('{id}', encodeURIComponent(result?.id ?? '')), 'notice', failed ? 'Saved. Email notice delivery failed; continue the work in Willow.' : result?.notice ?? 'Saved.')
+      if(name==='language.choose')response.headers.set('set-cookie',languageCookie(input.text('language')))
+      return response
     } catch (error) {
       const { code, status } = failure(error)
       if (name === 'policy.answer' && error instanceof WillowError) return policyAssistantPage(env,actor,policyUrl,{status:'unavailable',claims:[],withheld:[],needsHr:true,escalation:POLICY_ESCALATION_PATH,message:'No supported policy answer is available. HR must resolve the source or provider limitation before you rely on an entitlement or take action.'})
@@ -192,6 +208,9 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  clock:(env,actor,_request,url)=>clockPage(env,actor,url),
+  officialForms:async(_env,actor,_request,url)=>officialFormsPage(actor,url),
+  translations:(env,actor,_request,url)=>translationsPage(env,actor,url),
   webhooks:(env,actor,_request,url)=>webhooksPage(env,actor,url),
   apiCredentials:(env,actor,_request,url)=>credentialsPage(env,actor,url),
   settingLocations:(env,actor,_request,url)=>settingAreaPage(env,actor,'locations',url),

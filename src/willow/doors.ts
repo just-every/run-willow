@@ -3,6 +3,7 @@
 // entry, so a new door cannot be added without being crawled.
 // Patterns are relative to /api/willow/ (API) or absolute (pages).
 export const API_DOORS: [string, string][] = [
+  ['^clock$','clock'],['^translations$','translations'],
   ['^webhooks$','webhooks'],
   ['^training$', 'training'],
   ['^signature-requests$','signatureRequests'],['^signature-requests/([\\w-]+)$','signatureRequest'],
@@ -38,6 +39,7 @@ export const API_DOORS: [string, string][] = [
 ]
 
 export const PAGE_DOORS: [string, string][] = [
+  ['^/app/clock$','clock'],['^/app/official-forms$','officialForms'],['^/app/translations$','translations'],
   ['^/app/training$', 'training'], ['^/app/settings/training$', 'training'],
   ['^/app/settings/signatures$','signatureTemplateSettings'],
   ['^/app/signature-payloads/([\\w-]+)\\.pdf$','signaturePayloadFile'],
@@ -100,3 +102,6 @@ export const V1_API_DOORS: [string,string][] = [
 
 /** Public machine-readable documentation contains no employer data. */
 export const PUBLIC_API_DOORS:[string,string][]=[['^/api/willow/v1/openapi\\.json$','openapi']]
+
+/** Public careers pages reveal only HR-published openings. */
+export const CAREER_DOORS:[string,string][]=[['^/careers$','careers'],['^/careers/([\\w-]+)$','career']]

@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 import { effectiveFieldDefinitions } from '../custom-fields/store'
 import { insist } from '../core'
 import { doorCall, uploadAndPlan } from '../movein/door'
@@ -33,7 +34,7 @@ ${custom.length?h`<details><summary>Custom field columns</summary><p>Column name
       : ['undoing', 'applying','queued','failed','rolling_back'].includes(job.state) ? job.planId ? importForm([hidden('planId', job.planId ?? ''), hidden('fingerprint', job.fingerprint ?? ''), hidden('action', job.state === 'undoing' ? 'undo' : 'apply')], 'Resume', { secondary: true }) : importForm([hidden('job',job.id),hidden('action','legacy-undo')],'Undo interrupted legacy import',{secondary:true}) : '', h`${job.state==='completed'&&job.planId?form('import.access','/app/import',[hidden('job',job.id),select('Portal invitations','choice',[{value:'defer',label:'Defer invitations'},{value:'invite',label:'Invite current employees'}],'defer'),field('Invitation reason','reason')],'Save invitation choice',{secondary:true}):''}${job.caption ? h`<details><summary>Approval</summary><pre>${job.caption}</pre></details>` : ''}`]))
     : h`<p class="muted">No imports yet.</p>`}</section>
 <section class="card"><h2>Business imports</h2><p>Business is ${business.enabled?'enabled':'disabled'}. Your own imports always use the reviewed plan above. Revoked keys: ${business.revokedKids.join(', ')||'none'}.</p>${form('import.settings','/app/import',[hidden('enabled',business.enabled?'no':'yes')],business.enabled?'Disable Business imports':'Enable Business imports',{secondary:true})}</section>`
-  return page('Move in', actor, body, { current: '/app/import', url })
+  return page(msg('Move in'), actor, body, { current: '/app/import', url })
 }
 
 export async function previewPage(env: Bindings, actor: Actor, input: Input, url: URL, request: Request) {
@@ -63,7 +64,7 @@ ${preview.unknowns.length ? h`<section class="card"><h2>Unknown after import</h2
 <section class="card"><h2>Gaps</h2><ul>${preview.gaps.map(gap => h`<li>${gap}</li>`)}</ul></section>
 ${unmappedTypes.length ? h`<section class="card"><h2>Time-off types</h2><form method="post" action="/app/import/preview">${carried(['map_'])}${hidden('previousPlanId',plan.planId)}${input.flag('catchup')?hidden('catchup','yes'):''}${unmappedTypes.map(type => select(`BambooHR “${type}”`, `map_${type.toLowerCase().replace(/[^a-z0-9]/g, '')}`, policyList.map(policy => ({ value: policy.id, label: policy.name })), '', { required: false, blank: 'Not mapped' }))}<button type="submit" class="secondary">Preview again with this mapping</button></form></section>` : ''}
 <section class="card"><h2>2. Apply</h2><p>Applies exactly this preview (fingerprint ${preview.fingerprint.slice(0, 12)}…). If anything changed since, you will be asked to preview again.</p>${importForm( [hidden('planId',plan.planId), hidden('fingerprint', preview.fingerprint), hidden('action','apply')], 'Apply import')}</section>`
-  return page('Import preview', actor, body, { current: '/app/import', url })
+  return page(msg('Import preview'), actor, body, { current: '/app/import', url })
 }
 
 function importForm(fields: Html[], label: string, options: {secondary?:boolean} = {}) {

@@ -1,3 +1,4 @@
+import { sendFixedNotice } from '../locale/notices'
 import type { Bindings } from '../../auth.server'
 import { operatorMail } from '../../mail.server.mjs'
 import { commit, stmt } from '../core'
@@ -16,7 +17,7 @@ export async function deliverPacket(env: Bindings, actorId: string, packetId: st
     if (sender && env.MAIL_FROM) {
       const link = new URL(`/preboarding/${token}`, env.AUTH_ORIGIN).href
       const text = `You have a voluntary self-identification step in Willow.\n\nOpen your private step: ${link}\n\nInvitation issued: ${sourceOn}.\n`
-      const result = await sender.send({ deliveryId: packetId, from: env.MAIL_FROM, to: [email],
+      const result = await sendFixedNotice(env,'preboarding',packetId,sender,{ deliveryId: packetId, from: env.MAIL_FROM, to: [email],
         subject: 'Willow: your voluntary self-identification step', text,
         html: `<p>You have a voluntary self-identification step in Willow.</p><p><a href="${escape(link)}">Open your private step</a></p><p>Invitation issued: ${sourceOn}.</p>`,
         headers: { 'Auto-Submitted': 'auto-generated' } })

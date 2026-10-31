@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 import { signatureRequests } from '../sign/requests'
 import { excludesText } from '../retention/excluded'
 import { readsCustomField } from '../custom-fields/read'
@@ -41,7 +42,7 @@ function definitionFields(definition: ReportDefinition, custom: EffectiveField[]
 export async function customReportsPage(env: Bindings, actor: Actor, url: URL) {
   const [reports, custom, zone, signatures] = await Promise.all([savedReports(env, actor), visibleDefinitions(env, actor, actor.today), employerZone(env),signatureRequests(env,actor)])
   const definition: ReportDefinition = { name: '', columns: ['name', 'jobTitle', 'department', 'location', 'fte'], asOf: actor.today, from: `${actor.today.slice(0, 7)}-01`, to: actor.today, department: '', location: '', status: 'active' }
-  return page('Custom reports', actor, h`${isReporter(actor)?h`<p class="back"><a href="/app/reports">← Reports</a></p>`:''}<h1>Custom reports</h1><p>Save the columns, dates and filters you need. Each run uses your current access to people and fields.</p>${relatedReports(actor)}
+  return page(msg('Custom reports'), actor, h`${isReporter(actor)?h`<p class="back"><a href="/app/reports">← Reports</a></p>`:''}<h1>Custom reports</h1><p>Save the columns, dates and filters you need. Each run uses your current access to people and fields.</p>${relatedReports(actor)}
 <section class="card"><h2>Saved reports</h2>${reports.length ? table(['Report', 'Version', 'Record as of', 'Created'], reports.map(report => [h`<a href="${route}/${report.id}">${report.definition.name}</a>`, report.version, report.definition.asOf === 'today' ? 'Today, when run' : formatDate(report.definition.asOf), when(report.createdAt, zone)])) : h`<p class="muted">No saved reports in your scope.</p>`}</section>
 ${isReporter(actor)?h`<section class="card"><h2>Create a report</h2><p>Organization reporting requires reports access. Managers see their current direct team. Restricted values stay withheld even when a saved report includes their columns.</p>${form('report.save', `${route}/{id}`, definitionFields(definition, custom, signatures), 'Save report')}</section>`:''}`,  { current: isReporter(actor)?'/app/reports':'/app/reports/custom', url, signing:true })
 }

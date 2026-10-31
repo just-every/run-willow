@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
 import { all } from '../core'
@@ -13,7 +14,7 @@ export async function customApprovalForms(env: Bindings, actor: Actor) {
  return definitions.length?h`<section class="card"><h2>Propose a custom field change</h2><p>Each proposal saves one field for review. Its value stays unchanged until another eligible person approves it.</p>${definitions.map(definition=>{
   const choices=people.filter(person=>readsCustomField(actor,person.id,definition)).map(person=>({value:person.id,label:person.name}))
   if(!choices.length)return h``
-  const value=definition.type==='boolean'?select('New value','fieldValue',[{value:'true',label:'Yes'},{value:'false',label:'No'}],'',{required:definition.required,blank:'Not recorded'}):definition.type==='select'?select('New value','fieldValue',definition.validation.options,'',{required:definition.required,blank:'Not recorded'}):field('New value','fieldValue',{required:definition.required,type:definition.type==='date'?'date':'text'})
+  const value=definition.type==='boolean'?select('New value','fieldValue',[{value:'true',label:msg('Yes')},{value:'false',label:msg('No')}],'',{required:definition.required,blank:'Not recorded'}):definition.type==='select'?select('New value','fieldValue',definition.validation.options,'',{required:definition.required,blank:'Not recorded'}):field('New value','fieldValue',{required:definition.required,type:definition.type==='date'?msg('date'):msg('text')})
   return h`<details><summary>${definition.label}</summary>${form('custom.propose','/app/self-changes/{id}',[hidden('field',definition.id),select('Person','person',choices),field('Effective from','effectiveFrom',{type:'date',value:actor.today}),value],'Submit for review')}</details>`
  })}</section>`:h``
 }

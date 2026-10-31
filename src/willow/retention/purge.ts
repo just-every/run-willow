@@ -8,7 +8,7 @@ import { addDays, today } from '../dates'
 import { finishBlobs } from './erase'
 
 export const WARNING_DAYS = 30
-const BLOB_TABLES = ['wl_sign_files', 'wl_document_versions', 'wl_hiring_resumes', 'wl_protected_certifications']
+const BLOB_TABLES = ['wl_preboard_signatures','wl_sign_files', 'wl_document_versions', 'wl_hiring_resumes', 'wl_protected_certifications']
 
 /** Records whose expiry falls inside the warning window, and when each purges. */
 export async function expiringSoon(env: Bindings, date: string) {

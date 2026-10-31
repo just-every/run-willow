@@ -2,7 +2,7 @@
 const groups = {
   'records-people': [
     'regression-transactions', 'people', 'employee-export', 'employee-bundle',
-    'custom-fields', 'record-tables',
+    'custom-fields', 'record-tables', 'locale',
   ],
   'records-work': [
     'work-followup', 'workflows', 'change-requests', 'date-alerts', 'self-service',

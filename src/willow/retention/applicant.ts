@@ -34,6 +34,7 @@ export async function planApplicant(env: Bindings, actor: Actor, applicationId: 
   const adopted = await adoption(env)
   if (!adopted) blockers.push({ kind: 'retention_not_adopted', ref: TABLE_VERSION, reason: 'The owner has not adopted the retention table' })
   const stores: (RowTarget & { label: string; ms: string })[] = [
+    {id:'applicant_language',table:'wl_display_languages',label:'Applicant display language',ms:'0',from:`wl_display_languages t WHERE t.kind='applicant' AND t.subject IN (${list})`},
     { id: 'applicant_eeo', table: 'wl_applicant_eeo_answers', label: 'Application self-identification answers', ms: 't.recorded_at', from: `wl_applicant_eeo_answers t WHERE t.application_id IN (${list})` },
     { id: 'applicant_eeo_invites', table: 'wl_applicant_eeo_invitations', label: 'Application self-identification invitations', ms: 't.invited_at', from: `wl_applicant_eeo_invitations t WHERE t.application_id IN (${list})` },
     { id: 'application_closures', table: 'wl_hiring_closures', label: 'Application closure decisions', ms: 't.closed_at', from: `wl_hiring_closures t WHERE t.application_id IN (${list})` },

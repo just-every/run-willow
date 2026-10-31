@@ -1,3 +1,5 @@
+import { languageCookie } from './willow/locale/auth-frame'
+import { validLanguage } from './willow/locale/runtime'
 import { initializeProvisionedDoor } from './willow/movein/authority'
 import { createOwnerClaimHandler } from './modules/owner-claim/index.mjs'
 import { identityFetch } from './identity-fetch'
@@ -84,6 +86,8 @@ export async function authResponse(request: Request, original: Bindings): Promis
   return { ...env, OIDC_PROVIDERS: JSON.stringify(identity.providers.filter(p => linked.some(l => l.provider_id === p.id))) }
  }
  if (url.pathname === '/signin') {
+  const language=url.searchParams.get('language')
+  if(request.method==='GET'&&language&&validLanguage(language)){url.searchParams.delete('language');return new Response(null,{status:303,headers:{location:url.pathname+url.search,'set-cookie':languageCookie(language),'cache-control':'no-store'}})}
   const page = await createSignInHandler(operatorAuth(await linkedEnvironment()), {
    defaultReturnTo: '/setup',
   })(request)

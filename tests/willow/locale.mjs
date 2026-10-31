@@ -1,0 +1,145 @@
+// LOCALE-001: two complete public-door journeys. Provider fakes exist only at mail's network edge.
+import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { PDFDocument } from 'pdf-lib'
+import { harness,file } from './harness.mjs'
+import { fixture,day,today } from './regression-fixture.mjs'
+import { evidenceDirectory } from './evidence.mjs'
+const messages=[],invitations=new Map()
+const h=await harness({provider:async request=>{
+ if(new URL(request.url).hostname!=='api.sendgrid.com')throw new Error('Unexpected provider edge')
+ const message=await request.json();messages.push(message)
+ const content=message.content.map(c=>c.value).join('\n'),link=content.match(/https?:[^\s"<>]+\/(?:preboarding|applicant-self-id)\/[^\s"<>]+/)?.[0]
+ if(link)for(const p of message.personalizations)for(const to of p.to)invitations.set(to.email,link.replaceAll('&amp;','&'))
+ return new Response(null,{status:202})
+}})
+let browser
+const html=async(path,cookie)=>{const r=await h.raw(path,{cookie});const text=await r.text();assert.equal(r.status,200,`${path}: ${r.status} ${text.slice(0,250)}`);return text}
+const cookies=cookie=>cookie.split('; ').map(part=>{const i=part.indexOf('=');return {name:part.slice(0,i),value:part.slice(i+1),url:h.origin}})
+const capture=async(page,path,name)=>{await page.goto(h.origin+path);await page.screenshot({path:join(evidenceDirectory,`locale-${name}-390.png`),fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:join(evidenceDirectory,`locale-${name}-1440.png`),fullPage:true});await page.setViewportSize({width:390,height:844})}
+try {
+ await h.raw('/auth/bootstrap',{body:{token:h.vars.SETUP_TOKEN,displayName:'Locale Owner'}})
+ const owner=await h.signIn(h.vars.OWNER_EMAIL)
+ await h.raw('/setup',{cookie:owner,form:new URLSearchParams({confirm:'yes'})})
+ const f=await fixture(h,owner),s=f.staff,api=f.api,employee=s.employee.cookie
+ if(process.env.WILLOW_LOCALE_BROWSER==='1'){
+  const {chromium}=await import(process.env.WILLOW_PLAYWRIGHT_PATH??'@playwright/test')
+  browser=await chromium.launch({headless:true,...(existsSync('/usr/bin/chromium')?{executablePath:'/usr/bin/chromium'}:{}),args:['--no-sandbox']})
+ }
+ const context=browser?await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:390,height:844}}):null
+ if(context)await context.addCookies(cookies(employee))
+ const page=context?await context.newPage():null
+ // Journey 1: HR-authored translations, employee language, PTO, notices, native signature and phone clock.
+ await api('mover.schedule',{period:s.employee.period,effectiveFrom:day(-1),payBasis:'hourly',payAmount:'25.00',reason:'Hourly employee'})
+ const announcement=await api('company.announce',{title:'Safety update',body:'Review the new safety guide.',startsOn:today,audience:{kind:'everyone',id:null},ackRequired:true})
+ const field=await api('customField.define',{key:'shirt',classification:'general',label:'Shirt size',type:'select',effectiveFrom:day(-1),employeeRead:true,managerRead:true,options:'small|Small\nlarge|Large'})
+ await api('customField.define',{key:'badge',classification:'general',label:'Badge color',type:'text',maxLength:100,effectiveFrom:day(-1),employeeRead:true})
+ await api('customField.write',{person:s.employee.person,effectiveFrom:today,values:{shirt:'small',badge:'Home'}})
+ const sources=await api('translations'),shirt=sources.sources.find(x=>x.kind==='customField'&&x.original==='Shirt size')
+ assert.ok(shirt,'HR can choose the exact field definition version')
+ const translate=async source=>api('translation.write',{...source,language:'es-US',translated:source.translated})
+ await translate({...shirt,translated:'Talla de camisa'})
+ await translate({...sources.sources.find(x=>x.kind==='customField'&&x.original==='Small'),translated:'Pequeña'})
+ for(const [key,text] of [['title','Aviso de seguridad'],['body','Revise la nueva guía de seguridad.']])await translate({...sources.sources.find(x=>x.source===announcement.versionId&&x.field===key),translated:text})
+ await h.api('translation.write',employee,{...shirt,language:'es-US',translated:'Not allowed'},403)
+ await api('connections.notices',{enabled:true})
+ if(page){await page.goto(h.origin+'/app');await page.getByLabel('Display language').selectOption('es-US');await page.getByRole('button',{name:'Save language',exact:true}).click();await page.waitForURL('**/app?notice=*')}
+ else await h.api('language.choose',employee,{language:'es-US'})
+ let home=await html('/app',employee)
+ assert.match(home,/<html lang="es-US">/);assert.match(home,/Aviso de seguridad/);assert.match(home,/Revise la nueva guía/)
+ assert.match(home,/Solicitar permiso/);assert.ok(!home.includes('Review the new safety guide.'))
+ const profile=await html('/app/people/'+s.employee.person,employee)
+ assert.match(profile,/Talla de camisa/);assert.match(profile,/Pequeña/);assert.match(profile,/Badge color[\s\S]*Sin traducción/);assert.match(profile,/>Home</,'record value Home is never translated')
+ const report=await api('report.save',{definition:{name:'Workforce',columns:['name','leaveHours'],asOf:'today',status:'all'}})
+ const start=day(3),end=day(3)
+ if(page){
+  await capture(page,'/app','home')
+  await page.goto(h.origin+'/app/leave');await page.getByLabel('Primer día',{exact:true}).fill(start);await page.getByLabel('Último día',{exact:true}).fill(end);await page.getByRole('button',{name:'Calcular',exact:true}).click()
+  await page.getByLabel('Motivo (opcional y confidencial: su gerente no lo ve)').fill('Familia')
+  await page.getByRole('button',{name:'Enviar solicitud',exact:true}).click()
+  await page.waitForURL('**/app/leave/*')
+ }else await h.api('leave.request',employee,{account:s.employee.account,startDate:start,endDate:end,reason:'Familia'})
+ const requests=(await h.api('people/'+s.employee.person,employee)).leave.requests,r=requests.find(r=>r.startDate===start)
+ assert.ok(r)
+ const error=await h.submit('leave.request',employee,{account:s.employee.account,startDate:start,endDate:end},'/app/leave')
+ assert.match(await html(error.pathname+error.search,employee),/coinciden con otro permiso/)
+ await h.api('leave.decide',s.managera.cookie,{request:r.id,decision:'approve'})
+ const mail=messages.find(m=>m.subject==='Willow: hay una actualización disponible'&&m.personalizations.some(p=>p.to.some(t=>t.email==='employee@example.com')))
+ assert.ok(mail,'recipient language applies at the mail edge');assert.match(JSON.stringify(mail),/decisión sobre un permiso/);assert.ok(!JSON.stringify(mail).includes('Familia'))
+ if(page)await capture(page,'/app/leave/'+r.id,'pto')
+ // Native exact-byte signing records the reviewed consent language even after a display switch.
+ const pdf=await PDFDocument.create();pdf.addPage([612,792])
+ const folder=await api('company.folder',{name:'Agreements',audience:{kind:'everyone',id:null}})
+ const source=await api('company.file',{folder:folder.id,title:'Safety agreement',file:file('safety.pdf',await pdf.save())})
+ const category=await api('category.create',{name:'Signed policies',subjectReads:true})
+ const template=await api('signature.template',{source:source.versionId,title:'Safety agreement',category:category.id,signers:['employee'],fields:[{signer:0,kind:'signature',page:1,x:.1,y:.4,width:.7,height:.08}]})
+ const t=(await api('signature-templates')).find(t=>t.id===template.id)
+ await api('signature.template.approve',{template:t.id,digest:t.digest,reviewed:true})
+ const review=await api('signature.preview',{template:t.id,people:[s.employee.person],hr:s.hr.member,expiresAt:Date.now()+86400000})
+ const sent=await api('signature.send',{review:review.id,digest:review.digest,approved:true}),id=sent.requests[0]
+ const detail=await h.api('signature-requests/'+id,employee),bound={request:id,revision:detail.revision,digest:detail.digest}
+ const payload=await h.api('signature.prepare',employee,{...bound,name:'Empleado de prueba'})
+ assert.equal(payload.language,'es-US');assert.match(payload.consent,/Doy mi consentimiento/)
+ if(page){await capture(page,'/app/signatures/'+id,'signature');await page.getByLabel('Nombre para la firma').fill('Empleado de prueba');await page.getByRole('button',{name:'Revisar documento para firmar'}).click();assert.match(await page.locator('main').innerText(),/Doy mi consentimiento/);await page.screenshot({path:join(evidenceDirectory,'locale-consent-390.png'),fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:join(evidenceDirectory,'locale-consent-1440.png'),fullPage:true});await page.setViewportSize({width:390,height:844})}
+ await h.api('language.choose',employee,{language:'en'})
+ await h.api('signature.act',employee,{...bound,payload:payload.id,action:'sign',consent:true})
+ const signed=await h.api('signature-requests/'+id,employee)
+ assert.equal(signed.certificate.language,'es-US');assert.equal(signed.certificate.signers[0].consent,payload.consent)
+ const sealed=await h.raw('/app/files/document/'+signed.sealedVersion,{cookie:employee})
+ assert.equal(createHash('sha256').update(Buffer.from(await sealed.arrayBuffer())).digest('hex'),signed.certificate.sha256)
+ await h.api('language.choose',employee,{language:'es-US'})
+ if(page){await page.goto(h.origin+'/app/clock');await page.getByRole('button',{name:'Registrar entrada',exact:true}).click();await page.waitForURL('**/app/clock?notice=*')}
+ else await h.api('clock.punch',employee,{kind:'in',revision:0})
+ let clock=await h.api('clock',employee);assert.equal(clock.state,'in')
+ await h.api('clock.punch',employee,{kind:'in',revision:0},409)
+ for(const kind of ['break','resume','out']){clock=await h.api('clock',employee);await h.api('clock.punch',employee,{kind,revision:clock.revision})}
+ if(page)await capture(page,'/app/clock','clock')
+ const valuesSpanish=(await h.api('people/'+s.employee.person,employee)).customFields.fields.map(x=>[x.key,x.value])
+ await h.api('language.choose',employee,{language:'en'})
+ const valuesEnglish=(await h.api('people/'+s.employee.person,employee)).customFields.fields.map(x=>[x.key,x.value])
+ assert.deepEqual(valuesEnglish,valuesSpanish)
+ const englishReport=await api('custom-reports/'+report.id)
+ await h.api('language.choose',owner,{language:'es-US'})
+ const localizedReport=await api('custom-reports/'+report.id),spanishReportCsv=await(await h.raw('/app/reports/custom/'+report.id+'.csv',{cookie:owner})).text()
+ assert.ok(spanishReportCsv.includes('Nombre'));assert.ok(!spanishReportCsv.includes('employee@example.com'))
+ assert.deepEqual(localizedReport.result.totals,englishReport.result.totals);assert.deepEqual(localizedReport.result.rows.map(r=>r.cells),englishReport.result.rows.map(r=>r.cells))
+ await h.api('language.choose',owner,{language:'en'})
+ await context?.close()
+ console.log('PASS LOCALE-001 employee: translation → Spanish PTO and private notice → exact consent certificate → clock → invariant values/totals')
+ // Journey 2: invitation identity chooses Spanish, submits EEO and signs; public applicant chooses independently.
+ const packet=await api('preboarding.send',{name:'Nueva Persona',email:'newhire@example.com'}),link=invitations.get('newhire@example.com')
+ assert.ok(link)
+ const portal=async(path,body,status=200)=>{const r=await fetch(h.origin+path,{method:body?'POST':'GET',redirect:'manual',headers:{accept:'application/json',...(body?{'content-type':'application/json',origin:h.origin}:{})},body:body?JSON.stringify(body):undefined});const text=await r.text();assert.equal(r.status,status,text.slice(0,400));return text?JSON.parse(text):null}
+ const path=new URL(link).pathname
+ await portal(path,{localeAction:'choose',language:'es-US'},303)
+ let candidate=await portal(path);assert.equal(candidate.language,'es-US')
+ assert.match(await html(path),/Autoidentificación voluntaria/)
+ await portal(path,{hispanic:'no',races:['asian'],sex:'female'})
+ candidate=await portal(path);assert.equal(candidate.current.hispanic,'no');assert.deepEqual(candidate.current.races,['asian'])
+ await portal(path,{localeAction:'sign',name:'Nueva Persona',consent:true})
+ candidate=await portal(path);assert.equal(candidate.signature.language,'es-US');assert.match(candidate.signature.certificate.consent,/Doy mi consentimiento/)
+ const receipt=await fetch(h.origin+path+'?document=signed');assert.equal(createHash('sha256').update(Buffer.from(await receipt.arrayBuffer())).digest('hex'),candidate.signature.certificate.sha256)
+ const candidateContext=browser?await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:390,height:844}}):null,candidatePage=candidateContext?await candidateContext.newPage():null
+ if(candidatePage){await capture(candidatePage,path,'preboarding');assert.match(await candidatePage.locator('main').innerText(),/Se registró su firma/)}
+ const opening=await api('hiring.opening',{name:'Service associate',stages:['New','Offer','Rejected'],members:[s.hr.member]})
+ await api('career.publish',{opening:opening.id,description:'Help our customers.',active:true})
+ const careers=await api('translations')
+ for(const [field,translated] of [['name','Atención al cliente'],['description','Ayude a nuestros clientes.']])await translate({...careers.sources.find(x=>x.kind==='career'&&x.source===opening.id&&x.field===field),translated})
+ const careerPath='/careers/'+opening.id
+ const choose=await h.raw(careerPath,{form:new URLSearchParams({localeAction:'choose',language:'es-US'})});assert.equal(choose.status,303)
+ const displayCookie=choose.headers.get('set-cookie').split(';')[0]
+ assert.match(await html(careerPath,displayCookie),/Atención al cliente/)
+ const application=await h.raw(careerPath,{cookie:displayCookie,form:new URLSearchParams({opening:opening.id,revision:'1',name:'Solicitante',email:'candidate@example.com'})});assert.equal(application.status,200);assert.match(await application.text(),/Solicitud de empleo enviada/)
+ const candidateLink=invitations.get('candidate@example.com');assert.ok(candidateLink)
+ const candidatePath=new URL(candidateLink).pathname;assert.equal((await portal(candidatePath)).language,'es-US')
+ await portal(candidatePath,{hispanic:'declined',races:['declined'],sex:'declined'})
+ assert.equal((await portal(candidatePath)).current.hispanic,'declined')
+ if(candidatePage){await capture(candidatePage,candidatePath,'candidate-eeo');await candidatePage.context().addCookies([{name:'wl_language',value:'es-US',url:h.origin+'/careers'}]);await capture(candidatePage,careerPath,'careers')}
+ await api('preboarding.withdraw',{packet:packet.id});await portal(path,undefined,404)
+ await portal(path,{localeAction:'choose',language:'en'},404)
+ assert.equal((await h.raw('/api/willow/me')).status,401)
+ await candidateContext?.close()
+ console.log('PASS LOCALE-001 candidate: independent language → EEO → Spanish signed receipt → careers submission and separate EEO → withdrawal')
+} finally {await browser?.close();await h.close()}

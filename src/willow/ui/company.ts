@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 // Company content uses Willow's established cards, forms and download links.
 import type { Bindings } from '../../auth.server'
 import { can, type Actor } from '../actor'
@@ -5,12 +6,12 @@ import { companyHome,companyAdmin } from '../company/views'
 import { companyTeam } from '../company-team'
 import { formatDate,formatInstant } from '../dates'
 import { settings } from '../employer'
-import { area,field,form,h,hidden,page,select,table } from './html'
+import { area,field,form,h,hidden,page,select,table,content } from './html'
 
 export async function companyPanels(env:Bindings,actor:Actor) {
  const [data,team]=await Promise.all([companyHome(env,actor),companyTeam(env,actor)])
  return h`<section class="card"><h2>Company announcements</h2>${can(actor,'people.manage')?h`<p><a href="/app/company">Manage announcements and company files</a></p>`:''}
-${data.announcements.length?data.announcements.map(a=>h`<article><h3>${a.pinned?h`<span class="muted">Pinned · </span>`:''}${a.title}</h3><p>${a.body}</p><p class="muted">From ${formatDate(a.startsOn)}${a.endsOn?` through ${formatDate(a.endsOn)}`:''}</p>${a.ackRequired?(a.acknowledgedAt?h`<p>Read acknowledgment recorded.</p>`:form('company.acknowledge','/app',[hidden('version',a.versionId)],'Acknowledge reading')):''}</article>`):h`<p>No announcements for you today.</p>`}</section>
+${data.announcements.length?data.announcements.map(a=>h`<article><h3>${a.pinned?h`<span class="muted">Pinned · </span>`:''}${content('announcement',a.versionId,'title',a.title)}</h3><p>${content('announcement',a.versionId,'body',a.body)}</p><p class="muted">From ${formatDate(a.startsOn)}${a.endsOn?` through ${formatDate(a.endsOn)}`:''}</p>${a.ackRequired?(a.acknowledgedAt?h`<p>Read acknowledgment recorded.</p>`:form('company.acknowledge','/app',[hidden('version',a.versionId)],'Acknowledge reading')):''}</article>`):h`<p>No announcements for you today.</p>`}</section>
 <section class="card"><h2>Company files</h2>${data.folders.length?data.folders.map(f=>h`<h3>${f.name}</h3>${f.files.length?h`<ul>${f.files.map(file=>h`<li>${file.title}<ul>${file.versions.map(v=>h`<li><a href="/app/company/files/${v.id}">Download ${v.filename} · version ${v.version}</a></li>`)}</ul></li>`)}</ul>`:h`<p>No files in this folder yet.</p>`}`):h`<p>No shared folders for you today.</p>`}</section>
 <section class="card"><h2>People this month</h2><h3>New hires</h3>${team.newHires.length?table(['Person','Start'],team.newHires.map(p=>[h`<a href="/app/people/${p.person}">${p.name}</a>`,formatDate(p.startsOn)])):h`<p>No new hires in this period.</p>`}
 <h3>Upcoming permitted team time off</h3>${team.leave.length?table(['Person','Dates'],team.leave.map(l=>[l.name,`${formatDate(l.startDate)} – ${formatDate(l.endDate)}`])):h`<p>No upcoming absences within your leave access.</p>`}</section>
@@ -20,10 +21,10 @@ ${actor.personId?h`<h3>Your celebration preferences</h3><p>Choose what appears t
 
 export async function companyPage(env:Bindings,actor:Actor,url:URL) {
  const [data,look]=await Promise.all([companyAdmin(env,actor),settings(env)])
- const audiences=[{value:JSON.stringify({kind:'everyone',id:null}),label:'Everyone'},...look.locations.map(l=>({value:JSON.stringify({kind:'location',id:l.id}),label:`Location: ${l.name}`})),...look.departments.map(d=>({value:JSON.stringify({kind:'department',id:d.id}),label:`Department: ${d.name}`}))]
+ const audiences=[{value:JSON.stringify({kind:'everyone',id:null}),label:msg('Everyone')},...look.locations.map(l=>({value:JSON.stringify({kind:'location',id:l.id}),label:`Location: ${l.name}`})),...look.departments.map(d=>({value:JSON.stringify({kind:'department',id:d.id}),label:`Department: ${d.name}`}))]
  const audience=(value?:unknown)=>select('Audience','audience',audiences,JSON.stringify(value??{kind:'everyone',id:null}))
  const announcementFields=(a?:typeof data.announcements[number])=>[...(a?[hidden('id',a.id)]:[]),field('Title','title',{value:a?.title??''}),area('Announcement','body',a?.body??''),field('Starts on (employer time zone)','startsOn',{type:'date',value:a?.startsOn??actor.today}),field('Ends on (inclusive, optional)','endsOn',{type:'date',value:a?.endsOn??'',required:false}),audience(a?.audience),h`<label class="check"><input type="checkbox" name="pinned" value="yes"${a?.pinned?' checked':''}> Pin announcement</label><label class="check"><input type="checkbox" name="ackRequired" value="yes"${a?.ackRequired?' checked':''}> Request read acknowledgment</label>${a?h`<label class="check"><input type="checkbox" name="retired" value="yes"${a.retired?' checked':''}> Withdraw announcement</label>`:''}`]
- return page('Company home',actor,h`<p class="back"><a href="/app">← Home</a></p><h1>Company home</h1><p>Publication follows the employer’s calendar dates. Targeted content and downloads recheck today’s employment location or department.</p>
+ return page(msg('Company home'),actor,h`<p class="back"><a href="/app">← Home</a></p><h1>Company home</h1><p><a href="/app/translations">Employer translations</a></p><p>Publication follows the employer’s calendar dates. Targeted content and downloads recheck today’s employment location or department.</p>
 <section class="card"><h2>Announcements</h2>${data.announcements.map(a=>h`<details><summary>${a.title} · version ${a.version}</summary>${form('company.announce','/app/company',announcementFields(a),'Publish new version')}</details>`)}${data.acknowledgements.length?h`<h3>Read acknowledgments</h3>${table(['Announcement','Member','Read'],data.acknowledgements.map(r=>[data.announcements.flatMap(a=>a.history).find(a=>a.versionId===r.versionId)?.title??'Earlier announcement',r.name,formatInstant(r.at,look.employer?.timezone??'UTC')]))}`:''}<h3>Publish an announcement</h3>${form('company.announce','/app/company',announcementFields(),'Publish announcement')}</section>
 <section class="card"><h2>Shared folders</h2>${data.folders.map(f=>h`<details><summary>${f.name}</summary>${form('company.folder','/app/company',[hidden('id',f.id),field('Folder name','name',{value:f.name}),audience(f.audience),h`<label class="check"><input type="checkbox" name="retired" value="yes"${f.retired?' checked':''}> Withdraw folder</label>`],'Publish folder version')}</details>`)}
 ${form('company.folder','/app/company',[field('Folder name','name'),audience()],'Create shared folder')}

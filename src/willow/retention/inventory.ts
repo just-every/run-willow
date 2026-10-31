@@ -40,6 +40,10 @@ const cls = (key: ClassKey): Kind => ({ class: key })
 const s = (id: string, table: string, label: string, kind: Kind, from: string, extra: Partial<Store> = {}): Store => ({ id, table, label, kind, from: `${table} t WHERE ${from}`, ...extra })
 
 export const STORES: Store[] = [
+  s('display_language','wl_display_languages','Display language preferences','erase',"(t.kind='member' AND t.subject=?2) OR (t.kind='preboarding' AND t.subject IN (SELECT id FROM wl_preboard_packets WHERE linked_person_id=?1))"),
+  s('clock_events','wl_clock_events','Native clock events',cls('payroll'),'t.person_id=?1',{ms:'t.at'}),
+  s('preboard_signatures','wl_preboard_signatures','Preboarding signed receipts',cls('personnel'),'t.packet_id IN (SELECT id FROM wl_preboard_packets WHERE linked_person_id=?1)',{ms:'t.signed_at',blob:'t.size'}),
+
   s('signature_notifications','wl_sign_notifications','Signature notice delivery custody','erase','t.request_id IN (SELECT id FROM wl_sign_requests WHERE person_id=?1)',{ms:'t.created_at'}),
   s('signature_workflows','wl_workflow_signatures','Signature workflow custody','erase',"t.task_id IN (SELECT id FROM wl_case_tasks WHERE case_id IN (SELECT id FROM wl_cases WHERE person_id=?1))",{ms:'t.issued_at'}),
   s('signature_cohorts','wl_sign_cohorts','Signature enrollment and outreach consent','authored',"t.initiator=?2 OR t.hr_member=?2",{ms:'t.created_at'}),
@@ -175,6 +179,7 @@ export const STORES: Store[] = [
 
 // Rows another person's records keep: the person's attribution is replaced by the erasure label.
 export const AUTHORED: [string, string][] = [
+  ['wl_translations','recorded_by'],['wl_career_publications','published_by'],
   ['wl_sign_cohorts','initiator'], ['wl_sign_cohorts','hr_member'], ['wl_sign_payloads','member_id'], ['wl_sign_events','member_id'], ['wl_sign_requests','hr_member'], ['wl_sign_reviews','actor'], ['wl_sign_templates','recorded_by'], ['wl_sign_template_approvals','approved_by'],
   ['wl_okta_accounts','linked_by'], ['wl_okta_reviews','actor'], ['wl_okta_settings','approved_by'],
   ['wl_ai_policy_escalations','resolved_by'],
@@ -212,7 +217,7 @@ const NONE = (reason: string, ...tables: string[]): [string, string][] => tables
 export const OUT_OF_SCOPE = new Map<string, string>([
   ...NONE('Private erasure HMAC key and value-free source tombstones; installation archives preserve the fence', 'wl_retention_import_secret', 'wl_erased_import_keys', 'wl_import_erasure_fences'),
   ...NONE('employer configuration', 'wl_okta_settings', 'wl_ai_handbooks', 'wl_ai_handbook_versions', 'wl_ai_handbook_approvals', 'wl_ai_handbook_inclusions', 'wl_ai_settings', 'wl_employer', 'wl_connections', 'wl_import_door', 'wl_payroll_layout', 'wl_work_policy', 'wl_locations', 'wl_departments', 'wl_divisions', 'wl_legal_entities', 'wl_schedules', 'wl_doc_categories'),
-  ...NONE('policy and template definitions', 'wl_training_courses', 'wl_sign_templates', 'wl_sign_template_approvals', 'wl_policy_versions', 'wl_leave_policies', 'wl_leave_policy_rules', 'wl_template_tasks', 'wl_levels', 'wl_level_permissions', 'wl_level_scope_values', 'wl_level_self_fields', 'wl_level_other_fields', 'wl_level_document_categories', 'wl_level_reports', 'wl_level_builtin_reports', 'wl_level_settings', 'wl_level_job_fields', 'wl_level_compensation_fields', 'wl_level_leave_fields', 'wl_level_performance_fields', 'wl_level_approvals', 'wl_hiring_openings', 'wl_review_cycles', 'wl_company_announcements', 'wl_company_folders', 'wl_company_files'),
+  ...NONE('policy and template definitions', 'wl_translations','wl_career_publications', 'wl_training_courses', 'wl_sign_templates', 'wl_sign_template_approvals', 'wl_policy_versions', 'wl_leave_policies', 'wl_leave_policy_rules', 'wl_template_tasks', 'wl_levels', 'wl_level_permissions', 'wl_level_scope_values', 'wl_level_self_fields', 'wl_level_other_fields', 'wl_level_document_categories', 'wl_level_reports', 'wl_level_builtin_reports', 'wl_level_settings', 'wl_level_job_fields', 'wl_level_compensation_fields', 'wl_level_leave_fields', 'wl_level_performance_fields', 'wl_level_approvals', 'wl_hiring_openings', 'wl_review_cycles', 'wl_company_announcements', 'wl_company_folders', 'wl_company_files'),
   ...NONE('the erasure window: one row inside the journaled erasure batch, never committed', 'wl_erasure_window'),
   ...NONE('restricted custody of records already removed from every live table: owner-read only, purged by rule', 'wl_retained_records'),
   ...NONE('value-free erasure receipts and the post-commit blob work list: counts, labels and content digests only', 'wl_erasure_receipts', 'wl_erasure_blobs'),

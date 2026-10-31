@@ -1,4 +1,5 @@
 import { requireNoAgentCustody } from '../agent-door/custody'
+import { readTargets,moveRows,finishBlobs,type RowTarget } from './erase'
 // DATA-002 for expired or withdrawn preboarding identities, without employee authority.
 import { erasureStatements, invalidateTransfersStatements, redactionStatements } from '@runeditrun/rer/modules/portability/journal'
 import type { Bindings } from '../../auth.server'
@@ -55,7 +56,11 @@ export async function planPreboarding(env: Bindings, actor: Actor, packetId: str
   // Expiry is exclusive for portal authority, but retention uses the expiry day itself.
   const recordDay = [packet.source_on, packet.expires_on, dayOf(zone, Math.max(packet.created_at, packet.identity_created_at,
     packet.expires_at, packet.revoked_at ?? 0, answers.at ?? 0)), answers.day ?? ''].sort().at(-1)!
+  const signature=await one<{n:number;bytes:number}>(env,'SELECT COUNT(*) AS n,COALESCE(SUM(size),0) AS bytes FROM wl_preboard_signatures WHERE packet_id=?',packet.id)
   const definitions = [
+    {id:'preboard_signatures',table:'wl_preboard_signatures',label:'Preboarding signed receipt and certificate',column:'packet_id',subject:packet.id,cls:'personnel' as const,rows:signature!.n,bytes:signature!.bytes},
+    {id:'preboard_language',table:'wl_display_languages',label:'Preboarding display language',column:'subject',subject:packet.id,cls:null,rows:(await one<{n:number}>(env,"SELECT COUNT(*) AS n FROM wl_display_languages WHERE kind='preboarding' AND subject=?",packet.id))!.n},
+
     { id: 'preboard_eeo', table: 'wl_preboard_eeo_answers', label: 'Preboarding self-identification answers', column: 'packet_id', subject: packet.id, cls: 'eeo' as const, rows: answers.n },
     { id: 'preboard_packets', table: 'wl_preboard_packets', label: 'Preboarding invitation metadata', column: 'id', subject: packet.id, cls: null, rows: 1 },
     { id: 'preboard_identities', table: 'wl_preboard_identities', label: 'Preboarding identity', column: 'id', subject: packet.identity_id, cls: 'personnel' as const, rows: 1 },
@@ -65,7 +70,7 @@ export async function planPreboarding(env: Bindings, actor: Actor, packetId: str
     const expiry = cls ? classExpiry(cls, { hire: firstDay, end: recordDay, record: recordDay }, contractor) : recordDay
     const disposition: Item['disposition'] = applicable.length ? 'held' : cls && expiry > actor.today ? 'retained' : 'erased'
     const item: Item = { id: definition.id, table: definition.table, label: definition.label, class: cls, rule: cls ? CLASSES[cls].citation : null,
-      expiry: cls || applicable.length ? expiry : null, hold: applicable[0]?.id ?? null, disposition, rows: definition.rows, blobs: 0, bytes: 0 }
+      expiry: cls || applicable.length ? expiry : null, hold: applicable[0]?.id ?? null, disposition, rows: definition.rows, blobs: definition.table==='wl_preboard_signatures'?definition.rows:0, bytes:'bytes' in definition?definition.bytes??0:0 }
     return { ...definition, item, holds: applicable }
   })
   const items = stores.filter(store => store.item.rows).map(store => store.item)
@@ -86,7 +91,7 @@ export async function planPreboarding(env: Bindings, actor: Actor, packetId: str
     adopted: adopted ? { version: adopted.table_version, at: adopted.adopted_at } : null, states: [] as string[],
     eligible: !blockers.some(blocker => ['hired_preboarding', 'active_preboarding'].includes(blocker.kind)), confirmable: blockers.length === 0,
     blockers, request, examined: stores.length,
-    summary: { rows: items.reduce((sum, item) => sum + item.rows, 0), blobs: 0, bytes: 0, erased: total('erased'), anonymized: 0, redacted: 0, retained: total('retained'), held: total('held') },
+    summary: { rows: items.reduce((sum, item) => sum + item.rows, 0), blobs:items.reduce((sum,item)=>sum+item.blobs,0), bytes:items.reduce((sum,item)=>sum+item.bytes,0), erased: total('erased'), anonymized: 0, redacted: 0, retained: total('retained'), held: total('held') },
     items, copies, digest,
   }
   return { sequence, view, packet, stores }
@@ -112,6 +117,8 @@ export async function confirmPreboarding(env: Bindings, actor: Actor, input: Inp
   const label = `Former person ${randomLabel}`, stub = newId(), erasure = newId(), at = now()
   const scrub = preboardRedactions(env, packet, label)
   const counts = view.items.map(item => ({ store: item.id, table: item.table, disposition: item.disposition, class: item.class, expiry: item.expiry, hold: item.hold, rows: item.rows }))
+  const targets:RowTarget[]=plan.stores.map(store=>({id:store.id,table:store.table,item:store.item,...store.table==='wl_preboard_signatures'?{blob:'t.size'}:{},from:store.table+" t WHERE t."+store.column+"='"+store.subject.replaceAll("'","''")+"'"+(store.table==='wl_display_languages'?" AND t.kind='preboarding'":"")}))
+  const {ids,blobs}=await readTargets(env,targets,[]),blobList=[...blobs]
   await commit(env, [
     guard(env, 'preview_stale', `${BUSINESS_SEQUENCE} = ?`, plan.sequence),
     guard(env, 'preview_stale', `EXISTS (SELECT 1 FROM wl_preboard_packets WHERE id = ? AND revision = ? AND linked_person_id IS NULL
@@ -121,12 +128,13 @@ export async function confirmPreboarding(env: Bindings, actor: Actor, input: Inp
     guard(env, 'stale', `EXISTS (SELECT 1 FROM wl_members m JOIN oa_operators o ON lower(o.email) = m.email
       WHERE m.id = ? AND m.status = 'active' AND o.status = 'active' AND o.role = 'owner')`, actor.id),
     stmt(env, 'INSERT INTO wl_erasure_window (token) VALUES (?)', erasure),
-    ...await movePreboarding(env, plan.stores, erasure, at),
+    ...await moveRows(env, targets, ids, erasure, at),
     stmt(env, 'UPDATE wl_erasure_requests SET preboarding_id = ? WHERE preboarding_id = ?', stub, packetId),
     stmt(env, `INSERT INTO wl_erasure_receipts
       (id, request_id, label, source, received_on, approved_by, approved_at, digest, counts_json, blobs_total, blobs_bytes, scrubbed_json, copies_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ${scrub.countsSql}, ?)`,
-    erasure, request.id, label, request.source, request.received_on, actor.id, at, digest, JSON.stringify(counts), JSON.stringify(view.copies)),
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${scrub.countsSql}, ?)`,
+    erasure, request.id, label, request.source, request.received_on, actor.id, at, digest, JSON.stringify(counts), blobList.length,blobList.reduce((sum,[,size])=>sum+size,0),JSON.stringify(view.copies)),
+    ...blobList.map(([sha,size])=>stmt(env,'INSERT INTO wl_erasure_blobs(erasure_id,sha256,size) VALUES(?,?,?)',erasure,sha,size)),
     ...scrub.statements,
     ...view.copies.providers.map(provider => stmt(env, 'INSERT INTO wl_provider_requests (id, erasure_id, provider, copies, assignee, due_date, opened_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
       newId(), erasure, provider.provider, provider.copies, actor.id, addDays(actor.today, 30), at)),
@@ -136,5 +144,6 @@ export async function confirmPreboarding(env: Bindings, actor: Actor, input: Inp
     ...await redactionStatements(env.DB), ...await invalidateTransfersStatements(env.DB),
     stmt(env, 'DELETE FROM wl_erasure_window'),
   ], { actor: actor.id, action: 'erasure.execute', subject: erasure, detail: { digest, rows: view.summary.rows } })
+  await finishBlobs(env,erasure).catch(()=>0)
   return { id: request.id, status: 'confirmed', receipt: erasure, label, digest }
 }

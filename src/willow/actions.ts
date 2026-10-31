@@ -1,3 +1,6 @@
+import { publishCareer } from './locale/careers'
+import { clockPunch } from './clock'
+import { chooseLanguage,writeTranslation } from './locale/store'
 import { savePerformanceEntry } from './performance/entries'
 import { auditedSigning } from './sign/action-audit'
 import { prepareSignature } from './sign/payloads'
@@ -80,6 +83,7 @@ import { approveWorkPolicy, scheduleWork } from './work'
 import { runWorkNow } from './work-scheduler'
 
 export const actions: Record<string, Handler> = {
+  'career.publish':publishCareer,'clock.punch':clockPunch,'language.choose':chooseLanguage,'translation.write':writeTranslation,
   'okta.configure':configureOkta, 'okta.link':linkOktaAccount, 'okta.preview':previewOkta, 'okta.apply':applyOkta, 'okta.observe':observeOkta, 'okta.exception.close':closeOktaException,
   'workflow.step.approve': workflowStepApprove, 'workflow.preview': previewAiWorkflow, 'workflow.draft': createAiWorkflowDraft, 'workflow.publish': publishAiWorkflow,
   'ai.handbook.write':writeHandbook, 'ai.handbook.approve':approveHandbook, 'ai.handbook.include':includeHandbook, 'ai.handbook.withdraw':withdrawHandbook,

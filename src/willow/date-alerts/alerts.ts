@@ -1,3 +1,4 @@
+import { sendFixedNotice } from '../locale/notices'
 // PEOPLE-004 date alerts. HR (people.manage) names a date source, lead times
 // in days, recipients by role (HR = people.manage holders, the person's
 // manager in force on the day it fires, the employee, or a named member) and
@@ -109,7 +110,7 @@ async function email(env: Bindings, fireId: string, member: Actor) {
     else try {
       // Fixed content and authenticated link only; never the field, its value, the person or the date.
       const path = env.AUTH_ORIGIN + '/app/dates'
-      const result = await sender.send({ deliveryId: `${fireId}:${member.id}`, from: env.MAIL_FROM, to: [member.email], subject: 'Willow: an employee date needs attention', html: `<p>An employee date you follow is coming up in Willow.</p><p><a href="${esc(path)}">Sign in to Willow</a></p>`, text: `An employee date you follow is coming up in Willow.\n\nSign in to Willow: ${path}\n`, headers: { 'Auto-Submitted': 'auto-generated' } })
+      const result = await sendFixedNotice(env,'member',member.id,sender,{ deliveryId: `${fireId}:${member.id}`, from: env.MAIL_FROM, to: [member.email], subject: 'Willow: an employee date needs attention', html: `<p>An employee date you follow is coming up in Willow.</p><p><a href="${esc(path)}">Sign in to Willow</a></p>`, text: `An employee date you follow is coming up in Willow.\n\nSign in to Willow: ${path}\n`, headers: { 'Auto-Submitted': 'auto-generated' } })
       if (result?.status === 'accepted' || (result?.status === 'development' && env.AUTH_LOCAL === 'true')) { status = result.status; failure = null }
       else if (result?.status === 'uncertain') { status = 'uncertain'; failure = 'mail_outcome_uncertain' }
       else { status = 'refused'; failure = 'mail_refused' }

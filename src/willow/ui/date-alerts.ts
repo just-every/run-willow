@@ -1,3 +1,4 @@
+import { msg } from '../locale/runtime'
 // PEOPLE-004 page: upcoming dates in the reader's scope, their own alerts and
 // review tasks, and HR's alert settings.
 import type { Bindings } from '../../auth.server'
@@ -21,5 +22,5 @@ ${data.settings.alerts.length ? table(['Alert', 'Lead times', 'Recipients', 'Sta
 <section class="card"><h2>Coming up</h2>${data.upcoming.length ? table(['Date', 'What', 'Person', 'Owner'], data.upcoming.map(u => [formatDate(u.date), u.label, h`<a href="/app/people/${u.person.id}">${u.person.name}</a>`, u.owner])) : h`<p>Nothing coming up in your scope.</p>`}</section>
 ${data.tasks.length ? h`<section class="card"><h2>Review tasks</h2>${table(['Due', 'Task', 'Person', ''], data.tasks.map(t => [formatDate(t.dueDate), t.title, t.person.name, form('dateAlert.task', '/app/dates', [hidden('task', t.id), area('Outcome', 'evidence')], 'Mark done', { secondary: true })]))}</section>` : ''}
 <section class="card"><h2>Your alerts</h2>${data.alerts.length ? h`<ul>${data.alerts.map(a => h`<li>${a.label} for ${a.person.name}: ${formatDate(a.date)} (${a.leadDays} days ahead)</li>`)}</ul>` : h`<p>No alerts for you yet.</p>`}</section>${settings}`
-  return page('Upcoming dates', actor, body, { current: '/app/dates', url })
+  return page(msg('Upcoming dates'), actor, body, { current: '/app/dates', url })
 }

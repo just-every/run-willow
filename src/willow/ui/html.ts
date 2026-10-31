@@ -1,3 +1,4 @@
+import { languages, locale, localeContext, literalParts, msg, errorMessage, translated } from '../locale/runtime'
 import { canCredentialAdmin } from '../actor'
 import { holdsSetting } from '../levels/settings'
 // Page frame and small form helpers. Every value is escaped; pages need no script.
@@ -12,8 +13,9 @@ export const esc = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, c
 export type Html = { html: string }
 export const raw = (html: string): Html => ({ html })
 export function h(strings: TemplateStringsArray, ...values: unknown[]): Html {
-  let out = strings[0]
-  values.forEach((value, index) => { out += render(value) + strings[index + 1] })
+  const parts=literalParts(strings)
+  let out = parts[0]
+  values.forEach((value, index) => { out += render(value) + parts[index + 1] })
   return { html: out }
 }
 function render(value: unknown): string {
@@ -30,6 +32,8 @@ const NAV: NavItem[][] = [[
   { href: '/app/progress', label: 'In progress', icon: 'checklist', show: () => true },
   { href: '/app/people', label: 'People', icon: 'people', show: () => true },
   { href: '/app/signatures', label: 'Signatures', icon: 'checklist', show: () => true },
+  { href:'/app/clock',label:'Time clock',icon:'checklist',show:actor=>!!actor.personId },
+  { href:'/app/official-forms',label:'Official forms',icon:'document',show:()=>true },
   { href: '/app/leave', label: 'Leave', icon: 'calendar', show: () => true },
   { href: '/app/people?view=organization', label: 'Organization chart', icon: 'org', show: () => true },
   { href: '/app/payroll', label: 'Payroll', icon: 'wallet', show: actor => can(actor, 'payroll.handoff') && can(actor, 'pay.read') },
@@ -93,15 +97,18 @@ const STYLES = ['/fonts/fonts.css', '/rer-theme.css', '/willow-tokens.css', '/wi
 
 // `wide` lets a page use the whole work area (In progress). Without the nav (first run) the shell is bare.
 export function page(title: string, actor: Actor | null, body: Html, { current = '', url, status = 200, showNav = true, wide = false, signing = false }: { current?: string; url?: URL; status?: number; showNav?: boolean; wide?: boolean; signing?: boolean } = {}): Response {
+  const language=locale()
+  const choice=localeContext()
+  const languageForm=choice ? h`<form class="language-choice" method="post" action="${choice.invitation?choice.path:'/app/do/language.choose'}">${choice.invitation?hidden('localeAction','choose'):hidden('returnTo',url?url.pathname+url.search:'/app')}${select('Display language','language',languages,language)}<button type="submit">Save language</button></form>` : ''
   const notice = url?.searchParams.get('notice'), error = url?.searchParams.get('error')
   const nav = actor && showNav ? h`<input type="checkbox" id="menu-toggle" class="menu-toggle"><label for="menu-toggle" class="menu-button">${icon('menu')}Menu</label><nav aria-label="Main">${NAV.map((group, index) => {
     const items = group.filter(item => item.show(actor))
-    return items.length ? h`<ul class="${NAV_CLASSES[index]}">${items.map(item => h`<li><a href="${item.href}"${item.href === current ? raw(' aria-current="page"') : ''}>${icon(item.icon)}${item.label}</a></li>`)}</ul>` : ''
+    return items.length ? h`<ul class="${NAV_CLASSES[index]}">${items.map(item => h`<li><a href="${item.href}"${item.href === current ? raw(' aria-current="page"') : ''}>${icon(item.icon)}${msg(item.label)}</a></li>`)}</ul>` : ''
   })}</nav>` : ''
-  const top = actor && showNav ? h`<header class="topbar"><form class="find" method="get" action="/app/people" role="search">${icon('search')}<input type="search" name="q" placeholder="Find a person" aria-label="Find a person"></form><a class="bell" href="/app/tasks" aria-label="Open your task list" aria-describedby="tasks-tooltip">${icon('bell')}<span class="control-tooltip" id="tasks-tooltip" role="tooltip">Your tasks</span></a><div class="who">${avatar(actor.name)}<span>${actor.name}<small>${roleOf(actor)}</small></span></div></header>` : ''
-  const document = h`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · ${branding.name}</title>${(signing?[...STYLES,'/willow-signatures.css']:STYLES).map(href => h`<link rel="stylesheet" href="${href}">`)}<link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" type="image/svg+xml" href="/brand/favicon-32.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png"></head><body>
+  const top = actor && showNav ? h`<header class="topbar"><form class="find" method="get" action="/app/people" role="search">${icon('search')}<input type="search" name="q" placeholder="Find a person" aria-label="Find a person"></form><a class="bell" href="/app/tasks" aria-label="Open your task list" aria-describedby="tasks-tooltip">${icon('bell')}<span class="control-tooltip" id="tasks-tooltip" role="tooltip">Your tasks</span></a><div class="who">${avatar(actor.name)}<span>${actor.name}<small>${msg(roleOf(actor))}</small></span></div></header>` : ''
+  const document = h`<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · ${branding.name}</title>${(signing?[...STYLES,'/willow-signatures.css']:STYLES).map(href => h`<link rel="stylesheet" href="${href}">`)}<link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" type="image/svg+xml" href="/brand/favicon-32.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png"></head><body>
 <div class="shell${actor && showNav ? '' : ' bare'}"><aside class="rail"><a class="brand" href="/app"><img src="/brand/mark.svg" alt="" width="21" height="38"><span data-rer-name>${branding.name}</span></a>${nav}</aside>
-<div class="work">${top}<main${signing?raw(' data-signing-surface'):''}${wide ? raw(' class="wide"') : ''}>${notice ? h`<p class="flash" role="status">${notice}</p>` : ''}${error ? h`<p class="flash error" role="alert">That did not work: ${describeError(error)}</p>` : ''}${body}</main></div></div></body></html>`
+<div class="work">${top}${languageForm}<main${signing?raw(' data-signing-surface'):''}${wide ? raw(' class="wide"') : ''}>${notice ? h`<p class="flash" role="status">${msg(notice)}</p>` : ''}${error ? h`<p class="flash error" role="alert">That did not work: ${describeError(error)}</p>` : ''}${body}</main></div></div></body></html>`
   return new Response(document.html, { status, headers })
 }
 
@@ -124,14 +131,14 @@ const ERRORS: Record<string, string> = {
   not_your_task: 'this task belongs to someone else.',
   not_your_decision: 'this decision belongs to someone else.',
 }
-export const describeError = (code: string) => Object.hasOwn(ERRORS, code) ? ERRORS[code] : code.replace(/_/g, ' ') + '.'
+export const describeError = (code: string) => locale()!=='en' ? errorMessage(code) : Object.hasOwn(ERRORS, code) ? ERRORS[code] : errorMessage(code)
 
 export const hidden = (name: string, value: unknown) => h`<input type="hidden" name="${name}" value="${value}">`
 
 /** A POST form to the shared action door; returnTo may contain {id} for the created record. */
 // `layout` names a field arrangement in willow-layouts.css: columns, row-form, days or tasks.
 export function form(action: string, returnTo: string, fields: unknown, submit: string, { multipart = false, secondary = false, layout = '' } = {}) {
-  return h`<form method="post" action="/app/do/${action}"${layout ? h` class="${layout}"` : ''}${multipart ? raw(' enctype="multipart/form-data"') : ''}>${hidden('returnTo', returnTo)}${fields}<button type="submit"${secondary ? raw(' class="secondary"') : ''}>${submit}</button></form>`
+  return h`<form method="post" action="/app/do/${action}"${layout ? h` class="${layout}"` : ''}${multipart ? raw(' enctype="multipart/form-data"') : ''}>${hidden('returnTo', returnTo)}${fields}<button type="submit"${secondary ? raw(' class="secondary"') : ''}>${msg(submit)}</button></form>`
 }
 
 // Several forms share a page, so every control gets its own id.
@@ -140,31 +147,31 @@ const uid = (name: string) => `f-${name}-${(sequence = (sequence + 1) % 1_000_00
 
 export function field(label: string, name: string, { type = 'text', value = '', required = true, hint = '' }: { type?: string; value?: unknown; required?: boolean; hint?: string } = {}) {
   const id = uid(name)
-  return h`<div class="field"><label for="${id}">${label}</label>${hint ? h`<p class="hint" id="${id}-hint">${hint}</p>` : ''}<input id="${id}" type="${type}" name="${name}" value="${value}"${required ? raw(' required') : ''}${hint ? raw(` aria-describedby="${esc(id)}-hint"`) : ''}></div>`
+  return h`<div class="field"><label for="${id}">${msg(label)}</label>${hint ? h`<p class="hint" id="${id}-hint">${msg(hint)}</p>` : ''}<input id="${id}" type="${type}" name="${name}" value="${value}"${required ? raw(' required') : ''}${hint ? raw(` aria-describedby="${esc(id)}-hint"`) : ''}></div>`
 }
 
 export function area(label: string, name: string, value = '', required = true) {
   const id = uid(name)
-  return h`<div class="field"><label for="${id}">${label}</label><textarea id="${id}" name="${name}"${required ? raw(' required') : ''}>${value}</textarea></div>`
+  return h`<div class="field"><label for="${id}">${msg(label)}</label><textarea id="${id}" name="${name}"${required ? raw(' required') : ''}>${value}</textarea></div>`
 }
 
 export function select(label: string, name: string, options: { value: string; label: string }[], selected = '', { required = true, blank = '' } = {}) {
   const id = uid(name)
-  return h`<div class="field"><label for="${id}">${label}</label><select id="${id}" name="${name}"${required ? raw(' required') : ''}>${blank ? h`<option value="">${blank}</option>` : ''}${options.map(option => h`<option value="${option.value}"${option.value === selected ? raw(' selected') : ''}>${option.label}</option>`)}</select></div>`
+  return h`<div class="field"><label for="${id}">${msg(label)}</label><select id="${id}" name="${name}"${required ? raw(' required') : ''}>${blank ? h`<option value="">${msg(blank)}</option>` : ''}${options.map(option => h`<option value="${option.value}"${option.value === selected ? raw(' selected') : ''}>${option.label}</option>`)}</select></div>`
 }
 
 export function fileField(label: string, name: string, { required = false, accept = '' } = {}) {
   const id = uid(name)
-  return h`<div class="field"><label for="${id}">${label}</label><input id="${id}" type="file" name="${name}"${accept ? h` accept="${accept}"` : ''}${required ? raw(' required') : ''}></div>`
+  return h`<div class="field"><label for="${id}">${msg(label)}</label><input id="${id}" type="file" name="${name}"${accept ? h` accept="${accept}"` : ''}${required ? raw(' required') : ''}></div>`
 }
 
 export const checks = (legend: string, name: string, options: { value: string; label: string }[], selected: string[] = []) =>
-  h`<fieldset><legend>${legend}</legend>${options.map(option => h`<label class="check"><input type="checkbox" name="${name}" value="${option.value}"${selected.includes(option.value) ? raw(' checked') : ''}> ${option.label}</label>`)}</fieldset>`
+  h`<fieldset><legend>${msg(legend)}</legend>${options.map(option => h`<label class="check"><input type="checkbox" name="${name}" value="${option.value}"${selected.includes(option.value) ? raw(' checked') : ''}> ${option.label}</label>`)}</fieldset>`
 
 export const when = (instant: number | null | undefined, zone: string) => instant ? formatInstant(instant, zone) : '—'
 
 // On a phone each row stacks as label and value pairs; data-label carries the column heading.
-export const table = (headers: string[], rows: unknown[][]) => h`<div class="table-wrap"><table><thead><tr>${headers.map(header => h`<th scope="col">${header}</th>`)}</tr></thead><tbody>${rows.map(row => h`<tr>${row.map((cell, index) => h`<td${headers[index] ? h` data-label="${headers[index]}"` : ''}>${cell}</td>`)}</tr>`)}</tbody></table></div>`
+export const table = (headers: string[], rows: unknown[][]) => h`<div class="table-wrap"><table><thead><tr>${headers.map(header => h`<th scope="col">${msg(header)}</th>`)}</tr></thead><tbody>${rows.map(row => h`<tr>${row.map((cell, index) => h`<td${headers[index] ? h` data-label="${msg(headers[index])}"` : ''}>${cell}</td>`)}</tr>`)}</tbody></table></div>`
 
 // One mapping from a tag's words to its chip tone; anything not listed stays quiet.
 const TONES: Record<string, 'done' | 'wait' | 'alert'> = {
@@ -179,7 +186,7 @@ const toneOf = (text: string) => {
 /** A status chip, toned by its words and shown in sentence case ("overdue" -> "Overdue"). */
 // Stored statuses keep their spelling; people read US English.
 const US_LABELS: Record<string, string> = { cancelled: 'canceled' }
-export const tag = (text: unknown) => { const tone = toneOf(String(text ?? '')); return h`<span class="tag${tone ? ` tone-${tone}` : ''}">${sentence(Object.hasOwn(US_LABELS, String(text)) ? US_LABELS[String(text)] : String(text ?? ''))}</span>` }
+export const tag = (text: unknown) => { const tone = toneOf(String(text ?? '')); return h`<span class="tag${tone ? ` tone-${tone}` : ''}">${msg(sentence(Object.hasOwn(US_LABELS, String(text)) ? US_LABELS[String(text)] : String(text ?? '')))}</span>` }
 
 /** An initials disc beside a person's name (never part of a link's name), tinted by the name. */
 export const avatar = (name: string) => {
@@ -189,3 +196,13 @@ export const avatar = (name: string) => {
 
 /** A person's name with its initials disc; the link (when given) is the name alone. */
 export const person = (name: string, href?: string) => h`<span class="person">${avatar(name)}${href ? h`<a href="${href}">${name}</a>` : name}</span>`
+
+/** Employer-authored text is translated only with an exact source match. */
+export function content(kind:string,source:string,field:string,original:string):Html {
+ const value=translated(kind,source,field,original)
+ return value.untranslated?h`<span lang="en">${value.text} <small class="muted">(${msg('Untranslated')})</small></span>`:h`${value.text}`
+}
+export function contentLabel(kind:string,source:string,field:string,original:string):string {
+ const value=translated(kind,source,field,original)
+ return '\u2060'+value.text+(value.untranslated?' ('+msg('Untranslated')+')':'')
+}
