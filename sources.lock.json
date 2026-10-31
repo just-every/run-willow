@@ -5530,7 +5530,7 @@
       "executable": false
     },
     "src/willow/ui/self-service.ts": {
-      "sha256": "0a3d076a5eb70348b851fb5c7da8364064660b2294f9d381b609f74c6129fcd5",
+      "sha256": "a7e5206fc7dfccf243e4ac4a2a6aea98e6e7beb9c134bc28b9d625737e60a1bc",
       "executable": false
     },
     "src/willow/ui/settings-areas.ts": {
