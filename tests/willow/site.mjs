@@ -20,7 +20,8 @@ const run = site('run.html')
 const repository = pkg.repository.url.replace('https://github.com/', '')
 const commands = [...run.matchAll(/<code>([\s\S]*?)<\/code>/g)].map(([, html]) => html.replace(/<[^>]+>/g, ''))
 assert.ok(commands.includes(`npx -y @runeditrun/rer dev ${repository}`), 'the Run page shows the whole public launch command')
-assert.ok(run.includes(`data-copy="rer dev ${repository}"`), 'Copy keeps the repository launch command intact')
+const copied = [...run.matchAll(/data-copy="([^"]+)"/g)].map(([, command]) => command.replaceAll('&amp;', '&'))
+assert.ok(copied.some(command => commands.includes(command) && command.endsWith(` dev ${repository}`)), 'Copy retains the displayed complete repository launch command')
 
 const index = hrefs(site('docs.html'))
 for (const page of manifest.sections.flatMap(section => section.pages)) {

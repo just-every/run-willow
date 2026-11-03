@@ -1,3 +1,4 @@
+import { expireReplayCalls } from './modules/agent-door/index.ts'
 import { runWebhookScheduler } from './willow/webhooks'
 import { runPurgeScheduler } from './willow/retention/purge'
 import { runLeaveScheduler } from './willow/leave-policy'
@@ -35,6 +36,7 @@ api.get('/health', (context) => context.json({ status: 'ok', ...deploymentHealth
 
 export default withDemo({
   async scheduled(event, env) {
+    await expireReplayCalls({options:{db:env.DB},now:()=>event.scheduledTime})
     await runLeaveScheduler(runtimeBindings(env), event.scheduledTime)
     await runReportScheduler(runtimeBindings(env), event.scheduledTime)
     await runWorkScheduler(runtimeBindings(env), event.scheduledTime)

@@ -1,6 +1,6 @@
 import { readFile, realpath, stat } from 'node:fs/promises';
 import { dirname, extname, isAbsolute, relative, resolve, sep } from 'node:path';
-import { parse } from '../../../edition-authoring/vendor/babel-parser/babel-parser/index.mjs';
+import { parse } from '../../../../scripts/edition-authoring/vendor/babel-parser/babel-parser/index.mjs';
 
 export class NetworkAdapterError extends Error {}
 const invalid = message => new NetworkAdapterError(`Agent conformance network: ${message}`);

@@ -1,14 +1,14 @@
 import type { RunData } from '../base/run-site'
 import pkg from '../../package.json'
+import { runPricing } from '../base/run-pricing'
 
 /** Every string and command the run site's Run page (run-willow.com/run) shows. */
 export const run: RunData = {
   name: 'Willow',
   repository: pkg.repository.url,
   clone: `npx -y @runeditrun/rer dev ${pkg.repository.url.replace('https://github.com/', '')}`,
-  folder: 'run-willow',
-  requirements: 'Needs Node 22 or later and pnpm 10.12.4, on macOS, Linux or Windows with WSL2.',
+  paths: { product: null },
+  pricing: runPricing,
   licence: 'MIT',
   docs: true,
-  hosted: [],
 }

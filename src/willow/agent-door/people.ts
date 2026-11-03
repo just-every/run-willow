@@ -28,6 +28,7 @@ export function willowPeople(env: Bindings): PeopleAdapter {
   return member?{id:member.business_id,role:member.business_role==='admin'?'editor':null}:null
  }
  return {
+  businessStopped:async () => !!(await one<{stopped:number}>(env,'SELECT stopped FROM bs_settings WHERE singleton=1'))?.stopped,
   businessRole:person=>env.RER_OWNER_CLAIM_PUBLIC_KEYS?policyRoles.get(person.id)??null:person.role==='owner'?'owner':null,
   async sponsor({sub}) {
    const owner=await one<{operator_id:string}>(env,`SELECT b.operator_id FROM wl_agent_installation_owner b JOIN bs_settings s ON s.singleton=1 AND s.owner_id=? AND s.stopped=0`,sub)
