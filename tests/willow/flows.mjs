@@ -398,8 +398,10 @@ try {
     assert.ok((await h.api('people', cookie.hana)).some(person => person.id === approved.receipt.result.person))
     await h.api('proposal.decide', cookie.hana, { proposal: proposal.id, decision: 'approve' }, 409)
     // A plan prepared against a record that has since changed is refused.
-    const mover = await h.api('proposal.create', cookie.hana, { kind: 'mover', summary: 'Move Sam to People and Payroll', agent: 'owner agent', plan: { period: ids.samPeriod, effectiveFrom: addDays(today, 60), reason: 'Team change', departmentId: ids.people } })
-    assert.ok((await h.api(`proposals/${mover.id}`, cookie.hana)).changes.some(change => change.field === 'Department' && change.from === 'Operations' && change.to === 'People and Payroll'))
+    const mover = await h.api('proposal.create', cookie.owner, { kind: 'mover', summary: 'Move Sam to People and Payroll', agent: 'owner agent', plan: { period: ids.samPeriod, effectiveFrom: addDays(today, 60), reason: 'Team change', departmentId: ids.people, payAmount: '98000' } })
+    const hrProposal = await h.api(`proposals/${mover.id}`, cookie.hana)
+    assert.ok(hrProposal.changes.some(change => change.field === 'Department' && change.from === 'Operations' && change.to === 'People and Payroll'))
+    assert.equal(hrProposal.changes.find(change => change.field === 'Pay').from, null, 'A pay-blind proposal reviewer never receives old compensation')
     await h.api('period.payroll', cookie.hana, { period: ids.samPeriod, payrollId: 'PAY-sam-2' })
     assert.equal((await h.api('proposal.decide', cookie.hana, { proposal: mover.id, decision: 'approve' }, 409)).error, 'proposal_stale')
     ids.proposals = [proposal.id, mover.id]
