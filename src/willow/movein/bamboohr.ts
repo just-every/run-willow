@@ -390,7 +390,7 @@ function importContext(env: Bindings, actor: Actor): D1ImportContext {
 }
 
 /** Every imported entity that has since been edited or built on: undo is refused until each is reversed in Willow. */
-export async function undoBlockers(env: Bindings, jobId: string) {
+export async function undoBlockers(env: Bindings, jobId: string, actor: Actor | null) {
   const rows = await all(env, 'SELECT target_kind, target_id, record_json FROM ik_provenance WHERE job_id = ? AND reversed = 0', jobId)
   const blockers: { kind: string; target: string; reason: string; label?: string; href?: string }[] = []
   for (const row of rows) {
@@ -399,7 +399,7 @@ export async function undoBlockers(env: Bindings, jobId: string) {
     const reason = !current ? 'removed since import' : 'dependents' in current.value ? `${current.value.dependents} later record(s) depend on it`
       : current.revision !== recorded.appliedRevision || sha256(canonicalJson(current.value as Json)) !== recorded.valueHash ? 'edited since import' : null
     if (reason) {
-      const {permanentReason,...label} = await undoTargetLabel(env,row.target_kind,row.target_id)
+      const {permanentReason,...label} = await undoTargetLabel(env,row.target_kind,row.target_id,actor)
       blockers.push({ kind: row.target_kind, target: row.target_id, reason: permanentReason ?? reason, ...label })
     }
   }
@@ -410,7 +410,7 @@ export async function undoLegacyImport(env: Bindings, actor: Actor, job: string)
   insist(actor.owner, 'owner_required', 403)
   const prior=await one<{principal_id:string;state:string}>(env, "SELECT principal_id,state FROM ik_jobs WHERE id = ? AND namespace = 'bamboohr'", job)
   insist(prior, 'legacy_import_not_found', 404)
-  const blockers = await undoBlockers(env, job)
+  const blockers = await undoBlockers(env, job, actor)
   insist(!blockers.length, 'undo_blocked', 409, { blockers })
   const context=importContext(env,actor)
   const reverse=['queued','applying','failed','rolling_back','rolled_back'].includes(prior.state)?rollbackD1Import:undoD1Import
@@ -429,11 +429,11 @@ export async function importJobs(env: Bindings, actor: Actor) {
      ORDER BY a.at DESC`, destination, namespace, mappingVersion)
   const result: {id:string;planId?:string;fingerprint?:string;caption?:string;appliedAt:number;state:string;counts:any;effects:number;blockers:Awaited<ReturnType<typeof undoBlockers>>}[] = []
   for (const job of jobs) {
-    result.push({ id: job.id, appliedAt: job.at, state: job.state, counts: JSON.parse(job.detail).counts, effects: job.total, blockers: job.state === 'completed' ? await undoBlockers(env, job.id) : [] })
+    result.push({ id: job.id, appliedAt: job.at, state: job.state, counts: JSON.parse(job.detail).counts, effects: job.total, blockers: job.state === 'completed' ? await undoBlockers(env, job.id, actor) : [] })
   }
   const totals=new Map((await all<{id:string;total:number}>(env,'SELECT id,total FROM ik_jobs')).map(row=>[row.id,row.total]))
   if (actor.owner) for (const item of await doorHistory(env, actor)) {
-    const blockers = item.state === 'completed' ? await undoBlockers(env, item.jobId) : []
+    const blockers = item.state === 'completed' ? await undoBlockers(env, item.jobId, actor) : []
     const fence = await one<{ receipt_id: string }>(env, 'SELECT receipt_id FROM wl_import_erasure_fences WHERE job_id=?', item.jobId)
     if (fence) blockers.push({ kind: 'erasure', target: fence.receipt_id, reason: `Import custody was withdrawn by erasure receipt ${fence.receipt_id}` })
     result.push({

@@ -5514,15 +5514,15 @@
       "executable": false
     },
     "src/willow/movein/bamboohr.ts": {
-      "sha256": "8fddde06ba422412b8ccc11d4f1db60fca1c84b76bef440b9c3c682151fca4fe",
+      "sha256": "9e1fc52676ae4e478757ba58986f60f21c3b7b8dfc3d54de7b36a859c477998d",
       "executable": false
     },
     "src/willow/movein/blocker-labels.ts": {
-      "sha256": "155a4950b8babb1b77131e3713933953451b92d7b58b301a98e5abed21ac5266",
+      "sha256": "a7d5fb1cfe3247899988dcd583398d6b2a8f0f75f1f4810d8f3a7655460a6d23",
       "executable": false
     },
     "src/willow/movein/door.ts": {
-      "sha256": "f84a496290262d472cf6a7707774d86469a3583ac8f2471dea86f5a365d09b91",
+      "sha256": "5ed34f33b323d138caaa000995552a9d0e2e303eb96795392d1cb592e0599032",
       "executable": false
     },
     "src/willow/movein/forms.ts": {
