@@ -1,6 +1,7 @@
 # Run it locally
 
 Editable source: [just-every/run-willow](https://github.com/just-every/run-willow).
+For the no-Node installer and per-terminal PATH step, start with [README.md](README.md#run-it-locally).
 For adapting an installation, also read [AGENTS.consumer.md](AGENTS.consumer.md).
 
 ```sh
@@ -14,10 +15,10 @@ private answers file inside the checkout: `--answers exports/answers.json
 --non-interactive`). `dev` prints `RER_OPEN`, which opens Willow signed in as
 the owner; `dev --as hr|payroll|it|manager|employee` prints one for a persona
 (real local members at `<as>@dev.localhost`, defined in `src/dev-personas.ts`);
-`dev --login` uses the ordinary sign-in page instead. No external mail is
+the legacy `dev --login` flag uses the same automatic sign-in. No external mail is
 sent and no provider account is needed. Stop servers with
 `rer dev --stop` or `rer preview --stop`
-before build or verification.
+before build, verification or deployment dry runs.
 
 ```sh
 rer verify

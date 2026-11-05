@@ -8,21 +8,41 @@ provider you already use. Optional connections add notices, OIDC sign-in and
 checklist drafts.
 
 Source: [just-every/run-willow](https://github.com/just-every/run-willow).
-The site is at [run-willow.com](https://run-willow.com).
+The site is at [run-willow.com](https://run-willow.com); its [Run page](https://run-willow.com/run) shows the same install path below.
 See [ACCEPTANCE.md](ACCEPTANCE.md) for validation boundaries and owner trials.
 
 ## Run it locally
 
-One line installs the maintained command (the [RER installer](https://runeditrun.com)),
-clones Willow and starts it:
+Git is required; the installer brings Node and rer selects the checkout's pinned
+pnpm. One line installs rer, clones Willow into `run-willow` and starts it:
+
+```sh
+curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-willow
+```
+
+Already have Node 22 or later? This is the alternative:
 
 ```sh
 npx -y @runeditrun/rer dev just-every/run-willow
 ```
 
-Without Node, `curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-willow` does the same. To start it again later, run `cd run-willow && rer dev`. To supply the real owner mailbox, run `npx -y @runeditrun/rer install just-every/run-willow`, then these from the checkout instead:
+For the commands below, first put the installer’s launcher on this terminal’s
+PATH. Repeat this in each new terminal, or use `$HOME/.local/bin/rer` wherever
+these guides say `rer`:
 
 ```sh
+export PATH="$HOME/.local/bin:$PATH"
+cd run-willow
+rer dev
+```
+
+To supply the real owner mailbox before the first start, install without
+starting Willow, then run setup from the checkout:
+
+```sh
+curl -fsSL https://runeditrun.com/install.sh | sh -s -- install just-every/run-willow
+export PATH="$HOME/.local/bin:$PATH"
+cd run-willow
 rer setup --owner-email you@example.com
 rer dev
 ```
@@ -55,10 +75,10 @@ rer dev --as employee  # Sam Patel: no permissions; an employee once HR links a 
 A persona becomes someone's manager or an employee when HR records a person
 with the persona's work email (`manager@dev.localhost`, `employee@dev.localhost`)
 and presses **Give access** on that person. With `dev` already running, these
-print a fresh `RER_OPEN` for that persona and exit. `dev --login` turns dev
-identity off and opens the ordinary sign-in page instead. Stop `dev` with
+print a fresh `RER_OPEN` for that persona and exit. The legacy `dev --login`
+flag uses the same automatic sign-in; it does not open an email outbox. Stop `dev` with
 `rer dev --stop` or Ctrl-C, and stop `preview` with
-`rer preview --stop` before build or verification.
+`rer preview --stop` before build, verification or deployment dry runs.
 
 ```sh
 rer verify                                   # checks, build, typecheck, email-link and flow proofs
@@ -82,9 +102,17 @@ upgrade the existing installation in place with `rer install` and `rer setup`.
 If recovery is needed, restore the export on its original release first, then
 upgrade that installation in place. Existing inactive sign-in identities are never
 reactivated by recovery. Real `deploy` needs your own Cloudflare account
-and a verified mail sender. Pins: Node 22.20.0 and pnpm 10.12.4, selected
-automatically. `RUN-LOCALLY.md` and `SEED-COMMAND-CONTRACT.md` hold the full
-command and state contract.
+and a verified mail sender. `deploy --dry-run` accepts the shipped reserved-domain
+sender and reports missing mail and Cloudflare inputs for a real deployment;
+it sends no mail. The current native deploy command still takes the public sender
+from `vars.MAIL_FROM` in `deploy.json`. It cannot yet deploy a different sender
+from only the environment or `--env-file`; that CLI limitation must be resolved
+before relying on an environment-only sender. Never commit deployment-specific
+sender addresses or credentials to the seed.
+Pins: Node 22.20.0 and pnpm 10.12.4, selected
+automatically. `RUN-LOCALLY.md` and `SEED-COMMAND-CONTRACT.md` are shared Base
+references. Their captured-mail and legacy `--login` instructions are stale;
+use the local sign-in steps above and [Getting started](docs/getting-started.md).
 
 ## What a person can do
 

@@ -722,7 +722,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "f16dc4645d648cc92e209ded5cbbc703d4948d93f830d3d35af0efb4c1c72f92",
+      "sha256": "268bd4a80065a05657e73c7f53c013f8d88305f36987d0d36283f6cdf16fc1b4",
       "executable": false
     },
     "API.md": {
@@ -782,7 +782,7 @@
       "executable": false
     },
     "docs/getting-started.md": {
-      "sha256": "ba803278284ebcbcd17572788127c84f9967c0f229b7010742c13d26297e4a51",
+      "sha256": "70fcf0e5dda95c518f2c887cb642aad865195085a917715f20e0f6309464cac3",
       "executable": false
     },
     "docs/leave.md": {
@@ -1282,7 +1282,7 @@
       "executable": false
     },
     "OPERATIONS.md": {
-      "sha256": "7c22701c860137917a66cf4532064f2e9ce3a76e4d63106b005e51a21db02b22",
+      "sha256": "2d527a504e54c72254630990e04875118a1d61d7738c1e800765209716a1a417",
       "executable": false
     },
     "package.json": {
@@ -1598,7 +1598,7 @@
       "executable": false
     },
     "README.md": {
-      "sha256": "d31eab8edde1ed0e490ee61052854161156fcc5704974d95abca10088ddf44a2",
+      "sha256": "a49cd9e1a1b8408ef4686d0b5b1c1e20444aae06a9168c6c2040e33016939792",
       "executable": false
     },
     "release-history/0.1.0.json": {
