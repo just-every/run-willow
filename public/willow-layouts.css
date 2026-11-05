@@ -136,3 +136,9 @@ ul.cases { list-style: none; padding: 0; }
 @media (max-width: 600px) {
   .batch-actions > *, .batch-actions button { width: 100%; }
 }
+
+/* Access previews contain nested records; keep their fields full width. */
+.preview-facts { margin: .75rem 0; min-width: 0; overflow-wrap: anywhere; }
+.preview-facts > dt { font-weight: 600; margin-top: .75rem; }
+.preview-facts > dd { margin: .25rem 0 .75rem; }
+.preview-facts ul { padding-inline-start: 1.25rem; }

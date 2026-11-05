@@ -13,6 +13,8 @@
         { "slug": "people", "title": "People and joiners", "file": "people.md", "summary": "Start a joiner, schedule a change, record a leaver and keep each person's record and documents." },
         { "slug": "leave", "title": "Leave", "file": "leave.md", "summary": "Leave worked out in hours from each person's schedule, decided by their manager and kept in a ledger." },
         { "slug": "payroll", "title": "Payroll handoff", "file": "payroll.md", "summary": "Each pay period, hand your payroll provider exactly what changed, once, in the file layout it reads." },
+        { "slug": "audit", "title": "Audit trail", "file": "audit.md", "summary": "Find named events and browse retained history with person, action and date filters." },
+        { "slug": "proposals", "title": "Prepare a proposal", "file": "proposals.md", "summary": "Prepare a joiner or mover for HR to review and approve." },
         { "slug": "access", "title": "Access and privacy", "file": "access.md", "summary": "Who sees what: explicit permissions, what managers see, and how to preview exactly what anyone sees." }
       ]
     },

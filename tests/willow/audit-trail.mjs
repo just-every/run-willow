@@ -1,0 +1,31 @@
+// One public audit flow: named records, retained history, filters and admission.
+import assert from 'node:assert/strict'
+
+export async function auditTrailProof(h, owner, employee, person) {
+  const filtered = await h.api(`audit?person=${person}&action=person.private.read`, owner)
+  assert.ok(filtered.length)
+  assert.ok(filtered.every(event => event.action === 'person.private.read' && event.subject === person))
+  const latest = await h.api('audit', owner)
+  const older = await h.api(`audit?before=${latest.at(-1).seq}`, owner)
+  assert.ok(older.length, 'Earlier activity remains reachable beyond the first API page')
+  assert.ok(older.every(event => event.seq < latest.at(-1).seq))
+  assert.equal(new Set([...latest, ...older].map(event => event.seq)).size, latest.length + older.length)
+  const newestAgain = await h.api(`audit?after=${older[0].seq}`, owner)
+  assert.ok(newestAgain.at(-1).seq > older[0].seq)
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney', year: 'numeric', month: '2-digit', day: '2-digit' }).format(latest[0].at)
+  const dated = await h.api(`audit?from=${day}&to=${day}`, owner)
+  assert.ok(dated.every(event => new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney', year: 'numeric', month: '2-digit', day: '2-digit' }).format(event.at) === day))
+  const response = await h.raw(`/app/audit?person=${person}&action=person.private.read`, { cookie: owner })
+  assert.equal(response.status, 200)
+  const html = await response.text(), visible = html.replace(/<[^>]*>/g, '')
+  assert.ok(!visible.includes(person), 'Record identifiers stay out of visible labels')
+  assert.ok(!visible.includes('person.private.read'), 'Action codes stay out of visible labels')
+  const datedPage = await (await h.raw(`/app/audit?from=${day}&to=${day}`, { cookie: owner })).text()
+  const link = datedPage.match(/href="([^"]*before=[^"]*)"/)
+  assert.ok(link, 'The retained events have an older page')
+  const url = new URL(link[1].replaceAll('&amp;', '&'), h.origin)
+  assert.equal(url.searchParams.get('from'), day)
+  assert.equal(url.searchParams.get('to'), day)
+  assert.equal((await h.raw(url.pathname + url.search, { cookie: owner })).status, 200)
+  await h.api('audit', employee, undefined, 403)
+}

@@ -22,7 +22,7 @@ Managing someone needs no permission: a manager sees their team's work details a
 
 ## Preview what anyone sees
 
-Under **Preview what a member sees**, pick a member and a person and press **Preview**. Willow lists each part of the record (directory, employment history, payroll identifiers, private contact details, compensation, leave, confidential reasons, cases and private documents) with **Yes** or **No** for that member, exactly as Willow would show it to them.
+Under **Preview what a member sees**, pick a member and a person and press **Preview**. Willow lists each part of the record (directory, employment history, payroll identifiers, private contact details, compensation, leave, confidential reasons, cases and private documents) with **Yes** or **No** for that member. Open **Readable record (your access applies)** for the permitted names, dates and values. The preview intersects their access with yours: it never reveals a value withheld from you.
 
 ## Give and end access
 
