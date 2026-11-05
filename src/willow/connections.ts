@@ -23,7 +23,7 @@ export async function connections(env: Bindings, actor: Actor) {
   const links = await all(env, 'SELECT provider_id, status, issuer, client_id, pending_issuer, pending_client_id FROM oa_identity_providers')
   const health = await all(env, 'SELECT provider_id, failing_since, hard_failure_at FROM oa_identity_provider_health')
   const tokenHealth = await all(env, `SELECT h.provider_id, h.failed, h.observed_at FROM wl_identity_token_health h JOIN oa_identity_providers p ON p.provider_id = h.provider_id AND p.issuer = h.issuer AND p.client_id = h.client_id AND p.token_endpoint = h.token_endpoint AND p.linked_at = h.linked_at WHERE p.status = 'linked'`)
-  const notices = await all(env, 'SELECT id, kind, status, failure, created_at FROM wl_notices ORDER BY created_at DESC LIMIT 30')
+  const notices = await all<{id:string;kind:string;status:string;failure:string|null;created_at:number}>(env, 'SELECT id, kind, status, failure, created_at FROM wl_notices ORDER BY created_at DESC LIMIT 30')
   return { provisioning:await oktaOverview(env,actor), billing: providerBilling(env), notices: !!settings.notices, mailConfigured: !!operatorMail(env) && !!env.MAIL_FROM, history: notices,
     identity: { enabled: !!settings.oidc, state: identity.state, providers: identity.providers.map(p => ({ id: p.id, label: p.label ?? p.id })), links, health, tokenHealth },
     model: { selected: settings.model, configured: !!env.MODELS_ENDPOINT && !!env.MODELS_KEY, failures: await all(env, "SELECT id, failure, proposed_at FROM wl_model_drafts WHERE status = 'failed' ORDER BY proposed_at DESC LIMIT 10") } }

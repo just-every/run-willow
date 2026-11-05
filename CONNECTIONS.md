@@ -1,30 +1,62 @@
 # Willow connections and payroll handoff
 
-Connections is an owner-only page at `/app/connections`.
+Connections is at `/app/connections`. The owner configures providers and authorizes outbound activity; members with delegated integration-settings access see connection state.
 Migration `0008_connections.sql` adds optional settings, delivery status,
 checklist proposals, payroll mappings and frozen file previews. Base modules
 remain byte copies. No provider account is needed for local work.
 
 ## Runtime configuration and activation
 
-- Email: existing `MAIL_PROVIDER`, `MAIL_FROM`, `MAIL_API_KEY`, and
-  `MAIL_ACCOUNT_ID` for Cloudflare. Local setup uses `development` and Base's
-  gated outbox. The owner enables notices on Connections. Fixed notice copy
-  includes only an authenticated app link. Missing, refused and failed
-  transport is recorded separately; task/evidence/leave/payroll saves succeed.
-  A misconfigured mail sender does not break authenticated session reads.
-- OIDC: secret runtime binding `OIDC_PROVIDERS` is the Base provider array
-  (id, preset, issuer/tenant where applicable, clientId, clientSecret or
-  privateKey; optional trusted subjectEmails). `OIDC_TRANSACTION_SECRET` is
-  at least 32 characters and independent of `SESSION_SECRET`. Set provider
-  callback to `AUTH_ORIGIN/auth/oidc/ID/callback`. Follow the vendored
-  `src/modules/operator-auth/identity/oidc/README.md` for presets. No value
-  goes into a source file, answer archive or error. Use Connections to request
-  a confirmation email then link/relink/unlink the chosen provider. Only
-  owner-linked providers are offered; domain-required SSO is deliberately
-  unavailable so email links remain usable. Changed issuer/client metadata
-  requires an explicit relink. Malformed runtime configuration is visible
-  on Connections and does not enter ordinary email authentication.
+Settings are supplied to the runtime, not entered in the Connections page:
+
+- **Local:** add optional bindings to the checkout’s private `.dev.vars` file,
+  keep it outside version control, then restart `rer dev`. Local mail validates
+  and suppresses messages without sending or storing them, regardless of any
+  remote mail credentials. Use the `RER_OPEN` link from `rer dev` to sign in.
+  Optional model and Okta calls still reach their configured providers.
+- **Deployed:** put public settings in `deploy.json` under `vars`. Declare
+  each secret under `secrets` as
+  `{ "binding": "BINDING_NAME", "environment": "BINDING_NAME" }`, supply its
+  value through the deployment environment (or a private `rer deploy --env-file`
+  file), then run `rer deploy`. Never put secret values in tracked JSON vars.
+  Return to Connections to enable each capability after deployment.
+
+- Email: set `MAIL_PROVIDER` to `resend`, `sendgrid`, `cloudflare` or `rer`,
+  `MAIL_FROM` to the provider-approved sender, and secret `MAIL_API_KEY`.
+  Cloudflare also needs `MAIL_ACCOUNT_ID` (32 hexadecimal characters); RER
+  managed mail also needs the service-provided `MAIL_RELAY_URL`. Enable notices
+  on Connections. Complete eligible task work, decide leave or prepare a ready
+  payroll handoff, then inspect Notice history. Fixed notices include only an
+  authenticated app link. “Accepted by provider” means submission, not inbox
+  delivery; local suppression is labeled explicitly. Missing, refused and failed
+  transport is recorded separately; business saves succeed. History displays
+  readable event and result names in the employer’s configured time zone.
+- OIDC: secret runtime binding `OIDC_PROVIDERS` is a JSON array. Each entry
+  needs `id`, `preset` and `clientId`. Google fixes its issuer; Microsoft needs
+  a specific `tenant` (not common/organizations/consumers); Auth, Okta and
+  `legacy-rs256` need an exact `issuer`. The default `tokenAuthMethod` is
+  `private_key_jwt`, requiring a private JWK in `privateKey` with `kid` and a
+  public key registered at the provider. To use `clientSecret`, explicitly set
+  `tokenAuthMethod` to `client_secret_basic` or `client_secret_post`; Auth
+  supports only private-key authentication. The incumbent `legacy-rs256`
+  preset additionally needs exact `endpointPins` for authorization, token and
+  JWKS URLs. Microsoft and Okta require trusted `subjectEmails` mappings from
+  provider subject IDs to existing members’ emails; their email claims alone
+  never establish membership.
+  `OIDC_TRANSACTION_SECRET` is a separate secret, at least 32 characters and
+  different from `SESSION_SECRET`. Register the callback
+  `AUTH_ORIGIN/auth/oidc/ID/callback` with `ID` replaced by the entry’s `id`;
+  an explicit same-origin `redirectUri` overrides that default. Follow the
+  [complete OIDC preset and configuration guide](src/modules/operator-auth/identity/oidc/README.md).
+  Deploy with working mail, request the matching link/relink or unlink
+  confirmation email on Connections, open its confirmation in the same browser,
+  return to Connections and apply that operation to the chosen provider.
+  Local development suppresses confirmation mail. Only owner-linked providers
+  are offered; email links remain usable. Test sign-in through each provider.
+  Changed issuer/client metadata requires explicit relinking. Invalid runtime
+  configuration is visible on Connections and does not enter ordinary email
+  authentication. Provider settings and secret values never go into an answer
+  archive or error.
 - Models: `MODELS_ENDPOINT` is an HTTPS URL ending exactly in
   `/v1/chat/completions`; `MODELS_KEY` is a secret runtime binding. Choose a
   model identifier on Connections. Requests use `Authorization: Bearer ...`
@@ -32,7 +64,7 @@ remain byte copies. No provider account is needed for local work.
   key. Local tests may use loopback HTTP. Set the model blank to turn off.
   No retries, alternate providers or fabricated completion exist.
 
-For hosted deployments, add only the optional connections you choose to
+For model and identity connections, add only the optional bindings you choose to
 `deploy.json`: nonsecret `MODELS_ENDPOINT` in vars, and secret entries
 `{ "binding": "MODELS_KEY", "environment": "MODELS_KEY" }` and/or
 `OIDC_PROVIDERS` and `OIDC_TRANSACTION_SECRET` in secrets. Supply values through
@@ -45,7 +77,12 @@ After restore, reconfigure runtime bindings and relink OIDC explicitly.
 ## Reviewed Okta account work
 
 Set secret runtime bindings `OKTA_ORG_URL` and `OKTA_API_TOKEN` for the employer’s
-Okta organization, then enable explicit consent on Connections with a reason.
+Okta organization, restart or deploy, then enable explicit consent on Connections
+with a reason. The URL must be an HTTPS root on `*.okta.com`,
+`*.oktapreview.com` or `*.okta-emea.com`, without a path, custom port, query or
+fragment. The connector authenticates with an `SSWS` API token. These bindings
+are separate from the OIDC client used for optional Okta sign-in. Configured
+Okta account-work requests reach the provider during local development too.
 Add these optional secret bindings to the chosen deployment configuration; never
 put their values in tracked files. The token needs the user lifecycle, group
 membership and read permissions required by the reviewed actions.

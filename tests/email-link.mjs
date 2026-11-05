@@ -12,5 +12,14 @@ try {
   assert.equal(session.operator.email,h.vars.OWNER_EMAIL)
   assert.equal((await h.raw('/setup',{cookie,form:new URLSearchParams({confirm:'yes'})})).status,303)
   assert.deepEqual(await (await h.raw('/setup/state')).json(),{state:'claimed'})
+  const signIn=await h.raw('/signin')
+  assert.equal(signIn.status,200)
+  const returnTo=(await signIn.text()).match(/name="returnTo" value="([^"]+)"/)?.[1]
+  assert.equal(returnTo,'/app')
+  const sent=await h.raw('/auth/magic-link',{form:new URLSearchParams({email:h.vars.OWNER_EMAIL,returnTo})})
+  assert.equal(sent.status,303)
+  assert.equal(new URL(sent.headers.get('location'),h.origin).searchParams.has('returnTo'),false)
+  const returning=await h.signIn(h.vars.OWNER_EMAIL,{requested:true})
+  assert.equal((await h.raw('/auth/session',{cookie:returning})).status,200)
   console.log('Email-link sign-in passed against the emitted Worker: claim, provider delivery, confirmation, session')
 } finally {await h.close()}

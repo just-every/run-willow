@@ -1,26 +1,14 @@
 import { doorKey } from './movein/authority'
 import { administratesPerson, administrativeScopes, currentLevelAdmin, delegatedPayReview, validateDelegation, levelSessionFence } from './levels/delegation'
 import { levels } from './levels/store'
-import { PERFORMANCE_FIELDS, PERFORMANCE_LABELS, readsPerformanceField } from './levels/performance'
-import { readsLeaveField, LEAVE_FIELDS, LEAVE_LABELS } from './levels/leave'
-import { readsCompensation, COMPENSATION_FIELDS, COMPENSATION_LABELS } from './levels/compensation'
-import { JOB_FIELDS, JOB_LABELS, readsJobHistoryField } from './levels/job'
 // Flow 1 (access): Willow members, their explicit permissions, giving and
 // ending a person's access, and previewing exactly what a member can see.
 // Sign-in accounts are Base operator-auth operators: HR holders are admins
 // (they can invite and deactivate members); only the owner sets permissions.
-import { reportChoices } from './levels/reports'
-import { SELF_FIELDS, SELF_LABELS } from './levels/personal'
-import { readsPersonalField } from './levels/other-personal'
-import { readsTable } from './record-tables/schema'
 import { operatorAuth, type Bindings } from '../auth.server'
-import { PERMISSIONS, actorFor, requireOwner, requirePermission, type Actor, type Permission } from './actor'
-import { FACET_LABELS, facets, readsCategory, type Facet } from './access'
+import { PERMISSIONS, requireOwner, requirePermission, type Actor, type Permission } from './actor'
 import { all, auditRead, commit, guard, insist, newId, now, one, stmt, WillowError } from './core'
 import { Input } from './input'
-import { effectiveFieldDefinitions } from './custom-fields/store'
-import { readsCustomField } from './custom-fields/read'
-import { personView } from './profile'
 
 export async function members(env: Bindings, actor: Actor, request: Request) {
   requirePermission(actor, 'people.manage')
@@ -78,16 +66,21 @@ export async function bulkGiveAccess(env: Bindings, actor: Actor, input: Input, 
   input.only(['people','reason','returnTo'])
   const people=[...new Set(input.list('people'))], reason=input.text('reason',{max:400})
   insist(people.length>0&&people.length<=100,'invalid_people')
-  const eligible:string[]=[], skipped:string[]=[]
+  const eligible:string[]=[], skipped:string[]=[], skippedDetails:{person:string;name:string;reason:string;message:string}[]=[]
+  const skip=(id:string,name:string,reason:string,message:string)=>{skipped.push(id);skippedDetails.push({person:id,name,reason,message})}
   for(const id of people) {
-    const person=await one(env,'SELECT work_email FROM wl_people WHERE id=?',id)
+    const person=await one(env,'SELECT work_email,legal_name,preferred_name FROM wl_people WHERE id=?',id)
     insist(person,'person_not_found',404)
     const active=await one(env,'SELECT 1 FROM wl_periods WHERE person_id=? AND start_date<=? AND (end_date IS NULL OR end_date>=?)',id,actor.today,actor.today)
-    if(!active){skipped.push(id);continue}
-    insist(person.work_email,'work_email_required')
+    const name=person.preferred_name||person.legal_name
+    if(!active){
+      const upcoming=await one(env,'SELECT MIN(start_date) AS starts FROM wl_periods WHERE person_id=? AND start_date>?',id,actor.today)
+      skip(id,name,'not_current_employee',upcoming?.starts?`Employment starts on ${upcoming.starts}.`:'Employment is not current today.');continue
+    }
+    if(!person.work_email){skip(id,name,'work_email_required','A work email is required before inviting.');continue}
     const member=await one(env,'SELECT person_id,status FROM wl_members WHERE email=?',person.work_email)
     insist(!member||!member.person_id||member.person_id===id,'email_linked_elsewhere',409)
-    if(member?.status==='active'&&member.person_id){skipped.push(id);continue}
+    if(member?.status==='active'&&member.person_id){skip(id,name,'already_has_access','Already has access or an outstanding invitation.');continue}
     eligible.push(id)
   }
   // Validate the exact default before the first outward invitation.
@@ -101,7 +94,9 @@ export async function bulkGiveAccess(env: Bindings, actor: Actor, input: Input, 
     }
   }
   await commit(env,[],{actor:actor.id,action:'access.bulk',subject:actor.id,detail:{invited,skipped,deferred,reason}})
-  return {invited,skipped,deferred,notice:deferred.length?`${invited.length} invited; ${skipped.length} skipped. ${deferred.length} deferred by the sign-in invitation limit. Wait 15 minutes, then submit the selection again; existing access is skipped.`:`${invited.length} invited; ${skipped.length} skipped.`}
+  const skippedNotice=skippedDetails.map(person=>`${person.name}: ${person.message}`).join(' ')
+  const summary=deferred.length?`${invited.length} invited; ${skipped.length} skipped. ${deferred.length} deferred by the sign-in invitation limit. Wait 15 minutes, then submit the selection again; existing access is skipped.`:`${invited.length} invited; ${skipped.length} skipped.`
+  return {invited,skipped,skippedDetails,deferred,notice:[summary,skippedNotice].filter(Boolean).join(' ')}
 
 }
 
@@ -166,7 +161,14 @@ export async function giveAccess(env: Bindings, actor: Actor, input: Input, requ
   const administrator=policy && !!await one(env,"SELECT 1 FROM wl_level_permissions p JOIN wl_levels s ON s.id=p.level_id WHERE p.level_id=? AND p.permission='people.manage' AND s.scope_kind='everyone'",policy.level_id)
   const role=administrator?'admin':'member'
   if (!operator) await auth.invite(request, { email, displayName: name, role, returnTo: '/app' })
-  else if (operator.status === 'inactive') await auth.setOperatorStatus(request, operator.id, 'active')
+  else if (operator.status === 'inactive') {
+    const cancelled=await one(env,'SELECT 1 FROM oa_invitation_cancellations WHERE operator_id=?',operator.id)
+    if(cancelled) {
+      const invitationRole=policy?role:operator.role
+      if(invitationRole!==operator.role) await auth.setRole(request,operator.id,invitationRole)
+      await auth.invite(request,{email,displayName:name,role:invitationRole,returnTo:'/app'})
+    } else await auth.setOperatorStatus(request, operator.id, 'active')
+  }
   const target=await one(env,'SELECT id,version,role FROM oa_operators WHERE lower(email)=?',email)
   insist(target,'access_changed',409)
   insist(!policy||target.role!=='owner','owner_access_fixed',409)
@@ -193,6 +195,7 @@ export async function endAccessStatements(env: Bindings, actor: Actor, request: 
   if (!member || member.status === 'ended') return []
   const auth = operatorAuth(env), operator = await operatorByEmail(env, request, member.email)
   insist(operator?.role !== 'owner', 'owner_access_fixed', 409)
+  if (operator?.status === 'invited') await auth.cancelInvitation(request, operator.id)
   if (operator && operator.status === 'active') {
     await auth.setOperatorStatus(request, operator.id, 'inactive')
     for (const session of await auth.listSessions(request, operator.id)) if (session.active) await auth.revokeSession(request, session.id)
@@ -209,37 +212,6 @@ export async function endAccess(env: Bindings, actor: Actor, input: Input, reque
   return { id: personId, status: 'ended' }
 }
 
-/**
- * What a member would see of a person, computed by the same projection the
- * member's own requests use. The preview shows only values the previewing
- * member may also read; anything else is reported as withheld, never shown.
- */
-export async function visibilityPreview(env: Bindings, actor: Actor, memberId: string, personId: string) {
-  requirePermission(actor, 'people.manage')
-  const member = await one(env, 'SELECT * FROM wl_members WHERE id = ?', memberId)
-  insist(member, 'member_not_found', 404)
-  insist(await one(env, 'SELECT 1 FROM wl_people WHERE id = ?', personId), 'person_not_found', 404)
-  const owner = !!await one(env, "SELECT 1 FROM oa_operators WHERE lower(email) = ? AND role = 'owner'", member.email)
-  const target = await actorFor(env, { id: member.id, email: member.email, name: member.name, owner, personId: member.person_id, sessionId: '' })
-  const theirs = facets(target, personId), mine = facets(actor, personId)
-  const both = new Set([...theirs].filter(facet => mine.has(facet)))
-  const view = await personView(env, actor, personId, { admissionActor: target, facets: both, leaveFields:field=>readsLeaveField(target,personId,field)&&readsLeaveField(actor,personId,field), compensationFields: field=>readsCompensation(target,personId,field)&&readsCompensation(actor,personId,field), jobFields: field=>readsJobHistoryField(target,personId,field)&&readsJobHistoryField(actor,personId,field), personalFields: field => readsPersonalField(target,personId,field) && readsPersonalField(actor,personId,field), categories: category => readsCategory(target, personId, category) && readsCategory(actor, personId, category), customFields: definition => readsCustomField(target, personId, definition), recordTables: table => readsTable(target, personId, table) })
-  const customDefinitions = await effectiveFieldDefinitions(env, actor.today)
-  const readableReports=new Map((await reportChoices(env,actor)).map(report=>[report.id,report.name]))
-  const reportSelections=[...new Set(target.reportGrants.flatMap(grant=>grant.reports))].sort().map(id=>({id,name:readableReports.get(id)??null,withheldFromYou:!readableReports.has(id),reachesThisPerson:target.reportGrants.some(grant=>grant.reports.includes(id)&&grant.people.has(personId))}))
-  return {
-    member: { id: member.id, name: member.name, status: member.status, permissions: [...target.permissions] as Permission[], scoped: target.scoped.map(grant => ({ level: grant.level, permissions: [...grant.permissions].sort(), reachesThisPerson: grant.people.has(personId) })), managesThisPerson: target.reports.has(personId), isThisPerson: target.personId === personId },
-    performanceFields:PERFORMANCE_FIELDS.map(field=>({field,label:PERFORMANCE_LABELS[field],levelView:readsPerformanceField(target,personId,field)})),
-    reportSelections,
-    leaveFields:LEAVE_FIELDS.map(field=>({field,label:LEAVE_LABELS[field],visible:readsLeaveField(target,personId,field),withheldFromYou:readsLeaveField(target,personId,field)&&!readsLeaveField(actor,personId,field)})),
-    compensationFields:COMPENSATION_FIELDS.map(field=>({field,label:COMPENSATION_LABELS[field],visible:readsCompensation(target,personId,field),withheldFromYou:readsCompensation(target,personId,field)&&!readsCompensation(actor,personId,field)})),
-    jobFields:JOB_FIELDS.map(field=>({field,label:JOB_LABELS[field],visible:readsJobHistoryField(target,personId,field),withheldFromYou:readsJobHistoryField(target,personId,field)&&!readsJobHistoryField(actor,personId,field)})),
-    personalFields: SELF_FIELDS.map(field=>({field,label:SELF_LABELS[field],visible:readsPersonalField(target,personId,field),withheldFromYou:readsPersonalField(target,personId,field)&&!readsPersonalField(actor,personId,field)})),
-    customFields: customDefinitions.map(definition => ({ id: definition.id, key: definition.key, label: definition.label, visible: readsCustomField(target, personId, definition), withheldFromYou: readsCustomField(target, personId, definition) && !readsCustomField(actor, personId, definition) })),
-    facets: (Object.keys(FACET_LABELS) as Facet[]).map(facet => ({ facet, label: FACET_LABELS[facet], visible: theirs.has(facet), withheldFromYou: theirs.has(facet) && !mine.has(facet) })),
-    view,
-  }
-}
 
 async function checkAdministrativePerson(env: Bindings,actor:Actor,person:string) {
  if(actor.owner||!administrativeScopes(actor)?.length)return
