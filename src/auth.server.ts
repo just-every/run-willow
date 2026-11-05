@@ -85,7 +85,7 @@ export async function authResponse(request: Request, original: Bindings): Promis
  }
  if (url.pathname === '/signin') {
   const page = await createSignInHandler(operatorAuth(await linkedEnvironment()), {
-   defaultReturnTo: '/setup',
+   defaultReturnTo: '/app',
   })(request)
   if (page) return fontDocumentResponse(page)
  }
