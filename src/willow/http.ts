@@ -17,7 +17,8 @@ import { credentialActor, isCredentialActor } from './api-credentials'
 import { credentialResponse } from './api-credentials/authenticate'
 import { credentialRead } from './api-credentials/response'
 import type { CredentialMetadata } from './api-credentials/store'
-import { credentialsPage, issuedCredentialPage } from './ui/api-credentials'
+import { credentialsPage } from './ui/api-credentials'
+import { redirectIssuedCredential } from './api-credentials/disclosure'
 import { settingAreaPage } from './ui/settings-areas'
 import { invitationResponse } from './invitation-http'
 import { preboardingPage, applicantRecordsPage } from './ui/preboarding'
@@ -68,6 +69,7 @@ import { h, page } from './ui/html'
 import { casePage, homePage, tasksPage } from './ui/home'
 import { leavePage, requestPage } from './ui/leave'
 import { importPage, previewPage } from './ui/movein'
+import { importErrorPage } from './ui/movein-error'
 import { directoryPage, personPage } from './ui/people'
 import { accessPage, customFieldsPage, employerPage, settingsPage } from './ui/settings'
 import { auditPage, batchPage, payrollPage, proposalPage, proposalsPage, reportsPage } from './ui/work'
@@ -124,6 +126,7 @@ export async function willowResponse(request: Request, original: Bindings): Prom
       const response=json({ error: code, ...(url.pathname === '/api/willow/policy.answer' && status !== 401 ? { limitation: 'No policy answer is available. Ask HR before relying on an entitlement or taking action.', needsHr: true, escalation: POLICY_ESCALATION_PATH } : {}), ...(detail === undefined ? {} : { detail }) }, status)
       return request.headers.has('authorization')?credentialResponse(request,response):response
     }
+    if (url.pathname.startsWith('/app/import')) return importErrorPage(actor,{code,status,detail})
     if (status === 404) return page('Not found', actor, h`<h1>Not found</h1><p>There is nothing here you can open.</p><p><a href="/app">Back to Willow</a></p>`, { status: 404 })
     return page('Something went wrong', actor, h`<h1>That did not work</h1><p>${code.replace(/_/g, ' ')}</p><p><a href="/app">Back to Willow</a></p>`, { status })
   }
@@ -166,7 +169,7 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
       if (name === 'signature.prepare') return signatureConsentPage(actor,result,url)
       if (name === 'signature.preview' || name === 'task.signature.preview') return signaturePreviewPage(actor,result,url)
       if (name === 'policy.answer') return policyAssistantPage(env,actor,policyUrl,result as unknown as Awaited<ReturnType<typeof policyAnswer>>)
-      if (name === 'apiKey.issue' || name === 'apiKey.rotate') return issuedCredentialPage(actor,result as CredentialMetadata&{token:string})
+      if (name === 'apiKey.issue' || name === 'apiKey.rotate') return redirectIssuedCredential(env,actor,result as CredentialMetadata&{token:string})
       await reconcileRecipients(env,actor.today)
       const notices = await notifyAction(env, name!, result)
       const failed = notices?.failure || notices?.deliveries?.some(item => ['failed','refused'].includes(item.status))
@@ -193,7 +196,7 @@ const csv = (body: string, filename: string) => new Response(body, { headers: { 
 
 const pages: Record<string, Page> = {
   webhooks:(env,actor,_request,url)=>webhooksPage(env,actor,url),
-  apiCredentials:(env,actor,_request,url)=>credentialsPage(env,actor,url),
+  apiCredentials:(env,actor,request,url)=>credentialsPage(env,actor,url,request),
   settingLocations:(env,actor,_request,url)=>settingAreaPage(env,actor,'locations',url),
   settingSchedules:(env,actor,_request,url)=>settingAreaPage(env,actor,'schedules',url),
   settingCategories:(env,actor,_request,url)=>settingAreaPage(env,actor,'document-categories',url),

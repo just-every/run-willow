@@ -216,6 +216,11 @@ through `apiKey.approve` with `credential` and a nonempty `reason`. The native
 API credentials page provides the same review. Issuers cannot approve their
 own keys; rotation requires a fresh independent approval for sensitive keys.
 Delegates rotate or revoke only their own keys; the owner can manage any key.
+Browser issue and rotate actions redirect to the credential page before showing
+the secret once. Refresh then opens the list without issuing or rotating again.
+Copy the secret on that first view; after refresh, rotate it if you need a new
+secret. The short-lived disclosure is bound to the issuing session and never
+appears in a URL, audit record or credential listing.
 Authority or assignment changes and revisions of an issuer's assigned levels
 permanently revoke issued keys, including when the prior rights return before
 another API call. The entire credential row, including approval custody, stays

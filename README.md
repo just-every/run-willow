@@ -89,13 +89,13 @@ command and state contract.
 ## What a person can do
 
 - **Owner:** sets up the employer, approves leave policy versions, sets every
-  member's permissions and holds them all.
+  member's permissions and holds them all; reviews and applies the BambooHR move-in.
 - **HR (people.manage and the HR bundle):** adds locations, departments,
   working schedules, document categories and versioned joiner/mover/leaver
   templates; starts joiners and rehires, schedules effective-dated changes,
   records leavers; gives and ends access; previews exactly what any member sees
   about any person; stores private documents; opens leave accounts and signs
-  off opening balances; moves the workforce in from BambooHR; approves
+  off opening balances; prepares BambooHR exports for the owner to move in; approves
   proposals prepared by the owner's agent; reads summaries and the audit trail.
 - **Payroll (pay.read, payroll.handoff):** prepares a change batch per pay
   period, resolves exceptions, exports the CSV once and records the provider's

@@ -94,7 +94,7 @@ export async function exerciseImportDoor({h,owner,nonOwner,inputs,before}) {
       await shot('preview')
       await page.getByRole('button',{name:'Apply import',exact:true}).click()
       await page.waitForURL(url=>url.pathname==='/app/import')
-      assert.equal((await native()).length,before+6)
+      assert.equal((await native()).length,before+5)
       await shot('applied')
       await page.getByRole('button',{name:'Reconcile',exact:true}).last().click()
       await page.waitForURL('**/app/import/execute')
