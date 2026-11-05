@@ -56,7 +56,7 @@ try {
     // Staff are people first; access is given to a person through their work email.
     const staff = { hana: ['Hana Reid', ids.people], pat: ['Pat Okoro', ids.people], ivan: ['Ivan Ruiz', ids.ops], mia: ['Mia Chen', ids.ops] }
     for (const [key, [name, department]] of Object.entries(staff)) {
-      const started = await h.api('joiner.start', cookie.owner, { template: ids.joinerTemplate, legalName: name, workEmail: `${key}@example.com`, startDate: addDays(today, -900), employmentType: 'full_time', payrollId: `PAY-${key}`, jobTitle: key === 'mia' ? 'Operations Manager' : 'Staff', departmentId: department, locationId: ids.sydney, scheduleId: ids.week })
+      const started = await h.api('joiner.start', cookie.owner, { template: ids.joinerTemplate, legalName: name, workEmail: `${key}@example.com`, startDate: addDays(today, -900), employmentType: 'full_time', payrollId: `PAY-${key}`, jobTitle: key === 'mia' ? 'Operations Manager' : 'Staff', departmentId: department, locationId: ids.sydney, scheduleId: ids.week, payBasis: 'salary', payAmount: '65000' })
       ids[key] = started.person; ids[`${key}Period`] = started.period
     }
     for (const [key, name, payroll, pay] of [['sam', 'Samira Patel', 'PAY-sam', SECRET.salary], ['lee', 'Lee Park', '', '']]) {
@@ -300,6 +300,8 @@ try {
     await h.api('payroll.layout', cookie.owner, { format: 'generic', columns: genericColumns })
     await h.api('payroll.preview', cookie.pat, { batch: draft.id }, 409)
     await h.api('payroll.discard', cookie.pat, { batch: draft.id })
+    const leePeriod = (await personOf('owner', ids.lee)).employment.find(period => period.id === ids.leePeriod)
+    await h.api('compensation.pay', cookie.owner, { person: ids.lee, period: ids.leePeriod, revision: leePeriod.revision, effectiveFrom: leePeriod.startDate, payBasis: 'hourly', payAmount: '28.50', reason: 'Record starting pay before provider handoff' })
     await h.api('period.payroll', cookie.pat, { period: ids.leePeriod, payrollId: 'PAY-lee' })
     draft = await h.api('payroll.draft', cookie.pat, { periodStart: addDays(today, -13), periodEnd: end })
     await h.api('payroll.preview', cookie.pat, { batch: draft.id })
@@ -348,12 +350,13 @@ try {
   })
 
   await check('WIL-13', async () => {
+    const previousTerms = (await personOf('hana', ids.lee)).employment.find(period => period.id === ids.leePeriod).terms
     const start = addDays(today, 45)
     const rehire = await h.api('joiner.start', cookie.hana, { template: ids.joinerTemplate, person: ids.lee, startDate: start, employmentType: 'part_time', jobTitle: 'Coordinator', departmentId: ids.ops, managerPersonId: ids.mia, scheduleId: ids.week })
     const lee = await personOf('hana', ids.lee)
     assert.equal(lee.employment.length, 2)
     assert.equal(lee.employment.find(period => period.id === ids.leePeriod).endDate, addDays(today, 14))
-    assert.equal(lee.employment.find(period => period.id === ids.leePeriod).terms.length, 1)
+    assert.deepEqual(lee.employment.find(period => period.id === ids.leePeriod).terms, previousTerms)
     assert.equal(lee.employment.find(period => period.id === rehire.period).startDate, start)
     // Old access is not silently reactivated.
     assert.equal((await h.raw('/auth/magic-link', { body: { email: 'lee@example.com', returnTo: '/app' } })).status, 202)
@@ -620,7 +623,7 @@ try {
     assert.equal(rowan.private.phone, '0400 000 101')
     assert.equal(rowan.leave.accounts[0].openingStatus, 'proposed')
     assert.equal(rowan.documents[0].category, 'Employment contract')
-    const tamsin = await personOf('hana', people.find(person => person.name === 'Tam').id)
+    const tamsin = await personOf('hana', people.find(person => person.name === 'Tam Vale').id)
     assert.equal(tamsin.current.manager.name, 'Rowan Hale')
     assert.equal(tamsin.employment[0].terms[0].schedule.name, 'Standard week')
     const juno = await personOf('hana', people.find(person => person.name === 'Juno Ashby').id)

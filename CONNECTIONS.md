@@ -99,9 +99,21 @@ Review the wording: model text is a draft, never proof that a task was completed
 ## Payroll handoff
 
 On Payroll, the owner maps all generic fields to target headings and ordering.
-Each source must appear once. Generic files represent starts, ends, complete
-terms changes, approved leave and post-handoff reversals. Missing payroll IDs
-block preview until corrected and a fresh draft is made.
+Each source must appear once. Headings accept ordinary punctuation, including
+`Employee #`, and CSV quoting preserves commas and quotation marks. Headings
+must be nonblank, at most 60 characters, without control characters or a
+spreadsheet formula prefix. Payroll names use the employee's legal name.
+Generic files represent starts, ends, complete terms changes, approved leave
+and post-handoff reversals. Missing payroll IDs or missing compensation on a
+start or terms change become named source exceptions and block preview until
+corrected and a fresh draft is made; unknown compensation is never handed off
+as a ready change.
+Before that employment period has been handed off, an authorized compensation
+editor can record missing starting pay from the person's Compensation page
+(`compensation.pay` at the employment start date). This cancels and replaces
+the initial version without rewriting its history. For a later unknown-pay
+terms version, cancel it and append the corrected version on the same date.
+Discard the blocked payroll draft and prepare a fresh one after correction.
 
 The named format is **ADP RUN Time Sheet Import, payroll-assigned identifier**.
 Source: ADP's primary guide at
@@ -118,6 +130,7 @@ Employee IDs come from the employment period's payroll ID. Reconcile account
 active status, pay frequency and configured Time Sheet Import before use.
 Willow blocks non-leave lines, reversals, nonpositive hours, IDs too long,
 unmapped policies, employees outside the period, and leave spanning the period.
+Each layout blocker names the employee, provider identifier and effective date.
 It never silently drops a reconciled line or claims an unsupported line.
 Use generic changes for those cases. This does not calculate pay or claim a
 live ADP account has accepted the file.
@@ -125,6 +138,8 @@ live ADP account has accepted the file.
 Preview the exact file before export. Export checks the source snapshot and
 layout revision in the same transaction as the existing one-time claims.
 A source change needs a fresh draft; a layout change needs another preview.
+Drafts calculated under earlier payroll rules also require a fresh draft;
+they cannot reuse an earlier preview to bypass current source exceptions.
 The preview returns `previewRevision`; submit it with `batch` to
 `payroll.export`. The HTML export form carries this automatically, so a
 second operator cannot replace the file you reviewed before your export.

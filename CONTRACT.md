@@ -99,7 +99,7 @@ A person is separate from their employment periods. A joiner creates the person,
 
 ### WIL-05 — Versioned joiner, mover and leaver cases.
 
-Joiner, mover and leaver cases start from versioned templates: each task goes to HR, the manager in force on the case date, IT, payroll or the employee, due relative to that date. A new template version leaves open cases on their version. Only the task's assignee completes it; account and device tasks need evidence. A case cannot complete while a task is open or required information is missing.
+Joiner, mover and leaver cases start from versioned templates: each task goes to HR, the manager in force on the case date, IT, payroll or the employee, due relative to that date. A new template version leaves open cases on their version. Open manager tasks on an open joiner case follow the manager currently in force; completed tasks keep their assignment and evidence. The task's assignee completes it, and the owner may take over manager tasks; account and device tasks need evidence. A case cannot complete while a task is open or required information is missing.
 
 **Acceptance evidence:** Start a case, publish a new template, complete tasks as the right and wrong assignees, and attempt closure with missing evidence; the original template version and incomplete gate remain.
 
@@ -111,7 +111,7 @@ Private documents carry a category that decides whether the person and their man
 
 ### WIL-07 — Effective-dated terms and compensation.
 
-A change of terms is a new complete version effective from a date: past, current and future versions all remain, the version in force is chosen by date, and a future or past version can be canceled (kept as canceled) but never edited. The active employment period wins on the as-of date (inclusive boundaries), otherwise the first upcoming period, otherwise former; directory, profile, manager scope and reports use that same selection. Setting pay needs pay.read.
+A change of terms is a new complete version effective from a date: past, current and future versions all remain, the version in force is chosen by date, and a future or past version can be canceled (kept as canceled) but never edited. The active employment period wins on the as-of date (inclusive boundaries), otherwise the first upcoming period, otherwise former; directory, profile, manager scope and reports use that same selection. Setting pay needs pay.read. Before payroll handoff, the compensation door can correct starting pay at the start date by canceling the old initial version and appending its replacement atomically; job fields and later terms remain.
 
 **Acceptance evidence:** Schedule past and future changes, read profiles/directory/reports as of each boundary, cancel a version and inspect history; immutable terms and consistent manager scope survive.
 
@@ -135,13 +135,13 @@ The leave ledger is append-only. A request reserves its hours in the same atomic
 
 ### WIL-11 — Reviewed payroll change batches.
 
-A payroll change batch for a pay period gathers every start, end, terms change (with pay) and approved leave (in hours) effective by the period end and not yet handed off, keyed by the provider identifier; changes without one are listed as exceptions. All lines, exceptions and silent claims are calculated solely from one atomic source snapshot, revalidated in the draft transaction. Export atomically revalidates the reviewed source values and claims (including silent cancellation pairs), refusing stale drafts and older drafts without this calculation guarantee before any handoff; an unchanged draft hands each change off exactly once. A fresh draft nets pre-handoff cancellations to nothing; leave canceled after handoff becomes a reversal line in the next batch; the provider's acknowledgment is recorded. Needs payroll.handoff and pay.read. Payroll calculation, tax and payment stay with the provider.
+A payroll change batch for a pay period gathers every start, end, terms change (with pay) and approved leave (in hours) effective by the period end and not yet handed off, keyed by the provider identifier; changes without one or without a recorded pay basis and amount are listed as named exceptions. Generic files use the legal name; owner column headings accept printable punctuation, including #. All lines, exceptions and silent claims are calculated solely from one atomic source snapshot, revalidated in the draft transaction. Export atomically revalidates the reviewed source values and claims (including silent cancellation pairs), refusing stale drafts and older drafts without this calculation guarantee before any handoff; an unchanged draft hands each change off exactly once. A fresh draft nets pre-handoff cancellations to nothing; leave canceled after handoff becomes a reversal line in the next batch; the provider's acknowledgment is recorded. Needs payroll.handoff and pay.read. Payroll calculation, tax and payment stay with the provider.
 
 **Acceptance evidence:** Preview and export a batch; change source data before export and prove refusal, race competing exports, cancel before and after handoff, then record acknowledgment; claims and frozen lines stay consistent.
 
 ### WIL-12 — Evidence-gated departure and native access termination.
 
-A leaver records the period's end date and a private reason and opens a leaver case. External account and device tasks stay open until their assignee records evidence; while any is open the departure cannot be marked complete. The case's "end access" task deactivates the person's sign-in and clears their permissions.
+A leaver records the period's end date and a private reason and opens a leaver case. External account and device tasks stay open until their assignee records evidence; while any is open the departure cannot be marked complete. The case's "end access" task lets its assigned member deactivate that person's sign-in and clear their permissions in the same transaction that completes the task. Approved leave beyond the last employment day is flagged for HR to resolve, retaining the ledger until cancellation or correction.
 
 **Acceptance evidence:** End a period, inspect the leaver case, try closure before IT evidence, and finish the end-access task; sign-in and permissions end while incomplete external work stays visible.
 

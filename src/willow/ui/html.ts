@@ -106,6 +106,13 @@ export function page(title: string, actor: Actor | null, body: Html, { current =
 }
 
 const ERRORS: Record<string, string> = {
+  initial_terms_fixed: 'use Schedule a pay change on the Compensation card to correct starting pay before handoff. For a job change, choose an effective date after the employment start date.',
+  effective_before_start: 'the effective date must be after the employment start date.',
+  proposal_pay_approval_required: 'this plan sets pay. A member with People management and Read compensation must approve it.',
+  work_email_taken: 'that work email already belongs to another person.',
+  employee_number_taken: 'that employee number already belongs to another person.',
+  invalid_column_heading: 'each column heading must contain 1–60 printable characters and cannot start with =, +, - or @. Symbols such as # are allowed.',
+  payroll_calculation_changed: 'payroll calculation rules changed after this draft was prepared. Discard it and prepare a fresh batch.',
   stale: 'someone changed this record first. Reload and try again.',
   insufficient_balance: 'the leave balance does not cover this request.',
   tasks_open: 'every task must be done, with its evidence, before the case can complete.',

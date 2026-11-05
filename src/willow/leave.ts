@@ -21,6 +21,8 @@ import { WEEKDAYS } from './employer'
 import type { Input } from './input'
 import { displayName, termsOn } from './people'
 import { hasApproval } from './levels/approvals'
+import { readsJobHistoryField } from './levels/job'
+import { leaveEmploymentConflict } from './leave-employment'
 
 const BALANCE = '(SELECT COALESCE(SUM(minutes), 0) FROM wl_ledger WHERE account_id = ?)'
 
@@ -376,8 +378,12 @@ export async function leaveDetail(env: Bindings, actor: Actor, id: string) {
   const calculation = json<Record<string, unknown>>(row.calculation, {})
   if (!hasLeaveBaseline(actor, row.person_id) && !routed && Array.isArray(calculation.days)) calculation.days = calculation.days.map((day: Record<string, unknown>) => ({ date: day.date, minutes: day.minutes }))
   if (!read.policies && !routed) delete calculation.policyVersion
+  const period = readsJobHistoryField(actor, row.person_id, 'endDate')
+    ? await one<{ end_date: string | null }>(env, 'SELECT p.end_date FROM wl_periods p JOIN wl_leave_accounts a ON a.period_id=p.id WHERE a.id=?', row.account_id) : null
+  const employmentConflict = leaveEmploymentConflict(request, period?.end_date)
   return {
     ...request, name: displayName(row), calculation, ledger,
+    ...(employmentConflict ? { employmentConflict } : {}),
     ...(read.balances ? { balanceMinutes: await balance(env, row.account_id) } : {}),
     coverage: read.calendar || routed ? await coverage(env, row.person_id, (await one<{ period_id: string }>(env, 'SELECT period_id FROM wl_leave_accounts WHERE id = ?', row.account_id))!.period_id, row.start_date, row.end_date) : [],
     withheld: Object.keys(read).filter(field => !read[field as LeaveField]),

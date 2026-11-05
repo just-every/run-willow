@@ -22,6 +22,7 @@ import { all, auditRead, insist, one, type Row } from './core'
 import { selectedPeriods } from './employment'
 import { documentsFor } from './documents'
 import { leaveFor } from './leave'
+import { leaveEmploymentConflict } from './leave-employment'
 import { casesFor } from './lifecycle'
 import { PRIVATE_FIELDS, currentTerms, displayName, personNames, statusOf } from './people'
 
@@ -120,6 +121,14 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
   if(employment&&!visible.has('pay'))delete (employment as Record<string,unknown>).pay
   if(employment) employment.employment=projectJobEmployment(actor,personId,employment.employment,options.jobFields) as typeof employment.employment
   const jobFields=Object.fromEntries(JOB_FIELDS.map(field=>[field,readsJobHistoryField(actor,personId,field)&&(!options.jobFields||options.jobFields(field))]))
+  // Match the request's own period, including an earlier period after rehire.
+  // Use projected dates so previews and independent leave/job grants stay bounded.
+  const periodEnds = new Map((employment?.employment ?? []).map(period => [period.id, period.endDate]))
+  const accountPeriods = new Map((leave?.accounts ?? []).map(account => [account.id, account.period]))
+  const leaveProjection = leave && jobFields.endDate ? { ...leave, requests: leave.requests.map(request => {
+    const conflict = leaveEmploymentConflict(request, periodEnds.get(accountPeriods.get(request.account)))
+    return conflict ? { ...request, employmentConflict: conflict } : request
+  }) } : leave
   const compensationFields=Object.fromEntries(COMPENSATION_FIELDS.map(field=>[field,readsCompensation(actor,personId,field)&&(!options.compensationFields||options.compensationFields(field))]))
   const compensationRecords=await compensationRecordsFor(env,actor,personId,options.compensationFields)
   const compensation=await compensationProjection(env,actor,personId,options.compensationFields,date)
@@ -134,7 +143,7 @@ export async function personView(env: Bindings, actor: Actor, personId: string, 
       ...(visible.has('employment') && jobFields.scheduleId ? { schedule: current.schedule_id ? { id: current.schedule_id, ...look.schedules.get(current.schedule_id) } : null } : {}), ...(visible.has('employment') && jobFields.fte ? {fte: current.fte ?? (current.schedule_id && look.schedules.get(current.schedule_id) ? look.schedules.get(current.schedule_id)!.weeklyMinutes / 2400 : null)} : {}) } : null, facets: [...visible],
     ...(employment ? { ...(hasJobBaseline(actor,personId) && visible.has('employment') ? {employeeNumber: person.employee_number} : {}), ...employment } : {}),
     ...(personalFields.length ? { private: Object.fromEntries(personalFields.map(field => [field, privateValues?.[field] ?? null])) } : {}),
-    ...(visible.has('leave') ? { leave } : {}),
+    ...(visible.has('leave') ? { leave: leaveProjection } : {}),
     ...(visible.has('lifecycle') ? { cases } : {}),
     ...(visible.has('documents') ? { documents } : {}),
   }

@@ -53,7 +53,7 @@ async function describe(env: Bindings, kind: string, plan: Record<string, unknow
     changes.push({ field: 'Start date', from: null, to: text('startDate') }, { field: 'Employment type', from: null, to: text('employmentType') })
     if (text('payrollId')) changes.push({ field: 'Payroll identifier', from: null, to: text('payrollId') })
     for (const [key, column, name] of TERM_FIELDS) changes.push({ field: name, from: null, to: await label(env, column, text(key)) })
-    if (text('payBasis')) changes.push({ field: 'Pay', from: null, to: await payLabel(env, text('payBasis'), text('payAmount')), sensitivity: 'pay' })
+    if (text('payBasis') || text('payAmount')) changes.push({ field: 'Pay', from: null, to: await payLabel(env, text('payBasis'), text('payAmount')), sensitivity: 'pay' })
     const required = json<string[]>(template.required_fields, [])
     const supplied = (field: string) => field === 'work_email' ? text('workEmail') : field === 'payroll_id' ? text('payrollId') : text(field)
     missing.push(...required.filter(field => (REQUIRED_FIELDS as readonly string[]).includes(field) && !supplied(field)))
@@ -66,7 +66,10 @@ async function describe(env: Bindings, kind: string, plan: Record<string, unknow
     const base = await termsOn(env, period.id, text('effectiveFrom') ?? period.start_date)
     changes.push({ field: 'Effective from', from: base?.effective_from ?? null, to: text('effectiveFrom') })
     for (const [key, column, name] of TERM_FIELDS) if (key in plan) changes.push({ field: name, from: await label(env, column, base?.[column] ?? null), to: await label(env, column, text(key)) })
-    if (text('payBasis')) changes.push({ field: 'Pay', from: null, to: await payLabel(env, text('payBasis'), text('payAmount')), sensitivity: 'pay' })
+    if (text('payBasis') || text('payAmount')) {
+      const previous = base ? await one(env, 'SELECT pay_basis, amount_cents FROM wl_term_pay WHERE term_id=?', base.id) : null
+      changes.push({ field: 'Pay', from: previous ? await payLabel(env, previous.pay_basis, previous.amount_cents == null ? null : String(previous.amount_cents / 100)) : null, to: await payLabel(env, text('payBasis') ?? previous?.pay_basis, text('payAmount')), sensitivity: 'pay' })
+    }
   }
   return { changes, missing, expected }
 }
@@ -111,6 +114,7 @@ export async function decideProposal(env: Bindings, actor: Actor, input: Input) 
     || (expected.period && !await one(env, 'SELECT 1 FROM wl_periods WHERE id = ? AND revision = ?', expected.period.id, expected.period.revision))
   insist(!stale, 'proposal_stale', 409)
   const plan = JSON.parse(proposal.plan)
+  insist(!needsPayApproval(plan) || can(actor, 'pay.read'), 'proposal_pay_approval_required', 403)
   const prepared = await (proposal.kind === 'joiner' ? prepareJoiner : prepareMover)(env, actor, Input.of(plan))
   const receipt = { executedBy: actor.id, executedAt: now(), planSha256: await sha256Hex(proposal.plan), result: prepared.result }
   await commit(env, [
@@ -131,8 +135,10 @@ export async function proposalDetail(env: Bindings, actor: Actor, id: string) {
   requirePermission(actor, 'people.manage')
   const row = await one(env, 'SELECT * FROM wl_proposals WHERE id = ?', id)
   insist(row, 'not_found', 404)
-  return { id: row.id, kind: row.kind, summary: row.summary, agent: row.agent, status: row.status, proposedAt: row.proposed_at, decidedAt: row.decided_at, expected: json(row.expected, {}), changes: redact(actor, json<Change[]>(row.diff, [])), missing: json<string[]>(row.missing, []), receipt: json(row.receipt, null) }
+  return { id: row.id, kind: row.kind, summary: row.summary, agent: row.agent, status: row.status, proposedAt: row.proposed_at, decidedAt: row.decided_at, expected: json(row.expected, {}), changes: redact(actor, json<Change[]>(row.diff, [])), missing: json<string[]>(row.missing, []), approvalBlockers: needsPayApproval(JSON.parse(row.plan)) && !can(actor, 'pay.read') ? ['This plan sets pay. A member with People management and Read compensation must approve it. Ask the owner or HR to assign that access level.'] : [], receipt: json(row.receipt, null) }
 }
+
+const needsPayApproval = (plan: Record<string, unknown>) => ['payBasis', 'payAmount'].some(key => typeof plan[key] === 'string' && !!plan[key].trim())
 
 /**
  * Context for an agent explaining records: only what the signed-in member may

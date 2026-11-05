@@ -78,6 +78,8 @@ import { progressPage } from './ui/progress'
 import { changeRequestPage, changeRequestsPage } from './ui/change-requests'
 import { changeAttachment } from './change-requests/view'
 import { datesPage } from './ui/date-alerts'
+import { refusedForm } from './ui/refused-form'
+import { one } from './core'
 
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } })
 
@@ -172,9 +174,24 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
       const failed = notices?.failure || notices?.deliveries?.some(item => ['failed','refused'].includes(item.status))
       return redirect(env, returnTo.replace('{id}', encodeURIComponent(result?.id ?? '')), 'notice', failed ? 'Saved. Email notice delivery failed; continue the work in Willow.' : result?.notice ?? 'Saved.')
     } catch (error) {
-      const { code, status } = failure(error)
+      const { code, status, detail } = failure(error)
       if (name === 'policy.answer' && error instanceof WillowError) return policyAssistantPage(env,actor,policyUrl,{status:'unavailable',claims:[],withheld:[],needsHr:true,escalation:POLICY_ESCALATION_PATH,message:'No supported policy answer is available. HR must resolve the source or provider limitation before you rely on an entitlement or take action.'})
       if (status >= 500) throw error
+      if (['joiner.start', 'mover.schedule', 'compensation.pay', 'payroll.layout'].includes(name!)) {
+        const person = name === 'joiner.start' || name === 'compensation.pay'
+          ? input.text('person', { optional: true })
+          : name === 'mover.schedule' ? (await one(env, 'SELECT person_id FROM wl_periods WHERE id=?', input.text('period')))?.person_id : null
+        const destination = name === 'payroll.layout' ? '/app/payroll' : person ? `/app/people/${encodeURIComponent(person)}` : '/app/people'
+        const failedUrl = new URL(destination, url)
+        const conflict = detail as { name?: string } | undefined
+        const message = code === 'work_email_taken' && conflict?.name ? `That work email already belongs to ${conflict.name}`
+          : code === 'employee_number_taken' && conflict?.name ? `That employee number already belongs to ${conflict.name}` : code
+        failedUrl.searchParams.set('error', message)
+        failedUrl.searchParams.set('failedForm', name!)
+        const response = name === 'payroll.layout' ? await payrollPage(env, actor, failedUrl)
+          : person ? await personPage(env, actor, person, failedUrl) : await directoryPage(env, actor, failedUrl)
+        return refusedForm(response, name!, input)
+      }
       return redirect(env, returnTo.replace('/{id}', ''), 'error', code)
     }
   }

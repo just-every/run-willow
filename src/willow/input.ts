@@ -35,6 +35,15 @@ export class Input {
 
   provided(name: string) { return this.raw(name) !== undefined }
 
+  /** Entered text for redisplaying a refused native form; never files or JSON. */
+  formValues(): Map<string, string[]> {
+    const values = new Map<string, string[]>()
+    if (this.form) for (const [name, value] of this.form) {
+      if (typeof value === 'string') values.set(name, [...(values.get(name) ?? []), value])
+    }
+    return values
+  }
+
   has(name: string) {
     const value = this.raw(name)
     return value !== undefined && value !== null && value !== ''
