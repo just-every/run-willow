@@ -89,7 +89,7 @@ export async function importDoorResponse(request: Request, env: Bindings): Promi
         if(plan?.job_id) {
           const fence = await one<{ receipt_id: string }>(env, 'SELECT receipt_id FROM wl_import_erasure_fences WHERE job_id=?', plan.job_id)
           if (fence) throw new DoorError('import_withdrawn_by_erasure',409,{receiptId:fence.receipt_id})
-          const blockers=await undoBlockers(env,plan.job_id)
+          const blockers=await undoBlockers(env,plan.job_id,await currentActor(env,request))
           if(blockers.length) throw new DoorError('undo_blocked',409,{blockers})
         }
       }
