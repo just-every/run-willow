@@ -1,3 +1,4 @@
+import { describeImportBlocker } from './errors'
 import { effectiveFieldDefinitions } from '../custom-fields/store'
 import { insist } from '../core'
 import { doorCall, uploadAndPlan } from '../movein/door'
@@ -6,12 +7,14 @@ import { doorSettings } from '../movein/authority'
 // reviewed fingerprint, and the import journal with undo.
 import type { Bindings } from '../../auth.server'
 import { requireOwner, type Actor } from '../actor'
-import { formatInstant } from '../dates'
+import { formatDate, formatInstant } from '../dates'
 import { employer, settings } from '../employer'
 import type { Input } from '../input'
 import { policies } from '../leave'
 import { importJobs, prepareBamboohr } from '../movein/bamboohr'
 import { fileField, field, form, h, hidden, page, select, table, tag, type Html } from './html'
+
+const IMPORT_RECORDS: Record<string, string> = { person: 'Person', period: 'Employment', terms: 'Employment terms', pay: 'Pay', account: 'Leave account', department: 'Department', location: 'Location', document: 'Document', fieldValue: 'Custom field value', recordRow: 'Record table entry', erasure: 'Erased import source' }
 
 const DATE_FORMATS = [{ value: 'YMD', label: 'Year-month-day (2025-12-31), as BambooHR’s API writes them' }, { value: 'DMY', label: 'Day/month/year (31/12/2025)' }, { value: 'MDY', label: 'Month/day/year (12/31/2025)' }]
 
@@ -29,7 +32,7 @@ ${select('Working schedule for imported employment', 'schedule', data.schedules.
 ${custom.length?h`<details><summary>Custom field columns</summary><p>Column names default to custom:&lt;key&gt;. Values use the shared field definition on the effective date; required or invalid values reject that person.</p>${field('Custom values effective date','customEffectiveFrom',{value:actor.today,type:'date',required:true})}${custom.filter(d=>!d.retired).map(d=>field(`${d.label} (${d.type}${d.required?', required':''})`,`customColumn_${d.key}`,{value:`custom:${d.key}`}))}</details>`:''}
 <label><input type="checkbox" name="catchup" value="yes"> Compare with the previous import (catch-up)</label><button type="submit">Preview import</button></form></section>
 <section class="card"><h2>Imports</h2><p class="muted">Source records count people, employment, departments, locations, balances, documents and table rows separately, including records that need no native write.</p>${jobs.length ? table(['Applied', 'State', 'Source records processed', '', 'Approval'], jobs.map(job => [formatInstant(job.appliedAt, company?.timezone ?? 'UTC'), tag(job.state), job.effects,
-    job.state === 'completed' ? (job.blockers.length ? h`<p>Undo is blocked by later work:</p><ul>${job.blockers.map(blocker => h`<li>${blocker.href ? h`<a href="${blocker.href}">${blocker.label}</a>` : blocker.label ?? blocker.kind}: ${blocker.reason}</li>`)}</ul>` : h`${job.planId ? importForm([hidden('action','reconcile'),hidden('planId',job.planId)],'Reconcile',{secondary:true}) : ''}${importForm([hidden('job', job.id), hidden('action', job.planId ? 'undo' : 'legacy-undo'), hidden('planId', job.planId ?? '')], 'Undo this import', { secondary: true })}`)
+    job.state === 'completed' ? (job.blockers.length ? h`<p>Undo is blocked by later work:</p><ul>${job.blockers.map(blocker => h`<li>${blocker.href ? h`<a href="${blocker.href}">${blocker.label}</a>` : blocker.label ?? IMPORT_RECORDS[blocker.kind] ?? 'Imported record'}: ${describeImportBlocker(blocker.reason)}</li>`)}</ul>` : h`${job.planId ? importForm([hidden('action','reconcile'),hidden('planId',job.planId)],'Reconcile',{secondary:true}) : ''}${importForm([hidden('job', job.id), hidden('action', job.planId ? 'undo' : 'legacy-undo'), hidden('planId', job.planId ?? '')], 'Undo this import', { secondary: true })}`)
       : ['undoing', 'applying','queued','failed','rolling_back'].includes(job.state) ? job.planId ? importForm([hidden('planId', job.planId ?? ''), hidden('fingerprint', job.fingerprint ?? ''), hidden('action', job.state === 'undoing' ? 'undo' : 'apply')], 'Resume', { secondary: true }) : importForm([hidden('job',job.id),hidden('action','legacy-undo')],'Undo interrupted legacy import',{secondary:true}) : '', h`${job.state==='completed'&&job.planId?form('import.access','/app/import',[hidden('job',job.id),select('Portal invitations','choice',[{value:'defer',label:'Defer invitations'},{value:'invite',label:'Invite current employees'}],'defer'),field('Invitation reason','reason')],'Save invitation choice',{secondary:true}):''}${job.caption ? h`<details><summary>Approval</summary><pre>${job.caption.replace(/, fingerprint [a-f0-9]{64}$/, "")}</pre></details>` : ''}`]))
     : h`<p class="muted">No imports yet.</p>`}</section>
 <section class="card"><h2>Business imports</h2><p>Business is ${business.enabled?'enabled':'disabled'}. Your own imports always use the reviewed plan above. Revoked keys: ${business.revokedKids.join(', ')||'none'}.</p>${form('import.settings','/app/import',[hidden('enabled',business.enabled?'no':'yes')],business.enabled?'Disable Business imports':'Enable Business imports',{secondary:true})}</section>`
@@ -54,7 +57,7 @@ export async function previewPage(env: Bindings, actor: Actor, input: Input, url
   const counts = preview.counts as Record<string, unknown>
   const body = h`<p class="back"><a href="/app/import">← Move in</a></p><h1>Import preview</h1><p>Uploads and this plan are retained privately. No people or employment records have changed.</p>
 <div class="grid"><section class="card"><h2>Summary</h2><ul><li>${preview.people.active} active, ${preview.people.upcoming} upcoming and ${preview.people.former} former employment periods</li><li>${counts.effects} native records to write from ${counts.unique} source records; ${counts.rejected} source records rejected; ${counts.duplicates} repeated records collapsed</li>${preview.create.departments.length ? h`<li>New departments: ${preview.create.departments.join(', ')}</li>` : ''}${preview.create.locations.length ? h`<li>New locations: ${preview.create.locations.join(', ')}</li>` : ''}</ul><p class="muted">Each person and employment period counts separately. Departments and locations already in Willow are processed without a write. History shows the source records processed.</p></section>
-<section class="card"><h2>Balances to sign off</h2>${preview.balances.length ? table(['Person', 'Type', 'Hours', 'As of'], preview.balances.map(item => [item.person, `${item.type} → ${item.policy}`, item.hours, item.asOf])) : h`<p class="muted">None.</p>`}</section>
+<section class="card"><h2>Balances to sign off</h2>${preview.balances.length ? table(['Person', 'Type', 'Hours', 'As of'], preview.balances.map(item => [item.person, `${item.type} → ${item.policy}`, item.hours, formatDate(item.asOf)])) : h`<p class="muted">None.</p>`}</section>
 <section class="card"><h2>Documents</h2>${preview.documents.length ? h`<ul>${preview.documents.map(item => h`<li>${item.person}: ${item.title} (${item.category})</li>`)}</ul>` : h`<p class="muted">None.</p>`}</section>
 <section class="card"><h2>Record tables</h2>${preview.tables?.length ? h`<ul>${preview.tables.map(item => h`<li>${item.person}: ${item.rows} ${item.table} row(s)</li>`)}</ul>` : h`<p class="muted">None.</p>`}</section></div>
 ${preview.rejected.length ? h`<section class="card"><h2>Rejected rows</h2><ul>${preview.rejected.map(item => h`<li>${item.location}: ${item.reason}</li>`)}</ul></section>` : ''}

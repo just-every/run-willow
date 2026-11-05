@@ -9,7 +9,7 @@ export function formatMoney(cents: number, currency: string) {
 }
 
 export function formatPay(basis: PayBasis, cents: number | null, currency: string) {
-  if (cents === null) return `${basis} (amount unknown)`
+  if (cents === null) return basis === 'hourly' ? 'Hourly rate not recorded' : basis === 'salary' ? 'Salary not recorded' : 'Pay not recorded'
   const unit = basis === 'hourly' ? ' per hour' : basis === 'salary' ? ' per year' : ''
   return `${formatMoney(cents, currency)}${unit}`
 }
@@ -18,4 +18,4 @@ export function formatPay(basis: PayBasis, cents: number | null, currency: strin
 export const plainMoney = (cents: number, currency: string) => `${(cents / 100).toFixed(2)} ${currency}`
 
 // Reads the handoff's plain pay text back as the display form on screen.
-export const displayPayText = (text: string) => text.replace(/\b(salary|hourly) (\d+\.\d{2}) ([A-Z]{3})\b/g, (_, basis, amount, currency) => formatPay(basis, Math.round(Number(amount) * 100), currency))
+export const displayPayText = (text: string) => text.replace(/\bpay unknown unknown\b/g, 'pay not recorded').replace(/\b(salary|hourly) (\d+\.\d{2}) ([A-Z]{3})\b/g, (_, basis, amount, currency) => formatPay(basis, Math.round(Number(amount) * 100), currency))

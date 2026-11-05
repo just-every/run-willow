@@ -1,3 +1,4 @@
+import { auditTrailProof } from './audit-trail.mjs'
 import { sectionDoorProof } from './levels-section-doors.mjs'
 import { jobDoorProof } from './levels-job-doors.mjs'
 import { exerciseImportDoor } from './import-door.mjs'
@@ -590,6 +591,7 @@ try {
     const audit = await h.api('audit', cookie.owner)
     assert.ok(audit.some(event => event.action === 'person.private.read' && event.subject === ids.sam && event.actor === ids.hanaMember))
     assert.ok(audit.some(event => event.action === 'leave.reason.read' && event.actor === ids.hanaMember))
+    await auditTrailProof(h, cookie.owner, cookie.sam, ids.sam)
     console.log(`WIL-03 crawled ${urls.length} doors x ${Object.keys(forbidden).length} members`)
   })
 

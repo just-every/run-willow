@@ -1,6 +1,6 @@
-// Stored values as people read them: roles, employment types, task offsets, ISO dates and
-// audit actions. Records keep their stored spelling; only the page wording changes here.
-import { formatDay, isDate } from '../dates'
+// Stored values as people read them: roles, employment types, task offsets and dates.
+// Records keep their stored spelling; only the page wording changes here.
+import { formatDate, isDate } from '../dates'
 
 export const ASSIGNEE_LABELS: Record<string, string> = { hr: 'HR', it: 'IT', payroll: 'Payroll', manager: 'Manager', employee: 'Employee' }
 export const TYPE_LABELS: Record<string, string> = { full_time: 'Full time', part_time: 'Part time', casual: 'Casual', fixed_term: 'Fixed term', unknown: 'Unknown (from import)' }
@@ -22,14 +22,12 @@ export const hoursLabel = (value: number | string) => {
 }
 
 /** A stored value shown in a table: ISO dates as US days with the year, enums as words. */
-export function displayValue(value: unknown, today: string): string {
+export function displayValue(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—'
   const text = String(value)
-  if (isDate(text)) return formatDay(text, today, { year: true })
+  if (isDate(text)) return formatDate(text)
   if (Object.hasOwn(TYPE_LABELS, text)) return TYPE_LABELS[text]
   if (Object.hasOwn(KIND_LABELS, text)) return KIND_LABELS[text]
   return text
 }
 
-/** An audit action code as words: "report.compensation.read" -> "Report compensation read". */
-export const actionLabel = (action: string) => sentence(action.replace(/[._]+/g, ' '))

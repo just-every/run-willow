@@ -1,3 +1,4 @@
+import { audit } from './audit'
 import { webhookList } from './webhooks'
 import { trainingHome } from './training'
 import { signatureRequests,signatureRequest } from './sign/requests'
@@ -64,10 +65,7 @@ import { modelDraft, modelDrafts } from './model-drafts'
 
 type View = (env: Bindings, actor: Actor, request: Request, id: string, url: URL) => Promise<unknown>
 
-export async function audit(env: Bindings, actor: Actor) {
-  requirePermission(actor, 'audit.read')
-  return await all(env, 'SELECT seq, at, actor, action, subject, detail, agent_id, agent_name, operation_id, approvers FROM wl_audit ORDER BY seq DESC LIMIT 500')
-}
+export { audit } from './audit'
 
 const query = (url: URL) => Input.of(Object.fromEntries(url.searchParams))
 
@@ -157,7 +155,7 @@ export const views: Record<string, View> = {
   proposal: (env, actor, _request, id) => proposalDetail(env, actor, id),
   importSettings: (env, actor) => doorSettings(env, actor),
   imports: (env, actor) => importJobs(env, actor),
-  audit: (env, actor) => audit(env, actor),
+  audit: (env, actor, _request, _id, url) => audit(env, actor, url),
 }
 
 export function route(path: string): { view: View; id: string } {

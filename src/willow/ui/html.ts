@@ -6,6 +6,8 @@ import { can, hasScopedGrant, type Actor } from '../actor'
 import { formatInstant } from '../dates'
 import { iconPaths, type IconName } from '../../ui/icon-paths'
 import { sentence } from './labels'
+import { describeError } from './errors'
+export { describeError } from './errors'
 
 export const esc = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!))
 
@@ -104,27 +106,6 @@ export function page(title: string, actor: Actor | null, body: Html, { current =
 <div class="work">${top}<main${signing?raw(' data-signing-surface'):''}${wide ? raw(' class="wide"') : ''}>${notice ? h`<p class="flash" role="status">${notice}</p>` : ''}${error ? h`<p class="flash error" role="alert">That did not work: ${describeError(error)}</p>` : ''}${body}</main></div></div></body></html>`
   return new Response(document.html, { status, headers })
 }
-
-const ERRORS: Record<string, string> = {
-  stale: 'someone changed this record first. Reload and try again.',
-  insufficient_balance: 'the leave balance does not cover this request.',
-  tasks_open: 'every task must be done, with its evidence, before the case can complete.',
-  already_handed_off: 'this change has already been handed to payroll; record a new change instead.',
-  period_overlap: 'this person has an employment period that has not ended before this start date.',
-  required_information_missing: 'required information is still missing for this case.',
-  evidence_required: 'this task needs evidence of what was done.',
-  opening_not_signed_off: 'the opening balance has not been signed off yet.',
-  overlaps_existing_leave: 'this overlaps leave that is already requested or approved.',
-  no_working_schedule: 'there is no working schedule for some of these days.',
-  proposal_stale: 'the records changed after this proposal was prepared. Ask for a new proposal.',
-  reviewed_fingerprint_changed: 'the import changed since it was reviewed. Preview it again.',
-  undo_blocked: 'some imported records were edited or built on since the import. Reverse those changes first.',
-  employer_not_configured: 'the owner must set up the employer first.',
-  record_is_immutable: 'this record is kept as history and cannot be changed.',
-  not_your_task: 'this task belongs to someone else.',
-  not_your_decision: 'this decision belongs to someone else.',
-}
-export const describeError = (code: string) => Object.hasOwn(ERRORS, code) ? ERRORS[code] : code.replace(/_/g, ' ') + '.'
 
 export const hidden = (name: string, value: unknown) => h`<input type="hidden" name="${name}" value="${value}">`
 
