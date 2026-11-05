@@ -8,7 +8,9 @@ existing legacy import summaries; new import authority belongs to the owner.
 
 Uploads and plans are private custody, not new people or employment records.
 The owner reviews counts, rejections, unknowns and gaps before applying the
-exact fingerprint. Document uploads are privately staged under their content
+exact reviewed plan. The page identifies the review by employee filename and
+employment/native-write counts; the transport retains the fingerprint binding
+in hidden form fields. Document uploads are privately staged under their content
 digests before the native records are created. Each import keeps original
 bundle bytes, a journal and the source row behind every native record.
 
@@ -131,6 +133,14 @@ fields BambooHR leaves out for users who cannot see them, missing former
 employees (reports default to active people), schedules and payroll
 identifiers, which are not part of these fields, and a missing record-table file.
 
+Missing or unreadable hire dates reject the whole employee row, so they create
+neither a person nor employment. Counts distinguish native entity writes from
+source records processed: person and employment are separate source records,
+as are departments, locations, balances, documents and table rows. A source
+record can use an existing department/location without writing it. History
+reports source records processed; six native writes from eight source records
+therefore remains eight source records after completion.
+
 ## Re-import and undo
 
 Importing the same export again adds nothing. To compare a changed export,
@@ -143,7 +153,9 @@ departments/locations). Once anything was edited or built on — a signed-off
 balance, leave request, later terms change, case, payroll handoff, new document
 version or linked sign-in — Willow refuses before starting and lists the
 records. Reverse those in Willow first; a signed-off opening is a ledger entry
-and stays. Existing pre-door imports remain in history with owner undo; no
+and stays. Blockers name the person/account or record and link to the person’s
+record; signed-off openings explicitly explain that the permanent ledger
+prevents undo. Existing pre-door imports remain in history with owner undo; no
 separate importer can create or apply them.
 
 ## Not yet

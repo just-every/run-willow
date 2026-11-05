@@ -612,9 +612,11 @@ try {
     await transfer.request('apply',{planId:preview.planId,reviewedFingerprint:'0'.repeat(64)},403)
     const applied = await transfer.apply(preview)
     assert.equal(applied.job.state, 'completed')
+    assert.equal(applied.job.total, preview.counts.unique, 'History counts processed source records, including records without native writes')
     assert.equal((await transfer.reconcile(preview)).ok,true)
     const people = await h.api('people', cookie.owner)
-    assert.equal(people.length, before + 6)
+    assert.equal(people.length, before + 5)
+    assert.ok(!people.some(person => person.name === "Marlo Quist"), "A missing hire date rejects the whole employee row")
     const rowan = await personOf('owner', people.find(person => person.name === 'Rowan Hale').id)
     assert.equal(rowan.employment[0].terms[0].pay.amountCents, 9800000)
     assert.equal(rowan.private.phone, '0400 000 101')
@@ -633,7 +635,7 @@ try {
     // Importing the same export again adds nothing.
     const again = await transfer.plan(inputs)
     const second = await transfer.apply(again)
-    assert.equal((await h.api('people', cookie.owner)).length, before + 6)
+    assert.equal((await h.api('people', cookie.owner)).length, before + 5)
     // Catch-up replaces imported values, preserves original custody and is itself reversible.
     const changed={...inputs,employees:file('employees.csv',employeesCsv({conflictingEmail:'mia@example.com'}).replace('0400 000 101','0400 000 909'))}
     const catchup=await transfer.plan(changed,{catchup:true})
@@ -658,12 +660,12 @@ try {
     assert.equal(blocked.error, 'undo_blocked')
     const history=await h.api('imports',cookie.owner)
     assert.deepEqual(history.find(job=>job.planId===thirdPlan.planId).blockers.map(item=>item.kind),['account'])
-    assert.equal((await h.api('people', cookie.owner)).length, before + 6)
+    assert.equal((await h.api('people', cookie.owner)).length, before + 5)
     assert.equal((await h.api('imports', cookie.owner)).find(job => job.id === third.job.id).state, 'completed')
     assert.equal((await h.raw('/auth/signout',{cookie:cookie.owner,body:{}})).status,204)
     await transfer.request('apply',{planId:thirdPlan.planId,reviewedFingerprint:thirdPlan.fingerprint},401)
     const newOwner=await h.signIn(h.vars.OWNER_EMAIL)
-    assert.equal((await h.api('people',newOwner)).length,before+6,'a revoked owner session cannot mutate a reviewed import')
+    assert.equal((await h.api('people',newOwner)).length,before+5,'a revoked owner session cannot mutate a reviewed import')
   })
 } finally {
   await h.close()

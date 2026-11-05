@@ -1,4 +1,5 @@
 import { customImportSource } from '../custom-fields/import'
+import { undoTargetLabel } from './blocker-labels'
 import { doorHistory } from './authority'
 // Move-in kit 1: BambooHR. Reads an employee report (CSV or XLSX) using
 // BambooHR's documented field names (or their report column labels), an
@@ -132,7 +133,7 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
   const rows = sheet.rows.slice(1).map((cells, index) => ({ cells, row: index + 2, field: (name: string) => read.get(cells, name) }))
   const keyOf = (row: { field: (name: string) => string }) => row.field('id') ? `id:${row.field('id')}` : row.field('employeeNumber') ? `number:${row.field('employeeNumber')}` : ''
   const departments = new Set<string>(), locations = new Set<string>()
-  for (const row of rows) { if (row.field('department')) departments.add(row.field('department')); if (row.field('location')) locations.add(row.field('location')) }
+  for (const row of rows) { if (!parseDate(row.field('hireDate'), order)) continue; if (row.field('department')) departments.add(row.field('department')); if (row.field('location')) locations.add(row.field('location')) }
   for (const name of departments) record('department', `department:${name.toLowerCase()}`, { name }, employeesHash, employees.filename, 0)
   for (const name of locations) record('location', `location:${name.toLowerCase()}`, { name }, employeesHash, employees.filename, 0)
   for (const row of rows) record('person', `person:${keyOf(row) || `row-${row.row}`}`, { row: row.row, cells: Object.fromEntries(sheet.rows[0].map((header, index) => [header || `column ${index + 1}`, row.cells[index] ?? ''])) }, employeesHash, employees.filename, row.row)
@@ -215,11 +216,11 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
   }
   seen.clear()
   const managerKey = (row: (typeof rows)[number]) => {
-    if (row.field('supervisorEId')) return accepted.has(`id:${row.field('supervisorEId')}`) ? `id:${row.field('supervisorEId')}` : null
+    if (row.field('supervisorEId')) return personOf.has(`id:${row.field('supervisorEId')}`) ? `id:${row.field('supervisorEId')}` : null
     const name = row.field('reportsTo')
     if (!name) return null
     const wanted = name.includes(',') ? name.split(',').map(part => part.trim()).reverse().join(' ').toLowerCase() : name.toLowerCase()
-    return [...accepted].find(([, candidate]) => nameOf(candidate).toLowerCase() === wanted || (candidate.field('preferredName') + ' ' + candidate.field('lastName')).toLowerCase() === wanted)?.[0] ?? null
+    return [...accepted].find(([key, candidate]) => personOf.has(key) && (nameOf(candidate).toLowerCase() === wanted || (candidate.field('preferredName') + ' ' + candidate.field('lastName')).toLowerCase() === wanted))?.[0] ?? null
   }
 
   const mapping: ImportMapping = {
@@ -239,6 +240,8 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
         const key = keyOf(row), label = nameOf(row) || `row ${row.row}`
         if (!key) return reject(source, 'no stable identifier (id or employeeNumber)')
         if (accepted.get(key) !== row) return reject(source, `duplicate of row ${accepted.get(key)!.row} (same ${key.startsWith('id:') ? 'id' : 'employee number'})`)
+        const start = parseDate(row.field('hireDate'), order)
+        if (!start) return reject(source, `missing or unreadable hireDate "${row.field('hireDate')}"; the whole employee row is rejected`)
         const personId = targetIds.person(key)
         const workEmail = row.field('workEmail').toLowerCase() || null
         if (source.kind === 'person') {
@@ -259,8 +262,6 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
         }
         // Employment: one period from hireDate, with an end date when terminated.
         if (!personOf.has(key)) return reject(source, 'the person row was not imported')
-        const start = parseDate(row.field('hireDate'), order)
-        if (!start) return reject(source, `missing or unreadable hireDate "${row.field('hireDate')}"`)
         const end = row.field('terminationDate') ? parseDate(row.field('terminationDate'), order) : null
         if (row.field('terminationDate') && !end) return reject(source, `unreadable terminationDate "${row.field('terminationDate')}"`)
         if (end && end < start) return reject(source, 'terminationDate is before hireDate')
@@ -391,13 +392,16 @@ function importContext(env: Bindings, actor: Actor): D1ImportContext {
 /** Every imported entity that has since been edited or built on: undo is refused until each is reversed in Willow. */
 export async function undoBlockers(env: Bindings, jobId: string) {
   const rows = await all(env, 'SELECT target_kind, target_id, record_json FROM ik_provenance WHERE job_id = ? AND reversed = 0', jobId)
-  const blockers: { kind: string; target: string; reason: string }[] = []
+  const blockers: { kind: string; target: string; reason: string; label?: string; href?: string }[] = []
   for (const row of rows) {
     const recorded = JSON.parse(row.record_json)
     const current = await KINDS[row.target_kind].read(env.DB as never, row.target_id)
-    if (!current) blockers.push({ kind: row.target_kind, target: row.target_id, reason: 'removed since import' })
-    else if ('dependents' in current.value) blockers.push({ kind: row.target_kind, target: row.target_id, reason: `${current.value.dependents} later record(s) depend on it` })
-    else if (current.revision !== recorded.appliedRevision || sha256(canonicalJson(current.value as Json)) !== recorded.valueHash) blockers.push({ kind: row.target_kind, target: row.target_id, reason: 'edited since import' })
+    const reason = !current ? 'removed since import' : 'dependents' in current.value ? `${current.value.dependents} later record(s) depend on it`
+      : current.revision !== recorded.appliedRevision || sha256(canonicalJson(current.value as Json)) !== recorded.valueHash ? 'edited since import' : null
+    if (reason) {
+      const {permanentReason,...label} = await undoTargetLabel(env,row.target_kind,row.target_id)
+      blockers.push({ kind: row.target_kind, target: row.target_id, reason: permanentReason ?? reason, ...label })
+    }
   }
   return blockers
 }

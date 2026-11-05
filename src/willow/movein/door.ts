@@ -1,5 +1,6 @@
 import { quarantinedImportSources } from '../retention/import-custody'
 import { DoorError } from '../../modules/import-kit/src/door/protocol'
+import { AuthError } from '../../modules/operator-auth/index.mjs'
 // The only native import pipeline: both signed-in forms and external grants use Base's door.
 import { Buffer } from 'node:buffer'
 import type { Bindings } from '../../auth.server'
@@ -112,11 +113,17 @@ export async function importDoorResponse(request: Request, env: Bindings): Promi
       ownerEmail:env.OWNER_EMAIL, mapping:{version:emptyMapping.version,map(record){return (prepared?.mapping ?? emptyMapping).map(record)}},
       parse(value,index){ if (!prepared) throw new Error('source_not_prepared'); return prepared.parse(value,index) },
       async authorize() {
-        const actor = await currentActor(env, request)
-        if (!actor?.owner) return null
-        await initializeDoor(env, actor)
-        await source(namespace)
-        return ownerPredicate(actor)
+        try {
+          const actor = await currentActor(env, request)
+          if (!actor?.owner) return null
+          await initializeDoor(env, actor)
+          await source(namespace)
+          return ownerPredicate(actor)
+        } catch (error) {
+          // Preserve safe, named seed/auth refusals across the shared door.
+          if (error instanceof WillowError || error instanceof AuthError) throw new DoorError(error.code,error.status,error instanceof WillowError ? error.detail as Record<string,unknown> | undefined : undefined)
+          throw error
+        }
       },
     })(request)
     if(response?.ok && path.endsWith('/plan') && prepared) {
@@ -133,7 +140,7 @@ export async function importDoorResponse(request: Request, env: Bindings): Promi
 /** Server-rendered forms call the same HTTP handler with the current cookie and Origin. */
 export async function doorCall(env: Bindings, request: Request, action: string, body: unknown) {
   const response = await importDoorResponse(new Request(`${env.AUTH_ORIGIN}/api/operator/import/${action}`, {
-    method:'POST',headers:{cookie:request.headers.get('cookie') ?? '',origin:request.headers.get('origin') ?? '', 'content-type':'application/json','x-import-source':'bamboohr'},body:JSON.stringify(body),
+    method:'POST',headers:{host:new URL(env.AUTH_ORIGIN).host,cookie:request.headers.get('cookie') ?? '',origin:request.headers.get('origin') ?? '', 'content-type':'application/json','x-import-source':'bamboohr'},body:JSON.stringify(body),
   }), env)
   const result = await response!.json() as any
   insist(response!.ok, result.error ?? 'import_failed', response!.status, result.details)
