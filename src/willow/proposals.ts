@@ -67,8 +67,8 @@ async function describe(env: Bindings, kind: string, plan: Record<string, unknow
     changes.push({ field: 'Effective from', from: base?.effective_from ?? null, to: text('effectiveFrom') })
     for (const [key, column, name] of TERM_FIELDS) if (key in plan) changes.push({ field: name, from: await label(env, column, base?.[column] ?? null), to: await label(env, column, text(key)) })
     if (text('payBasis') || text('payAmount')) {
-      const previous = base ? await one(env, 'SELECT pay_basis FROM wl_term_pay WHERE term_id=?', base.id) : null
-      changes.push({ field: 'Pay', from: null, to: await payLabel(env, text('payBasis') ?? previous?.pay_basis, text('payAmount')), sensitivity: 'pay' })
+      const previous = base ? await one(env, 'SELECT pay_basis, amount_cents FROM wl_term_pay WHERE term_id=?', base.id) : null
+      changes.push({ field: 'Pay', from: previous ? await payLabel(env, previous.pay_basis, previous.amount_cents == null ? null : String(previous.amount_cents / 100)) : null, to: await payLabel(env, text('payBasis') ?? previous?.pay_basis, text('payAmount')), sensitivity: 'pay' })
     }
   }
   return { changes, missing, expected }
