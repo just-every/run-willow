@@ -2,7 +2,7 @@ Willow works leave out in hours from each person's own working schedule, keeps e
 
 ## Open a leave account
 
-On a person's page, **Open a leave account** asks for an approved leave policy, the cutover date and the opening balance in hours, with a note of where the balance comes from. The opening balance is a proposal until someone with **Manage leave policies, balances and confidential reasons** signs it off. **Post accrual** then adds the hours the policy accrues up to a date.
+On a person's page, **Open a leave account** asks for an approved leave policy, the cutover date and the opening balance in hours, with a note of where the balance comes from. The opening balance is a proposal until someone with **Manage leave policies, balances and confidential reasons** signs it off. **Post accrual** then adds the hours the policy accrues up to a date. If that date has already been processed, check **accrued through** and choose a later date when more accrual is due. After sign-off, the opening entry keeps its source note without describing the balance as awaiting sign-off.
 
 ## Request leave
 

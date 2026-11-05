@@ -2,7 +2,7 @@ Everyone at your employer has one record in **People**: who they are, their empl
 
 ## Start a joiner
 
-At the foot of **People**, **Start a joiner** asks for the joiner template, the person's legal and preferred names, work email, employee number, start date, employment type, payroll identifier (the employee's identifier in your payroll provider, if known), job title, department, location, manager, working schedule and pay. Press **Start joiner**.
+At the foot of **People**, **Start a joiner** asks for the joiner template, the person's legal and preferred names, work email, employee number, start date, employment type, payroll identifier (the employee's identifier in your payroll provider, if known), job title, department, location, manager, working schedule. Pay fields appear only when you also have **Read compensation** access; otherwise an authorized colleague can record pay separately. Press **Start joiner**.
 
 Willow creates the person, their first employment period and a joiner case. Each task in the template goes to the person who does it, due relative to the start date:
 
@@ -15,6 +15,8 @@ Willow creates the person, their first employment period and a joiner case. Each
 Everyone sees their tasks on **Home**. A task marked as needing evidence is done only with a note of what was done, and Willow never acts on an outside system itself. A case completes only when every task is done and the information the template requires is on the record.
 
 ## Keep the record
+
+Links for tools are inside **For agents and integrations**. They return JSON rather than a person-facing page, and include only what your current access allows.
 
 A person's page shows **Directory** (name, work email, role, department, location, manager, status), **Private details** (personal email, phone, home address, date of birth, emergency contact) and **Employment**. Edit them from the **Edit** rows on each card; a person can keep their own private details up to date.
 

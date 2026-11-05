@@ -315,7 +315,7 @@ export async function prepareBamboohr(env: Bindings, input: Input) {
         if (conflict('account', id, source)) return reject(source, 'already imported earlier with a different balance')
         const minutes = Math.round(Number(get('balance')) * 60)
         balanceList.push({ person: label, type, hours: (minutes / 60).toFixed(2), asOf, policy: policy.name })
-        return { effects: [effect('account', id, { period: periodOf.get(key)!, policy: policy.id, policyVersion: policy.version, cutoverDate: asOf, openingMinutes: minutes, openingNote: `BambooHR ${type} balance at ${asOf} (proposed; needs sign-off)`, openingStatus: 'proposed', accruedThrough: asOf })] }
+        return { effects: [effect('account', id, { period: periodOf.get(key)!, policy: policy.id, policyVersion: policy.version, cutoverDate: asOf, openingMinutes: minutes, openingNote: `BambooHR ${type} balance at ${asOf}`, openingStatus: 'proposed', accruedThrough: asOf })] }
       }
       if (source.kind === 'record') {
         // Willow's own export names the person by employeeNumber; a BambooHR id column also works.

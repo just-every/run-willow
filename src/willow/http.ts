@@ -1,3 +1,5 @@
+import { proposalInstructionsPage } from './ui/proposal-instructions'
+import { confirmation, consumeConfirmation } from './flash'
 import { signatureTemplateSettings } from './ui/signature-templates'
 import { signaturePayloadFile } from './sign/payloads'
 import { signaturesPage,signaturePage,signaturePreviewPage,signatureConsentPage } from './ui/signatures'
@@ -65,6 +67,7 @@ import { batchFile } from './payroll'
 import { summary, summaryCsv } from './reports'
 import { tableReportCsv } from './record-tables/report'
 import { h, page } from './ui/html'
+import { describeError, formErrorCode } from './ui/errors'
 import { casePage, homePage, tasksPage } from './ui/home'
 import { leavePage, requestPage } from './ui/leave'
 import { importPage, previewPage } from './ui/movein'
@@ -117,7 +120,12 @@ export async function willowResponse(request: Request, original: Bindings): Prom
     if(url.pathname==='/app/oauth/authorize')return await oauthConsentPage(env,actor,request,url)
     if(url.pathname.startsWith('/api/willow/v1/'))throw new WillowError('credential_required',401)
     if (api) return await apiResponse(env, actor, request, url)
-    return await pageResponse(env, actor, request, url)
+    const expired = consumeConfirmation(request, url)
+    const response = await pageResponse(env, actor, request, url)
+    if (!expired) return response
+    const headers = new Headers(response.headers)
+    headers.append('set-cookie', expired)
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
   } catch (error) {
     const { code, status, detail } = failure(error)
     if (api || request.headers.has('authorization') || actor&&isCredentialActor(actor)) {
@@ -125,7 +133,7 @@ export async function willowResponse(request: Request, original: Bindings): Prom
       return request.headers.has('authorization')?credentialResponse(request,response):response
     }
     if (status === 404) return page('Not found', actor, h`<h1>Not found</h1><p>There is nothing here you can open.</p><p><a href="/app">Back to Willow</a></p>`, { status: 404 })
-    return page('Something went wrong', actor, h`<h1>That did not work</h1><p>${code.replace(/_/g, ' ')}</p><p><a href="/app">Back to Willow</a></p>`, { status })
+    return page('Something went wrong', actor, h`<h1>That did not work</h1><p>${describeError(code)}</p><p><a href="/app">Back to Willow</a></p>`, { status })
   }
 }
 
@@ -175,7 +183,7 @@ async function pageResponse(env: Bindings, actor: Actor, request: Request, url: 
       const { code, status } = failure(error)
       if (name === 'policy.answer' && error instanceof WillowError) return policyAssistantPage(env,actor,policyUrl,{status:'unavailable',claims:[],withheld:[],needsHr:true,escalation:POLICY_ESCALATION_PATH,message:'No supported policy answer is available. HR must resolve the source or provider limitation before you rely on an entitlement or take action.'})
       if (status >= 500) throw error
-      return redirect(env, returnTo.replace('/{id}', ''), 'error', code)
+      return redirect(env, returnTo.replace('/{id}', ''), 'error', formErrorCode(code, name!))
     }
   }
   // The owner sets up the employer before anything else.
@@ -192,6 +200,7 @@ type Page = (env: Bindings, actor: Actor, request: Request, url: URL, id: string
 const csv = (body: string, filename: string) => new Response(body, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${filename}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' } })
 
 const pages: Record<string, Page> = {
+  proposalInstructions: (_env, actor, _request, url) => proposalInstructionsPage(actor, url),
   webhooks:(env,actor,_request,url)=>webhooksPage(env,actor,url),
   apiCredentials:(env,actor,_request,url)=>credentialsPage(env,actor,url),
   settingLocations:(env,actor,_request,url)=>settingAreaPage(env,actor,'locations',url),
@@ -288,6 +297,12 @@ const pages: Record<string, Page> = {
 
 function redirect(env: Bindings, target: string, key: 'notice' | 'error', value: string) {
   const location = new URL(target, env.AUTH_ORIGIN)
+  location.searchParams.delete('notice')
+  location.searchParams.delete('error')
+  location.searchParams.delete('confirmation')
   location.searchParams.set(key, value)
-  return new Response(null, { status: 303, headers: { location: location.pathname + location.search, 'cache-control': 'no-store' } })
+  const headers = new Headers({ 'cache-control': 'no-store' })
+  if (key === 'notice') headers.set('set-cookie', confirmation(location))
+  headers.set('location', location.pathname + location.search)
+  return new Response(null, { status: 303, headers })
 }
