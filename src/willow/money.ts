@@ -9,7 +9,7 @@ export function formatMoney(cents: number, currency: string) {
 }
 
 export function formatPay(basis: PayBasis, cents: number | null, currency: string) {
-  if (cents === null) return basis === 'hourly' ? 'Hourly rate not recorded' : basis === 'salary' ? 'Salary not recorded' : 'Pay not recorded'
+  if (cents === null || basis === 'unknown') return basis === 'hourly' ? 'Hourly rate not recorded' : basis === 'salary' ? 'Salary not recorded' : 'Pay not recorded'
   const unit = basis === 'hourly' ? ' per hour' : basis === 'salary' ? ' per year' : ''
   return `${formatMoney(cents, currency)}${unit}`
 }

@@ -3,7 +3,7 @@ import type { Bindings } from '../auth.server'
 import { requirePermission, type Actor } from './actor'
 import { all, commit, guard, insist, json, newId, now, one, stmt, type Row } from './core'
 import type { Input } from './input'
-import { answersFor } from './lifecycle'
+import { answersFor, taskAssignments } from './lifecycle'
 import { termsOn } from './people'
 import { plannedTasks, workflowContext } from './workflow-plan'
 import { auditSequence, readReview, reviewGuards, saveReview } from './workflow-review'
@@ -62,12 +62,14 @@ export async function applyUpgrade(env: Bindings, actor: Actor, input: Input) {
 }
 
 export async function failTask(env: Bindings, actor: Actor, input: Input) {
-  const task = await one(env, 'SELECT * FROM wl_case_tasks WHERE id=?', input.text('task'))
-  insist(task && task.status === 'open' && !task.superseded_at, 'task_not_open', 409)
-  const current = (await one(env, 'SELECT * FROM wl_cases WHERE id=?', task.case_id))!
+  const snapshot = (await one(env, 'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
+  const stored = await one(env, 'SELECT * FROM wl_case_tasks WHERE id=?', input.text('task'))
+  insist(stored && stored.status === 'open' && !stored.superseded_at, 'task_not_open', 409)
+  const current = (await one(env, 'SELECT * FROM wl_cases WHERE id=?', stored.case_id))!
+  const [task] = await taskAssignments(env, [stored], actor.today, current)
   insist(answersFor(actor, task, current), 'not_your_task', 403)
   const failure = input.text('failure', { max: 2000 })
-  await commit(env, [guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_case_tasks WHERE id=? AND status='open' AND superseded_at IS NULL)", task.id),
+  await commit(env, [...(task.assignee === 'manager' ? [guard(env, 'access_changed', '(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?', snapshot)] : []), guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_case_tasks WHERE id=? AND status='open' AND superseded_at IS NULL)", task.id),
     stmt(env, 'UPDATE wl_case_tasks SET failure=? WHERE id=?', failure, task.id), stmt(env, 'UPDATE wl_cases SET revision=? WHERE id=?', newId(), current.id)],
     { actor: actor.id, action: 'task.failed', subject: task.id, detail: { case: current.id } })
   return { id: current.id, status: 'open' }

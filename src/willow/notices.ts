@@ -1,11 +1,12 @@
 // Fixed copy only. No person names, task titles, decisions, or evidence enter mail.
 import type { Bindings } from '../auth.server'
 import { operatorMail } from '../mail.server.mjs'
-import { actorFor, can, type Actor } from './actor'
+import { actorFor, can, employerZone, type Actor } from './actor'
 import { all, newId, now, one, stmt, type Row } from './core'
-import { answersFor } from './lifecycle'
+import { answersFor, taskAssignments } from './lifecycle'
 import { esc } from './ui/html'
 import { connectionSettings } from './connections'
+import { today } from './dates'
 
 const COPY: Record<string, string> = {
   assignment: 'There is assigned work to review in Willow.',
@@ -50,7 +51,7 @@ export async function notifyAction(env: Bindings, action: string, result: any) {
     if (caseId) {
       const c = await one(env, 'SELECT * FROM wl_cases WHERE id=?', caseId)
       if (!c) return undefined
-      const tasks = await all(env, 'SELECT * FROM wl_case_tasks WHERE case_id=? AND superseded_at IS NULL', caseId)
+      const tasks = await taskAssignments(env, await all(env, 'SELECT * FROM wl_case_tasks WHERE case_id=? AND superseded_at IS NULL', caseId), today(await employerZone(env)), c)
       kind = action === 'task.complete' ? 'completion' : 'assignment'
       subject = caseId; path = '/app/tasks'
       allowed = a => tasks.some(t => (kind === 'assignment' ? t.status === 'open' : t.id === result.id) && answersFor(a, t, c))

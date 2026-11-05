@@ -39,6 +39,13 @@ const ERRORS: Record<string, string> = {
   not_your_decision: 'This decision belongs to another reviewer. Ask the assigned reviewer to open it.',
   authentication_required: 'Sign in again, then reopen the page and review its current status before continuing.',
   owner_required: 'The owner must perform this action. Ask them to open this page and review it.',
+  initial_terms_fixed: 'Use Schedule a pay change on the Compensation card to correct starting pay before handoff. For a job change, choose an effective date after the employment start date.',
+  effective_before_start: 'The effective date must be after the employment start date.',
+  proposal_pay_approval_required: 'This plan sets pay. A member with People management and Read compensation must approve it.',
+  work_email_taken: 'That work email already belongs to another person.',
+  employee_number_taken: 'That employee number already belongs to another person.',
+  invalid_column_heading: 'Each column heading must contain 1–60 printable characters and cannot start with =, +, - or @. Symbols such as # are allowed.',
+  payroll_calculation_changed: 'Payroll calculation rules changed after this draft was prepared. Discard it and prepare a fresh batch.',
   internal_error: 'Willow could not finish this request. Reload the page and check its current status before trying again. If the problem continues, contact your administrator.',
 }
 
@@ -47,7 +54,10 @@ export function formErrorCode(code: string, action: string): string {
   return code === 'stale' && ['payroll.preview', 'payroll.export'].includes(action) ? 'payroll_stale' : code
 }
 
-export function describeError(code: string): string {
+/** `conflict` names the person already holding a refused work email or employee number. */
+export function describeError(code: string, conflict?: string | null): string {
+  if (conflict && code === 'work_email_taken') return `That work email already belongs to ${conflict}.`
+  if (conflict && code === 'employee_number_taken') return `That employee number already belongs to ${conflict}.`
   return Object.hasOwn(ERRORS, code) ? ERRORS[code] : 'Willow could not complete this action. Review the information on this page and try again. If the problem continues, ask your administrator for help.'
 }
 

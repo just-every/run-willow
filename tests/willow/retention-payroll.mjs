@@ -15,6 +15,11 @@ export async function payrollErasure(h, owner, f) {
   for (const person of await api('people')) {
     for (const period of (await api(`people/${person.id}`)).employment ?? []) {
       if (!period.payrollId) await api('period.payroll', { period: period.id, payrollId: `synthetic-willow-${++serial}` })
+      const initial = period.terms.find(term => term.status === 'active' && term.effectiveFrom === period.startDate)
+      if (initial && (!initial.pay || initial.pay.basis === 'unknown' || initial.pay.amountCents === null)) {
+        const current = (await api(`people/${person.id}`)).employment.find(item => item.id === period.id)
+        await api('compensation.pay', { person: person.id, period: period.id, revision: current.revision, effectiveFrom: period.startDate, payBasis: 'hourly', payAmount: '28.50', reason: 'Confirm imported starting pay before the shared handoff' })
+      }
     }
   }
   await api('payroll.layout', { format: 'generic', columns: genericColumns })

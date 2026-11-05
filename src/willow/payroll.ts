@@ -12,7 +12,7 @@ import { requireDate } from './dates'
 import type { Input } from './input'
 import { payrollSources, guardPayrollSources, decodePayrollSources } from './payroll-sources'
 import { payrollPreviewStatus } from './payroll-layout'
-import { calculatePayroll, type Line } from './payroll-calculation'
+import { calculatePayroll, payrollCalculationMatches, type Line } from './payroll-calculation'
 import { requirePayrollCustomAccess, type PayrollColumn } from './payroll-custom-fields'
 export type { Line } from './payroll-calculation'
 
@@ -70,6 +70,7 @@ export async function exportBatch(env: Bindings, actor: Actor, input: Input) {
   // Earlier drafts may have gathered live rows outside their source fence.
   // Only a draft calculated entirely from the captured state can be exported.
   insist(sources && calculatedFromSources === true, 'stale', 409)
+  insist(payrollCalculationMatches(decodePayrollSources(sources), batch.period_end, { lines, silent }, json(batch.exceptions, [])), 'payroll_calculation_changed', 409)
   insist(batch.file_preview && batch.layout_revision, 'payroll_preview_required', 409)
   insist(input.text('previewRevision', {optional:true}) === batch.revision, 'payroll_preview_changed', 409)
   await requirePayrollCustomAccess(env, actor, customColumns, [...new Set(lines.map(line => line.person))])

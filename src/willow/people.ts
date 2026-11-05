@@ -70,10 +70,10 @@ export function readFte(input: Input): number | null {
 }
 
 /** Pay is read only when the request supplies it; setting pay needs pay.read. */
-export function readPay(actor: Actor, input: Input, { approved = false } = {}): PayInput | null {
+export function readPay(actor: Actor, input: Input, { approved = false, basis: inheritedBasis }: { approved?: boolean; basis?: PayInput['basis'] } = {}): PayInput | null {
   if (!input.has('payBasis') && !input.has('payAmount')) return null
   if (!approved) requirePermission(actor, 'pay.read')
-  const basis = input.text('payBasis', { max: 10 }) as PayInput['basis']
+  const basis = (input.has('payBasis') ? input.text('payBasis', { max: 10 }) : inheritedBasis ?? input.text('payBasis', { max: 10 })) as PayInput['basis']
   insist(['salary', 'hourly', 'unknown'].includes(basis), 'invalid_payBasis')
   const amount = input.text('payAmount', { optional: true, max: 20 })
   insist(!amount || /^\d{1,9}(\.\d{1,2})?$/.test(amount), 'invalid_payAmount')
@@ -96,8 +96,11 @@ export function termsStatements(env: Bindings, termId: string, periodId: string,
 }
 
 async function uniqueIdentity(env: Bindings, person: PersonInput, exceptId = '') {
-  if (person.workEmail) insist(!await one(env, 'SELECT 1 FROM wl_people WHERE work_email = ? AND id <> ?', person.workEmail, exceptId), 'work_email_taken', 409)
-  if (person.employeeNumber) insist(!await one(env, 'SELECT 1 FROM wl_people WHERE employee_number = ? AND id <> ?', person.employeeNumber, exceptId), 'employee_number_taken', 409)
+  for (const [value, column, code] of [[person.workEmail, 'work_email', 'work_email_taken'], [person.employeeNumber, 'employee_number', 'employee_number_taken']] as const) {
+    if (!value) continue
+    const existing = await one(env, `SELECT legal_name, preferred_name FROM wl_people WHERE ${column} = ? AND id <> ?`, value, exceptId)
+    insist(!existing, code, 409, existing ? { name: displayName(existing) } : undefined)
+  }
 }
 
 export async function createPersonStatements(env: Bindings, person: PersonInput) {
@@ -202,12 +205,13 @@ export async function prepareTerms(env: Bindings, actor: Actor, input: Input, { 
   insist(period, 'period_not_found', 404)
   insist(actor.personId !== period.person_id, 'own_terms', 403)
   const effective = requireDate(input.text('effectiveFrom', { max: 10 }), 'invalid_effectiveFrom')
-  insist(effective > period.start_date, 'effective_before_start')
+  insist(effective >= period.start_date, 'effective_before_start')
+  insist(effective !== period.start_date, 'initial_terms_fixed', 409, { startDate: period.start_date })
   insist(!period.end_date || effective <= period.end_date, 'effective_after_end')
   const base = (await termsOn(env, periodId, effective))!
   const terms = await readTerms(env, input, base, effective, '', { exactFields })
-  const pay = readPay(actor, input, { approved })
   const previousPay = (await one<{ pay_basis: PayInput['basis']; amount_cents: number | null; currency: string }>(env, 'SELECT pay_basis, amount_cents, currency FROM wl_term_pay WHERE term_id = ?', base.id))!
+  const pay = readPay(actor, input, { approved, basis: previousPay.pay_basis })
   const currency = pay ? (await one<{ currency: string }>(env, 'SELECT currency FROM wl_employer'))!.currency : previousPay.currency
   const termId = newId()
   const organizationGuard = await managerChangeGuard(env, { period: { id: periodId, personId: period.person_id, startDate: period.start_date, endDate: period.end_date }, term: { id: termId, effectiveFrom: effective, managerPersonId: terms.managerPersonId } })
@@ -253,7 +257,12 @@ export async function setPayrollId(env: Bindings, actor: Actor, input: Input) {
   return { id: periodId, payrollId }
 }
 
-export const displayName = (row: Row) => row.preferred_name || row.legal_name
+export function displayName(row: Row): string {
+  const legal = String(row.legal_name ?? '').trim(), preferred = String(row.preferred_name ?? '').trim()
+  if (!preferred) return legal
+  const suffix = legal.split(/\s+/).slice(1).join(' ')
+  return !/\s/.test(preferred) && suffix ? `${preferred} ${suffix}` : preferred
+}
 
 export async function personNames(env: Bindings): Promise<Map<string, string>> {
   return new Map((await all<{ id: string; legal_name: string; preferred_name: string | null }>(env, 'SELECT id, legal_name, preferred_name FROM wl_people')).map(row => [row.id, displayName(row)]))

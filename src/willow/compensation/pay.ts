@@ -10,6 +10,7 @@ import { canEditCompensation,canRequestCompensation } from '../levels/compensati
 import { requestChange } from '../change-requests/requests'
 import { payWriteField } from './pay-authority'
 import { readCompensationRecord } from './records'
+import { prepareStartingPay } from './starting-pay'
 export async function editCompensationPay(env:Bindings,actor:Actor,input:Input) {
  input.only(['person','period','revision','effectiveFrom','payBasis','payAmount','reason','returnTo'])
  const person=input.text('person'),live=await liveJobActor(env,actor)
@@ -18,7 +19,9 @@ export async function editCompensationPay(env:Bindings,actor:Actor,input:Input) 
  insist(period,'period_not_found',404)
  insist(period.revision===input.text('revision'),'stale',409)
  const execution={period:period.id,effectiveFrom:input.text('effectiveFrom'),reason:input.text('reason',{max:300}),payBasis:input.text('payBasis'),payAmount:input.text('payAmount',{optional:true}),template:''}
- const prepared=await prepareJobChange(env,live.actor,period.id,execution)
+ const prepared=execution.effectiveFrom===period.start_date
+  ? await prepareStartingPay(env,live.actor,period,input)
+  : await prepareJobChange(env,live.actor,period.id,execution)
  await commit(env,[live.fence,guard(env,'stale','EXISTS(SELECT 1 FROM wl_periods WHERE id=? AND revision=?)',period.id,period.revision),...prepared.statements],prepared.audit)
  return prepared.result
 }

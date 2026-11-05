@@ -7,10 +7,13 @@ import type { Input } from './input'
 import { guardPayrollSources, decodePayrollSources, payrollSources } from './payroll-sources'
 import { batchCsv, CSV_COLUMNS, type Line } from './payroll'
 import { customColumnSources, payrollCustomColumnOptions, payrollCustomValues, type PayrollColumn } from './payroll-custom-fields'
+import { payrollCalculationMatches } from './payroll-calculation'
 
 export const ADP_GUIDE = 'https://support.adp.com/adp_payroll/content/hybrid/@runcomplete/doc/pdf/GTS_payroll_guide.pdf'
 export const ADP_COLUMNS = ['IID','Pay Frequency','Pay Period Start Date','Pay Period End Date','Employee ID','Earnings Code','Pay Hours','Dollars','Separate Check','Worked In Dept','Rate Code']
 export const payrollLayout = (env: Bindings) => one(env, 'SELECT * FROM wl_payroll_layout WHERE singleton=1')
+const validHeading = (heading: unknown) => typeof heading === 'string' && heading.length <= 60 && heading.trim().length > 0 && !/[\u0000-\u001f\u007f]/.test(heading) && !/^\s*[=+\-@]/.test(heading)
+type LayoutException = Pick<Line, 'key' | 'person' | 'name' | 'payrollId' | 'effectiveDate'> & { reason: string }
 
 export async function layoutView(env: Bindings, actor: Actor) {
   requirePermission(actor, 'payroll.handoff', 'pay.read')
@@ -36,7 +39,8 @@ export async function configureLayout(env: Bindings, actor: Actor, input: Input)
     insist(Array.isArray(columns) && columns.length >= CSV_COLUMNS.length && columns.length <= CSV_COLUMNS.length + eligible.length &&
       new Set(columns.map(c => c?.source)).size === columns.length && new Set(columns.map(c => c?.heading)).size === columns.length &&
       CSV_COLUMNS.every(source => columns.some(column => column?.source === source)) &&
-      columns.every(c => c && (CSV_COLUMNS.includes(c.source) || eligible.some(field => field.source === c.source)) && typeof c.heading === 'string' && /^[A-Za-z][A-Za-z0-9 _-]{0,59}$/.test(c.heading)), 'complete_column_mapping_required')
+      columns.every(c => c && (CSV_COLUMNS.includes(c.source) || eligible.some(field => field.source === c.source))), 'complete_column_mapping_required')
+    insist(columns.every(c => validHeading(c.heading)), 'invalid_column_heading')
     mapping = { ...mapping, columns: columns.map(c => ({source:c.source,heading:c.heading})) }
   }
   if (format === 'adp-run') {
@@ -57,16 +61,17 @@ export async function configureLayout(env: Bindings, actor: Actor, input: Input)
 const adpDate = (date: string) => `${date.slice(5,7)}/${date.slice(8,10)}/${date.slice(0,4)}`
 
 function renderAdp(lines: Line[], mapping: any, start: string, end: string, sources: string) {
-  const errors: { key: string; reason: string }[] = []
+  const errors: LayoutException[] = []
   const periods = decodePayrollSources(sources).wl_periods
   for (const line of lines) {
+    const exception = (reason: string) => errors.push({ key: line.key, person: line.person, name: line.name, payrollId: line.payrollId, effectiveDate: line.effectiveDate, reason })
     const period = periods.find(p => p.id === line.periodId)
-    if (!period || period.start_date > end || period.end_date && period.end_date < start) errors.push({key:line.key,reason:'Employee is not active within this pay period.'})
-    if (line.kind !== 'leave') errors.push({ key: line.key, reason: `ADP Time Sheet Import cannot represent ${line.kind}; use the generic changes layout.` })
-    else if (line.unit !== 'hours' || !line.units || !/^\d{1,9}(\.\d{1,2})?$/.test(line.units) || Number(line.units) <= 0) errors.push({ key: line.key, reason: 'Positive hours with at most two decimals required.' })
-    else if (line.effectiveDate < start || !line.endDate || line.endDate > end) errors.push({ key: line.key, reason: 'Leave must fall wholly within the pay period; reconcile a different period.' })
-    if (!line.payrollId || !/^[a-zA-Z0-9_-]{1,15}$/.test(line.payrollId)) errors.push({ key: line.key, reason: 'A payroll-assigned Employee ID of at most 15 characters is required.' })
-    if (line.kind === 'leave' && (!line.policyId || !mapping.earnings[line.policyId])) errors.push({ key: line.key, reason: 'Map this leave policy to an earnings code from the ADP Earnings Codes report.' })
+    if (!period || period.start_date > end || period.end_date && period.end_date < start) exception('Employee is not active within this pay period.')
+    if (line.kind !== 'leave') exception(`ADP Time Sheet Import cannot represent ${line.kind}; use the generic changes layout.`)
+    else if (line.unit !== 'hours' || !line.units || !/^\d{1,9}(\.\d{1,2})?$/.test(line.units) || Number(line.units) <= 0) exception('Positive hours with at most two decimals required.')
+    else if (line.effectiveDate < start || !line.endDate || line.endDate > end) exception('Leave must fall wholly within the pay period; reconcile a different period.')
+    if (!line.payrollId || !/^[a-zA-Z0-9_-]{1,15}$/.test(line.payrollId)) exception('A payroll-assigned Employee ID of at most 15 characters is required.')
+    if (line.kind === 'leave' && (!line.policyId || !mapping.earnings[line.policyId])) exception('Map this leave policy to an earnings code from the ADP Earnings Codes report.')
   }
   insist(!errors.length, 'payroll_layout_exceptions', 409, { exceptions: errors })
   const rows = lines.map(line => [mapping.company,mapping.frequency,adpDate(start),adpDate(end),line.payrollId,mapping.earnings[line.policyId!],Number(line.units).toFixed(2),'',mapping.separateCheck,mapping.department,mapping.rateCode])
@@ -79,8 +84,9 @@ export async function previewPayroll(env: Bindings, actor: Actor, input: Input) 
   insist(batch?.status === 'draft', 'batch_not_draft', 409)
   const layout = await payrollLayout(env)
   insist(layout, 'payroll_layout_required', 409)
-  const data = json<{lines: Line[]; sources?: string; calculatedFromSources?: boolean; customColumns?: string[]}>(batch.lines, { lines: [] })
+  const data = json<{lines: Line[]; silent?: string[]; sources?: string; calculatedFromSources?: boolean; customColumns?: string[]}>(batch.lines, { lines: [] })
   insist(data.sources && data.calculatedFromSources, 'stale', 409)
+  insist(payrollCalculationMatches(decodePayrollSources(data.sources), batch.period_end, data, json(batch.exceptions, [])), 'payroll_calculation_changed', 409)
   insist(json<any[]>(batch.exceptions, []).length === 0, 'payroll_source_exceptions', 409)
   const mapping = JSON.parse(layout.mapping)
   const customColumns = layout.format === 'generic' ? customColumnSources(mapping.columns) : []
@@ -94,16 +100,23 @@ export async function previewPayroll(env: Bindings, actor: Actor, input: Input) 
 /** The page explains every current blocker before the owner attempts export. */
 export async function payrollPreviewStatus(env: Bindings, batch: import('./core').Row, actor: Actor) {
   if (batch.status !== 'draft') return { issues: [] as string[], stale: false }
-  const layout = await payrollLayout(env), data = json<{lines:Line[];sources?:string}>(batch.lines,{lines:[]})
+  const layout = await payrollLayout(env), data = json<{lines:Line[];silent?:string[];sources?:string;calculatedFromSources?:boolean}>(batch.lines,{lines:[]})
   const issues: string[] = []
   if (!layout) issues.push('The owner must select and map an export layout on Payroll.')
   const exceptions = json<{name:string;reason:string}[]>(batch.exceptions,[])
   issues.push(...exceptions.map(e=>`${e.name}: ${e.reason}. Correct the source and create a fresh batch.`))
-  if (layout?.format === 'adp-run' && data.sources) {
-    try { renderAdp(data.lines,JSON.parse(layout.mapping),batch.period_start,batch.period_end,data.sources) }
-    catch (error) { if (error instanceof WillowError && error.code === 'payroll_layout_exceptions') issues.push(...(error.detail as {exceptions:{reason:string}[]}).exceptions.map(e=>e.reason)); else throw error }
+  let calculationChanged = true
+  if (data.sources && data.calculatedFromSources) {
+    try { calculationChanged = !payrollCalculationMatches(decodePayrollSources(data.sources), batch.period_end, data, exceptions) }
+    catch (error) { if (!(error instanceof WillowError && error.code === 'stale')) throw error }
   }
-  const stale = !!batch.file_preview && (batch.layout_revision !== layout?.revision || data.sources !== await payrollSources(env, actor))
-  if (stale) issues.push('The source or layout changed after this preview. Changed sources require a fresh batch; changed mappings require another preview.')
+  if (!calculationChanged && layout?.format === 'adp-run' && data.sources) {
+    try { renderAdp(data.lines,JSON.parse(layout.mapping),batch.period_start,batch.period_end,data.sources) }
+    catch (error) { if (error instanceof WillowError && error.code === 'payroll_layout_exceptions') issues.push(...(error.detail as {exceptions:LayoutException[]}).exceptions.map(e=>`${e.name} (${e.payrollId ?? 'no payroll identifier'}, ${e.effectiveDate}): ${e.reason}`)); else throw error }
+  }
+  const previewChanged = !!batch.file_preview && (batch.layout_revision !== layout?.revision || data.sources !== await payrollSources(env, actor))
+  if (calculationChanged) issues.push('Payroll calculation rules changed after this draft was prepared. Discard this draft and prepare a fresh batch before preview or export.')
+  if (previewChanged) issues.push('The source or layout changed after this preview. Changed sources require a fresh batch; changed mappings require another preview.')
+  const stale = calculationChanged || previewChanged
   return {issues:[...new Set(issues)],stale}
 }

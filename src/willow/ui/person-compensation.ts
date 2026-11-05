@@ -3,7 +3,7 @@ import type { Actor } from '../actor'
 import { canEditCompensation, canRequestCompensation } from '../levels/compensation'
 import { formatMoney, formatPay } from '../money'
 import { formatDate } from '../dates'
-import { area, field, form, h, hidden, select, table, tag, type Html } from './html'
+import { area, field, form, h, hidden, raw, select, table, tag, type Html } from './html'
 
 type View = Record<string, any>
 type Kind = 'bonus' | 'equity'
@@ -11,15 +11,15 @@ const bases = [{ value: 'salary', label: 'Salary per year' }, { value: 'hourly',
 const date = (value: string | undefined) => value === undefined ? 'Withheld' : formatDate(value)
 const payText = (terms: View) => !Object.hasOwn(terms, 'pay') ? 'Withheld' : terms.pay ? formatPay(terms.pay.basis, terms.pay.amountCents, terms.pay.currency) : 'Not recorded'
 
-function payChange(actor: Actor, person: string, view: View, historical=false): Html {
+function payChange(actor: Actor, person: string, view: View, historical=false, failed=false): Html {
  const period = view.employment?.find((item: View) => item.id === view.selectedPeriod)
  if (!period || actor.personId === person) return h``
  const right=historical?'history':'pay'
  const edit = canEditCompensation(actor, person, right)
  if (!edit && !canRequestCompensation(actor, person, right)) return h``
  const current = period.terms.find((terms: View) => terms.inForce)?.pay
- return h`<details><summary>${historical?'Correct historical pay':edit ? 'Schedule a pay change' : 'Request a pay change'}</summary>${historical?h`<p>Choose a date before the pay version currently in force. This right cannot change current pay.</p>`:''}
- ${edit ? h`<p>The change creates a dated pay version. Previous versions stay in the record.</p>` : h`<p>The current pay stays in force until the configured compensation approval chain approves this request.</p>`}
+ return h`<details${failed?raw(' open'):''}><summary>${historical?'Correct historical pay':edit ? 'Schedule a pay change' : 'Request a pay change'}</summary>${historical?h`<p>Choose a date before the pay version currently in force. This right cannot change current pay.</p>`:''}
+ ${edit ? h`<p>The change creates a dated pay version. Starting pay can be corrected on the employment start date before payroll handoff. Previous versions stay in the record.</p>` : h`<p>The current pay stays in force until the configured compensation approval chain approves this request.</p>`}
  ${form(edit ? 'compensation.pay' : 'change.request', edit ? `/app/people/${person}` : '/app/changes/{id}', [
   hidden('person', person), ...(edit ? [hidden('period', period.id), hidden('revision', period.revision)] : []),
   field('Effective from', 'effectiveFrom', { type: 'date', value: historical?'':actor.today }),
@@ -56,15 +56,15 @@ function awards(actor: Actor, person: string, view: View, kind: Kind, dated: boo
  ${!dated ? awardForm(actor, person, kind) : ''}${!dated && readable ? latest.map(record => awardForm(actor, person, kind, record)) : ''}`
 }
 
-export function personCompensationSection(actor: Actor, person: string, view: View, dated: boolean): Html {
+export function personCompensationSection(actor: Actor, person: string, view: View, dated: boolean, failedForm: string | null = null): Html {
  const fields = view.compensationFields
  const periods: View[] = view.employment ?? []
  const inForce = view.compensation.payRecords.find((terms:View)=>terms.inForce)
  const history:View[] = view.compensation.payRecords
  return h`<section class="card private facet-compensation"><h2>Compensation</h2>
- ${actor.personId === person ? h`<p>View only. Your own compensation cannot be changed here.</p>` : ''}
+ ${actor.personId === person ? h`<p>${Object.values(fields).some(Boolean) ? 'You can view the compensation fields allowed by your access level. Your own compensation cannot be changed here.' : 'Your access level does not show your compensation. Ask HR for an access level that includes the fields you need to view.'}</p>` : ''}
  <dl class="facts"><dt>Pay in force</dt><dd>${!fields.pay ? 'Withheld' : inForce ? payText(inForce) : 'No pay in force'}</dd></dl>
- ${!dated ? payChange(actor, person, view) : ''}${!dated&&(canEditCompensation(actor,person,'history')||canRequestCompensation(actor,person,'history'))?payChange(actor,person,view,true):''}
+ ${!dated ? payChange(actor, person, view, false, failedForm==='compensation.pay') : ''}${!dated&&(canEditCompensation(actor,person,'history')||canRequestCompensation(actor,person,'history'))?payChange(actor,person,view,true,failedForm==='compensation.pay'):''}
  <h3>Pay history</h3>${!fields.history ? h`<p>Withheld</p>` : history.length ? table(['Effective', 'Pay', 'Status'], history.map(terms => [date(terms.effectiveFrom), payText(terms), tag(terms.status === 'cancelled' ? 'cancelled' : terms.inForce ? 'in force' : 'past or scheduled')])) : h`<p class="muted">No pay history.</p>`}
  ${awards(actor, person, view, 'bonus', dated)}${awards(actor, person, view, 'equity', dated)}
  <h3>Compensation bands</h3>${!fields.bands ? h`<p>Withheld</p>` : view.compensation.bands.length ? table(['Role', 'Level', 'Effective', 'Basis', 'Minimum', 'Maximum'], view.compensation.bands.map((band: View) => [band.job_title, band.level, date(band.effective_from), band.basis, formatMoney(band.minimum_cents, 'USD'), formatMoney(band.maximum_cents, 'USD')])) : h`<p class="muted">No matching compensation bands.</p>`}

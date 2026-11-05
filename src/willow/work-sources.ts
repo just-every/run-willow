@@ -14,7 +14,7 @@ import { readsCategory, sees } from './access'
 import { all, json, one, type Row } from './core'
 import { addDays, today } from './dates'
 import { blockedBy } from './workflow-plan'
-import { answersFor, missingFields } from './lifecycle'
+import { answersFor, missingFields, taskAssignments } from './lifecycle'
 import { renewalsDue } from './record-tables/rows'
 import { CERTIFICATIONS, readsTable, recordTables } from './record-tables/schema'
 import { mayApprove, mayRead, type ResolvedStep } from './change-requests/chain'
@@ -62,7 +62,7 @@ export async function workSources(env: Bindings, defaultDays: number): Promise<W
  }
 
  for (const r of await all(env,"SELECT o.*,p.person_id FROM wl_leave_overrides o JOIN wl_leave_accounts a ON a.id=o.account_id JOIN wl_periods p ON p.id=a.period_id WHERE NOT EXISTS(SELECT 1 FROM wl_leave_override_decisions d WHERE d.override_id=o.id)")) add('leave-override',r,'Review leave balance override','/app/leave#overrides',deadline(r.requested_at),a=>canAbout(a,'leave.manage',r.person_id),a=>a.owner)
- const tasks = await all(env, `SELECT t.*,c.person_id FROM wl_case_tasks t JOIN wl_cases c ON c.id=t.case_id WHERE t.status='open' AND t.superseded_at IS NULL AND c.status='open'`)
+ const tasks = await taskAssignments(env, await all(env, `SELECT t.*,c.person_id,c.kind,c.status AS case_status FROM wl_case_tasks t JOIN wl_cases c ON c.id=t.case_id WHERE t.status='open' AND t.superseded_at IS NULL AND c.status='open'`), today(zone))
  for (const t of tasks) {
  const blocked = await blockedBy(env,t)
  add('task',t,t.title,`/app/cases/${t.case_id}`,t.due_date,a=>sees(a,t.person_id,'lifecycle') || answersFor(a,t,t),a=>answersFor(a,t,t),null,t.failure?'External or assigned work failed; evidence still required':blocked.length?`Blocked by ${blocked.length} prerequisite(s)`:t.system?'External evidence required':'Task open')

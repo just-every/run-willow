@@ -6,14 +6,15 @@ import { promotePacketStatements } from './preboarding'
 // responsible person records evidence. A case cannot complete while any task
 // is open.
 import type { Bindings } from '../auth.server'
-import { can, canAbout, requirePermission, type Actor, type Permission } from './actor'
+import { can, canAbout, requirePermission, type Actor } from './actor'
 import { scopeFence } from './levels/scope'
 import { sees } from './access'
 import { all, commit, guard, insist, json, newId, now, one, stmt, type Row } from './core'
 import { addDays, requireDate, today } from './dates'
 import { requireEmployer } from './employer'
 import type { Input } from './input'
-import { endAccessStatements } from './members'
+import { taskEndAccessStatements } from './lifecycle/access'
+import { ASSIGNEES, answersFor, taskAssignments } from './lifecycle/tasks'
 import { managerChangeGuard } from './organization'
 import { editorTaskRules, parseTaskRules } from './workflow-rules'
 import { blockedBy, plannedTasks, workflowContext, type WorkflowContext } from './workflow-plan'
@@ -22,9 +23,7 @@ import { customValueStatements, customValuesInput } from './custom-fields/store'
 import { assetReturnStatements, heldAssets } from './record-tables/rows'
 import { PRIVATE_FIELDS, createPersonStatements, displayName, prepareTerms, readPerson, startPeriodStatements, termsOn } from './people'
 
-export const ASSIGNEES = ['hr', 'manager', 'it', 'payroll', 'employee'] as const
-export type Assignee = typeof ASSIGNEES[number]
-export const ASSIGNEE_PERMISSION: Partial<Record<Assignee, Permission>> = { hr: 'people.manage', it: 'it.tasks', payroll: 'payroll.handoff' }
+export { ASSIGNEES, ASSIGNEE_PERMISSION, answersFor, taskAssignments, type Assignee } from './lifecycle/tasks'
 export const REQUIRED_FIELDS = [...PRIVATE_FIELDS, 'work_email', 'payroll_id'] as const
 
 export async function createTemplate(env: Bindings, actor: Actor, input: Input) {
@@ -178,19 +177,12 @@ export async function startLeaver(env: Bindings, actor: Actor, input: Input) {
   return { id: opened.caseId, case: opened.caseId, period: periodId, endDate: end }
 }
 
-/** Who answers for a task: its named member, the holders of its role's permission, or the employee themselves. */
-export function answersFor(actor: Actor, task: Row, caseRow: Row): boolean {
-  if (task.assignee === 'employee') return actor.personId === caseRow.person_id
-  // The manager in force on the case's date answers; without one, HR does.
-  if (task.assignee === 'manager') return task.assignee_person_id ? task.assignee_person_id === actor.personId : canAbout(actor, 'people.manage', caseRow.person_id)
-  const permission = ASSIGNEE_PERMISSION[task.assignee as Assignee]!
-  return permission === 'people.manage' ? canAbout(actor, permission, caseRow.person_id) : can(actor, permission)
-}
-
-export async function completeTask(env: Bindings, actor: Actor, input: Input, request: Request) {
-  const task = await one(env, 'SELECT * FROM wl_case_tasks WHERE id = ?', input.text('task', { max: 100 }))
-  insist(task, 'task_not_found', 404)
-  const caseRow = (await one(env, 'SELECT * FROM wl_cases WHERE id = ?', task.case_id))!
+export async function completeTask(env: Bindings, actor: Actor, input: Input, _request: Request) {
+  const snapshot = (await one(env, 'SELECT COALESCE(MAX(seq),0) AS seq FROM wl_audit'))!.seq
+  const stored = await one(env, 'SELECT * FROM wl_case_tasks WHERE id = ?', input.text('task', { max: 100 }))
+  insist(stored, 'task_not_found', 404)
+  const caseRow = (await one(env, 'SELECT * FROM wl_cases WHERE id = ?', stored.case_id))!
+  const [task] = await taskAssignments(env, [stored], actor.today, caseRow)
   insist(answersFor(actor, task, caseRow), 'not_your_task', 403)
   // HR work reached only through a scoped level is rechecked against fresh terms inside the write (ROLE-002).
   const scopeAuthority = (task.assignee === 'hr' || (task.assignee === 'manager' && !task.assignee_person_id)) && !can(actor, 'people.manage') ? await scopeFence(env, actor, caseRow.person_id, 'people.manage') : []
@@ -202,14 +194,14 @@ export async function completeTask(env: Bindings, actor: Actor, input: Input, re
   insist(!task.evidence_required || evidence, 'evidence_required')
   const statements: D1PreparedStatement[] = [
     ...scopeAuthority,
+    ...(task.assignee === 'manager' ? [guard(env, 'access_changed', '(SELECT COALESCE(MAX(seq),0) FROM wl_audit)=?', snapshot)] : []),
+    ...(task.action === 'end_access' ? await taskEndAccessStatements(env, actor, task, caseRow) : []),
     guard(env, 'dependencies_open', "NOT EXISTS(SELECT 1 FROM wl_case_tasks d JOIN json_each(?) j ON d.id=j.value WHERE d.status<>'done' AND d.superseded_at IS NULL)", task.dependencies),
     guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_case_tasks WHERE id=? AND status='open' AND superseded_at IS NULL)", task.id),
-    stmt(env, "UPDATE wl_case_tasks SET status = 'done', failure = NULL, evidence = ?, completed_by = ?, completed_at = ? WHERE id = ? AND status = 'open'", evidence || null, actor.id, now(), task.id),
+    stmt(env, "UPDATE wl_case_tasks SET status = 'done', failure = NULL, evidence = ?, completed_by = ?, completed_at = ?, assignee_person_id = ? WHERE id = ? AND status = 'open'", evidence || null, actor.id, now(), task.assignee_person_id, task.id),
     guard(env, 'stale', "EXISTS(SELECT 1 FROM wl_case_tasks WHERE id = ? AND completed_by = ? AND status = 'done')", task.id, actor.id),
     stmt(env, 'UPDATE wl_cases SET revision = ? WHERE id = ?', newId(), caseRow.id),
   ]
-  // The one local action a task can run: ending the person's Willow access.
-  if (task.action === 'end_access') statements.push(...await endAccessStatements(env, actor, request, caseRow.person_id))
   if (task.action === 'asset_return') statements.push(...await assetReturnStatements(env, actor, task.record_row_id, input))
   await commit(env, statements, { actor: actor.id, action: 'task.complete', subject: task.id, detail: { case: caseRow.id, evidence: !!evidence, action: task.action } })
   return { id: task.id, case: caseRow.id, status: 'done' }
@@ -245,7 +237,7 @@ export async function completeCase(env: Bindings, actor: Actor, input: Input) {
 export async function caseDetail(env: Bindings, actor: Actor, id: string) {
   const caseRow = await one(env, 'SELECT * FROM wl_cases WHERE id = ?', id)
   insist(caseRow, 'not_found', 404)
-  const history = await all(env, 'SELECT * FROM wl_case_tasks WHERE case_id = ? ORDER BY position', id)
+  const history = await taskAssignments(env, await all(env, 'SELECT * FROM wl_case_tasks WHERE case_id = ? ORDER BY position', id), actor.today, caseRow)
   const tasks = history.filter(task => !task.superseded_at)
   const mine = tasks.filter(task => answersFor(actor, task, caseRow))
   // Anyone answering a task sees the case's tasks; the lifecycle facet sees the whole case.
@@ -275,6 +267,6 @@ export async function casesFor(env: Bindings, personId: string, asOf?: { date: s
 
 /** Open tasks this member answers for, across every case. */
 export async function myTasks(env: Bindings, actor: Actor) {
-  const rows = await all(env, "SELECT t.*, c.person_id, c.kind, p.legal_name, p.preferred_name FROM wl_case_tasks t JOIN wl_cases c ON c.id = t.case_id JOIN wl_people p ON p.id = c.person_id WHERE t.status = 'open' AND t.superseded_at IS NULL AND c.status='open' ORDER BY t.due_date, t.position")
+  const rows = await taskAssignments(env, await all(env, "SELECT t.*, c.person_id, c.kind, c.status AS case_status, p.legal_name, p.preferred_name FROM wl_case_tasks t JOIN wl_cases c ON c.id = t.case_id JOIN wl_people p ON p.id = c.person_id WHERE t.status = 'open' AND t.superseded_at IS NULL AND c.status='open' ORDER BY t.due_date, t.position"), actor.today)
   return await Promise.all(rows.filter(row => answersFor(actor, row, row)).map(async row => ({ id: row.id, case: row.case_id, kind: row.kind, person: displayName(row), title: row.title, dueDate: row.due_date, overdue: row.due_date < actor.today, evidenceRequired: !!row.evidence_required, system: row.system, failure: row.failure, blockedBy: await blockedBy(env, row) })))
 }
