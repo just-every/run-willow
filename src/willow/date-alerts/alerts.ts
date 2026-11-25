@@ -11,7 +11,7 @@
 // alerts and people without current or upcoming employment fire nothing.
 // Slack/Teams delivery is COMMS-001's to add before it ships.
 import type { Bindings } from '../../auth.server'
-import { operatorMail } from '../../mail.server.mjs'
+import { mailOff, operatorMail } from '../../mail.server.mjs'
 import { can, employerZone, requirePermission, type Actor } from '../actor'
 import { connectionSettings } from '../connections'
 import { all, commit, insist, json, newId, now, one, stmt, type Row } from '../core'
@@ -105,7 +105,8 @@ async function email(env: Bindings, fireId: string, member: Actor) {
   let status = 'disabled', failure: string | null = 'notices_disabled'
   if ((await connectionSettings(env))?.notices) {
     const sender = operatorMail(env)
-    if (!sender || !env.MAIL_FROM) { status = 'failed'; failure = 'mail_unavailable' }
+    if (mailOff(env)) { status = 'refused'; failure = 'mail_off' }
+    else if (!sender || !env.MAIL_FROM) { status = 'failed'; failure = 'mail_unavailable' }
     else try {
       // Fixed content and authenticated link only; never the field, its value, the person or the date.
       const path = env.AUTH_ORIGIN + '/app/dates'

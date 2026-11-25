@@ -36,7 +36,7 @@
     {
       "name": "OWNER_EMAIL",
       "label": "Owner email",
-      "help": "The first owner of the installation. Local development shows sign-in links in its private outbox; hosted sign-in uses the configured email provider.",
+      "help": "The first owner of the installation. Local development shows sign-in links in its private outbox. For a hosted installation with email off, use rer signin from the deployment checkout.",
       "kind": "email",
       "required": true,
       "prefill": "account-email",
@@ -74,6 +74,10 @@
           "label": "Local development outbox"
         },
         {
+          "value": "none",
+          "label": "Email off"
+        },
+        {
           "value": "rer",
           "label": "RER managed mail"
         },
@@ -91,7 +95,7 @@
         }
       ],
       "group": "mail",
-      "help": "Use the private outbox for local development. Hosted installations require RER managed mail or a configured direct provider."
+      "help": "Use the private outbox for local development or turn hosted email off. Choose a mail provider to enable email sign-in and notices."
     },
     {
       "name": "MAIL_FROM",

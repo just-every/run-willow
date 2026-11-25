@@ -5,7 +5,7 @@ import { actorFor, employerZone, type Actor } from '../actor'
 import { all, commit, guard, insist, newId, now, one, stmt } from '../core'
 import { addDays, daysBetween, isDate, today } from '../dates'
 import type { Input } from '../input'
-import { operatorMail } from '../../mail.server.mjs'
+import { mailOff, operatorMail } from '../../mail.server.mjs'
 import { connectionSettings } from '../connections'
 import { workMembers } from '../work-sources'
 import { requireReporter, savedReport } from './definitions'
@@ -51,7 +51,8 @@ export async function runReportScheduler(env:Bindings,instant=now()) {
      if(!(await connectionSettings(env))?.notices){status='disabled';failure='notices_disabled'}
      else {
       const sender=operatorMail(env),link=env.AUTH_ORIGIN+'/app/reports/custom/'+schedule.report_id
-      if(!sender||!env.MAIL_FROM){status='refused';failure='mail_unavailable'}
+      if(mailOff(env)){status='refused';failure='mail_off'}
+      else if(!sender||!env.MAIL_FROM){status='refused';failure='mail_unavailable'}
       else {
        try {
         const result=await sender.send({deliveryId:id,from:env.MAIL_FROM,to:[member.email],subject:'Willow: scheduled report ready',html:`<p>A scheduled report is ready.</p><p><a href="${link}">Sign in to view your permitted report</a></p>`,text:`A scheduled report is ready. Sign in to view your permitted report: ${link}`,headers:{'Auto-Submitted':'auto-generated'}})

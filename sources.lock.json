@@ -758,7 +758,7 @@
       "executable": false
     },
     "deploy.json": {
-      "sha256": "9583be94e9f20e129da9ef890d9a5bc163c368d1357fe7d7b140e910bf4166dd",
+      "sha256": "906001b25f885257ec4f2c58991b4492cca25a926fb4e9d6a8c5b243ff03cc1d",
       "executable": false
     },
     "docs/access.md": {
@@ -838,7 +838,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "bcf551b91c5b3de11d048673fd3cf0c46eb41f8a1635a7d5db408552b4069953",
+      "sha256": "612b4c5a11bdc88103a4f7969fb8f2ab24f6452cf14a0c4fb7ef5b0b3ebf578b",
       "executable": false
     },
     "migrations/base-copies.json": {
@@ -1290,11 +1290,11 @@
       "executable": false
     },
     "OPERATIONS.md": {
-      "sha256": "2d527a504e54c72254630990e04875118a1d61d7738c1e800765209716a1a417",
+      "sha256": "8a80dfaf8b98f4abe0c92bbd2c95b2c9c973b22de0b44da742bf09007ceb56a5",
       "executable": false
     },
     "package.json": {
-      "sha256": "3bab9c76b51c1f9d60a2d216bc4ea213abc2e98168ecf41e6371d534e6f70966",
+      "sha256": "24c11e5d25c06f4643641e041b8294f21ef7fa0f2677ac0a747db587073d2802",
       "executable": false
     },
     "packaging.json": {
@@ -1302,7 +1302,7 @@
       "executable": false
     },
     "pnpm-lock.yaml": {
-      "sha256": "bcd109744da5babb3c7ebc91a1c461934dd3bca3968bb907a5052f692d88f97d",
+      "sha256": "e23d2d88a8f14f4e8a5a7949ba984532d5e3585b708563677f8c7028f098b4ea",
       "executable": false
     },
     "public/apple-touch-icon.png": {
@@ -1606,7 +1606,7 @@
       "executable": false
     },
     "README.md": {
-      "sha256": "3b02f96f21127bf23ca05af00fdbfc26ae3126d29168b2ea9edfdc825fdd752f",
+      "sha256": "9863c1ff395017e8dc693fe17920fe3e8017462410617fce8a3f2e94ce7837f0",
       "executable": false
     },
     "release-history/0.1.0.json": {
@@ -1618,11 +1618,11 @@
       "executable": false
     },
     "rer-project.json": {
-      "sha256": "a243d3b3a3668e30f99e616449d02185450c0cb402751815b27f4002fa650807",
+      "sha256": "5f248b16fa87c60d88010e6a38cae7c6442fbc7c4eb71a56a127b7d36ee81eb0",
       "executable": false
     },
     "rer-setup.json": {
-      "sha256": "f329eec0c10dbd41785b987b56889792d88afc0bfc858982828dc396ac20c15b",
+      "sha256": "bd6d03bffea72e5d220c5df582d2c7f99757c9ceca1864c601841462239a2c2f",
       "executable": false
     },
     "RUN-LOCALLY.md": {
@@ -2350,7 +2350,7 @@
       "executable": false
     },
     "scripts/installer/local.mjs": {
-      "sha256": "b5e058e062820c24548c37dc81355fa223a754807a9b4f8f5fb4b9ba7e1a81c1",
+      "sha256": "aa4405e09c2d56c365b772ef3a37c2ba61323c8c3bbf55ac1cb8a370ea722936",
       "executable": false
     },
     "scripts/installer/portability.mjs": {
@@ -2398,7 +2398,7 @@
       "executable": false
     },
     "src/auth.server.ts": {
-      "sha256": "01e76c96f6c7acf140cc9fc0fc56aa468baa0e6a09e27f197326bdd3fbb3ec10",
+      "sha256": "b6484fb44134bd647e99d2a705aac710f92d54142e9ff19722659bb62afa814f",
       "executable": false
     },
     "src/base/contract-filter.ts": {
@@ -2558,11 +2558,11 @@
       "executable": false
     },
     "src/mail.server.d.mts": {
-      "sha256": "2e3eaa0588f12f6f04b565b948a0b8b823c201f349cdf9dd75c42c2d2413732b",
+      "sha256": "76dced8cc0e12d5184a6d05e542211d85c3e14b12d6c8d09744321b86c92d794",
       "executable": false
     },
     "src/mail.server.mjs": {
-      "sha256": "08ea037f5a77de5a5b5342d0c91d400ee2f5af2a384ab6b1eb490f3883ae6e44",
+      "sha256": "424fb1bad039e8932cdba26d469d22a8a38fc6ad13a004364432ac3b41d146f3",
       "executable": false
     },
     "src/modules/agent-door/admission.ts": {
@@ -5142,7 +5142,7 @@
       "executable": false
     },
     "src/willow/connections.ts": {
-      "sha256": "543ade4ec1210a91f18b7b15533606436ae707750034285df45dda29b3abd970",
+      "sha256": "7f162ae95f1342eb98b3709c70fe234c1c27f46500eee039e68574659266db22",
       "executable": false
     },
     "src/willow/core.ts": {
@@ -5178,7 +5178,7 @@
       "executable": false
     },
     "src/willow/date-alerts/alerts.ts": {
-      "sha256": "d7a0157733588e77ae955b324735e9a8a2f4549d51107dd679f028668c0bbb54",
+      "sha256": "b6cc2d7f5edda01a470c33be3316cd96918e648e0ad809e8117f36e8313c3fd6",
       "executable": false
     },
     "src/willow/date-alerts/sources.ts": {
@@ -5226,7 +5226,7 @@
       "executable": false
     },
     "src/willow/eeo-applicants/mail.ts": {
-      "sha256": "e0a7c1d269ffa237ae4fd386f2e897640c15de71634ce348c782acb79796e3f9",
+      "sha256": "a12e357200e246647725b0ec4d9f6f00e0ce71705bd4eb1cb8049ea72f016f18",
       "executable": false
     },
     "src/willow/eeo-applicants/portal.ts": {
@@ -5574,7 +5574,7 @@
       "executable": false
     },
     "src/willow/notices.ts": {
-      "sha256": "9f6c045616d830cc8ec1da85aa8d68f2c637d8ec26d5c0469188bdf4474fdc52",
+      "sha256": "de1fef3f99fb6633f397aeda56c703fbff7c51415f3b42c91dc0b9b2aacea20d",
       "executable": false
     },
     "src/willow/organization-import.ts": {
@@ -5650,7 +5650,7 @@
       "executable": false
     },
     "src/willow/preboarding/mail.ts": {
-      "sha256": "47b9a71025204957cf3bca0763afd8ca84454eace497cb327238f7862984d424",
+      "sha256": "1584aac30ebbf8884db7e916a0ff5d46bbc8c8db82d72b508bd8ad51e2599426",
       "executable": false
     },
     "src/willow/preboarding/packets.ts": {
@@ -5762,7 +5762,7 @@
       "executable": false
     },
     "src/willow/reporting/schedule.ts": {
-      "sha256": "44468472daf5778cc721c31c1ca4545d11ff38bfeb3050e69e787a8fe24b3298",
+      "sha256": "d181eeda1094c628c022cbe0ef984bbed40cfe6d71d9e341e08c254e636a2ce7",
       "executable": false
     },
     "src/willow/reporting/signature-files.ts": {
@@ -5894,7 +5894,7 @@
       "executable": false
     },
     "src/willow/sign/delivery.ts": {
-      "sha256": "9561b10fc6c0c5fb5bd14bc72df7ffbf61f0834125cdbee93ace33ddb2c01fe5",
+      "sha256": "84e570ddf924aa34afc4a8f879ce81a3fd644b67ffe3ad65c78c4673d04098a4",
       "executable": false
     },
     "src/willow/sign/expiry.ts": {
@@ -6038,7 +6038,7 @@
       "executable": false
     },
     "src/willow/ui/connections.ts": {
-      "sha256": "8087ec574e8d93ab1f040eaab6361355a9d688a07bbdfa1f00c8262526c7074f",
+      "sha256": "3a8d46d9a3f82a7fa25bda1f663ef539d1f29f1d7d8ebfd924bcee5f7d180407",
       "executable": false
     },
     "src/willow/ui/custom-approval.ts": {
@@ -6150,7 +6150,7 @@
       "executable": false
     },
     "src/willow/ui/notice-labels.ts": {
-      "sha256": "e9923483f969b470dad18f490eb1a49dbf7e3e5a62f7f895f4678b1793363b8d",
+      "sha256": "3dc3cb9099ffbd0ed1be68b987643b996041a8f42480b4dff4dd58c32c22fba6",
       "executable": false
     },
     "src/willow/ui/oauth-consent.ts": {
@@ -6290,7 +6290,7 @@
       "executable": false
     },
     "src/willow/work-scheduler.ts": {
-      "sha256": "060a7f276067a0506b3c81305cf7459207b1be2bfd0bb9b59b98c16d63d82c55",
+      "sha256": "bb33f1db2b479d56c7aad6f34f7420709a4bc4aac90f4becffdffd809f720804",
       "executable": false
     },
     "src/willow/work-sources.ts": {
@@ -6322,7 +6322,7 @@
       "executable": false
     },
     "tests/email-link.mjs": {
-      "sha256": "ae506bce6fff17c5dcc37a0ffb5fba9b2e7a036d52e3f2545146f86b9016a2b2",
+      "sha256": "ac905c254bab96e9eba38cfea45ce84a7311771df095fd5ee9ad048ca2685649",
       "executable": false
     },
     "tests/willow/agent-door/browser.mjs": {
@@ -6386,7 +6386,7 @@
       "executable": false
     },
     "tests/willow/cli.mjs": {
-      "sha256": "18bd31d64f645b163573ede71c1711ca702145119d115508fe3e47d64ee88251",
+      "sha256": "ee6b70b577b94a93778e3a55ddf7f6b94361a0022414c698942ee2e420a228e2",
       "executable": false
     },
     "tests/willow/company-home-browser.mjs": {
@@ -6514,7 +6514,7 @@
       "executable": false
     },
     "tests/willow/journey.mjs": {
-      "sha256": "e1a1fe610333138eff7cb1919cd89032fa736dfd824e9e55f0fa7926a1632370",
+      "sha256": "886881dbc12f8d6cffd9063d831c1e19acf19ae8fc64f1449bcff2d6ab661964",
       "executable": false
     },
     "tests/willow/leave-policies-browser.mjs": {
@@ -6686,11 +6686,7 @@
       "executable": false
     },
     "tests/willow/open-public-start.mjs": {
-      "sha256": "0b26c6c84d04235b1cebba3e3a646d4f9d5fd356eeb76420a719e5a09f7df510",
-      "executable": false
-    },
-    "tests/willow/open-start-process.mjs": {
-      "sha256": "dfe983712c7d5c01c5824b2e38886c525d3a17db1980850228c150d9627cfc9e",
+      "sha256": "0e4c80c18b8c89bae401ae66ab838c4037f605b40f2e07b4ce1f58469e6673b3",
       "executable": false
     },
     "tests/willow/people.mjs": {
@@ -6862,7 +6858,7 @@
       "executable": false
     },
     "wrangler.jsonc": {
-      "sha256": "db19bdc9b3750fcc343b3eecc81a95da23bf35356dd6f00d944a50e5823fcc64",
+      "sha256": "dd694a7bb2e4bb543e6b0dbd2f3d876b2651c391ca27039c514b095688b04a79",
       "executable": false
     }
   }

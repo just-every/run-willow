@@ -1,6 +1,13 @@
 import { createMailSender } from './modules/mail/index.mjs'
 
+const disabledSender = Object.freeze({
+ async send() { return { status: 'rejected', provider: 'none', providerMessageId: null, code: 'mail_off' } },
+})
+
+export const mailOff = env => env.MAIL_PROVIDER === 'none'
+
 export function operatorMail(env) {
+ if (mailOff(env)) return disabledSender
  try {
   return env.RER_DEMO === '1' || env.AUTH_LOCAL === 'true'
    ? createMailSender({ provider: 'development', mode: 'development' })

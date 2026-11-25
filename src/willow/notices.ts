@@ -1,6 +1,6 @@
 // Fixed copy only. No person names, task titles, decisions, or evidence enter mail.
 import type { Bindings } from '../auth.server'
-import { operatorMail } from '../mail.server.mjs'
+import { mailOff, operatorMail } from '../mail.server.mjs'
 import { actorFor, can, employerZone, type Actor } from './actor'
 import { all, newId, now, one, stmt, type Row } from './core'
 import { answersFor, taskAssignments } from './lifecycle'
@@ -28,7 +28,8 @@ async function deliver(env: Bindings, recipient: Actor, kind: string, subject: s
       return {id,status:'refused',failure:'recipient_access_changed'}
     }
     const sender = operatorMail(env)
-    if (sender && env.MAIL_FROM) {
+    if (mailOff(env)) { status = 'refused'; failure = 'mail_off' }
+    else if (sender && env.MAIL_FROM) {
       const result = await sender.send({ deliveryId: id, from: env.MAIL_FROM, to: [recipient.email], subject: 'Willow: an update is ready', html: `<p>${COPY[kind]}</p><p><a href="${esc(env.AUTH_ORIGIN + path)}">Sign in to Willow</a></p>`, text: `${COPY[kind]}\n\nSign in to view it: ${env.AUTH_ORIGIN}${path}\n`, headers: { 'Auto-Submitted': 'auto-generated' } })
       if (result?.status === 'accepted' || result?.status === 'development' && env.AUTH_LOCAL === 'true') { status = result.status; failure = null }
       else { status = 'refused'; failure = 'mail_refused' }

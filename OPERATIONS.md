@@ -74,16 +74,17 @@ a forward migration and verified transition/recovery.
 
 ## Deployment
 
-`rer deploy --dry-run` validates the real owner-account
-deployment declaration and builds locally without provider requests. Real
-deployment requires privately supplied `CLOUDFLARE_ACCOUNT_ID` and
-`CLOUDFLARE_API_TOKEN`, the declared owner/session/setup secrets, and a real
-verified mail sender. A dry run accepts the shipped reserved-domain sender
-and reports missing mail and Cloudflare inputs for a real deployment, without
-sending mail. The current native deploy command takes the public sender from
-`vars.MAIL_FROM` in `deploy.json`; it cannot yet deploy a different sender from
-only the environment or `--env-file`. Treat this as a CLI limitation, and never
-commit deployment-specific sender addresses or credentials to the seed. Follow the deployment sections of
+`MAIL_PROVIDER=none rer deploy --dry-run` builds locally and checks the
+owner-account deployment plan without provider requests. For a real deployment,
+supply the Business's Cloudflare account ID and API token privately and give rer
+the owner email. With email off, omit all mail credentials and sender settings.
+Run `rer signin` with the same Cloudflare credentials from the deployment checkout
+to issue the owner's one-time link.
+
+For email sign-in and outbound notices, supply a supported `MAIL_PROVIDER`, a
+verified `MAIL_FROM`, `MAIL_API_KEY`, and any provider-specific settings through
+the environment or a private `--env-file`. Keep deployment credentials out of
+source. Follow the deployment sections of
 `SEED-COMMAND-CONTRACT.md`; account scope, resource ownership, migrations,
 receipt and health checks are defined there. Willow uses the pinned
 `@runeditrun/rer` package for these operations.

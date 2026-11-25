@@ -101,14 +101,11 @@ a private export and retain that release for recovery. To move to a new release,
 upgrade the existing installation in place with `rer install` and `rer setup`.
 If recovery is needed, restore the export on its original release first, then
 upgrade that installation in place. Existing inactive sign-in identities are never
-reactivated by recovery. Real `deploy` needs your own Cloudflare account
-and a verified mail sender. `deploy --dry-run` accepts the shipped reserved-domain
-sender and reports missing mail and Cloudflare inputs for a real deployment;
-it sends no mail. The current native deploy command still takes the public sender
-from `vars.MAIL_FROM` in `deploy.json`. It cannot yet deploy a different sender
-from only the environment or `--env-file`; that CLI limitation must be resolved
-before relying on an environment-only sender. Never commit deployment-specific
-sender addresses or credentials to the seed.
+reactivated by recovery. A Business can prepare a deploy with email off using
+`MAIL_PROVIDER=none rer deploy --dry-run`. A real deploy uses the Business's own
+Cloudflare account. With email off, the owner runs `rer signin` from the checkout
+that deployed Willow with its Cloudflare credentials. Email sign-in, invitations
+and notices require a provider. See [Deployment](OPERATIONS.md#deployment).
 Pins: Node 22.20.0 and pnpm 10.12.4, selected
 automatically. `RUN-LOCALLY.md` and `SEED-COMMAND-CONTRACT.md` are shared Base
 references. Their captured-mail and legacy `--login` instructions are stale;

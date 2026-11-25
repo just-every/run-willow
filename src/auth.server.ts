@@ -4,7 +4,7 @@ import { identityFetch } from './identity-fetch'
 import { firstRunResponse } from './base/setup'
 import { fontDocumentResponse } from './base/font-response'
 import { createOperatorAuth, createAuthHandler, createSignInHandler, type AuthConfig } from './modules/operator-auth/index.mjs'
-import { operatorMail } from './mail.server.mjs'
+import { mailOff, operatorMail } from './mail.server.mjs'
 import branding from './branding.json'
 import { identityConfiguration } from './identity.server'
 import { recoverMemberIdentities } from './willow/recover-access'
@@ -37,7 +37,7 @@ export interface Bindings {
  OWNER_EMAIL: string
  SESSION_SECRET: string
  SETUP_TOKEN?: string
- MAIL_PROVIDER?: 'development' | 'resend' | 'sendgrid' | 'cloudflare' | 'rer'
+ MAIL_PROVIDER?: 'none' | 'development' | 'resend' | 'sendgrid' | 'cloudflare' | 'rer'
  MAIL_FROM?: string
  MAIL_RELAY_URL?: string
  MAIL_API_KEY?: string
@@ -51,7 +51,7 @@ export interface Bindings {
 }
 
 export const runtimeBindings = (env: Bindings): Bindings => env.RER_DEV_ORIGIN && env.AUTH_LOCAL === 'true' ? { ...env, AUTH_ORIGIN: env.RER_DEV_ORIGIN } : env
-export const authConfig = (env: Bindings): AuthConfig => ({ origin: env.AUTH_ORIGIN, local: env.AUTH_LOCAL === 'true', OWNER_EMAIL: env.OWNER_EMAIL, SESSION_SECRET: env.SESSION_SECRET, SETUP_TOKEN: env.SETUP_TOKEN, MAIL_FROM: env.MAIL_FROM, branding: { productName: branding.name, accentColor: branding.primaryColor, signInPath: '/signin', theme: theme.href } })
+export const authConfig = (env: Bindings): AuthConfig => ({ origin: env.AUTH_ORIGIN, local: env.AUTH_LOCAL === 'true', OWNER_EMAIL: env.OWNER_EMAIL, SESSION_SECRET: env.SESSION_SECRET, SETUP_TOKEN: env.SETUP_TOKEN, MAIL_FROM: mailOff(env) ? undefined : env.MAIL_FROM, branding: { productName: branding.name, accentColor: branding.primaryColor, signInPath: '/signin', theme: theme.href } })
 export function operatorAuth(env: Bindings, tokenProvider?: string) {
  const providers = identityConfiguration(env).providers
  return createOperatorAuth({
@@ -64,7 +64,7 @@ export function operatorAuth(env: Bindings, tokenProvider?: string) {
     if (!member) throw new Error('not_a_member')
    }
   } },
-  mailSender: operatorMail(env),
+  mailSender: mailOff(env) ? undefined : operatorMail(env),
   clientIp: request => request.headers.get('CF-Connecting-IP') ?? '',
  })
 }
@@ -89,7 +89,10 @@ export async function authResponse(request: Request, original: Bindings): Promis
   })(request)
   if (page) return fontDocumentResponse(page)
  }
- if (url.pathname === '/auth/magic-link' && request.method === 'POST' && request.headers.get('origin') === env.AUTH_ORIGIN && url.origin === env.AUTH_ORIGIN) await recoverMemberIdentities(env)
+ if (url.pathname === '/auth/magic-link' && request.method === 'POST' && request.headers.get('origin') === env.AUTH_ORIGIN && url.origin === env.AUTH_ORIGIN) {
+  if (mailOff(env)) return Response.json({ error: 'mail_off' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
+  await recoverMemberIdentities(env)
+ }
  // Willow keeps email-link admission available: domain-required SSO is outside its contract.
  if (url.pathname.startsWith('/auth/domain')) return Response.json({ error: 'optional_identity_only' }, { status: 403 })
  if (url.pathname.startsWith('/auth/providers') && request.method === 'POST') return Response.json({ error: 'use_connections_owner_action' }, { status: 403 })

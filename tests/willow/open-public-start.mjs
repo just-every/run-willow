@@ -10,7 +10,6 @@ import { dirname, join, delimiter } from 'node:path'
 import { promisify } from 'node:util'
 import { pathToFileURL } from 'node:url'
 import { createRedaction } from '@runeditrun/rer/redaction'
-import { publicStart } from './open-start-process.mjs'
 
 const execute = promisify(execFile), redaction = createRedaction()
 const safe = value => redaction.redact(String(value)).replace(/https?:\/\/[^\s<>"']+/gi, '[private URL]')
@@ -33,14 +32,16 @@ async function run() {
   assert.equal((await readdir(cwd)).length, 0, 'Public command begins in an empty directory')
   const cancelled = new AbortController(), cancel = () => cancelled.abort()
   process.on('SIGINT', cancel); process.on('SIGTERM', cancel)
-  let launch, browser, revision = 'not yet resolved', failure
+  const root = join(cwd, 'run-willow')
+  const rer = (args, options) => execute('npx', ['-y', '@runeditrun/rer', ...args], { cwd, env: environment, ...options })
+  let browser, revision = 'not yet resolved', failure
   try {
-    launch = await publicStart(cwd, environment)
-    const open = await launch.ready(cancelled.signal)
+    const { stdout } = await rer(['dev', 'just-every/run-willow'], { signal: cancelled.signal, timeout: 15 * 60_000 })
+    const open = stdout.match(/^RER_OPEN\s+(\S+)/m)?.[1]
+    assert.ok(open, 'Public command returned a signed-in RER_OPEN link')
     redaction.addSecrets(open)
     const url = new URL(open), origin = url.origin
     assert.ok(url.protocol === 'http:' && /^(?:localhost|127\.0\.0\.1|\[::1\]|[\w.-]+\.localhost)$/.test(url.hostname), 'RER_OPEN must stay on this computer')
-    const root = join(cwd, 'run-willow')
     const git = async args => (await execute('git', ['-C', root, ...args], { env: environment, timeout: 30_000 })).stdout.trim()
     const [source, head, main, license, manifest] = await Promise.all([
       git(['config', '--get', 'remote.origin.url']), git(['rev-parse', 'HEAD']), git(['rev-parse', 'refs/remotes/origin/main']),
@@ -189,7 +190,8 @@ async function run() {
     console.log(`OPEN-001 public main ${revision}: MIT rights, credential-free exact npx start, 48 employees, employment/case/payroll writes, ${visited.size} product pages and all navigation passed. Local billing disclosures require their separate proof.`)
   } catch (error) { failure = error }
   finally {
-    const cleanup = await Promise.allSettled([browser?.close(), launch?.stop()])
+    const entries = await readdir(cwd)
+    const cleanup = await Promise.allSettled([browser?.close(), entries.includes('run-willow') && rer(['dev', '--cwd', root, '--stop'], { timeout: 30_000 })])
     process.off('SIGINT', cancel); process.off('SIGTERM', cancel)
     const errors = cleanup.filter(result => result.status === 'rejected').map(result => result.reason)
     if (!errors.length) await rm(scratch, { recursive: true, force: true })

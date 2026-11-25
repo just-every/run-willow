@@ -4,7 +4,7 @@ import { enrollSignatureJoiners } from './sign/cohorts'
 import { dispatchCohortNotices } from './sign/delivery'
 // A durable attempt claim precedes mail. Uncertain attempts are visible and never retried blindly.
 import type { Bindings } from '../auth.server'
-import { operatorMail } from '../mail.server.mjs'
+import { mailOff, operatorMail } from '../mail.server.mjs'
 import { employerZone, requireOwner, type Actor } from './actor'
 import { connectionSettings } from './connections'
 import { commit, newId, now, stmt } from './core'
@@ -52,7 +52,8 @@ export async function runWorkScheduler(env: Bindings, instant=now()) {
     if (!enabled) {status='disabled';failure='notices_disabled'}
     else {
      const sender = operatorMail(env)
-     if (!sender || !env.MAIL_FROM) {status='failed';failure='mail_unavailable'}
+     if (mailOff(env)) {status='refused';failure='mail_off'}
+     else if (!sender || !env.MAIL_FROM) {status='failed';failure='mail_unavailable'}
      else try {
       // Fixed content and authenticated link only; never send the title, person, date or next-action text.
       const path=env.AUTH_ORIGIN+'/app/tasks'

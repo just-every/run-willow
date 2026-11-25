@@ -230,6 +230,7 @@ try {
   // A valid test sender lets dry runs reach the missing-credential boundary.
   const deployment = JSON.parse(deploymentSource)
   const { domain } = JSON.parse(await readFile(join(root, 'deploy-site.json'), 'utf8'))
+  deployment.vars.MAIL_PROVIDER = 'resend'
   deployment.vars.MAIL_FROM = `Willow <synthetic-willow-1@${domain}>`
   await writeFile(deploymentFile, JSON.stringify(deployment, null, 2) + '\n')
   // A dry run validates and builds locally without contacting Cloudflare.

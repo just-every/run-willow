@@ -1,6 +1,6 @@
 // The bearer exists only in this delivery call. Neither audit nor action responses carry it.
 import type { Bindings } from '../../auth.server'
-import { operatorMail } from '../../mail.server.mjs'
+import { mailOff, operatorMail } from '../../mail.server.mjs'
 import { one, stmt } from '../core'
 import { PHASE_ELIGIBLE } from './store'
 import type { InvitationRow } from './types'
@@ -22,7 +22,8 @@ export async function deliverInvitation(env: Bindings, row: InvitationRow, token
     const current = await one<{ contact_email: string }>(env, `SELECT a.contact_email FROM ${joins} WHERE ${eligible}`, row.id, row.token_hash)
     if (!current) return { status: 'refused', failure: 'invitation_unavailable' }
     const sender = operatorMail(env)
-    if (sender && env.MAIL_FROM) {
+    if (mailOff(env)) result = { status: 'refused', failure: 'mail_off' }
+    else if (sender && env.MAIL_FROM) {
       const link = new URL(`/applicant-self-id/${token}`, env.AUTH_ORIGIN).href
       const copy = 'You may complete voluntary self-identification in Willow. Your answers are separate from your application, are never shown to the hiring team and do not affect selection.'
       const sent = await sender.send({ deliveryId: row.id, from: env.MAIL_FROM, to: [current.contact_email],

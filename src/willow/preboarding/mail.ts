@@ -1,10 +1,10 @@
 import type { Bindings } from '../../auth.server'
-import { operatorMail } from '../../mail.server.mjs'
+import { mailOff, operatorMail } from '../../mail.server.mjs'
 import { commit, stmt } from '../core'
 
 export interface PacketDelivery {
   status: 'accepted' | 'development' | 'refused' | 'failed'
-  failure: 'mail_unavailable' | 'mail_refused' | 'mail_failed' | null
+  failure: 'mail_off' | 'mail_unavailable' | 'mail_refused' | 'mail_failed' | null
 }
 const escape = (value: string) => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!)
 
@@ -13,7 +13,8 @@ export async function deliverPacket(env: Bindings, actorId: string, packetId: st
   let delivery: PacketDelivery = { status: 'failed', failure: 'mail_unavailable' }
   try {
     const sender = operatorMail(env)
-    if (sender && env.MAIL_FROM) {
+    if (mailOff(env)) delivery = { status: 'refused', failure: 'mail_off' }
+    else if (sender && env.MAIL_FROM) {
       const link = new URL(`/preboarding/${token}`, env.AUTH_ORIGIN).href
       const text = `You have a voluntary self-identification step in Willow.\n\nOpen your private step: ${link}\n\nInvitation issued: ${sourceOn}.\n`
       const result = await sender.send({ deliveryId: packetId, from: env.MAIL_FROM, to: [email],
@@ -26,7 +27,9 @@ export async function deliverPacket(env: Bindings, actorId: string, packetId: st
     }
   } catch { delivery = { status: 'failed', failure: 'mail_failed' } }
   try {
-    await commit(env, [stmt(env, 'UPDATE wl_preboard_packets SET delivery_status = ?, delivery_failure = ? WHERE id = ?', delivery.status, delivery.failure, packetId)],
+    // Keep the existing packet table's closed set of stored failure codes.
+    const storedFailure = delivery.failure === 'mail_off' ? 'mail_refused' : delivery.failure
+    await commit(env, [stmt(env, 'UPDATE wl_preboard_packets SET delivery_status = ?, delivery_failure = ? WHERE id = ?', delivery.status, storedFailure, packetId)],
       { actor: actorId, action: 'preboarding.delivery', subject: packetId, detail: delivery })
   } catch { /* Delivery bookkeeping cannot roll back the committed invitation. */ }
   return delivery

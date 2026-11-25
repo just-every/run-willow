@@ -1,5 +1,5 @@
 import type { Bindings } from '../../auth.server'
-import { operatorMail } from '../../mail.server.mjs'
+import { mailOff, operatorMail } from '../../mail.server.mjs'
 import { connectionSettings } from '../connections'
 import { all, commit, newId, now, stmt } from '../core'
 import { esc } from '../ui/html'
@@ -22,7 +22,8 @@ export async function dispatchCohortNotices(env:Bindings,cohort?:string,instant=
    if(!(await connectionSettings(env))?.notices){status='disabled';failure='notices_disabled'}
    else {
     const sender=operatorMail(env)
-    if(!sender||!env.MAIL_FROM){status='failed';failure='mail_unavailable'}
+    if(mailOff(env)){status='refused';failure='mail_off'}
+    else if(!sender||!env.MAIL_FROM){status='failed';failure='mail_unavailable'}
     else try {
      const path=env.AUTH_ORIGIN+'/app/signatures/'+row.id
      const result=await sender.send({deliveryId:id,from:env.MAIL_FROM,to:[fresh.recipient.email],subject:'Willow: signature request',html:`<p>A signature request is ready in Willow.</p><p><a href="${esc(path)}">Sign in to Willow</a></p>`,text:`A signature request is ready in Willow.\n\nSign in to Willow: ${path}\n`,headers:{'Auto-Submitted':'auto-generated'}})
